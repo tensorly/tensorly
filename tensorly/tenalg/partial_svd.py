@@ -4,6 +4,7 @@ import numpy as np
 
 # Author: Jean Kossaifi
 
+
 def partial_svd(matrix, n_eigenvecs=None):
     """Computes a fast partial SVD on `matrix`
 
@@ -13,7 +14,7 @@ def partial_svd(matrix, n_eigenvecs=None):
     Parameters
     ----------
     matrix : 2D-array
-    n_eigenvecs : int, optional
+    n_eigenvecs : int, optional, default is None
         if specified, number of eigen[vectors-values] to return
 
     Returns
