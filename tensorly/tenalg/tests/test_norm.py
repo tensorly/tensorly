@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import norm as sc_norm
 from numpy.testing import assert_
 from ...base import tensor_to_vec
-from ..norm import norm
+from .._norm import norm
 
 # Author: Jean Kossaifi
 
