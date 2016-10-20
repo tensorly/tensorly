@@ -5,6 +5,8 @@ from ..tenalg import partial_svd
 from ..tucker import tucker_to_tensor
 from ..utils import check_random_state
 
+# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+
 
 def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
            random_state=None, verbose=False):
@@ -109,6 +111,7 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
     .. [1] G. Zhou, A. Cichocki, Q. Zhao and S. Xie,
        "Nonnegative Matrix and Tensor Factorizations : An algorithmic perspective,"
        in IEEE Signal Processing Magazine, vol. 31, no. 3, pp. 54-65, May 2014.
+
     .. [2] DD Lee and HS Seung,
        "Algorithms for non-negative matrix factorization",
        in Advances in neural information processing systems (NIPS), 2001

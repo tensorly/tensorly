@@ -1,12 +1,13 @@
 import numpy as np
 from numpy.linalg import solve
-
 from ..utils import check_random_state
 from ..base import unfold
 from ..kruskal import kruskal_to_tensor
 from ..tenalg import khatri_rao
 from ..tenalg._partial_svd import partial_svd
 from ..tenalg import norm
+
+# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
@@ -41,7 +42,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     ----------
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-
     """
     tensor = tensor.astype(np.float)
     rng = check_random_state(random_state)
@@ -160,7 +160,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
         rec_error = norm(tensor - kruskal_to_tensor(nn_factors), 2) / norm_tensor
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
-            print('reconsturction error={}, variation={}.'.format(
+            print('reconstruction error={}, variation={}.'.format(
                 rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
         if iteration > 1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:

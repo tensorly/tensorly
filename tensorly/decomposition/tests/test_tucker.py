@@ -48,7 +48,6 @@ def test_tucker():
             'abs norm of difference between svd and random init too high')
 
 
-
 def test_non_negative_tucker():
     """Test for non-negative Tucker"""
     rng = check_random_state(1234)
