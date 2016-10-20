@@ -114,4 +114,3 @@ def test_inv_squared_kronecker():
     # Faster version
     res = inv_squared_kronecker(W, n_identity=n_identity)
     assert_array_almost_equal(true_res, res)
-

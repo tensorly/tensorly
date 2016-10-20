@@ -48,15 +48,15 @@ def kruskal_to_tensor(factors):
     return fold(full_tensor, 0, shape)
 
 
-def kruskal_to_unfolded(matrices, mode):
+def kruskal_to_unfolded(factors, mode):
     """Turns the khatri-product of matrices into an unfolded tensor
 
-        turns ``factor_matrices = [|U_1, ... U_n|]`` into a mode-`mode`
+        turns ``factors = [|U_1, ... U_n|]`` into a mode-`mode`
         unfolding of the tensor
 
     Parameters
     ----------
-    matrices : ndarray list
+    factors : ndarray list
         list of matrices, all with the same number of columns
         ie for all u in factor_matrices:
          u[i] has shape (s_u_i, R), where R is fixed
@@ -70,21 +70,21 @@ def kruskal_to_unfolded(matrices, mode):
 
     Notes
     -----
-    Writing factor_matrices = [U_1, ..., U_n], we exploit the fact that
+    Writing factors = [U_1, ..., U_n], we exploit the fact that
     ``U_k = U[k].dot(khatri_rao(U_1, ..., U_k-1, U_k+1, ..., U_n))``
     """
-    return matrices[mode].dot(khatri_rao(matrices, skip_matrix=mode).T)
+    return factors[mode].dot(khatri_rao(factors, skip_matrix=mode).T)
 
 
-def kruskal_to_vec(factor_matrices):
+def kruskal_to_vec(factors):
     """Turns the khatri-product of matrices into a vector
 
-        (the tensor ``factor_matrices = [|U_1, ... U_n|]``
+        (the tensor ``factors = [|U_1, ... U_n|]``
         is converted into a raveled mode-0 unfolding)
 
     Parameters
     ----------
-    factor_matrices : ndarray list
+    factors : ndarray list
         list of matrices, all with the same number of columns
         ie for all u in U: u[i] has shape (s_i, R), where R is fixed
 
@@ -93,4 +93,4 @@ def kruskal_to_vec(factor_matrices):
     ndarray
         vectorised tensor
     """
-    return tensor_to_vec(kruskal_to_tensor(factor_matrices))
+    return tensor_to_vec(kruskal_to_tensor(factors))
