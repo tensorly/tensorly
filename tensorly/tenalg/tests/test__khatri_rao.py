@@ -138,3 +138,7 @@ def test_khatri_rao():
     res_1 = khatri_rao(U, skip_matrix=1)
     res_2 = khatri_rao([U[0]] + U[2:])
     assert_array_equal(res_1, res_2)
+
+    res_1 = khatri_rao(U, skip_matrix=0)
+    res_2 = khatri_rao(U[1:])
+    assert_array_equal(res_1, res_2)

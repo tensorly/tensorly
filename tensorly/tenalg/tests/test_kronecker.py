@@ -89,6 +89,11 @@ def test_kronecker():
     res_2 = kronecker([U[0]] + U[2:])
     assert_array_equal(res_1, res_2)
 
+    res_1 = kronecker(U, skip_matrix=0)
+    res_2 = kronecker(U[1:])
+    assert_array_equal(res_1, res_2)
+
+
 
 def test_inv_squared_kronecker():
     """Test for inv_squared_kronecker"""

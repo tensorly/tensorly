@@ -38,7 +38,7 @@ def kronecker(matrices, skip_matrix=None, reverse=False):
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
-    if skip_matrix:
+    if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
 
     if reverse:
