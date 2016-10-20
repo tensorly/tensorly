@@ -2,7 +2,7 @@ from scipy.sparse.linalg import svds
 from scipy.linalg import svd
 from numpy.testing import assert_array_almost_equal, assert_raises
 import numpy as np
-from ..partial_svd import partial_svd
+from .._partial_svd import partial_svd
 
 
 def test_partial_svd():
