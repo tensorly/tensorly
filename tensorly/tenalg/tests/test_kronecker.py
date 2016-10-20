@@ -82,6 +82,7 @@ def test_kronecker():
                              [ 0. ,  3. ,  0. ,  6. ]])
     assert_array_equal(kronecker([a, b], reverse=True),  reversed_res)
 
+    # Test while skipping a matrix
     shapes = [[2, 3], [4, 5], [6, 7]]
     U = [np.random.randn(*shape) for shape in shapes]
     res_1 = kronecker(U, skip_matrix=1)
