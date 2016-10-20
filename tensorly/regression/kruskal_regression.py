@@ -10,7 +10,9 @@ from ..utils import check_random_state
 
 class KruskalRegressor():
     def __init__(self, weight_rank, tol=10e-7, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
-        """Class to perform Robust regression on tensors
+        """Kruskal tensor regression
+
+            Learns a low rank CP tensor weight
 
         Parameters
         ----------
@@ -77,9 +79,6 @@ class KruskalRegressor():
                 inv_term = np.dot(phi.T, phi) + self.reg_W*np.eye(phi.shape[1])
                 W[i] = np.reshape(solve(inv_term, phi.T.dot(y)), (X.shape[i + 1], self.weight_rank))
 
-            #######################################
-            # Monitor the evolution of the errors #
-            #######################################
             weight_tensor_ = kruskal_to_tensor(W)
             norm_W.append(norm(weight_tensor_, 2))
 

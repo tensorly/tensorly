@@ -7,6 +7,7 @@ from ...metrics.regression import RMSE
 
 def test_KruskalRegressor():
     """Test for KruskalRegressor"""
+
     # Parameter of the experiment
     image_height = 8
     image_width = 8
