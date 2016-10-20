@@ -1,0 +1,1 @@
+from ._khatri_rao import khatri_rao
