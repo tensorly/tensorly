@@ -5,7 +5,7 @@ from ..utils import check_random_state
 from ..base import unfold
 from ..kruskal import kruskal_to_tensor
 from ..tenalg import khatri_rao
-from ..tenalg.partial_svd import partial_svd
+from ..tenalg._partial_svd import partial_svd
 from ..tenalg import norm
 
 
@@ -23,6 +23,13 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             number of components
     n_iter_max : int
                  maximum number of iteration
+    init : {'svd', 'random'}, optional
+    tol : float, optional
+          tolerance: the algorithm stops when the variation in
+          the reconstruction error is less than the tolerance
+    random_state : {None, int, np.random.RandomState}
+    verbose : int, optional
+        level of verbosity
 
     Returns
     -------
