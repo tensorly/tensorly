@@ -52,9 +52,8 @@ def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
         core = rng.random_sample(ranks)
         factors = [rng.random_sample(s) for s in zip(tensor.shape, ranks)]
 
-    if verbose or tol:
-        rec_errors = []
-        norm_tensor = norm(tensor, 2)
+    rec_errors = []
+    norm_tensor = norm(tensor, 2)
 
     for iteration in range(n_iter_max):
         for mode in range(tensor.ndim):
@@ -64,19 +63,19 @@ def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
 
         core = tucker_to_tensor(tensor, factors, transpose_factors=True)
 
-        if verbose or tol:
-            rec_error = norm(tensor - tucker_to_tensor(core, factors), 2) / norm_tensor
-            rec_errors.append(rec_error)
+        rec_error = np.sqrt(norm_tensor**2 - norm(core, 2)**2) / norm_tensor
+        #rec_error = norm(tensor - tucker_to_tensor(core, factors), 2) / norm_tensor
+        rec_errors.append(rec_error)
 
-            if iteration > 1:
+        if iteration > 1:
+            if verbose:
+                print('reconsturction error={}, variation={}.'.format(
+                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
-                    print('reconsturction error={}, variation={}.'.format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
-
-                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
-                    if verbose:
-                        print('converged in {} iterations.'.format(iteration))
-                    break
+                    print('converged in {} iterations.'.format(iteration))
+                break
 
     return core, factors
 

@@ -36,7 +36,7 @@ class TuckerRegressor():
         self.random_state = random_state
         self.verbose = verbose
 
-    def get_params(self):
+    def get_params(self, **kwargs):
         """Returns a dictionary of parameters
         """
         params = ['weight_ranks', 'tol', 'reg_W', 'n_iter_max', 'random_state', 'verbose']
@@ -103,7 +103,7 @@ class TuckerRegressor():
                     break
 
         self.weight_tensor_ = weight_tensor_
-        self.tucker_W_ = (G, W)
+        self.tucker_weight_ = (G, W)
         self.vec_W_ = tucker_to_vec(G, W)
         self.n_iterations_ = iteration + 1
         self.norm_W_ = norm_W

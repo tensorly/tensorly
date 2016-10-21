@@ -72,19 +72,19 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             factor = solve(pseudo_inverse.T, factor.T).T
             factors[mode] = factor
 
-        if verbose or tol:
-            rec_error = norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
-            rec_errors.append(rec_error)
+        #if verbose or tol:
+        rec_error = norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+        rec_errors.append(rec_error)
 
-            if iteration > 1:
+        if iteration > 1:
+            if verbose:
+                print('reconsturction error={}, variation={}.'.format(
+                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
-                    print('reconsturction error={}, variation={}.'.format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
-
-                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
-                    if verbose:
-                        print('converged in {} iterations.'.format(iteration))
-                    break
+                    print('converged in {} iterations.'.format(iteration))
+                break
 
     return factors
 

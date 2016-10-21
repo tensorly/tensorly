@@ -35,7 +35,7 @@ class KruskalRegressor():
         self.random_state = random_state
         self.verbose = verbose
 
-    def get_params(self):
+    def get_params(self, **kwargs):
         """Returns a dictionary of parameters
         """
         params = ['weight_rank', 'tol', 'reg_W', 'n_iter_max', 'random_state', 'verbose']
