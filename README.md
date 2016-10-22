@@ -9,14 +9,14 @@ Tensor learning in Python
 
 Simply run
 ```bash
-pip install git+https://github.com/JeanKossaifi/tensorly
+pip install git+https://github.com/tensorly/tensorly
 ```
 
 ### Option 2: clone the repository and install
 
 Clone the repository and cd there:
 ```bash
-git clone https://github.com/JeanKossaifi/tensorly
+git clone https://github.com/tensorly/tensorly
 cd tensorly
 ```
 
