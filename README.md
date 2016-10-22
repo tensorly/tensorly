@@ -1,16 +1,17 @@
-# tensorly
+# TensorLy
 
-Tensor learning in Python
+Tensor Learning in Python.
 
 
 ## How to install
  
-### Option 1: Easy/fast option: install with pip
+### Easy/fast option: install with pip
 
 Simply run
 ```bash
-pip install git+https://github.com/tensorly/tensorly
+pip install -U tensorly
 ```
+That's it!
 
 ### Option 2: clone the repository and install
 
@@ -23,6 +24,11 @@ cd tensorly
 Then install the package (here in editable mode with `-e` or equivalently `--editable`):
 ```bash
 pip install -e .
+```
+
+Alternatively, you can pip install from the git repository:
+```bash
+pip install git+https://github.com/tensorly/tensorly
 ```
 
 ## Running the tests
