@@ -23,16 +23,16 @@ def tucker_to_tensor(core, factors, skip_factor=None, transpose_factors=False):
     Returns
     -------
     2D-array
-       full tensor of shape `(U[0].shape[0], ..., U[-1].shape[0])`
+       full tensor of shape `(factors[0].shape[0], ..., factors[-1].shape[0])`
 
     Notes
     -----
     This implementation is equivalent to:
 
-    >>> def tucker_to_tensor(G, U):
-    ...     for i, matrix in enumerate(U):
+    >>> def tucker_to_tensor(core, factors):
+    ...     for i, matrix in enumerate(factors):
     ...         if not i:
-    ...             res = mode_dot(G, matrix, i)
+    ...             res = mode_dot(core, matrix, i)
     ...         else:
     ...             res = mode_dot(res, matrix, i)
     ...     return res
@@ -91,12 +91,6 @@ def tucker_to_vec(core, factors, skip_factor=None, transpose_factors=False):
 
     >>> def tucker_to_vec(core, factors):
     ...     return kronecker(factors).dot(tensor_to_vec(core))
-
-    In this implementation we:
-
-    1* take the n-mode product of the core with all the factors
-    2* vectorize the result
-       (rather than computing potentially large kronecker product of factors)
     """
     return tensor_to_vec(tucker_to_tensor(core, factors, skip_factor=skip_factor, transpose_factors=transpose_factors))
 

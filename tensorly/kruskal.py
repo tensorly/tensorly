@@ -59,7 +59,7 @@ def kruskal_to_unfolded(factors, mode):
     factors : ndarray list
         list of matrices, all with the same number of columns
         ie for all u in factor_matrices:
-         u[i] has shape (s_u_i, R), where R is fixed
+        u[i] has shape (s_u_i, R), where R is fixed
     mode: int
         mode of the desired unfolding
 

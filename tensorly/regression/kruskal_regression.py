@@ -9,25 +9,26 @@ from ..utils import check_random_state
 
 
 class KruskalRegressor():
+    """Kruskal tensor regression
+
+        Learns a low rank CP tensor weight
+
+    Parameters
+    ----------
+    weight_rank : int
+        rank of the CP decomposition of the regression weights
+    tol : float
+        convergence value
+    reg_W : int, optional, default is 1
+        regularisation on the weights
+    n_iter_max : int, optional, default is 100
+        maximum number of iteration
+    random_state : None, int or RandomState, optional, default is None
+    verbose : int, default is 1
+        level of verbosity
+    """
+
     def __init__(self, weight_rank, tol=10e-7, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
-        """Kruskal tensor regression
-
-            Learns a low rank CP tensor weight
-
-        Parameters
-        ----------
-        weight_rank : int
-            rank of the CP decomposition of the regression weights
-        tol : float
-            convergence value
-        reg_W : int, optional, default is 1
-            regularisation on the weights
-        n_iter_max : int, optional, default is 100
-            maximum number of iteration
-        random_state : None, int or RandomState, optional, default is None
-        verbose : int, default is 1
-            level of verbosity
-        """
         self.weight_rank = weight_rank
         self.tol = tol
         self.reg_W = reg_W

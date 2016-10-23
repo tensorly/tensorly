@@ -10,25 +10,26 @@ from ..utils import check_random_state
 
 
 class TuckerRegressor():
+    """Tucker tensor regression
+
+        Learns a low rank Tucker weight for the regression
+
+    Parameters
+    ----------
+    weight_ranks : int list
+        dimension of each mode of the core Tucker weight
+    tol : float
+        convergence value
+    reg_W : int, optional, default is 1
+        regularisation on the weights
+    n_iter_max : int, optional, default is 100
+        maximum number of iteration
+    random_state : None, int or RandomState, optional, default is None
+    verbose : int, default is 1
+        level of verbosity
+    """
+
     def __init__(self, weight_ranks, tol=10e-7, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
-        """Tucker tensor regression
-
-            Learns a low rank Tucker weight for the regression
-
-        Parameters
-        ----------
-        weight_ranks : int list
-            dimension of each mode of the core Tucker weight
-        tol : float
-            convergence value
-        reg_W : int, optional, default is 1
-            regularisation on the weights
-        n_iter_max : int, optional, default is 100
-            maximum number of iteration
-        random_state : None, int or RandomState, optional, default is None
-        verbose : int, default is 1
-            level of verbosity
-        """
         self.weight_ranks = weight_ranks
         self.tol = tol
         self.reg_W = reg_W

@@ -5,7 +5,7 @@ from scipy.linalg import svd
 
 
 def soft_thresholding(tensor, threshold):
-    """Soft thresholding operator
+    """Soft-thresholding operator
 
         sign(tensor)*max(abs(tensor) - threshold, 0)
 
@@ -26,7 +26,7 @@ def soft_thresholding(tensor, threshold):
     Basic shrinkage
 
     >>> import numpy as np
-    >>> from tensorlib.linalg import soft_thresholding
+    >>> from tensorly.tenalg.proximal import soft_thresholding
     >>> tensor = np.array([[1, -2, 1.5], [-4, 3, -0.5]])
     >>> soft_thresholding(tensor, 1.1)
     array([[ 0. , -0.9,  0.4],

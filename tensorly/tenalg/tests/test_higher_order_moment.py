@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import assert_array_almost_equal
-from ..higher_order_moment import higher_order_moment
+from .._higher_order_moment import higher_order_moment
 
 
 def test_higher_order_moment():
