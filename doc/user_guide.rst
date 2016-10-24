@@ -7,3 +7,4 @@ User guide: table of contents
    :numbered:
 
    tensor_basics.rst
+   tensor_decomposition.rst

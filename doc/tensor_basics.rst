@@ -73,7 +73,7 @@ For a tensor of size :math:`(I_1, I_2, \cdots, I_n)`, the k-mode unfolding of th
    However, to be consistent with the Python indexing that always starts at zero,
    in tensorly, unfolding also starts at zero!
 
-   Therefore `unfold(tensor, 0)` will unfold said tensor along its first dimension!
+   Therefore ``unfold(tensor, 0)`` will unfold said tensor along its first dimension!
 
 
 For instance, using the :math:`\tilde X` previously defined, the 0-mode unfolding of :math:`\tilde X`:
