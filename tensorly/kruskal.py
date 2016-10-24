@@ -8,8 +8,8 @@ from .tenalg import khatri_rao
 def kruskal_to_tensor(factors):
     """Turns the Khatri-product of matrices into a full tensor
 
-        :math:`factor_matrices = [|U_1, ... U_n|]` becomes
-        a tensor shape `(U[1].shape[0], U[2].shape[0], ... U[-1].shape[0])`
+        ``factor_matrices = [|U_1, ... U_n|]`` becomes
+        a tensor shape ``(U[1].shape[0], U[2].shape[0], ... U[-1].shape[0])``
 
     Parameters
     ----------
@@ -21,7 +21,7 @@ def kruskal_to_tensor(factors):
     Returns
     -------
     ndarray
-        full tensor of shape (U[1].shape[0], ... U[-1].shape[0])
+        full tensor of shape ``(U[1].shape[0], ... U[-1].shape[0])``
 
     Notes
     -----

@@ -45,9 +45,9 @@ def tucker_to_unfolded(core, factors, mode=0, skip_factor=None, transpose_factor
 
     Parameters
     ----------
-    G : ndarray
+    core : ndarray
         core tensor
-    U : ndarray list
+    factors : ndarray list
         list of matrices
     mode : None or int list, optional, default is None
     skip_factor : None or int, optional, default is None
