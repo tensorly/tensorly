@@ -24,5 +24,6 @@ for mode in range(tensor.ndim):
 ###########################################################################
 # Re-folding the tensor is as easy:
 for mode in range(tensor.ndim):
-    unfolded = unfold(tensor, mode)
-    print('* mode-{} unfolding:\n{}'.format(mode, fold(unfolded, mode, tensor.shape)))
+    unfolding = unfold(tensor, mode)
+    folded = fold(unfolding, mode, tensor.shape)
+    print(np.all(folded == tensor))
