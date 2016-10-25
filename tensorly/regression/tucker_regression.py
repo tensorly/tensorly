@@ -6,7 +6,10 @@ from ..tenalg import norm, kronecker
 from ..tucker import tucker_to_tensor, tucker_to_vec
 from ..utils import check_random_state
 
-# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+# Author: Jean Kossaifi
+
+# License: BSD 3 clause
+
 
 
 class TuckerRegressor():

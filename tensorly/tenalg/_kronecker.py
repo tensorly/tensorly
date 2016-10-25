@@ -3,6 +3,9 @@ import numpy as np
 
 # Author: Jean Kossaifi
 
+# License: BSD 3 clause
+
+
 
 def kronecker(matrices, skip_matrix=None, reverse=False):
     """Kronecker product of a list of matrices
@@ -21,9 +24,9 @@ def kronecker(matrices, skip_matrix=None, reverse=False):
 
     Returns
     -------
-    kronecker_product: matrix of shape `(prod(n_rows), prod(n_columns)`
-        where `prod(n_rows) = prod([m.shape[0] for m in matrices])`
-        and `prod(n_columns) = prod([m.shape[1] for m in matrices])`
+    kronecker_product: matrix of shape ``(prod(n_rows), prod(n_columns)``
+        where ``prod(n_rows) = prod([m.shape[0] for m in matrices])``
+        and ``prod(n_columns) = prod([m.shape[1] for m in matrices])``
 
     Notes
     -----

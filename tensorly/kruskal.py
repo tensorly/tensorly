@@ -1,8 +1,14 @@
+"""
+Core operations on Kruskal tensors.
+"""
+
 import numpy as np
 from .base import fold, tensor_to_vec
 from .tenalg import khatri_rao
 
 # Author: Jean Kossaifi
+
+# License: BSD 3 clause
 
 
 def kruskal_to_tensor(factors):
@@ -86,7 +92,12 @@ def kruskal_to_vec(factors):
     ----------
     factors : ndarray list
         list of matrices, all with the same number of columns
-        ie for all u in U: u[i] has shape (s_i, R), where R is fixed
+        i.e.::
+
+            for u in U:
+                u[i].shape == (s_i, R)
+                
+        where `R` is fixed while `s_i` can vary with `i`
 
     Returns
     -------

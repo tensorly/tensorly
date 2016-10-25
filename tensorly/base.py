@@ -1,6 +1,12 @@
+"""
+Core tensor operations.
+"""
+
 import numpy as np
 
 # Author: Jean Kossaifi
+
+# License: BSD 3 clause
 
 
 def tensor_from_frontal_slices(*matrices):
@@ -9,12 +15,12 @@ def tensor_from_frontal_slices(*matrices):
     Parameters
     ----------
     matrices : ndarray list
-        list of frontal slices, each a matrix of shape (I, J)
+        list of frontal slices, each a matrix of shape ``(I, J)``
 
     Returns
     -------
     ndarray
-        tensor of shape (I, J, len(matrix_list))
+        tensor of shape ``(I, J, len(matrices))``
     """
     return np.concatenate([i[..., None] for i in matrices], axis=-1)
 
@@ -25,12 +31,12 @@ def tensor_to_vec(tensor):
     Parameters
     ----------
     tensor : ndarray
-             tensor of shape (i_1, ..., i_n)
+             tensor of shape ``(i_1, ..., i_n)``
 
     Returns
     -------
     1D-array
-        vectorised tensor of shape (i_1 * ... * i_n)
+        vectorised tensor of shape ``(i_1 * i_2 * ... * i_n)``
     """
     return np.ravel(tensor)
 
@@ -41,14 +47,14 @@ def vec_to_tensor(vec, shape):
     Parameters
     ----------
     vec : 1D-array
-        vectorised tensor of shape (i_1 * ... * i_n)
+        vectorised tensor of shape ``(i_1 * i_2 * ... * i_n)``
     shape : tuple
         shape of the ful tensor
 
     Returns
     -------
     ndarray
-        tensor of shape `shape` = (i_1, ..., i_n)
+        tensor of shape `shape` = ``(i_1, ..., i_n)``
     """
     return np.reshape(vec, shape)
 
@@ -60,18 +66,18 @@ def unfold(tensor, mode=0):
     ----------
     tensor : ndarray
     mode : int, default is 0
-           indexing starts at 0, therefore mode is in range(0, tensor.ndim)
+           indexing starts at 0, therefore mode is in ``range(0, tensor.ndim)``
 
     Returns
     -------
     ndarray
-        unfolded_tensor of shape (tensor.shape[mode], -1)
+        unfolded_tensor of shape ``(tensor.shape[mode], -1)``
     """
     return np.moveaxis(tensor, mode, 0).reshape((tensor.shape[mode], -1))
 
 
 def fold(unfolded_tensor, mode, shape):
-    """Refolds the `mode`-mode unfolding into a tensor of shape `shape`
+    """Refolds the mode-`mode` unfolding into a tensor of shape `shape`
 
         In other words, refolds the n-mode unfolded tensor
         into the original tensor of the specified shape.
@@ -79,7 +85,7 @@ def fold(unfolded_tensor, mode, shape):
     Parameters
     ----------
     unfolded_tensor : ndarray
-        unfolded tensor of shape (shape[mode], -1)
+        unfolded tensor of shape ``(shape[mode], -1)``
     mode : int
         the mode of the unfolding
     shape : tuple
@@ -100,12 +106,13 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
     """Unfolds each tensor while ignoring the specified number of dimensions at the beginning and the end.
 
         For instance, if the first dimension of the tensor is the number of samples, to unfold each sample, you would
-        set skip_begin=1. This would, for each `i in range(tensor.shape[0])`, unfold `tensor[i, ...]`.
+        set skip_begin=1.
+        This would, for each i in ``range(tensor.shape[0])``, unfold ``tensor[i, ...]``.
 
     Parameters
     ----------
     tensor : ndarray
-        tensor of shape n_samples*n_1*...*n_i
+        tensor of shape n_samples x n_1 x n_2 x ... x n_i
     mode : int
         indexing starts at 0, therefore mode is in range(0, tensor.ndim)
     skip_begin : int, optional

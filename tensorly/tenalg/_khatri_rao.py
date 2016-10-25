@@ -2,12 +2,15 @@ import numpy as np
 
 # Author: Jean Kossaifi
 
+# License: BSD 3 clause
+
+
 
 def khatri_rao(matrices, skip_matrix=None, reverse=False):
     """Khatri-Rao product of a list of matrices
 
-        This can be seen as a column-wise kronecker product
-         (see [1]_ for more details).
+        This can be seen as a column-wise kronecker product.
+        (see [1]_ for more details).
 
     Parameters
     ----------
@@ -15,7 +18,7 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
         list of matrices with the same number of columns, i.e.::
 
             for i in len(matrices):
-                matrices[i] is a matrix of shape `(n_i, m)`
+                matrices[i].shape = (n_i, m)
 
     skip_matrix : None or int, optional, default is None
         if not None, index of a matrix to skip
@@ -25,8 +28,8 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
 
     Returns
     -------
-    khatri_rao_product: matrix of shape `(prod(n_i), m)`
-        where `prod(n_i) = prod([m.shape[0] for m in matrices])`
+    khatri_rao_product: matrix of shape ``(prod(n_i), m)``
+        where ``prod(n_i) = prod([m.shape[0] for m in matrices])``
         i.e. the product of the number of rows of all the matrices in the product.
 
     Notes

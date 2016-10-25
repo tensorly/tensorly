@@ -17,8 +17,8 @@ def gen_image(region='swiss', image_height=20, image_width=20,
     Returns
     -------
     ndarray
-        array of shape (image_height, image_width)
-        or (image_height, image_width, n_channels)
+        array of shape ``(image_height, image_width)``
+        or ``(image_height, image_width, n_channels)``
         array for which all values are zero except the region specified
     """
     weight = np.zeros((image_height, image_width), dtype=np.float)

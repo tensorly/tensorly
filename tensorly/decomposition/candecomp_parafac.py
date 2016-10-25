@@ -9,6 +9,8 @@ from ..tenalg import norm
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
+# License: BSD 3 clause
+
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             random_state=None, verbose=False):
@@ -93,7 +95,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
                          random_state=None, verbose=0):
     """Non-negative CP decomposition
 
-        Uses multiplicative updates, see [1]_, [2]_
+        Uses multiplicative updates, see [2]_
 
     Parameters
     ----------
@@ -114,17 +116,14 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     -------
     factors : ndarray list
             list of positive factors of the CP decomposition
-            element `i` is of shape `(tensor.shape[i], rank)`
+            element `i` is of shape ``(tensor.shape[i], rank)``
 
     References
     ----------
-    .. [1] DD Lee and HS Seung,
-       "Algorithms for non-negative matrix factorization",
-       in Advances in neural information processing systems (NIPS), 2001
-
-    .. [2] G. Zhou, A. Cichocki, Q. Zhao and S. Xie,
-       "Nonnegative Matrix and Tensor Factorizations : An algorithmic perspective",
-       in IEEE Signal Processing Magazine, vol. 31, no. 3, pp. 54-65, May 2014.
+    .. [2] Amnon Shashua and Tamir Hazan,
+       "Non-negative tensor factorization with applications to statistics and computer vision",
+       In Proceedings of the International Conference on Machine Learning (ICML),
+       pp 792–799, ICML, 2005
     """
     epsilon = 10e-12
 

@@ -3,11 +3,14 @@ from scipy.linalg import svd
 
 # Author: Jean Kossaifi
 
+# License: BSD 3 clause
+
+
 
 def soft_thresholding(tensor, threshold):
     """Soft-thresholding operator
 
-        sign(tensor)*max(abs(tensor) - threshold, 0)
+        sign(tensor) * max[abs(tensor) - threshold, 0]
 
     Parameters
     ----------

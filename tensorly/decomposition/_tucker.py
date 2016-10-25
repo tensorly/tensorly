@@ -7,13 +7,15 @@ from ..utils import check_random_state
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
+# License: BSD 3 clause
+
 
 def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
            random_state=None, verbose=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition:
-        ``tensor = [| core; factors[0], ...factors[-1] |]``
+        ``tensor = [| core; factors[0], ...factors[-1] |]`` [1]_
 
     Parameters
     ----------
@@ -37,6 +39,11 @@ def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
     factors : ndarray list
             list of factors of the Tucker decomposition.
             Its ``i``-th element is of shape ``(tensor.shape[i], ranks[i])``
+
+    References
+    ----------
+    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
     if ranks is None:
         ranks = [s for s in tensor.shape]
@@ -84,7 +91,7 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
                         random_state=None, verbose=False):
     """Non-negative Tucker decomposition
 
-        Iterative multiplicative update, see [1]_, [2]_
+        Iterative multiplicative update, see [2]_
 
     Parameters
     ----------
@@ -103,17 +110,14 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
             has shape `ranks`
     factors : ndarray list
             list of factors of the CP decomposition
-            element `i` is of shape (tensor.shape[i], rank)
+            element `i` is of shape ``(tensor.shape[i], rank)``
 
     References
     ----------
-    .. [1] G. Zhou, A. Cichocki, Q. Zhao and S. Xie,
-       "Nonnegative Matrix and Tensor Factorizations : An algorithmic perspective,"
-       in IEEE Signal Processing Magazine, vol. 31, no. 3, pp. 54-65, May 2014.
-
-    .. [2] DD Lee and HS Seung,
-       "Algorithms for non-negative matrix factorization",
-       in Advances in neural information processing systems (NIPS), 2001
+    .. [2] Yong-Deok Kim and Seungjin Choi,
+       "Nonnegative tucker decomposition",
+       IEEE Conference on Computer Vision and Pattern Recognition s(CVPR),
+       pp 1–8, 2007
     """
     epsilon = 10e-12
 

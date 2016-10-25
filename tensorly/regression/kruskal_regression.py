@@ -5,7 +5,10 @@ from ..tenalg import norm,  khatri_rao
 from ..kruskal import kruskal_to_tensor, kruskal_to_vec
 from ..utils import check_random_state
 
-# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+# Author: Jean Kossaifi
+
+# License: BSD 3 clause
+
 
 
 class KruskalRegressor():

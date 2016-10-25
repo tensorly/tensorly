@@ -1,10 +1,16 @@
 from ._khatri_rao import khatri_rao
 
+# Author: Jean Kossaifi
+
+# License: BSD 3 clause
+
+
 
 def higher_order_moment(matrix, order=3):
     """Higher order moment of a matrix of observations
 
-        Computes the `order`-order moment of `matrix``
+        Computes the higher moment of order `order` of `matrix`
+
         Each row of `matrix` represents a samples
         (i.e. an observation)
 
@@ -12,6 +18,7 @@ def higher_order_moment(matrix, order=3):
     ----------
     matrix : 2D-array
         array of shape (n_samples, n_features)
+
         i.e. each row is a sample
     order : int, optional
         order of the moment to compute

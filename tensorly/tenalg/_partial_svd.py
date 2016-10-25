@@ -4,6 +4,9 @@ import numpy as np
 
 # Author: Jean Kossaifi
 
+# License: BSD 3 clause
+
+
 
 def partial_svd(matrix, n_eigenvecs=None):
     """Computes a fast partial SVD on `matrix`

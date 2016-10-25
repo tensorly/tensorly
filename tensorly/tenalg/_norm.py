@@ -2,9 +2,12 @@ import numpy as np
 
 # Author: Jean Kossaifi
 
+# License: BSD 3 clause
+
+
 
 def norm(tensor, order):
-    """Computes the l-order norm of tensor
+    """Computes the l-`order` norm of tensor
 
     Parameters
     ----------
@@ -14,7 +17,7 @@ def norm(tensor, order):
     Returns
     -------
     float
-        l-order norm of tensor
+        l-`order` norm of tensor
     """
     if order == 1:
         return np.sum(np.abs(tensor))
