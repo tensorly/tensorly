@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from ..proximal import svd_thresholing, soft_thresholding, inplace_soft_thresholding
+from ..proximal import svd_thresholding, soft_thresholding, inplace_soft_thresholding
 from ..proximal import procrustes
 
 # Author: Jean Kossaifi
@@ -64,7 +64,7 @@ def test_inplace_soft_thresholding():
     assert (res is tensor)
 
 
-def test_svd_thresholing():
+def test_svd_thresholding():
     """Test for singular_value_thresholding operator"""
     U = np.array([[1, 0, 0],
                   [0, 1, 0],
@@ -73,7 +73,7 @@ def test_svd_thresholing():
     tensor = U.dot(np.diag(singular_values).dot(U.T))
     shrinked_singular_values = [0, 1.6, -1.5]
     true_res = U.dot(np.diag(shrinked_singular_values).dot(U.T))
-    res = svd_thresholing(tensor, 0.5)
+    res = svd_thresholding(tensor, 0.5)
     assert_array_almost_equal(true_res, res)
 
 

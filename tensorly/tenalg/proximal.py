@@ -43,6 +43,10 @@ def soft_thresholding(tensor, threshold):
     array([[ 1. , -2. ,  0.4],
            [-2.9,  3. ,  0. ]])
 
+    See also
+    --------
+    inplace_soft_thresholding : Inplace version of the soft-thresholding operator
+    svd_thresholding : SVD-thresholding operator
     """
     signs = np.sign(tensor)
     values = (signs*tensor - threshold)
@@ -62,13 +66,10 @@ def inplace_soft_thresholding(tensor, threshold):
     ndarray
         tensor on which the operator has been applied inplace
 
-    Notes
-    -----
-    This version is memory efficient.
-    For a faster but less memory efficient version, you can use this function:
-
-    >>> def soft_thresholding(tensor, threshold):
-    ...     return np.maximum(0, tensor - threshold) - np.maximum(0, -tensor - threshold)
+    See also
+    --------
+    soft_thresholding : less memory-efficient but fast soft-thresholding operator
+    svd_thresholding : SVD-thresholding operator
     """
     index_shrink = ((tensor <= threshold) & (tensor >= -threshold))
     index_more = (tensor > threshold)
@@ -79,7 +80,7 @@ def inplace_soft_thresholding(tensor, threshold):
     return tensor
 
 
-def svd_thresholing(matrix, threshold):
+def svd_thresholding(matrix, threshold):
     """Singular value thresholding operator
 
     Parameters
@@ -91,6 +92,10 @@ def svd_thresholing(matrix, threshold):
     -------
     ndarray
         matrix on which the operator has been applied
+
+    See also
+    --------
+    procrustes : procrustes operator
     """
     U, s, V = svd(matrix, full_matrices=False)
     return np.dot(U, soft_thresholding(s, threshold)[:, None]*V)
@@ -108,6 +113,11 @@ def procrustes(matrix):
     ndarray
         matrix on which the Procrustes operator has been applied
         has the same shape as the original tensor
+
+
+    See also
+    --------
+    svd_thresholding : SVD-thresholding operator
     """
     U, _, V = svd(matrix, full_matrices=False)
     return np.dot(U, V)

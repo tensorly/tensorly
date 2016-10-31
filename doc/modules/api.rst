@@ -81,7 +81,10 @@ API reference
     higher_order_moment
     multi_mode_dot
     proximal.soft_thresholding
-    proximal.svd_thresholing
+    proximal.inplace_soft_thresholding
+    proximal.svd_thresholding
+    proximal.procrustes
+    partial_svd
 
 
 :mod:`tensorly.decomposition`: Tensor Decomposition
