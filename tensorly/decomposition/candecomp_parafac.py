@@ -1,11 +1,10 @@
 import numpy as np
-from ..utils import check_random_state
+from ..utils import check_random_state, nnlsm_blockpivot
 from ..base import unfold
 from ..kruskal import kruskal_to_tensor
 from ..tenalg import khatri_rao
 from ..tenalg._partial_svd import partial_svd
 from ..tenalg import norm
-from nonnegfac.nnls import nnlsm_blockpivot
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -228,10 +227,7 @@ def _nn_parafac_mu(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
 
     return nn_factors
 
-def _nnls_blockpivot_solve(A,B):
-    return nnlsm_blockpivot(A, B)[0]
-
-def _nn_parafac_annls(tensor, rank, nnls=_nnls_blockpivot_solve, **kwargs):
+def _nn_parafac_annls(tensor, rank, nnls=nnlsm_blockpivot, **kwargs):
     """Non-negative CP decomposition via alternating nonneg least squares, see [3]_
 
     References

@@ -25,4 +25,4 @@ for i,j,k,r in itr.product(range(N), range(N), range(N), range(R)):
     data[i,j,k] += factors[0][i,r]*factors[1][j,r]*factors[2][k,r]
 
 # fit CP decomposition
-model = non_negative_parafac(data, R, init='pos', verbose=1)
+model = non_negative_parafac(data, R, verbose=1)
