@@ -227,7 +227,7 @@ def _nn_parafac_mu(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
 
     return nn_factors
 
-def _nn_parafac_annls(tensor, rank, nnls=nnlsm_blockpivot, **kwargs):
+def _nn_parafac_annls(tensor, rank, nnls=lambda A, B: nnlsm_blockpivot(A, B)[0], **kwargs):
     """Non-negative CP decomposition via alternating nonneg least squares, see [3]_
 
     References

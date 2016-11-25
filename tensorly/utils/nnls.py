@@ -1,5 +1,5 @@
 """
-Code in this file were written and shared by Jingu Kim (@kimjingu).
+Code in this file was written and shared by Jingu Kim (@kimjingu).
 
 REPO:
 ----
@@ -32,7 +32,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-
 import numpy as np
 import scipy.optimize as opt
 import scipy.sparse as sps
@@ -103,7 +102,7 @@ def nnlsm_blockpivot(A, B, is_input_prod=False, init=None):
     p_vec[:] = p_bar
     ninf_vec = np.zeros([k])
     ninf_vec[:] = n + 1
-    not_opt_set = np.logical_and(Y < 0, -PassSet)
+    not_opt_set = np.logical_and(Y < 0, ~PassSet)
     infea_set = np.logical_and(X < 0, PassSet)
 
     not_good = np.sum(not_opt_set, axis=0) + np.sum(infea_set, axis=0)
@@ -123,7 +122,7 @@ def nnlsm_blockpivot(A, B, is_input_prod=False, init=None):
         temp1 = np.logical_and(not_opt_colset, not_good >= ninf_vec)
         temp2 = p_vec >= 1
         cols_set2 = np.logical_and(temp1, temp2)
-        cols_set3 = np.logical_and(temp1, -temp2)
+        cols_set3 = np.logical_and(temp1, ~temp2)
 
         cols1 = cols_set1.nonzero()[0]
         cols2 = cols_set2.nonzero()[0]
@@ -148,7 +147,7 @@ def nnlsm_blockpivot(A, B, is_input_prod=False, init=None):
                 candi_set = np.logical_or(
                     not_opt_set[:, col], infea_set[:, col])
                 to_change = np.max(candi_set.nonzero()[0])
-                PassSet[to_change, col] = -PassSet[to_change, col]
+                PassSet[to_change, col] = ~PassSet[to_change, col]
                 num_backup += 1
 
         (X[:, not_opt_cols], temp_cholesky, temp_eq) = normal_eq_comb(
@@ -161,14 +160,14 @@ def nnlsm_blockpivot(A, B, is_input_prod=False, init=None):
 
         not_opt_mask = np.tile(not_opt_colset, (n, 1))
         not_opt_set = np.logical_and(
-            np.logical_and(not_opt_mask, Y < 0), -PassSet)
+            np.logical_and(not_opt_mask, Y < 0), ~PassSet)
         infea_set = np.logical_and(
             np.logical_and(not_opt_mask, X < 0), PassSet)
         not_good = np.sum(not_opt_set, axis=0) + np.sum(infea_set, axis=0)
         not_opt_colset = not_good > 0
         not_opt_cols = not_opt_colset.nonzero()[0]
 
-    return X#, (success, Y, num_cholesky, num_eq, num_backup)
+    return X, (success, Y, num_cholesky, num_eq, num_backup)
 
 
 def nnlsm_activeset(A, B, overwrite=False, is_input_prod=False, init=None):
@@ -232,7 +231,7 @@ def nnlsm_activeset(A, B, overwrite=False, is_input_prod=False, init=None):
         PassSet = np.zeros([n, k], dtype=bool)
 
     Y = np.zeros([n, k])
-    opt_cols = (-not_opt_set).nonzero()[0]
+    opt_cols = (~not_opt_set).nonzero()[0]
     not_opt_cols = not_opt_set.nonzero()[0]
 
     Y[:, opt_cols] = AtA.dot(X[:, opt_cols]) - AtB[:, opt_cols]
@@ -255,7 +254,7 @@ def nnlsm_activeset(A, B, overwrite=False, is_input_prod=False, init=None):
         infea_subset = Z < 0
         temp = np.any(infea_subset, axis=0)
         infea_subcols = temp.nonzero()[0]
-        fea_subcols = (-temp).nonzero()[0]
+        fea_subcols = (~temp).nonzero()[0]
 
         if infea_subcols.size > 0:
             infea_cols = not_opt_cols[infea_subcols]
@@ -286,19 +285,19 @@ def nnlsm_activeset(A, B, overwrite=False, is_input_prod=False, init=None):
             Y[abs(Y) < 1e-12] = 0
 
             not_opt_subset = np.logical_and(
-                Y[:, fea_cols] < 0, -PassSet[:, fea_cols])
-            new_opt_cols = fea_cols[np.all(-not_opt_subset, axis=0)]
+                Y[:, fea_cols] < 0, ~PassSet[:, fea_cols])
+            new_opt_cols = fea_cols[np.all(~not_opt_subset, axis=0)]
             update_cols = fea_cols[np.any(not_opt_subset, axis=0)]
 
             if update_cols.size > 0:
-                val = Y[:, update_cols] * -PassSet[:, update_cols]
+                val = Y[:, update_cols] * ~PassSet[:, update_cols]
                 min_ix = np.argmin(val, axis=0)
                 PassSet[(min_ix, update_cols)] = True
 
             not_opt_set[new_opt_cols] = False
             not_opt_cols = not_opt_set.nonzero()[0]
 
-    return X#, (success, Y, num_cholesky, num_eq)
+    return X, (success, Y, num_cholesky, num_eq)
 
 
 def normal_eq_comb(AtA, AtB, PassSet=None):
@@ -322,7 +321,7 @@ def normal_eq_comb(AtA, AtB, PassSet=None):
     num_eq = 0
     if AtB.size == 0:
         Z = np.zeros([])
-    elif (PassSet == None) or np.all(PassSet):
+    elif (PassSet is None) or np.all(PassSet):
         Z = nla.solve(AtA, AtB)
         num_cholesky = 1
         num_eq = AtB.shape[1]
@@ -386,7 +385,7 @@ def _column_group_loop(B):
                 all_ones = False
                 subvec = vec[cols]
                 trues = subvec.nonzero()[0]
-                falses = (-subvec).nonzero()[0]
+                falses = (~subvec).nonzero()[0]
                 if trues.size > 0:
                     after.append(cols[trues])
                 if falses.size > 0:
@@ -420,11 +419,11 @@ def column_group_sub(B, i, cols):
         return [cols]
     if i == (B.shape[0] - 1):
         col_trues = cols[vec.nonzero()[0]]
-        col_falses = cols[(-vec).nonzero()[0]]
+        col_falses = cols[(~vec).nonzero()[0]]
         return [col_trues, col_falses]
     else:
         col_trues = cols[vec.nonzero()[0]]
-        col_falses = cols[(-vec).nonzero()[0]]
+        col_falses = cols[(~vec).nonzero()[0]]
         after = column_group_sub(B, i + 1, col_trues)
         after.extend(column_group_sub(B, i + 1, col_falses))
     return after
