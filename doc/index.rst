@@ -5,7 +5,7 @@ TensorLy: Tensor Learning in Python
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    installation
    user_guide
