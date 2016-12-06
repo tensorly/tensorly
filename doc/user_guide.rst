@@ -8,3 +8,4 @@ User guide: table of contents
 
    tensor_basics.rst
    tensor_decomposition.rst
+   tensor_regression.rst
