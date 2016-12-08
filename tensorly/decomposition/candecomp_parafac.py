@@ -1,6 +1,5 @@
 import numpy as np
-from numpy.linalg import solve
-from ..utils import check_random_state
+from ..utils import check_random_state, nnlsm_blockpivot
 from ..base import unfold
 from ..kruskal import kruskal_to_tensor
 from ..tenalg import khatri_rao
@@ -11,9 +10,7 @@ from ..tenalg import norm
 
 # License: BSD 3 clause
 
-
-def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
-            random_state=None, verbose=False):
+def parafac(tensor, rank, **kwargs):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
         Computes a rank-`rank` decomposition of `tensor` [1]_ such that:
@@ -45,6 +42,37 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
+    return _parafac_als(tensor, rank, **kwargs)
+
+def _parafac_als(tensor, rank, ls_method=np.linalg.solve, n_iter_max=100,
+                 init='svd', tol=10e-7, random_state=None, verbose=False):
+    """Fit CP decomposition by alternating least squares (ALS) or non-negative least squares (ANNLS)
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank  : int
+            number of components
+    n_iter_max : int
+                 maximum number of iteration
+    ls_method : function
+                specifies the least-squares solver called within each loop -
+                defaults to the standard numpy solver but can be changed to
+                randomized or non-negative least squares solvers
+    init : {'svd', 'random'}, optional
+    tol : float, optional
+          tolerance: the algorithm stops when the variation in
+          the reconstruction error is less than the tolerance
+    random_state : {None, int, np.random.RandomState}
+    verbose : int, optional
+        level of verbosity
+
+    Returns
+    -------
+    factors : ndarray list
+            list of factors of the CP decomposition
+            element `i` is of shape (tensor.shape[i], rank)
+    """
     tensor = tensor.astype(np.float)
     rng = check_random_state(random_state)
     if init is 'random':
@@ -61,6 +89,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
                 U = np.hstack((U, new_columns))
             factors.append(U[:, :rank])
 
+    else:
+        factors = [np.random.rand(tensor.shape[i], rank) for i in range(tensor.ndim)]
+
     rec_errors = []
     norm_tensor = norm(tensor, 2)
 
@@ -71,7 +102,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
                 if i != mode:
                     pseudo_inverse *= np.dot(factor.T, factor)
             factor = np.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode))
-            factor = solve(pseudo_inverse.T, factor.T).T
+            factor = ls_method(pseudo_inverse.T, factor.T).T
             factors[mode] = factor
 
         #if verbose or tol:
@@ -90,12 +121,39 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
 
     return factors
 
-
-def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
-                         random_state=None, verbose=0):
+def non_negative_parafac(tensor, rank, method='annls', **kwargs):
     """Non-negative CP decomposition
 
-        Uses multiplicative updates, see [2]_
+        Fits a non-negative CP decomposition by user-specified method.
+        Currently implemented methods include alternating non-negative least
+        squares ('annls') and multiplicative updates ('mu').
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank   : int
+            number of components
+    method : str, optional
+            specifies algorithm {'annls', 'mu'}, default is 'annls'
+
+    Returns
+    -------
+    factors : ndarray list
+            list of positive factors of the CP decomposition
+            element `i` is of shape ``(tensor.shape[i], rank)``
+    """
+    method_dict = {
+        'annls': _nn_parafac_annls,
+        'mu': _nn_parafac_mu
+    }
+    if method not in method_dict.keys():
+        raise ValueError('Optimization method not recognized. Choose from '+str(set(method_dict.keys())))
+    else:
+        return method_dict[method](tensor, rank, **kwargs)
+
+def _nn_parafac_mu(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
+                         random_state=None, verbose=0):
+    """Non-negative CP decomposition via multiplicative updates, see [2]_
 
     Parameters
     ----------
@@ -168,3 +226,15 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             break
 
     return nn_factors
+
+def _nn_parafac_annls(tensor, rank, nnls=lambda A, B: nnlsm_blockpivot(A, B)[0], **kwargs):
+    """Non-negative CP decomposition via alternating nonneg least squares, see [3]_
+
+    References
+    ----------
+    .. [3] Jingu Kim, Yunlong He, and Haesun Park.
+       "Algorithms for Nonnegative Matrix and Tensor Factorizations: A Unified View Based
+       on Block Coordinate Descent Framework." Journal of Global Optimization,
+       58(2), pp. 285-319, 2014. http://dx.doi.org/10.1007/s10898-013-0035-4
+    """
+    return _parafac_als(tensor, rank, ls_method=nnls, **kwargs)
