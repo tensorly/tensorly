@@ -1,0 +1,78 @@
+import numpy as np
+from numpy.linalg import qr
+from ..utils import check_random_state
+from ..kruskal import kruskal_to_tensor
+from ..tucker import tucker_to_tensor
+
+
+def cp_tensor(shape, rank, full=False, random_state=None):
+    """Generates a random CP tensor
+    
+    Parameters
+    ----------
+    shape : tuple
+        shape of the tensor to generate
+    rank : int
+        rank of the CP decomposition
+    full : bool, optional, default is False
+        if True, a full tensor is returned
+        otherwise, the decomposed tensor is returned
+    random_state : `np.random.RandomState`
+        
+    Returns
+    -------
+    cp_tensor : ND-array or 2D-array list
+        ND-array : full tensor if `full` is True
+        2D-array list : list of factors otherwise
+    """
+    rns = check_random_state(random_state)
+    factors = [rns.random_sample((s, rank)) for s in shape]
+    if full:
+        return kruskal_to_tensor(factors)
+    else:
+        return factors
+    
+
+def tucker_tensor(shape, rank, full=False, random_state=None):
+    """Generates a random Tucker tensor
+    
+    Parameters
+    ----------
+    shape : tuple
+        shape of the tensor to generate
+    rank : int or int list
+        rank of the Tucker decomposition
+        if int, the same rank is used for each mode
+        otherwise, dimension of each mode
+    full : bool, optional, default is False
+        if True, a full tensor is returned
+        otherwise, the decomposed tensor is returned
+    random_state : `np.random.RandomState`
+        
+    Returns
+    -------
+    tucker_tensor : ND-array or (ND-array, 2D-array list)
+        ND-array : full tensor if `full` is True
+        (ND-array, 2D-array list) : core tensor and list of factors otherwise
+    """
+    rns = check_random_state(random_state)
+
+    if isinstance(rank, int):
+        rank = [rank for _ in shape]
+
+    for i, (s, r) in enumerate(zip(shape, rank)):
+        if r > s:
+            raise ValueError('The rank should be smaller than the tensor size, yet rank[{0}]={1} > shape[{0}]={2}.'.format(i, r, s))
+
+    factors = []
+    for (s, r) in zip(shape, rank):
+        Q, _= qr(rns.random_sample((s, s)))
+        factors.append(Q[:, :r])
+
+    core = rns.random_sample(rank)
+    if full:
+        return tucker_to_tensor(core, factors)
+    else:
+        return core, factors
+
+

@@ -1,6 +1,5 @@
-from ..synthetic import gen_image, low_rank_matrix 
-from numpy.testing import assert_array_equal, assert_equal 
-from numpy.linalg import matrix_rank 
+from ..synthetic import gen_image
+from numpy.testing import assert_array_equal
 import numpy as np 
 
 
@@ -33,13 +32,4 @@ def test_gen_image():
                          [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
     res = gen_image(region='rectangle', image_height=10, image_width=10, weight_value=1)
     assert_array_equal(true_res, res)
-
-
-
- 
-def test_low_rank_matrix(): 
-    """Test for low_rank_matrix""" 
-    rank = 5 
-    mat = low_rank_matrix((100, 1000), rank) 
-    assert_equal(matrix_rank(mat), rank) 
 

@@ -51,25 +51,3 @@ def gen_image(region='swiss', image_height=20, image_width=20,
     return weight
 
 
-
-def low_rank_matrix(size, rank, random_state=None):
-    """Generates a random low-rank matrix
-
-    Parameters
-    ----------
-    size : (int, int)
-        (n_rows, n_columns) = size of the matrix to be created
-    rank : int
-        rank of the matrix to be generated
-    random_state : `np.random.RandomState`
-
-    Returns
-    -------
-    low_rank_matrix : ndarray of shape size
-
-        matrix with the specified rank
-    """
-    rns = check_random_state(random_state)
-    right_factor = rns.rand(size[0], rank)
-    left_factor = rns.rand(rank, size[1])
-    return np.dot(right_factor, left_factor)
