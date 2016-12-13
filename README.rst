@@ -4,6 +4,9 @@
 .. image:: https://travis-ci.org/tensorly/tensorly.svg?branch=master
     :target: https://travis-ci.org/tensorly/tensorly
 
+.. image:: https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master
+    :target: https://coveralls.io/github/tensorly/tensorly?branch=master
+
 TensorLy
 ========
 
