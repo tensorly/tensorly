@@ -140,6 +140,24 @@ API reference
     regression.RMSE
 
 
+:mod:`tensorly.random`: Sampling random tensors
+===============================================
+
+.. automodule:: tensorly.random
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: tensorly.random
+
+.. autosummary::
+   :toctree: generated/
+   :template: function.rst
+
+   cp_tensor
+   tucker_tensor
+
+
+
 :mod:`tensorly.datasets`: Creating and loading data
 ====================================================
 
