@@ -70,8 +70,7 @@ def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
 
         core = tucker_to_tensor(tensor, factors, transpose_factors=True)
 
-        rec_error = np.sqrt(norm_tensor**2 - norm(core, 2)**2) / norm_tensor
-        #rec_error = norm(tensor - tucker_to_tensor(core, factors), 2) / norm_tensor
+        rec_error = np.sqrt(abs(norm_tensor**2 - norm(core, 2)**2)) / norm_tensor
         rec_errors.append(rec_error)
 
         if iteration > 1:
