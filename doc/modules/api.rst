@@ -104,6 +104,7 @@ API reference
     non_negative_parafac
     tucker
     non_negative_tucker
+    robust_pca
 
 
 :mod:`tensorly.regression`: Tensor Regression
