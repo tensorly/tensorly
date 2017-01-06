@@ -61,7 +61,7 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
 
        \\begin{equation*}
        \\begin{aligned}
-           & \\min_{\\{J_i\\} \\tilde D, \\tilde E} & \\sum_{i=1}^N \\text{reg}_J \\|J_i\\|_* + \\text{reg}_E \\|E\\|_1 \\\\
+           & \\min_{\\{J_i\\}, \\tilde D, \\tilde E} & \\sum_{i=1}^N \\text{reg}_J \\|J_i\\|_* + \\text{reg}_E \\|E\\|_1 \\\\
            & \\text{subject to} & \\tilde X = & \\tilde A + \\tilde E \\\\
            &                    & A_{[i]}   = & J_i,  \\text{ for each } i \\in \\{1, 2, \\cdots, N\\}\\\\
        \\end{aligned}
