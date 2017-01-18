@@ -32,7 +32,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.todo',
-    'sphinx.ext.viewcode', 
+    'sphinx.ext.viewcode',
     'sphinx.ext.imgmath', #'sphinx.ext.mathjax',
     'numpydoc.numpydoc',
     'sphinx_gallery.gen_gallery',
@@ -68,7 +68,9 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'tensorly'
-copyright = u'Jean Kossaifi 2016'
+from datetime import datetime
+year = datetime.now().year
+copyright = u'2016 - {}, Jean Kossaifi'.format(year)
 author = 'Jean Kossaifi'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -132,18 +134,17 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'#alabaster'
+html_theme = 'tensorly'
+
+# Add any paths that contain custom themes here, relative to this directory.
+html_theme_path = ['themes']
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'logo_only':True,
-    'display_version': False,
+    'google_analytics' : 'UA-86209849-1',
 }
-
-# Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = []
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
@@ -156,6 +157,8 @@ html_title = 'tensorly'
 # of the sidebar.
 html_logo = '_static/TensorLy_logo.png'
 
+html_add_permalinks = None
+
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
@@ -165,6 +168,10 @@ html_logo = '_static/TensorLy_logo.png'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_additional_pages = {
+    'home': 'home.html',
+}
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

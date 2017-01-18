@@ -3,9 +3,9 @@
 People
 ------
 
-.. hlist::
+TensorLy is developed by a group of Researchers from Imperial College London:
 
-   * `Jean Kossaifi <http://ibug.doc.ic.ac.uk/people/jkossaifi>`_
-   * `Yannis Panagakis <http://ibug.doc.ic.ac.uk/people/ypanagakis>`_
+- `Jean Kossaifi <http://jeankossaifi.github.io>`_
+- `Yannis Panagakis <http://ibug.doc.ic.ac.uk/people/ypanagakis>`_
 
 

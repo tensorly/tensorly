@@ -1,0 +1,45 @@
+<nav class="nav is-dark has-shadow top" id="top">
+    <div class="nav-left">
+        <a class="nav-item nav-title" href="{{ pathto('home') }}">
+            TensorLy
+        </a>
+
+        <a class="nav-item is-tab tooltip is-right" href="{{pathto(master_doc)}}">
+            <i class="fa fa-home" aria-hidden="true"></i>
+            <span class="tooltiptext">Home page</span>
+        </a>
+        <a class="nav-item is-tab tooltip is-right" href="https://github.com/tensorly/tensorly" target="_blank">
+            <span class="tooltiptext">Open project on Github</span>
+            <span class="icon"><i class="fa fa-github"></i></span>
+        </a>
+    </div>
+
+
+
+    <span class="nav-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </span>
+
+
+    <div class="nav-right nav-menu">
+        <a class="nav-item is-tab" href="{{pathto('installation')}}">
+            Install
+        </a>
+        <a class="nav-item is-tab" href="{{pathto('user_guide')}}">
+            User guide
+        </a>
+        <a class="nav-item is-tab" href="{{pathto('modules/api')}}">
+            API
+        </a>
+        <a class="nav-item is-tab" href="{{pathto('auto_examples/index')}}">
+            Examples
+        </a>
+        <a class="nav-item is-tab" href="{{pathto('authors')}}">
+            People
+        </a>
+        
+    </div>
+</nav>
+
