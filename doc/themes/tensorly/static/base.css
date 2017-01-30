@@ -99,6 +99,42 @@ div.admonition dd {
     padding-top: 0.5em;
     font-size: 2.75rem;
 }
+.admonition.important {
+    border: solid #008c77;
+    padding: 0;
+    margin: 1em 0;
+    background: #b3f9ee;
+}
+.admonition.important p{
+    padding: 1em;
+}
+.admonition.important p.first.admonition-title {
+    padding: .5em .75em;
+    margin: 0;
+    font-weight: 700;
+    color: #f5f5f5;
+    background: #008c77;
+    border-top: none;
+    margin-top: 0;
+}
+.admonition.warning {
+    border: solid #9a2c42;
+    margin: 1em 0;
+    padding: 0;
+    background: #e2d7d9;
+}
+.admonition.warning p{
+    padding: 1em;
+}
+.admonition.warning p.first.admonition-title {
+    padding: .5em .75em;
+    margin: 0;
+    font-weight: 700;
+    color: #f5f5f5;
+    background: #9a2c42;
+    border-top: none;
+    margin-top: 0;
+}
 
 /* EXAMPLES */
 /* download all buttons */
@@ -384,7 +420,7 @@ div.sphx-glr-download a span:last-child {
     padding: 0 0;
     margin: 0 0;
     background-color: whitesmoke;
-    min-height: calc(100vh - 6rem);
+    min-height: calc(100vh + 1rem);
 }
 .main-content {
     position: relative;
