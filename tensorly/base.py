@@ -103,7 +103,7 @@ def fold(unfolded_tensor, mode, shape):
 
 
 def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False):
-    """Unfolds each tensor while ignoring the specified number of dimensions at the beginning and the end.
+    """Partially unfolds a tensor while ignoring the specified number of dimensions at the beginning and the end.
 
         For instance, if the first dimension of the tensor is the number of samples, to unfold each sample, you would
         set skip_begin=1.
@@ -172,7 +172,7 @@ def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
 def partial_tensor_to_vec(tensor, skip_begin=1, skip_end=0):
     """Partially vectorises a tensor
 
-        Vectorises each tensor ignoring the specified dimension at the beginning and the end
+        Partially vectorises a tensor while ignoring the specified dimension at the beginning and the end
 
     Parameters
     ----------
@@ -192,7 +192,7 @@ def partial_tensor_to_vec(tensor, skip_begin=1, skip_end=0):
 
 
 def partial_vec_to_tensor(matrix, shape, skip_begin=1, skip_end=0):
-    """Partially reconverts a partially vectorised tensor into a full one
+    """Refolds a partially vectorised tensor into a full one
 
     Parameters
     ----------
