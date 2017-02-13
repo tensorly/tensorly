@@ -135,6 +135,9 @@ div.admonition dd {
     border-top: none;
     margin-top: 0;
 }
+div.math {
+    text-align: center;
+}
 
 /* EXAMPLES */
 /* download all buttons */
