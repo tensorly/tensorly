@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils import check_random_state
+from ..random import check_random_state
 
 
 def gen_image(region='swiss', image_height=20, image_width=20,
@@ -38,9 +38,9 @@ def gen_image(region='swiss', image_height=20, image_width=20,
         weight[large_height:-large_height, large_width:-large_width] = weight_value
 
     elif region is "circle":
-        radius = int(image_width // 3)
-        cy = int(image_width / 2)
-        cx = int(image_height / 2)
+        radius = image_width // 3
+        cy = image_width // 2
+        cx = image_height // 2
         y, x = np.ogrid[-radius: radius, -radius: radius]
         index = x**2 + y**2 <= radius**2
         weight[cy-radius:cy+radius, cx-radius:cx+radius][index] = 1

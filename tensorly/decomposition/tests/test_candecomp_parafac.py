@@ -4,7 +4,7 @@ from ..candecomp_parafac import parafac
 from ..candecomp_parafac import non_negative_parafac
 from ...kruskal import kruskal_to_tensor
 from ...tenalg import norm
-from ...utils import check_random_state
+from ...random import check_random_state
 
 
 def test_parafac():

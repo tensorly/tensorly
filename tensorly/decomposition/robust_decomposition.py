@@ -1,7 +1,7 @@
 import numpy as np
 from ..base import fold, unfold
 from ..tenalg import norm, khatri_rao
-from ..utils import check_random_state
+from ..random import check_random_state
 from ..tenalg.proximal import soft_thresholding, svd_thresholding
 
 # Author: Jean Kossaifi

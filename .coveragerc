@@ -1,0 +1,5 @@
+[run]
+omit = *yaleb.py, *utils*
+
+[report]
+omit = *yaleb.py, *utils*

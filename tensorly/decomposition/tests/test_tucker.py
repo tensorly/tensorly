@@ -3,7 +3,7 @@ import numpy as np
 from .._tucker import tucker, non_negative_tucker
 from ...tucker import tucker_to_tensor
 from ...tenalg import norm
-from ...utils import check_random_state
+from ...random import check_random_state
 
 
 def test_tucker():

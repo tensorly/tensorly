@@ -3,7 +3,7 @@ import numpy as np
 from ..base import partial_tensor_to_vec, partial_unfold
 from ..tenalg import norm,  khatri_rao
 from ..kruskal import kruskal_to_tensor, kruskal_to_vec
-from ..utils import check_random_state
+from ..random import check_random_state
 
 # Author: Jean Kossaifi
 

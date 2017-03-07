@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import solve
-from ..utils import check_random_state
+from ..random import check_random_state
 from ..base import unfold
 from ..kruskal import kruskal_to_tensor
 from ..tenalg import khatri_rao

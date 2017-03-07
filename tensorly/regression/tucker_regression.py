@@ -4,7 +4,7 @@ from ..base import unfold, vec_to_tensor
 from ..base import partial_tensor_to_vec, partial_unfold
 from ..tenalg import norm, kronecker
 from ..tucker import tucker_to_tensor, tucker_to_vec
-from ..utils import check_random_state
+from ..random import check_random_state
 
 # Author: Jean Kossaifi
 

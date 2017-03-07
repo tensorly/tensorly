@@ -3,7 +3,7 @@ from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot, norm
 from ..tenalg import partial_svd
 from ..tucker import tucker_to_tensor
-from ..utils import check_random_state
+from ..random import check_random_state
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 

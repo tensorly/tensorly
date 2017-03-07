@@ -1,4 +1,4 @@
-from ..base import cp_tensor, tucker_tensor
+from ..base import cp_tensor, tucker_tensor, check_random_state
 from ...tucker import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...base import unfold
@@ -6,6 +6,24 @@ from numpy.linalg import matrix_rank
 from numpy.testing import assert_equal, assert_array_almost_equal, assert_raises
 import numpy as np
 
+
+def test_check_random_state():
+    """Test for check_random_state"""
+
+    # Generate a random state for me
+    rns = check_random_state(seed=None)
+    assert(isinstance(rns, np.random.RandomState))
+
+    # random state from integer seed
+    rns = check_random_state(seed=10)
+    assert(isinstance(rns, np.random.RandomState))
+
+    # if it is already a random state, just return it
+    cpy_rns = check_random_state(seed=rns)
+    assert(cpy_rns is rns)
+
+    # only takes as seed a random state, an int or None
+    assert_raises(ValueError, check_random_state, seed='bs')
 
 def test_cp_tensor():
     """test for random.cp_tensor"""
