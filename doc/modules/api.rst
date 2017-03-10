@@ -156,6 +156,9 @@ API reference
 
    cp_tensor
    tucker_tensor
+   check_random_state
+   noise.add_noise
+   noise.patch_noise
 
 
 
@@ -174,17 +177,3 @@ API reference
 
     synthetic.gen_image
 
-
-:mod:`tensorly.utils`: Utility functions
-=========================================
-
-.. automodule:: tensorly.utils
-    :no-members:
-    :no-inherited-members:
-
-.. currentmodule:: tensorly.utils
-
-.. autosummary::
-    :toctree: generated/
-
-    check_random_state
