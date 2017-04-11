@@ -1,9 +1,37 @@
 from numpy.testing import assert_, assert_equal, assert_array_almost_equal
 import numpy as np
-from .._tucker import tucker, non_negative_tucker
+from .._tucker import tucker, non_negative_tucker, partial_tucker
 from ...tucker import tucker_to_tensor
-from ...tenalg import norm
+from ...tenalg import norm, multi_mode_dot
 from ...random import check_random_state
+
+
+def test_partial_tucker():
+    """Test for the Partial Tucker decomposition"""
+    rng = check_random_state(1234)
+    tol_norm_2 = 10e-3
+    tol_max_abs = 10e-1
+    tensor = rng.random_sample((3, 4, 3))
+    modes = [1, 2]
+    core, factors = partial_tucker(tensor, modes, ranks=None, n_iter_max=200, verbose=True)
+    reconstructed_tensor = multi_mode_dot(core, factors, modes=modes)
+    norm_rec = norm(reconstructed_tensor, 2)
+    norm_tensor = norm(tensor, 2)
+    assert_((norm_rec - norm_tensor)/norm_rec < tol_norm_2)
+
+    # Test the max abs difference between the reconstruction and the tensor
+    assert_(np.max(np.abs(norm_rec - norm_tensor)) < tol_max_abs)
+
+    # Test the shape of the core and factors
+    ranks = [3, 1]
+    core, factors = partial_tucker(tensor, modes=modes, ranks=ranks, n_iter_max=100, verbose=1)
+    for i, rank in enumerate(ranks):
+        assert_equal(factors[i].shape, (tensor.shape[i+1], ranks[i]),
+                     err_msg="factors[{}].shape={}, expected {}".format(
+                         i, factors[i].shape, (tensor.shape[i+1], ranks[i])))
+    assert_equal(core.shape, [tensor.shape[0]]+ranks, err_msg="Core.shape={}, "
+                     "expected {}".format(core.shape, [tensor.shape[0]]+ranks))
+
 
 
 def test_tucker():

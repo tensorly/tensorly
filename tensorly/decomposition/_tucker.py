@@ -9,6 +9,78 @@ from ..random import check_random_state
 
 # License: BSD 3 clause
 
+def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
+           random_state=None, verbose=False):
+    """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
+
+        Decomposes `tensor` into a Tucker decomposition exclusively along the provided modes.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    modes : int list
+            list of the modes on which to perform the decomposition
+    ranks : None or int list
+            size of the core tensor, ``(len(ranks) == len(modes))``
+    n_iter_max : int
+                 maximum number of iteration
+    init : {'svd', 'random'}, optional
+    tol : float, optional
+          tolerance: the algorithm stops when the variation in
+          the reconstruction error is less than the tolerance
+    random_state : {None, int, np.random.RandomState}
+    verbose : int, optional
+        level of verbosity
+
+    Returns
+    -------
+    core : ndarray 
+            core tensor of the Tucker decomposition
+    factors : ndarray list
+            list of factors of the Tucker decomposition.
+            with ``core.shape[i] == (tensor.shape[i], ranks[i]) for i in modes``
+    """
+    if ranks is None:
+        ranks = [tensor.shape[mode] for mode in modes]
+
+    # SVD init
+    if init == 'svd':
+        factors = []
+        for index, mode in enumerate(modes):
+            eigenvecs, _, _ = partial_svd(unfold(tensor, mode), n_eigenvecs=ranks[index])
+            factors.append(eigenvecs)
+    else:
+        rng = check_random_state(random_state)
+        core = rng.random_sample(ranks)
+        factors = [rng.random_sample((tensor.shape[mode], ranks[index])) for (index, mode) in enumerate(modes)]
+
+    rec_errors = []
+    norm_tensor = norm(tensor, 2)
+
+    for iteration in range(n_iter_max):
+        for index, mode in enumerate(modes):
+            core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
+            eigenvecs, _, _ = partial_svd(unfold(core_approximation, mode), n_eigenvecs=ranks[index])
+            factors[index] = eigenvecs
+
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
+
+        # The factors are orthonormal and therefore do not affect the reconstructed tensor's norm
+        rec_error = np.sqrt(abs(norm_tensor**2 - norm(core, 2)**2)) / norm_tensor
+        rec_errors.append(rec_error)
+
+        if iteration > 1:
+            if verbose:
+                print('reconsturction error={}, variation={}.'.format(
+                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                if verbose:
+                    print('converged in {} iterations.'.format(iteration))
+                break
+
+    return core, factors
+
 
 def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
            random_state=None, verbose=False):
@@ -45,46 +117,9 @@ def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
-    if ranks is None:
-        ranks = [s for s in tensor.shape]
-
-    # SVD init
-    if init == 'svd':
-        factors = []
-        for mode in range(tensor.ndim):
-            eigenvecs, _, _ = partial_svd(unfold(tensor, mode), n_eigenvecs=ranks[mode])
-            factors.append(eigenvecs)
-    else:
-        rng = check_random_state(random_state)
-        core = rng.random_sample(ranks)
-        factors = [rng.random_sample(s) for s in zip(tensor.shape, ranks)]
-
-    rec_errors = []
-    norm_tensor = norm(tensor, 2)
-
-    for iteration in range(n_iter_max):
-        for mode in range(tensor.ndim):
-            core_approximation = tucker_to_tensor(tensor, factors, skip_factor=mode, transpose_factors=True)
-            eigenvecs, _, _ = partial_svd(unfold(core_approximation, mode), n_eigenvecs=ranks[mode])
-            factors[mode] = eigenvecs
-
-        core = tucker_to_tensor(tensor, factors, transpose_factors=True)
-
-        rec_error = np.sqrt(abs(norm_tensor**2 - norm(core, 2)**2)) / norm_tensor
-        rec_errors.append(rec_error)
-
-        if iteration > 1:
-            if verbose:
-                print('reconsturction error={}, variation={}.'.format(
-                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
-
-            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
-                if verbose:
-                    print('converged in {} iterations.'.format(iteration))
-                break
-
-    return core, factors
-
+    modes = list(range(tensor.ndim))
+    return partial_tucker(tensor, modes, ranks=ranks, n_iter_max=n_iter_max, init=init,
+                          tol=tol, random_state=random_state, verbose=verbose)
 
 def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
                         random_state=None, verbose=False):
