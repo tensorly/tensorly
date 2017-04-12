@@ -37,6 +37,12 @@ def tensor_to_vec(tensor):
     -------
     1D-array
         vectorised tensor of shape ``(i_1 * i_2 * ... * i_n)``
+
+    See also
+    --------
+    vec_to_tensor
+    fold 
+    unfold
     """
     return np.ravel(tensor)
 
@@ -55,6 +61,12 @@ def vec_to_tensor(vec, shape):
     -------
     ndarray
         tensor of shape `shape` = ``(i_1, ..., i_n)``
+
+    See also
+    --------
+    tensor_to_vec
+    fold 
+    unfold
     """
     return np.reshape(vec, shape)
 
@@ -72,6 +84,11 @@ def unfold(tensor, mode=0):
     -------
     ndarray
         unfolded_tensor of shape ``(tensor.shape[mode], -1)``
+
+    See also
+    --------
+    fold
+    tensor_to_vec
     """
     return np.moveaxis(tensor, mode, 0).reshape((tensor.shape[mode], -1))
 
@@ -95,6 +112,11 @@ def fold(unfolded_tensor, mode, shape):
     -------
     ndarray
         folded_tensor of shape `shape`
+
+    See also
+    --------
+    unfold
+    tensor_to_vec
     """
     full_shape = list(shape)
     mode_dim = full_shape.pop(mode)
@@ -126,6 +148,10 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
     -------
     ndarray
         partially unfolded tensor
+
+    See also
+    --------
+    partial_fold
     """
     if ravel_tensors:
         new_shape = [-1]
@@ -161,6 +187,10 @@ def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
     -------
     ndarray
         partially re-folded tensor
+
+    See also
+    --------
+    partial_unfold
     """
     transposed_shape = list(shape)
     mode_dim = transposed_shape.pop(skip_begin+mode)
@@ -172,7 +202,8 @@ def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
 def partial_tensor_to_vec(tensor, skip_begin=1, skip_end=0):
     """Partially vectorises a tensor
 
-        Partially vectorises a tensor while ignoring the specified dimension at the beginning and the end
+        In other words, vectorises the subtensors of `tensor` obtained by
+        ignoring the specified dimension at the beginning and the end
 
     Parameters
     ----------
@@ -187,6 +218,10 @@ def partial_tensor_to_vec(tensor, skip_begin=1, skip_end=0):
     -------
     ndarray
         partially vectorised tensor with the `skip_begin` first and `skip_end` last dimensions untouched
+
+    See also
+    --------
+    partial_vec_to_tensor : invert the partial_tensor_to_vec operation
     """
     return partial_unfold(tensor, mode=0, skip_begin=skip_begin, skip_end=skip_end, ravel_tensors=True)
 
@@ -209,5 +244,9 @@ def partial_vec_to_tensor(matrix, shape, skip_begin=1, skip_end=0):
     -------
     ndarray
         full tensor
+
+    See also
+    --------
+    partial_tensor_to_vec : invert the partial_vec_to_tensor operation
     """
     return partial_fold(matrix, mode=0, shape=shape, skip_begin=skip_begin, skip_end=skip_end)
