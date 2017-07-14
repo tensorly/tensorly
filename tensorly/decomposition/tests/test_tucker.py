@@ -65,7 +65,7 @@ def test_tucker():
     tol_max_abs = 10e-1
 
     core_svd, factors_svd = tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, init='svd', verbose=1)
-    core_random, factors_random = tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, init='random')
+    core_random, factors_random = tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
     rec_svd = tucker_to_tensor(core_svd, factors_svd)
     rec_random = tucker_to_tensor(core_random, factors_random)
     error = norm(rec_svd - rec_random, 2)
@@ -103,7 +103,7 @@ def test_non_negative_tucker():
             'abs norm of reconstruction error higher than tol')
 
     core_svd, factors_svd = non_negative_tucker(tensor, ranks=[3, 4, 3], n_iter_max=500, init='svd', verbose=1)
-    core_random, factors_random = non_negative_tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, init='random')
+    core_random, factors_random = non_negative_tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
     rec_svd = tucker_to_tensor(core_svd, factors_svd)
     rec_random = tucker_to_tensor(core_random, factors_random)
     error = norm(rec_svd - rec_random, 2)

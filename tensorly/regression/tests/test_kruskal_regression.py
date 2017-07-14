@@ -3,6 +3,7 @@ from numpy.testing import assert_
 from ..kruskal_regression import KruskalRegressor
 from ...base import tensor_to_vec, partial_tensor_to_vec
 from ...metrics.regression import RMSE
+from ...random import check_random_state
 
 
 def test_KruskalRegressor():
@@ -12,10 +13,11 @@ def test_KruskalRegressor():
     image_height = 8
     image_width = 8
     n_channels = 3
-    tol = 10e-3
+    tol = 0.005
 
     # Generate random samples
-    X = np.random.normal(size=(1200, image_height, image_width, n_channels), loc=0, scale=1)
+    rng = check_random_state(1234)
+    X = rng.normal(size=(1200, image_height, image_width, n_channels), loc=0, scale=1)
     regression_weights = np.zeros((image_height, image_width, n_channels))
     regression_weights[2:-2, 2:-2, 0] = 1
     regression_weights[2:-2, 2:-2, 1] = 2

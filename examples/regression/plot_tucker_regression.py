@@ -8,7 +8,7 @@ Example on how to use :class:`tensorly.regression.tucker_regression.TuckerRegres
 import matplotlib.pyplot as plt
 from tensorly.base import tensor_to_vec, partial_tensor_to_vec
 from tensorly.datasets.synthetic import gen_image
-from tensorly.utils import check_random_state
+from tensorly.random import check_random_state
 from tensorly.regression.tucker_regression import TuckerRegressor
 
 # Parameter of the experiment

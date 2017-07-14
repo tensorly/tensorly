@@ -15,7 +15,7 @@ def test_parafac():
     tol_max_abs = 10e-2
     tensor = rng.random_sample((3, 4, 2))
     factors_svd = parafac(tensor, rank=4, n_iter_max=200, init='svd')
-    factors_random = parafac(tensor, rank=4, n_iter_max=200, init='random', verbose=1)
+    factors_random = parafac(tensor, rank=4, n_iter_max=200, init='random', random_state=1234, verbose=1)
     rec_svd = kruskal_to_tensor(factors_svd)
     rec_random = kruskal_to_tensor(factors_random)
     error = norm(rec_svd - tensor, 2)
@@ -67,7 +67,7 @@ def test_non_negative_parafac():
     factors_svd = non_negative_parafac(tensor, rank=3, n_iter_max=100,
                                        init='svd')
     factors_random = non_negative_parafac(tensor, rank=3, n_iter_max=100,
-                                          init='random', verbose=1)
+                                          init='random', random_state=1234, verbose=1)
     rec_svd = kruskal_to_tensor(factors_svd)
     rec_random = kruskal_to_tensor(factors_random)
     error = norm(rec_svd - rec_random, 2)

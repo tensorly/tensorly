@@ -72,7 +72,7 @@ class TuckerRegressor():
         G = rng.randn(*self.weight_ranks)
         W = []
         for i in range(1, X.ndim):  # First dimension of X = number of samples
-            W.append(np.random.randn(X.shape[i], G.shape[i - 1]))
+            W.append(rng.randn(X.shape[i], G.shape[i - 1]))
 
         # Norm of the weight tensor at each iteration
         norm_W = []
