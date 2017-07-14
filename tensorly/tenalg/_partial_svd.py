@@ -43,7 +43,8 @@ def partial_svd(matrix, n_eigenvecs=None):
 
     if n_eigenvecs is None or n_eigenvecs >= min_dim:
         # Default on standard SVD
-        U, S, V = svd(matrix)
+        # Only need full matrices when n_eigenvecs > min_dim
+        U, S, V = svd(matrix, n_eigenvecs != min_dim)
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         return U, S, V
 
