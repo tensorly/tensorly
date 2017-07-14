@@ -106,7 +106,7 @@ def patch_noise(tensor, patch_size, noise='gaussian',
         if int, the values inside the patches will simply be set to that value
     mean : float, default is 0
     std : float, default is 1
-    percent: float, default is 0.2
+    percent : float, default is 0.2
     inplace : bool, optional
         if True the noise is added inplace
         otherwise a copy is created

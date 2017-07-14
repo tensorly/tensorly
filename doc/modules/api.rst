@@ -103,6 +103,7 @@ API reference
     parafac
     non_negative_parafac
     tucker
+    partial_tucker
     non_negative_tucker
     robust_pca
 
