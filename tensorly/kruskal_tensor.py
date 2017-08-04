@@ -2,7 +2,7 @@
 Core operations on Kruskal tensors.
 """
 
-import numpy as np
+from . import backend as T
 from .base import fold, tensor_to_vec
 from .tenalg import khatri_rao
 
@@ -33,24 +33,12 @@ def kruskal_to_tensor(factors):
     -----
     This version works by first computing the mode-0 unfolding of the tensor
     and then refolding it.
-    There are other possible and equivalent alternate implementation.
 
-    Version slower but closer to the mathematical definition
-    of a tensor decomposition:
-
-    >>> from functools import reduce
-    >>> def kt_to_tensor(factors):
-    ...     for r in range(factors[0].shape[1]):
-    ...         vecs = np.ix_(*[u[:, r] for u in factors])
-    ...         if r:
-    ...             res += reduce(np.multiply, vecs)
-    ...         else:
-    ...             res = reduce(np.multiply, vecs)
-    ...     return res
-
+    There are other possible and equivalent alternate implementation, e.g.
+    summing over r and updating an outer product of vectors.
     """
     shape = [factor.shape[0] for factor in factors]
-    full_tensor = np.dot(factors[0], khatri_rao(factors[1:]).T)
+    full_tensor = T.dot(factors[0], khatri_rao(factors[1:]).T)
     return fold(full_tensor, 0, shape)
 
 
@@ -79,7 +67,7 @@ def kruskal_to_unfolded(factors, mode):
     Writing factors = [U_1, ..., U_n], we exploit the fact that
     ``U_k = U[k].dot(khatri_rao(U_1, ..., U_k-1, U_k+1, ..., U_n))``
     """
-    return factors[mode].dot(khatri_rao(factors, skip_matrix=mode).T)
+    return T.dot(factors[mode], khatri_rao(factors, skip_matrix=mode).T)
 
 
 def kruskal_to_vec(factors):

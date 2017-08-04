@@ -15,7 +15,6 @@ API reference
     :toctree: generated/
     :template: function.rst
 
-    tensor_from_frontal_slices
     unfold
     fold
     tensor_to_vec
@@ -26,14 +25,14 @@ API reference
     partial_vec_to_tensor
 
 
-:mod:`tensorly.kruskal`: Kruskal tensors
-==========================================
+:mod:`tensorly.kruskal`: Tensors in the Kruskal format
+======================================================
 
-.. automodule:: tensorly.kruskal
+.. automodule:: tensorly.kruskal_tensor
     :no-members:
     :no-inherited-members:
 
-.. currentmodule:: tensorly.kruskal
+.. currentmodule:: tensorly.kruskal_tensor
 
 .. autosummary::
     :toctree: generated/
@@ -43,14 +42,14 @@ API reference
     kruskal_to_unfolded
     kruskal_to_vec
 
-:mod:`tensorly.tucker`: Tucker tensors
-========================================
+:mod:`tensorly.tucker`: Tensors in Tucker format
+================================================
 
-.. automodule:: tensorly.tucker
+.. automodule:: tensorly.tucker_tensor
     :no-members:
     :no-inherited-members:
 
-.. currentmodule:: tensorly.tucker
+.. currentmodule:: tensorly.tucker_tensor
 
 .. autosummary::
     :toctree: generated/
@@ -77,14 +76,10 @@ API reference
     khatri_rao
     kronecker
     mode_dot
-    norm
-    higher_order_moment
     multi_mode_dot
     proximal.soft_thresholding
-    proximal.inplace_soft_thresholding
     proximal.svd_thresholding
     proximal.procrustes
-    partial_svd
 
 
 :mod:`tensorly.decomposition`: Tensor Decomposition
@@ -158,8 +153,6 @@ API reference
    cp_tensor
    tucker_tensor
    check_random_state
-   noise.add_noise
-   noise.patch_noise
 
 
 

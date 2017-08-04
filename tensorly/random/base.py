@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.linalg import qr
-from ..kruskal import kruskal_to_tensor
-from ..tucker import tucker_to_tensor
+from ..kruskal_tensor import kruskal_to_tensor
+from ..tucker_tensor import tucker_to_tensor
+from .. import backend as T
 
 
 def check_random_state(seed):
@@ -48,7 +49,7 @@ def cp_tensor(shape, rank, full=False, random_state=None):
         2D-array list : list of factors otherwise
     """
     rns = check_random_state(random_state)
-    factors = [rns.random_sample((s, rank)) for s in shape]
+    factors = [T.tensor(rns.random_sample((s, rank))) for s in shape]
     if full:
         return kruskal_to_tensor(factors)
     else:
@@ -89,9 +90,9 @@ def tucker_tensor(shape, rank, full=False, random_state=None):
     factors = []
     for (s, r) in zip(shape, rank):
         Q, _= qr(rns.random_sample((s, s)))
-        factors.append(Q[:, :r])
+        factors.append(T.tensor(Q[:, :r]))
 
-    core = rns.random_sample(rank)
+    core = T.tensor(rns.random_sample(rank))
     if full:
         return tucker_to_tensor(core, factors)
     else:

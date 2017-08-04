@@ -1,4 +1,5 @@
-import numpy as np
+from .. import backend as T
+from math import sqrt
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -17,7 +18,7 @@ def MSE(y_true, y_pred):
     -------
     float
     """
-    return np.mean((y_true - y_pred) ** 2)
+    return T.mean((y_true - y_pred) ** 2)
 
 
 def RMSE(y_true, y_pred):
@@ -35,5 +36,5 @@ def RMSE(y_true, y_pred):
     -------
     float
     """
-    return np.sqrt(MSE(y_true, y_pred))
+    return sqrt(MSE(y_true, y_pred))
 

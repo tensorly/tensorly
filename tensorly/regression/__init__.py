@@ -1,4 +1,4 @@
-"""
+"""                                                                                                                                                      
 The :mod:`tensorly.regression` module includes classes for performing Tensor
 Regression.
 """

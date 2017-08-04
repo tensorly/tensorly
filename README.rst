@@ -10,10 +10,11 @@
 TensorLy
 ========
 
-TensorLy is a fast and simple Python library for tensor learning. It builds on top of NumPy and SciPy and and allows for fast and straightforward tensor decomposition, tensor learning and tensor algebra.
+TensorLy is a fast and simple Python library for tensor learning. It builds on top of NumPy, SciPy and MXNet and allows for fast and straightforward tensor decomposition, tensor learning and tensor algebra.
 
 - **Website:** http://tensorly.github.io
 - **Source:**  https://github.com/tensorly/tensorly
+- **Jupyter Notebooks:** https://github.com/JeanKossaifi/tensorly_notebooks
 
 
 How to install

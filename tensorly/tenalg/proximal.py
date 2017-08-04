@@ -1,5 +1,4 @@
-import numpy as np
-from scipy.linalg import svd
+from .. import backend as T
 
 # Author: Jean Kossaifi
 
@@ -28,9 +27,9 @@ def soft_thresholding(tensor, threshold):
     --------
     Basic shrinkage
 
-    >>> import numpy as np
+    >>> import tensorly.backend as T
     >>> from tensorly.tenalg.proximal import soft_thresholding
-    >>> tensor = np.array([[1, -2, 1.5], [-4, 3, -0.5]])
+    >>> tensor = T.tensor([[1, -2, 1.5], [-4, 3, -0.5]])
     >>> soft_thresholding(tensor, 1.1)
     array([[ 0. , -0.9,  0.4],
            [-2.9,  1.9,  0. ]])
@@ -38,7 +37,7 @@ def soft_thresholding(tensor, threshold):
 
     Example with missing values
 
-    >>> mask = np.array([[0, 0, 1], [1, 0, 1]])
+    >>> mask = T.tensor([[0, 0, 1], [1, 0, 1]])
     >>> soft_thresholding(tensor, mask*1.1)
     array([[ 1. , -2. ,  0.4],
            [-2.9,  3. ,  0. ]])
@@ -48,36 +47,8 @@ def soft_thresholding(tensor, threshold):
     inplace_soft_thresholding : Inplace version of the soft-thresholding operator
     svd_thresholding : SVD-thresholding operator
     """
-    signs = np.sign(tensor)
-    values = (signs*tensor - threshold)
-    return np.where(values > 0, signs*values, 0)
+    return T.sign(tensor)*T.maximum(T.abs(tensor) - threshold, 0)
 
-
-def inplace_soft_thresholding(tensor, threshold):
-    """Inplace version of the shrinkage operator
-
-    Parameters
-    ----------
-    tensor : ndarray
-    threshold : float
-
-    Returns
-    -------
-    ndarray
-        tensor on which the operator has been applied inplace
-
-    See also
-    --------
-    soft_thresholding : less memory-efficient but fast soft-thresholding operator
-    svd_thresholding : SVD-thresholding operator
-    """
-    index_shrink = ((tensor <= threshold) & (tensor >= -threshold))
-    index_more = (tensor > threshold)
-    index_less = (tensor < -threshold)
-    tensor[index_shrink] = 0
-    tensor[index_more] -= threshold
-    tensor[index_less] += threshold
-    return tensor
 
 
 def svd_thresholding(matrix, threshold):
@@ -97,8 +68,8 @@ def svd_thresholding(matrix, threshold):
     --------
     procrustes : procrustes operator
     """
-    U, s, V = svd(matrix, full_matrices=False)
-    return np.dot(U, soft_thresholding(s, threshold)[:, None]*V)
+    U, s, V = T.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
+    return T.dot(U, T.reshape(soft_thresholding(s, threshold), (-1, 1))*V)
 
 
 def procrustes(matrix):
@@ -119,6 +90,6 @@ def procrustes(matrix):
     --------
     svd_thresholding : SVD-thresholding operator
     """
-    U, _, V = svd(matrix, full_matrices=False)
-    return np.dot(U, V)
+    U, _, V = T.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
+    return T.dot(U, V)
 

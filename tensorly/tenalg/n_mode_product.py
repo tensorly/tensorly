@@ -1,11 +1,5 @@
-import numpy as np
-from ..base import fold, unfold
-
-# Author: Jean Kossaifi
-
-# License: BSD 3 clause
-
-
+from .. import backend as T
+from ..base import unfold, fold
 
 def mode_dot(tensor, matrix_or_vector, mode):
         """n-mode product of a tensor by a matrix at the specified mode.
@@ -29,6 +23,8 @@ def mode_dot(tensor, matrix_or_vector, mode):
             * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
             * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
         """
+        # the mode along which to fold might decrease if we take product with a vector
+        fold_mode = mode
         new_shape = list(tensor.shape)
 
         if matrix_or_vector.ndim == 2:  # Tensor times matrix
@@ -39,7 +35,6 @@ def mode_dot(tensor, matrix_or_vector, mode):
                         tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[1]
                     ))
             new_shape[mode] = matrix_or_vector.shape[0]
-            factor_is_vec = False
 
         elif matrix_or_vector.ndim == 1:  # Tensor times vector
             if matrix_or_vector.shape[0] != tensor.shape[mode]:
@@ -48,21 +43,18 @@ def mode_dot(tensor, matrix_or_vector, mode):
                         tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[0]
                     ))
             if len(new_shape) > 1:
-                new_shape[mode] = 1
+                new_shape.pop(mode)
+                fold_mode -= 1
             else:
                 new_shape = [1]
-            factor_is_vec = True
+
         else:
             raise ValueError('Can only take n_mode_product with a vector or a matrix.'
                              'Provided array of dimension {} not in [1, 2].'.format(matrix_or_vector.ndim))
 
-        res = np.dot(matrix_or_vector, unfold(tensor, mode))
+        res = T.dot(matrix_or_vector, unfold(tensor, mode))
 
-        if factor_is_vec:
-            return np.squeeze(fold(res, mode, new_shape))
-        else:
-            return fold(res, mode, new_shape)
-
+        return fold(res, fold_mode, new_shape)
 
 def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False):
     """n-mode product of a tensor and several matrices or vectors

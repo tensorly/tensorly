@@ -33,7 +33,8 @@ Let's take for this example the tensor :math:`\tilde X` defined by its frontal s
 In Python, this array can be expressed as a numpy array::
 
    >>> import numpy as np
-   >>> X = np.arange(24).reshape((3, 4, 2))
+   >>> import tensorly as tl
+   >>> X = tl.tensor(np.arange(24).reshape((3, 4, 2)))
 
 
 You can view the frontal slices by fixing the last axis::
@@ -115,6 +116,7 @@ In tensorly:
 
 .. code-block:: python
 
+   >>> from tensorly import unfold
    >>> unfold(X, 0) # mode-1 unfolding
    array([[ 0,  1,  2,  3,  4,  5,  6,  7],
           [ 8,  9, 10, 11, 12, 13, 14, 15],

@@ -1,11 +1,9 @@
 import numpy as np
-from numpy.linalg import solve
+from .. import backend as T
 from ..random import check_random_state
 from ..base import unfold
-from ..kruskal import kruskal_to_tensor
+from ..kruskal_tensor import kruskal_to_tensor
 from ..tenalg import khatri_rao
-from ..tenalg._partial_svd import partial_svd
-from ..tenalg import norm
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -45,37 +43,39 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
-    tensor = tensor.astype(np.float)
     rng = check_random_state(random_state)
+
     if init is 'random':
-        factors = [rng.random_sample((tensor.shape[i], rank)) for i in range(tensor.ndim)]
+        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank))) for i in range(tensor.ndim)]
 
     elif init is 'svd':
         factors = []
         for mode in range(tensor.ndim):
-            U, _, _ = partial_svd(unfold(tensor, mode), n_eigenvecs=rank)
+            U, _, _ = T.partial_svd(unfold(tensor, mode), n_eigenvecs=rank)
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
-                new_columns = rng.random_sample((U.shape[0], rank - tensor.shape[mode]))
-                U = np.hstack((U, new_columns))
+                factor = T.tensor(np.zeros((U.shape[0], rank)))
+                factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])))
+                factor[:, :tensor.shape[mode]] = U
+                U = T.tensor(factor)
             factors.append(U[:, :rank])
 
     rec_errors = []
-    norm_tensor = norm(tensor, 2)
+    norm_tensor = T.norm(tensor, 2)
 
     for iteration in range(n_iter_max):
         for mode in range(tensor.ndim):
-            pseudo_inverse = np.ones((rank, rank))
+            pseudo_inverse = T.tensor(np.ones((rank, rank)))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse *= np.dot(factor.T, factor)
-            factor = np.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode))
-            factor = solve(pseudo_inverse.T, factor.T).T
+                    pseudo_inverse[:] = pseudo_inverse*T.dot(factor.T, factor)
+            factor = T.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode))
+            factor = T.solve(pseudo_inverse.T, factor.T).T
             factors[mode] = factor
 
         #if verbose or tol:
-        rec_error = norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+        rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
         rec_errors.append(rec_error)
 
         if iteration > 1:
@@ -130,13 +130,13 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     # Initialisation
     if init == 'svd':
         factors = parafac(tensor, rank)
-        nn_factors = [np.abs(f) for f in factors]
+        nn_factors = [T.abs(f) for f in factors]
     else:
         rng = check_random_state(random_state)
-        nn_factors = [np.abs(rng.random_sample((s, rank))) for s in tensor.shape]
+        nn_factors = [T.tensor(np.abs(rng.random_sample((s, rank)))) for s in tensor.shape]
 
     n_factors = len(nn_factors)
-    norm_tensor = norm(tensor, 2)
+    norm_tensor = T.norm(tensor, 2)
     rec_errors = []
 
     for iteration in range(n_iter_max):
@@ -146,17 +146,17 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             sub_indices = [i for i in range(n_factors) if i != mode]
             for i, e in enumerate(sub_indices):
                 if i:
-                    accum *= nn_factors[e].T.dot(nn_factors[e])
+                    accum[:] = accum*T.dot(nn_factors[e].T, nn_factors[e])
                 else:
-                    accum = nn_factors[e].T.dot(nn_factors[e])
+                    accum = T.dot(nn_factors[e].T, nn_factors[e])
 
-            numerator = np.dot(unfold(tensor, mode), khatri_rao(nn_factors, skip_matrix=mode))
-            numerator = numerator.clip(min=epsilon)
-            denominator = np.dot(nn_factors[mode], accum)
-            denominator = denominator.clip(min=epsilon)
-            nn_factors[mode] *= numerator / denominator
+            numerator = T.dot(unfold(tensor, mode), khatri_rao(nn_factors, skip_matrix=mode))
+            numerator = T.clip(numerator, a_min=epsilon, a_max=None)
+            denominator = T.dot(nn_factors[mode], accum)
+            denominator = T.clip(denominator, a_min=epsilon, a_max=None)
+            nn_factors[mode][:] = nn_factors[mode]* numerator / denominator
 
-        rec_error = norm(tensor - kruskal_to_tensor(nn_factors), 2) / norm_tensor
+        rec_error = T.norm(tensor - kruskal_to_tensor(nn_factors), 2) / norm_tensor
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
             print('reconstruction error={}, variation={}.'.format(

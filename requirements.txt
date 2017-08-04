@@ -1,2 +1,4 @@
 numpy
 scipy
+mxnet
+pytest-cov

@@ -1,9 +1,9 @@
-from scipy.linalg import solve
 import numpy as np
 from ..base import partial_tensor_to_vec, partial_unfold
-from ..tenalg import norm,  khatri_rao
-from ..kruskal import kruskal_to_tensor, kruskal_to_vec
+from ..tenalg import  khatri_rao
+from ..kruskal_tensor import kruskal_to_tensor, kruskal_to_vec
 from ..random import check_random_state
+from .. import backend as T
 
 # Author: Jean Kossaifi
 
@@ -79,12 +79,15 @@ class KruskalRegressor():
 
             # Optimise each factor of W
             for i in range(len(W)):
-                phi = partial_unfold(X, i, skip_begin=1).dot(khatri_rao(W, skip_matrix=i)).reshape((X.shape[0], -1))
-                inv_term = np.dot(phi.T, phi) + self.reg_W*np.eye(phi.shape[1])
-                W[i] = np.reshape(solve(inv_term, phi.T.dot(y)), (X.shape[i + 1], self.weight_rank))
+                phi = T.reshape(
+                          T.dot(partial_unfold(X, i, skip_begin=1),
+                                khatri_rao(W, skip_matrix=i)),
+                      (X.shape[0], -1))
+                inv_term = T.dot(phi.T, phi) + self.reg_W*T.tensor(np.eye(phi.shape[1]))
+                W[i] = T.reshape(T.solve(inv_term, T.dot(phi.T, y)), (X.shape[i + 1], self.weight_rank))
 
             weight_tensor_ = kruskal_to_tensor(W)
-            norm_W.append(norm(weight_tensor_, 2))
+            norm_W.append(T.norm(weight_tensor_, 2))
 
             # Convergence check
             if iteration > 1:
@@ -111,4 +114,4 @@ class KruskalRegressor():
         X : ndarray
             tensor data of shape (n_samples, N1, ..., NS)
         """
-        return np.dot(partial_tensor_to_vec(X), self.vec_W_)
+        return T.dot(partial_tensor_to_vec(X), self.vec_W_)

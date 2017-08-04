@@ -1,5 +1,4 @@
-import numpy as np
-
+from .. import backend as T
 
 # Author: Jean Kossaifi
 
@@ -53,49 +52,6 @@ def kronecker(matrices, skip_matrix=None, reverse=False):
         if not i:
             res = matrix
         else:
-            res = np.kron(res, matrix)
+            res = T.kron(res, matrix)
     return res
 
-
-def inv_squared_kronecker(matrices, n_identity=0, mu=None):
-    """Inverse of a transposed kronecker product times itself
-
-    Computes effectively:
-    ``inv(np.dot(kron_W.T, kron_W)/mu + (n_identity)*np.eye(kron_W.shape[1]))``
-    with
-    ``kron_W = kronecker(W)``.
-
-    Parameters
-    ----------
-    matrices : 2D-array list
-        factors of the kronecker product
-    n_identity : int
-        n_identity * Identity is added to kron_W.T.dot(kron_W)
-    mu : float, optional
-        kron_W.T.dot(kron_W) is divided by mu
-    """
-    from scipy.linalg import eigh
-
-    if mu is None:
-        mu = 1
-
-    ## Decompose each of the terms in the kr product
-    ## Inverse the diagonal part
-    P = []
-    S = []
-    for i, U in enumerate(matrices):
-        eigenvals, eigenvecs = eigh(U.T.dot(U))
-        P.append(eigenvecs)
-        if i:
-            S = np.concatenate([s * eigenvals for s in S])
-        else:
-            S = eigenvals
-
-    else:  # S + mu *(n*Identity)
-        S += n_identity * mu
-
-    # invert the diagonal part
-    S = 1 / S
-
-    kr = kronecker(P)
-    return np.dot(kr, S[:, None] * kr.T) * mu

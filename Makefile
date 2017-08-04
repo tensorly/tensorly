@@ -1,15 +1,18 @@
 # Automate testing etc
-
-NOSETESTS ?= nosetests
-
+BACKEND?='mxnet'
 
 all: install test
 
 install:
 	pip install -e .
 
-test-coverage:
-	nosetests -v --exe --doctest-tests --with-coverage --cover-package=tensorly tensorly
-
 test:
-	nosetests -v --exe --doctest-tests tensorly
+	TENSORLY_BACKEND=$(BACKEND) pytest -v tensorly
+
+test-all:
+	TENSORLY_BACKEND='mxnet' pytest -v tensorly
+	TENSORLY_BACKEND='numpy' pytest -v tensorly
+
+test-coverage:
+	TENSORLY_BACKEND=$(BACKEND) pytest -v --cov tensorly tensorly
+

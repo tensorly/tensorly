@@ -26,7 +26,7 @@ Running the tests
 =================
 
 Uni-testing is an vital part of this package.
-You can run all the tests using the `nose` package::
+You can run all the tests using `pytest`::
 
-   nosetests -v --exe --doctest-tests tensorly
+   pytest tensorly
 

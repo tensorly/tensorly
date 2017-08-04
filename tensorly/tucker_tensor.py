@@ -30,18 +30,6 @@ def tucker_to_tensor(core, factors, skip_factor=None, transpose_factors=False):
     -------
     2D-array
        full tensor of shape ``(factors[0].shape[0], ..., factors[-1].shape[0])``
-
-    Notes
-    -----
-    This implementation is equivalent to:
-
-    >>> def tucker_to_tensor(core, factors):
-    ...     for i, matrix in enumerate(factors):
-    ...         if not i:
-    ...             res = mode_dot(core, matrix, i)
-    ...         else:
-    ...             res = mode_dot(res, matrix, i)
-    ...     return res
     """
     return multi_mode_dot(core, factors, skip=skip_factor, transpose=transpose_factors)
 

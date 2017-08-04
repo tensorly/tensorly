@@ -1,6 +1,6 @@
 import numpy as np
 from ..random import check_random_state
-
+from .. import backend as T
 
 def gen_image(region='swiss', image_height=20, image_width=20,
                  n_channels=None, weight_value=1):
@@ -48,6 +48,6 @@ def gen_image(region='swiss', image_height=20, image_width=20,
     if n_channels is not None and weight.ndim == 2:
         weight = np.concatenate([weight[..., None]]*n_channels, axis=-1)
 
-    return weight
+    return T.tensor(weight)
 
 

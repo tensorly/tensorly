@@ -1,104 +1,62 @@
-"""
-Core tensor operations.
-"""
-
-import numpy as np
-
-# Author: Jean Kossaifi
-
-# License: BSD 3 clause
-
-
-def tensor_from_frontal_slices(*matrices):
-    """Creates a third order tensor from a list of matrices (frontal slices)
-
-    Parameters
-    ----------
-    matrices : ndarray list
-        list of frontal slices, each a matrix of shape ``(I, J)``
-
-    Returns
-    -------
-    ndarray
-        tensor of shape ``(I, J, len(matrices))``
-    """
-    return np.concatenate([i[..., None] for i in matrices], axis=-1)
-
+from . import backend as T
 
 def tensor_to_vec(tensor):
     """Vectorises a tensor
-
+    
     Parameters
     ----------
     tensor : ndarray
              tensor of shape ``(i_1, ..., i_n)``
-
+    
     Returns
     -------
     1D-array
         vectorised tensor of shape ``(i_1 * i_2 * ... * i_n)``
-
-    See also
-    --------
-    vec_to_tensor
-    fold 
-    unfold
     """
-    return np.ravel(tensor)
+    return T.reshape(tensor, (-1, ))
 
 
 def vec_to_tensor(vec, shape):
     """Folds a vectorised tensor back into a tensor of shape `shape`
-
+    
     Parameters
     ----------
     vec : 1D-array
         vectorised tensor of shape ``(i_1 * i_2 * ... * i_n)``
     shape : tuple
         shape of the ful tensor
-
+    
     Returns
     -------
     ndarray
         tensor of shape `shape` = ``(i_1, ..., i_n)``
-
-    See also
-    --------
-    tensor_to_vec
-    fold 
-    unfold
     """
-    return np.reshape(vec, shape)
+    return T.reshape(vec, shape)
 
 
-def unfold(tensor, mode=0):
+def unfold(tensor, mode):
     """Returns the mode-`mode` unfolding of `tensor` with modes starting at `0`.
-
+    
     Parameters
     ----------
     tensor : ndarray
     mode : int, default is 0
            indexing starts at 0, therefore mode is in ``range(0, tensor.ndim)``
-
+    
     Returns
     -------
     ndarray
         unfolded_tensor of shape ``(tensor.shape[mode], -1)``
-
-    See also
-    --------
-    fold
-    tensor_to_vec
     """
-    return np.moveaxis(tensor, mode, 0).reshape((tensor.shape[mode], -1))
+    return T.reshape(T.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1))
 
 
 def fold(unfolded_tensor, mode, shape):
     """Refolds the mode-`mode` unfolding into a tensor of shape `shape`
-
+    
         In other words, refolds the n-mode unfolded tensor
         into the original tensor of the specified shape.
-
+    
     Parameters
     ----------
     unfolded_tensor : ndarray
@@ -107,25 +65,19 @@ def fold(unfolded_tensor, mode, shape):
         the mode of the unfolding
     shape : tuple
         shape of the original tensor before unfolding
-
+    
     Returns
     -------
     ndarray
         folded_tensor of shape `shape`
-
-    See also
-    --------
-    unfold
-    tensor_to_vec
     """
     full_shape = list(shape)
     mode_dim = full_shape.pop(mode)
     full_shape.insert(0, mode_dim)
-    return np.moveaxis(unfolded_tensor.reshape(full_shape), 0, mode)
-
+    return T.moveaxis(T.reshape(unfolded_tensor, full_shape), 0, mode)
 
 def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False):
-    """Partially unfolds a tensor while ignoring the specified number of dimensions at the beginning and the end.
+    """Partially unfolds a tensor while ignoring the specified number of dimensions at the beginning and the end.                                       
 
         For instance, if the first dimension of the tensor is the number of samples, to unfold each sample, you would
         set skip_begin=1.
@@ -148,10 +100,6 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
     -------
     ndarray
         partially unfolded tensor
-
-    See also
-    --------
-    partial_fold
     """
     if ravel_tensors:
         new_shape = [-1]
@@ -164,12 +112,12 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
     if skip_end:
         new_shape += [tensor.shape[-i] for i in range(skip_end)]
 
-    return np.moveaxis(tensor, mode+skip_begin, skip_begin).reshape(new_shape)
+    return T.reshape(T.moveaxis(tensor, mode+skip_begin, skip_begin), new_shape)
 
 
 def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
     """Re-folds a partially unfolded tensor
-
+    
     Parameters
     ----------
     unfolded : ndarray
@@ -182,29 +130,23 @@ def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
         number of dimensions to leave untouched at the beginning
     skip_end : int, optional
         number of dimensions to leave untouched at the end
-
+    
     Returns
     -------
     ndarray
         partially re-folded tensor
-
-    See also
-    --------
-    partial_unfold
     """
     transposed_shape = list(shape)
-    mode_dim = transposed_shape.pop(skip_begin+mode)
+    mode_dim = transposed_shape.pop(skip_begin + mode)
     transposed_shape.insert(skip_begin, mode_dim)
-
-    return np.moveaxis(unfolded.reshape(transposed_shape), skip_begin, skip_begin+mode)
+    return T.moveaxis(T.reshape(unfolded, transposed_shape), skip_begin, skip_begin + mode)
 
 
 def partial_tensor_to_vec(tensor, skip_begin=1, skip_end=0):
     """Partially vectorises a tensor
-
-        In other words, vectorises the subtensors of `tensor` obtained by
-        ignoring the specified dimension at the beginning and the end
-
+    
+        Partially vectorises a tensor while ignoring the specified dimension at the beginning and the end
+    
     Parameters
     ----------
     tensor : ndarray
@@ -213,22 +155,17 @@ def partial_tensor_to_vec(tensor, skip_begin=1, skip_end=0):
         number of dimensions to leave untouched at the beginning
     skip_end : int, optional
         number of dimensions to leave untouched at the end
-
+    
     Returns
     -------
     ndarray
         partially vectorised tensor with the `skip_begin` first and `skip_end` last dimensions untouched
-
-    See also
-    --------
-    partial_vec_to_tensor : invert the partial_tensor_to_vec operation
     """
     return partial_unfold(tensor, mode=0, skip_begin=skip_begin, skip_end=skip_end, ravel_tensors=True)
 
-
 def partial_vec_to_tensor(matrix, shape, skip_begin=1, skip_end=0):
     """Refolds a partially vectorised tensor into a full one
-
+    
     Parameters
     ----------
     matrix : ndarray
@@ -239,14 +176,11 @@ def partial_vec_to_tensor(matrix, shape, skip_begin=1, skip_end=0):
         number of dimensions to leave untouched at the beginning
     skip_end : int, optional
         number of dimensions to leave untouched at the end
-
+    
     Returns
     -------
     ndarray
         full tensor
-
-    See also
-    --------
-    partial_tensor_to_vec : invert the partial_vec_to_tensor operation
     """
     return partial_fold(matrix, mode=0, shape=shape, skip_begin=skip_begin, skip_end=skip_end)
+

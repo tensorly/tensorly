@@ -1,10 +1,10 @@
 from ..base import cp_tensor, tucker_tensor, check_random_state
-from ...tucker import tucker_to_tensor
+from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...base import unfold
 from numpy.linalg import matrix_rank 
-from numpy.testing import assert_equal, assert_array_almost_equal, assert_raises
 import numpy as np
+from ... import backend as T
 
 
 def test_check_random_state():
@@ -23,7 +23,7 @@ def test_check_random_state():
     assert(cpy_rns is rns)
 
     # only takes as seed a random state, an int or None
-    assert_raises(ValueError, check_random_state, seed='bs')
+    T.assert_raises(ValueError, check_random_state, seed='bs')
 
 def test_cp_tensor():
     """test for random.cp_tensor"""
@@ -32,11 +32,11 @@ def test_cp_tensor():
     
     tensor = cp_tensor(shape, rank, full=True)
     for i in range(tensor.ndim):
-        assert_equal(matrix_rank(unfold(tensor, i)), rank)
+        T.assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
         
     factors = cp_tensor(shape, rank, full=False)
     for i, factor in enumerate(factors):
-        assert_equal(factor.shape, (shape[i], rank),
+        T.assert_equal(factor.shape, (shape[i], rank),
                 err_msg=('{}-th factor has shape {}, expected {}'.format(
                      i, factor.shape, (shape[i], rank))))
         
@@ -47,11 +47,11 @@ def test_tucker_tensor():
     
     tensor = tucker_tensor(shape, rank, full=True)
     for i in range(tensor.ndim):
-        assert_equal(matrix_rank(unfold(tensor, i)), rank)
+        T.assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
         
     core, factors = tucker_tensor(shape, rank, full=False)
     for i, factor in enumerate(factors):
-        assert_equal(factor.shape, (shape[i], rank),
+        T.assert_equal(factor.shape, (shape[i], rank),
                 err_msg=('{}-th factor has shape {}, expected {}'.format(
                      i, factor.shape, (shape[i], rank))))
     
@@ -59,20 +59,20 @@ def test_tucker_tensor():
     rank = (6, 4, 5)
     tensor = tucker_tensor(shape, rank, full=True)
     for i in range(tensor.ndim):
-        assert_equal(matrix_rank(unfold(tensor, i)),  min(shape[i], rank[i]))
+        T.assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))),  min(shape[i], rank[i]))
         
     core, factors = tucker_tensor(shape, rank, full=False)
     for i, factor in enumerate(factors):
-        assert_equal(factor.shape, (shape[i], rank[i]),
+        T.assert_equal(factor.shape, (shape[i], rank[i]),
                 err_msg=('{}-th factor has shape {}, expected {}.'.format(
                      i, factor.shape, (shape[i], rank[i]))))
-    assert_equal(core.shape, rank, err_msg='core has shape {}, expected {}.'.format(
+    T.assert_equal(core.shape, rank, err_msg='core has shape {}, expected {}.'.format(
                                      core.shape, rank))
     for factor in factors:
-        assert_array_almost_equal(factor.T.dot(factor), np.eye(factor.shape[1]))
+        T.assert_array_almost_equal(T.dot(factor.T, factor), T.tensor(np.eye(factor.shape[1])))
     tensor = tucker_to_tensor(core, factors)
     reconstructed = multi_mode_dot(tensor, factors, transpose=True)
-    assert_array_almost_equal(core, reconstructed)
+    T.assert_array_almost_equal(core, reconstructed)
 
-    with assert_raises(ValueError):
+    with T.assert_raises(ValueError):
         tucker_tensor((3, 4, 5), (3, 6, 3))

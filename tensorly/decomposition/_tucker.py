@@ -1,9 +1,9 @@
-import numpy as np
+from .. import backend as T
 from ..base import unfold
-from ..tenalg import multi_mode_dot, mode_dot, norm
-from ..tenalg import partial_svd
-from ..tucker import tucker_to_tensor
+from ..tenalg import multi_mode_dot, mode_dot
+from ..tucker_tensor import tucker_to_tensor
 from ..random import check_random_state
+from math import sqrt
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -47,26 +47,26 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
     if init == 'svd':
         factors = []
         for index, mode in enumerate(modes):
-            eigenvecs, _, _ = partial_svd(unfold(tensor, mode), n_eigenvecs=ranks[index])
+            eigenvecs, _, _ = T.partial_svd(unfold(tensor, mode), n_eigenvecs=ranks[index])
             factors.append(eigenvecs)
     else:
         rng = check_random_state(random_state)
-        core = rng.random_sample(ranks)
-        factors = [rng.random_sample((tensor.shape[mode], ranks[index])) for (index, mode) in enumerate(modes)]
+        core = T.tensor(rng.random_sample(ranks))
+        factors = [T.tensor(rng.random_sample((tensor.shape[mode], ranks[index]))) for (index, mode) in enumerate(modes)]
 
     rec_errors = []
-    norm_tensor = norm(tensor, 2)
+    norm_tensor = T.norm(tensor, 2)
 
     for iteration in range(n_iter_max):
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
-            eigenvecs, _, _ = partial_svd(unfold(core_approximation, mode), n_eigenvecs=ranks[index])
+            eigenvecs, _, _ = T.partial_svd(unfold(core_approximation, mode), n_eigenvecs=ranks[index])
             factors[index] = eigenvecs
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
 
         # The factors are orthonormal and therefore do not affect the reconstructed tensor's norm
-        rec_error = np.sqrt(abs(norm_tensor**2 - norm(core, 2)**2)) / norm_tensor
+        rec_error = sqrt(abs(norm_tensor**2 - T.norm(core, 2)**2)) / norm_tensor
         rec_errors.append(rec_error)
 
         if iteration > 1:
@@ -121,6 +121,7 @@ def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
     return partial_tucker(tensor, modes, ranks=ranks, n_iter_max=n_iter_max, init=init,
                           tol=tol, random_state=random_state, verbose=verbose)
 
+
 def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
                         random_state=None, verbose=False):
     """Non-negative Tucker decomposition
@@ -158,17 +159,17 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
     # Initialisation
     if init == 'svd':
         core, factors = tucker(tensor, ranks)
-        nn_factors = [np.abs(f) for f in factors]
-        nn_core = np.abs(core)
+        nn_factors = [T.abs(f) for f in factors]
+        nn_core = T.abs(core)
     else:
         rng = check_random_state(random_state)
-        core = rng.random_sample(ranks) + 0.01  # Check this
-        factors = [rng.random_sample(s) for s in zip(tensor.shape, ranks)]
-        nn_factors = [np.abs(f) for f in factors]
-        nn_core = np.abs(core)
+        core = T.tensor(rng.random_sample(ranks) + 0.01)  # Check this
+        factors = [T.tensor(rng.random_sample(s)) for s in zip(tensor.shape, ranks)]
+        nn_factors = [T.abs(f) for f in factors]
+        nn_core = T.abs(core)
 
     n_factors = len(nn_factors)
-    norm_tensor = norm(tensor, 2)
+    norm_tensor = T.norm(tensor, 2)
     rec_errors = []
 
     for iteration in range(n_iter_max):
@@ -176,23 +177,23 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
             B = tucker_to_tensor(nn_core, nn_factors, skip_factor=mode)
             B = unfold(B, mode).T
 
-            numerator = np.dot(unfold(tensor, mode), B)
-            numerator = numerator.clip(min=epsilon)
-            denominator = np.dot(nn_factors[mode], B.T.dot(B))
-            denominator = denominator.clip(min=epsilon)
+            numerator = T.dot(unfold(tensor, mode), B)
+            numerator = T.clip(numerator, a_min=epsilon, a_max=None)
+            denominator = T.dot(nn_factors[mode], T.dot(B.T, B))
+            denominator = T.clip(denominator, a_min=epsilon, a_max=None)
             nn_factors[mode] *= numerator / denominator
 
         numerator = tucker_to_tensor(tensor, nn_factors, transpose_factors=True)
-        numerator = numerator.clip(min=epsilon)
+        numerator = T.clip(numerator, a_min=epsilon, a_max=None)
         for i, f in enumerate(nn_factors):
             if i:
-                denominator = mode_dot(denominator, f.T.dot(f), i)
+                denominator = mode_dot(denominator, T.dot(f.T, f), i)
             else:
-                denominator = mode_dot(nn_core, f.T.dot(f), i)
-        denominator = denominator.clip(min=epsilon)
+                denominator = mode_dot(nn_core, T.dot(f.T, f), i)
+        denominator = T.clip(denominator, a_min=epsilon, a_max=None)
         nn_core *= numerator / denominator
 
-        rec_error = norm(tensor - tucker_to_tensor(nn_core, nn_factors), 2) / norm_tensor
+        rec_error = T.norm(tensor - tucker_to_tensor(nn_core, nn_factors), 2) / norm_tensor
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
             print('reconsturction error={}, variation={}.'.format(

@@ -1,4 +1,4 @@
-import numpy as np
+from .. import backend as T
 
 # Author: Jean Kossaifi
 
@@ -80,9 +80,4 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
         matrices = matrices[::-1]
         # Note: we do NOT use .reverse() which would reverse matrices even outside this function
 
-    start = ord('a')
-    common_dim = 'z'
-    target = ''.join(chr(start + i) for i in range(n_factors))
-    source = ','.join(i+common_dim for i in target)
-    operation = source+'->'+target+common_dim
-    return np.einsum(operation, *matrices).reshape((-1, n_columns))
+    return T.kr(matrices)

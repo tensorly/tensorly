@@ -1,8 +1,9 @@
 import numpy as np
 from ..base import fold, unfold
-from ..tenalg import norm, khatri_rao
+from ..tenalg import khatri_rao
 from ..random import check_random_state
 from ..tenalg.proximal import soft_thresholding, svd_thresholding
+from .. import backend as T
 
 # Author: Jean Kossaifi
 
@@ -74,11 +75,11 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
         mask = 1
 
     # Initialise the decompositions
-    D = np.zeros_like(X)  # low rank part
-    E = np.zeros_like(X)  # sparse part
-    L_x = np.zeros_like(X)  # Lagrangian variables for the (X - D - E - L_x/mu) term
-    J = [np.zeros_like(X) for _ in range(X.ndim)] # Low-rank modes of X
-    L = [np.zeros_like(X) for _ in range(X.ndim)] # Lagrangian or J
+    D = T.zeros_like(X)  # low rank part
+    E = T.zeros_like(X)  # sparse part
+    L_x = T.zeros_like(X)  # Lagrangian variables for the (X - D - E - L_x/mu) term
+    J = [T.zeros_like(X) for _ in range(X.ndim)] # Low-rank modes of X
+    L = [T.zeros_like(X) for _ in range(X.ndim)] # Lagrangian or J
 
     # Norm of the reconstructions at each iteration
     rec_X = []
@@ -107,8 +108,8 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
         mu = min(mu*learning_rate, mu_max)
 
         # Evolution of the reconstruction errors
-        rec_X.append(norm(X - D - E, 2))
-        rec_D.append(np.max([norm(low_rank - D, 2) for low_rank in J]))
+        rec_X.append(T.norm(X - D - E, 2))
+        rec_D.append(np.max([T.norm(low_rank - D, 2) for low_rank in J]))
 
         # Convergence check
         if iteration > 1:
