@@ -8,7 +8,7 @@ TensorLy: Tensor Learning in Python
    :hidden:
 
    installation
-   user_guide
+   user_guide/index
    modules/api
    auto_examples/index
    development_guide/index
@@ -29,7 +29,7 @@ TensorLy: Tensor Learning in Python
               </div>
 
               <div class="tile is-parent">
-              <a class="tile is-child box" href="user_guide.html">
+              <a class="tile is-child box" href="user_guide/index.html">
                   <p class="title">User Guide</p>
                   <p class="subtitle">A friendly guide to tensor learning</p>
               </a>

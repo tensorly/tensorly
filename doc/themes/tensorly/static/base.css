@@ -48,7 +48,6 @@ div.math {
  * TOP NAVBAR
  * ********** */
 .navbar {
-	padding-top: 0.5em;
 	margin-bottom: 0.2em; /* let shodow appear */
 }
 .navbar-item {j
@@ -60,6 +59,11 @@ div.math {
 }
 .navbar-burger {
 	margin-top: 1rem;
+}
+@media screen and (min-width: 1008px) { /* Leave some space on large screens */
+	.navbar-end {
+		padding-left: 1em;
+	}
 }
 
 
@@ -257,7 +261,9 @@ a.box:hover {
     background: white;
 }
 .tile.is-child {
-    background: #efefef;
+    /* background: #efefef; */
+	background: #f7f9f8;
+	box-shadow: 0 4px 5px rgba(10,10,10,0.62), 0 0 0 5px #f2f9f8;
 }
 
 
@@ -460,9 +466,10 @@ div.sphx-glr-footer {
     text-align: center;
     margin-top: 2em;
     margin-bottom: 1em;
+	display: inline;
 }
 div.sphx-glr-download {
-    display: inline-block;
+    display: inline;
     margin: 1em;
     vertical-align: middle;
 }
@@ -498,6 +505,9 @@ p.sphx-glr-signature>a {
     float: right;
     font-size: small;
     padding: 1em;
+}
+p.sphx-glr-signature {
+	display: flow-root;
 }
 /* Content at the top of page */
 #gallery-of-examples #contents {

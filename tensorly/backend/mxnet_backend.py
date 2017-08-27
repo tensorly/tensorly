@@ -18,9 +18,9 @@ from . import numpy_backend
 def tensor(data, ctx=mx.cpu(), dtype="float64"):
     """Tensor class
     """
-    if dtype is None is isinstance(data, numpy.ndarray):
+    if dtype is None and isinstance(data, numpy.ndarray):
         dtype = data.dtype
-    return np.array(data, ctx=ctx, dtype=None)
+    return np.array(data, ctx=ctx, dtype=dtype)
 
 def to_numpy(tensor):
     """Convert a tensor to numpy format
