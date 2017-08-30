@@ -152,7 +152,7 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
     .. [2] Yong-Deok Kim and Seungjin Choi,
        "Nonnegative tucker decomposition",
        IEEE Conference on Computer Vision and Pattern Recognition s(CVPR),
-       pp 1–8, 2007
+       pp 1-8, 2007
     """
     epsilon = 10e-12
 
