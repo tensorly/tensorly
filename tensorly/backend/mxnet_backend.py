@@ -59,7 +59,7 @@ def ndim(tensor):
     return tensor.ndim
 
 def arange(start, stop=None, step=1.0):
-    return np.arange(start, stop, step)
+    return np.arange(start, stop, step, dtype="float64")
 
 def reshape(tensor, shape):
     return np.reshape(tensor, shape=shape)
@@ -85,7 +85,7 @@ def min(tensor, *args, **kwargs):
 def max(tensor, *args, **kwargs):
     return np.min(tensor, *args, **kwargs).asscalar()
 
-def norm(tensor, order=2, axis=()):
+def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor
     Parameters
     ----------
@@ -108,7 +108,7 @@ def norm(tensor, order=2, axis=()):
     elif order == 2:
         res = np.sqrt(np.sum(tensor**2, axis=axis))
     else:
-        res = np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
+        res = np.sum(np.abs(tensor)**order, axis=axis)**(1./order)
 
     if res.shape == (1,):
         return res.asscalar()

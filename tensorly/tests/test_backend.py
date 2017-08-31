@@ -289,3 +289,53 @@ def test_partial_svd():
     with T.assert_raises(ValueError):
         tensor = T.tensor(np.random.random((3, 3, 3)))
         T.partial_svd(tensor)
+
+
+def test_shape():
+    A = T.arange(3*4*5)
+
+    shape1 = (3*4,5)
+    A1 = A.reshape(shape1)
+    T.assert_equal(T.shape(A1), shape1)
+
+    shape2 = (3,4,5)
+    A2 = A.reshape(shape2)
+    T.assert_equal(T.shape(A2), shape2)
+
+
+def test_ndim():
+    A = T.arange(3*4*5)
+    T.assert_equal(T.ndim(A), 1)
+
+    shape1 = (3*4,5)
+    A1 = A.reshape(shape1)
+    T.assert_equal(T.ndim(A1), 2)
+
+    shape2 = (3,4,5)
+    A2 = A.reshape(shape2)
+    T.assert_equal(T.ndim(A2), 3)
+
+
+def test_norm():
+    v = T.tensor([1,2,3])
+    T.assert_equal(T.norm(v,1), 6)
+
+    A = T.arange(6).reshape((3,2))
+    T.assert_equal(T.norm(A, 1), 15)
+
+    column_norms1 = T.norm(A, 1, axis=0)
+    row_norms1 = T.norm(A, 1, axis=1)
+    T.assert_array_equal(column_norms1, T.tensor([6, 9]))
+    T.assert_array_equal(row_norms1, T.tensor([1, 5, 9]))
+
+    column_norms2 = T.norm(A, 2, axis=0)
+    row_norms2 = T.norm(A, 2, axis=1)
+    T.assert_array_almost_equal(column_norms2, T.tensor([4.47213602, 5.91608]))
+    T.assert_array_almost_equal(row_norms2, T.tensor([1., 3.60555124, 6.40312433]))
+
+    # limit as order->oo is the oo-norm
+    column_norms10 = T.norm(A, 10, axis=0)
+    row_norms10 = T.norm(A, 10, axis=1)
+    T.assert_array_almost_equal(column_norms10, T.tensor([4.00039053, 5.00301552]))
+    T.assert_array_almost_equal(row_norms10, T.tensor([1., 3.00516224, 5.05125666]))
+
