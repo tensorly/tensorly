@@ -67,6 +67,9 @@ def reshape(tensor, shape):
 def moveaxis(tensor, source, target):
     return np.moveaxis(tensor, source, target)
 
+def prod(tensor, *args, **kwds):
+    return np.prod(tensor, *args, **kwds)
+
 def dot(matrix1, matrix2):
     return np.dot(matrix1, matrix2)
 
@@ -82,26 +85,34 @@ def min(tensor, *args, **kwargs):
 def max(tensor, *args, **kwargs):
     return np.min(tensor, *args, **kwargs).asscalar()
 
-def norm(tensor, order):
+def norm(tensor, order=2, axis=()):
     """Computes the l-`order` norm of tensor
     Parameters
     ----------
     tensor : ndarray
     order : int
+    axis : int or tuple
     Returns
     -------
     float
         l-`order` norm of tensor
     """
+    # TODO: better handling of difference in null axis between numpy and mxnet
+    if axis is None:
+        axis = ()
+
     if order == 'inf':
-        return np.max(np.abs(tensor)).asscalar()
+        return np.max(np.abs(tensor), axis=axis).asscalar()
     if order == 1:
-        res =  np.sum(np.abs(tensor))
+        res =  np.sum(np.abs(tensor), axis=axis)
     elif order == 2:
-        res = np.sqrt(np.sum(tensor**2))
+        res = np.sqrt(np.sum(tensor**2, axis=axis))
     else:
-        res = np.sum(np.abs(tensor)**order)**(1/order)
-    return res.asscalar()
+        res = np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
+
+    if res.shape == (1,):
+        return res.asscalar()
+    return res
 
 
 def kr(matrices):
