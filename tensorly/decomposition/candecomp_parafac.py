@@ -123,7 +123,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     .. [2] Amnon Shashua and Tamir Hazan,
        "Non-negative tensor factorization with applications to statistics and computer vision",
        In Proceedings of the International Conference on Machine Learning (ICML),
-       pp 792–799, ICML, 2005
+       pp 792-799, ICML, 2005
     """
     epsilon = 10e-12
 
