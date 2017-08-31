@@ -6,7 +6,7 @@ from ..kruskal_tensor import kruskal_to_tensor
 from ..tenalg import khatri_rao
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
-# Author: Chris Swierczewski <csw@amazon.com>
+# Author: Chris Swierczewski <cswiercz@gmail.com>
 
 # License: BSD 3 clause
 
