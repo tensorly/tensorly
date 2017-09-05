@@ -40,6 +40,7 @@ def ndim(tensor):
 arange = np.arange
 reshape = np.reshape
 moveaxis = np.moveaxis
+prod = np.prod
 dot = np.dot
 kron = np.kron
 abs = np.abs
@@ -58,25 +59,30 @@ sign = np.sign
 where = np.where
 copy = np.copy
 
-def norm(tensor, order):
+def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor
     Parameters
     ----------
     tensor : ndarray
     order : int
+    axis : tuple
     Returns
     -------
     float
         l-`order` norm of tensor
     """
+    # TODO: better handling of difference in null axis between numpy and mxnet
+    if axis == ():
+        axis = None
+
     if order == 'inf':
-        return np.max(np.abs(tensor))
+        return np.max(np.abs(tensor), axis=axis)
     if order == 1:
-        return np.sum(np.abs(tensor))
+        return np.sum(np.abs(tensor), axis=axis)
     elif order == 2:
-        return np.sqrt(np.sum(tensor**2))
+        return np.sqrt(np.sum(tensor**2, axis=axis))
     else:
-        return np.sum(np.abs(tensor)**order)**(1/order)
+        return np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
 
 
 def kr(matrices):
