@@ -46,7 +46,6 @@ abs = np.abs
 max = np.max
 min = np.min
 maximum = np.maximum
-clip = np.clip
 all = np.all
 mean = np.mean
 solve = np.linalg.solve
@@ -57,6 +56,12 @@ sum = np.sum
 sign = np.sign
 where = np.where
 copy = np.copy
+transpose = np.transpose
+
+def clip(tensor, a_min=None, a_max=None, inplace=False):
+    return np.clip(tensor, a_min, a_max)
+
+
 
 def norm(tensor, order):
     """Computes the l-`order` norm of tensor

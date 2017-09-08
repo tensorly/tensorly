@@ -117,7 +117,7 @@ def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
-    modes = list(range(tensor.ndim))
+    modes = list(range(T.ndim(tensor)))
     return partial_tucker(tensor, modes, ranks=ranks, n_iter_max=n_iter_max, init=init,
                           tol=tol, random_state=random_state, verbose=verbose)
 
@@ -173,13 +173,13 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
     rec_errors = []
 
     for iteration in range(n_iter_max):
-        for mode in range(tensor.ndim):
+        for mode in range(T.ndim(tensor)):
             B = tucker_to_tensor(nn_core, nn_factors, skip_factor=mode)
-            B = unfold(B, mode).T
+            B = T.transpose(unfold(B, mode))
 
             numerator = T.dot(unfold(tensor, mode), B)
             numerator = T.clip(numerator, a_min=epsilon, a_max=None)
-            denominator = T.dot(nn_factors[mode], T.dot(B.T, B))
+            denominator = T.dot(nn_factors[mode], T.dot(T.transpose(B), B))
             denominator = T.clip(denominator, a_min=epsilon, a_max=None)
             nn_factors[mode] *= numerator / denominator
 
@@ -187,9 +187,9 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
         numerator = T.clip(numerator, a_min=epsilon, a_max=None)
         for i, f in enumerate(nn_factors):
             if i:
-                denominator = mode_dot(denominator, T.dot(f.T, f), i)
+                denominator = mode_dot(denominator, T.dot(T.transpose(f), f), i)
             else:
-                denominator = mode_dot(nn_core, T.dot(f.T, f), i)
+                denominator = mode_dot(nn_core, T.dot(T.transpose(f), f), i)
         denominator = T.clip(denominator, a_min=epsilon, a_max=None)
         nn_core *= numerator / denominator
 

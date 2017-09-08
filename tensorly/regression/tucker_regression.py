@@ -71,7 +71,7 @@ class TuckerRegressor():
         # Initialise randomly the weights
         G = T.tensor(rng.randn(*self.weight_ranks))
         W = []
-        for i in range(1, X.ndim):  # First dimension of X = number of samples
+        for i in range(1, T.ndim(X)):  # First dimension of X = number of samples
             W.append(T.tensor(rng.randn(X.shape[i], G.shape[i - 1])))
 
         # Norm of the weight tensor at each iteration
@@ -84,15 +84,15 @@ class TuckerRegressor():
                 phi = partial_tensor_to_vec(
                             T.dot(partial_unfold(X, i),
                                   T.dot(kronecker(W, skip_matrix=i),
-                                          unfold(G, i).T)))
+                                          T.transpose(unfold(G, i)))))
                 # Regress phi on y: we could call a package here, e.g. scikit-learn
-                inv_term = T.dot(phi.T, phi) + self.reg_W * T.tensor(np.eye(phi.shape[1]))
-                W_i = vec_to_tensor(T.solve(inv_term, T.dot(phi.T, y)),
+                inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(np.eye(phi.shape[1]))
+                W_i = vec_to_tensor(T.solve(inv_term, T.dot(T.transpose(phi), y)),
                                     (X.shape[i + 1], G.shape[i]))
                 W[i] = W_i
 
             phi = T.dot(partial_tensor_to_vec(X), kronecker(W))
-            G = vec_to_tensor(T.solve(T.dot(phi.T, phi) + self.reg_W * T.tensor(np.eye(phi.shape[1])), T.dot(phi.T, y)), G.shape)
+            G = vec_to_tensor(T.solve(T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(np.eye(phi.shape[1])), T.dot(T.transpose(phi), y)), G.shape)
 
             weight_tensor_ = tucker_to_tensor(G, W)
             norm_W.append(T.norm(weight_tensor_, 2))

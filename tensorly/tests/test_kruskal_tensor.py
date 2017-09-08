@@ -63,7 +63,7 @@ def test_kruskal_to_tensor():
     for i in range(len(rows)):
         unfolded = unfold(tensor, mode=i)
         U_i = matrices.pop(i)
-        reconstructed = tl.dot(U_i, khatri_rao(matrices).T)
+        reconstructed = tl.dot(U_i, tl.transpose(khatri_rao(matrices)))
         tl.assert_array_almost_equal(reconstructed, unfolded)
         matrices.insert(i, U_i)
 

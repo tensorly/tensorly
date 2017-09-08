@@ -94,19 +94,19 @@ def test_multi_mode_dot():
     X = T.tensor(np.arange(12).reshape((3, 4)))
     U = T.tensor(np.random.random((3, 5)))
     res_1 = multi_mode_dot(X, [U], modes=[0], transpose=True)
-    res_2 = T.dot(U.T, X)
+    res_2 = T.dot(T.transpose(U), X)
     T.assert_array_almost_equal(res_1, res_2)
 
     dims = [2, 3, 4, 5]
     X = T.tensor(np.random.randn(*dims))
-    factors = [T.tensor(np.random.rand(dims[i], X.shape[i])) for i in range(X.ndim)]
-    true_res = T.dot(T.dot(factors[0], unfold(X, 0)), kronecker(factors[1:]).T)
+    factors = [T.tensor(np.random.rand(dims[i], X.shape[i])) for i in range(T.ndim(X))]
+    true_res = T.dot(T.dot(factors[0], unfold(X, 0)), T.transpose(kronecker(factors[1:])))
     n_mode_res = multi_mode_dot(X, factors)
     T.assert_array_almost_equal(true_res, unfold(n_mode_res, 0))
-    for i in range(X.ndim):
-        indices = [j for j in range(X.ndim) if j != i]
+    for i in range(T.ndim(X)):
+        indices = [j for j in range(T.ndim(X)) if j != i]
         sub_factors = [factors[j] for j in indices]
-        true_res = T.dot(T.dot(factors[i], unfold(X, i)), kronecker(sub_factors).T)
+        true_res = T.dot(T.dot(factors[i], unfold(X, i)), T.transpose(kronecker(sub_factors)))
         res = unfold(n_mode_res, i)
         temp = multi_mode_dot(X, sub_factors, modes=indices)
         res2 = T.dot(factors[i], unfold(temp, i))
@@ -117,7 +117,7 @@ def test_multi_mode_dot():
     # Test skipping a factor
     dims = [2, 3, 4, 5]
     X = T.tensor(np.random.randn(*dims))
-    factors = [T.tensor(np.random.rand(dims[i], X.shape[i])) for i in range(X.ndim)]
+    factors = [T.tensor(np.random.rand(dims[i], X.shape[i])) for i in range(T.ndim(X))]
     res_1 = multi_mode_dot(X, factors, skip=1)
     res_2 = multi_mode_dot(X, [factors[0]] + factors[2:], modes=[0, 2, 3])
     T.assert_array_equal(res_1, res_2)

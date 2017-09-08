@@ -34,7 +34,7 @@ def test_unfold():
                    [9, 21],
                    [12, 24]]])
 
-    X = T.tensor(T.arange(24).reshape((3, 4, 2)))
+    X = T.reshape(T.arange(24), (3, 4, 2))
     unfoldings = [T.tensor([[0, 1, 2, 3, 4, 5, 6, 7],
                             [8, 9, 10, 11, 12, 13, 14, 15],
                             [16, 17, 18, 19, 20, 21, 22, 23]]),
@@ -44,16 +44,17 @@ def test_unfold():
                             [6, 7, 14, 15, 22, 23]]),
                   T.tensor([[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
                             [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]])]
-    for mode in range(X.ndim):
+    for mode in range(T.ndim(X)):
         unfolding = unfold(X, mode=mode)
         T.assert_array_equal(unfolding, unfoldings[mode])
-        T.assert_array_equal(unfolding.reshape((-1, )), unfoldings[mode].reshape((-1,)))
+        T.assert_array_equal(T.reshape(unfolding, (-1, )),
+                             T.reshape(unfoldings[mode], (-1,)))
 
 
 def test_fold():
     """Test for fold
     """
-    X = T.arange(24).reshape((3, 4, 2))
+    X = T.reshape(T.arange(24), (3, 4, 2))
     unfoldings = [T.tensor([[0, 1, 2, 3, 4, 5, 6, 7],
                             [8, 9, 10, 11, 12, 13, 14, 15],
                             [16, 17, 18, 19, 20, 21, 22, 23]]),
@@ -64,16 +65,16 @@ def test_fold():
     		  T.tensor([[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
                             [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]])]
     # hard coded example
-    for mode in range(X.ndim):
+    for mode in range(T.ndim(X)):
     	T.assert_array_equal(fold(unfoldings[mode], mode, X.shape), X)
 
     # check dims
-    for i in range(X.ndim):
+    for i in range(T.ndim(X)):
         T.assert_array_equal(X, fold(unfold(X, i), i, X.shape))
 
     # chain unfolding and folding
     X = T.tensor(np.random.random(2 * 3 * 4 * 5).reshape(2, 3, 4, 5))
-    for i in range(X.ndim):
+    for i in range(T.ndim(X)):
         T.assert_array_equal(X, fold(unfold(X, i), i, X.shape))
 
  
@@ -132,7 +133,7 @@ def test_partial_unfold():
     -----
     Assumes that the standard unfold is correct!
     """
-    X = T.arange(24).reshape((3, 4, 2))
+    X = T.reshape(T.arange(24), (3, 4, 2))
     n_samples = 3
     ###################################
     # Samples are the first dimension #
@@ -141,15 +142,15 @@ def test_partial_unfold():
                                       for i in range(n_samples)]))
     t = T.tensor(X)
     # We created here a tensor with 3 samples, each sample being similar to X
-    for i in range(X.ndim):  # test for each mode
+    for i in range(T.ndim(X)):  # test for each mode
         unfolded = partial_unfold(tensor, i, skip_begin=1)
         unfolded_X = unfold(t, i)
         for j in range(n_samples):  # test for each sample
             T.assert_array_equal(unfolded[j], unfolded_X+j)
     # Test for raveled tensor
-    for i in range(X.ndim):  # test for each mode
+    for i in range(T.ndim(X)):  # test for each mode
         unfolded = partial_unfold(tensor, mode=i, skip_begin=1, ravel_tensors=True)
-        unfolded_X = unfold(t, i).reshape((-1, ))
+        unfolded_X = T.reshape(unfold(t, i), (-1, ))
         for j in range(n_samples):  # test for each sample
             T.assert_array_equal(unfolded[j], unfolded_X + j)
     
@@ -158,18 +159,18 @@ def test_partial_unfold():
     ##################################
     tensor = T.tensor(np.concatenate([np.arange(24).reshape((3, 4, 2, 1))+i\
                                       for i in range(n_samples)], axis=-1))
-    for i in range(X.ndim):  # test for each mode
+    for i in range(T.ndim(X)):  # test for each mode
         unfolded = partial_unfold(tensor, mode=i, skip_end=1, skip_begin=0)
         unfolded_X = unfold(t, i)
         for j in range(n_samples):  # test for each sample
-            T.assert_array_equal(unfolded.T[j].T, unfolded_X+j)
+            T.assert_array_equal(T.transpose(T.transpose(unfolded)[j]), unfolded_X+j)
     
     # Test for raveled tensor
-    for i in range(X.ndim):  # test for each mode
+    for i in range(T.ndim(X)):  # test for each mode
         unfolded = partial_unfold(tensor, mode=i, skip_end=1, skip_begin=0, ravel_tensors=True)
-        unfolded_X = unfold(t, i).reshape((-1, ))
+        unfolded_X = T.reshape(unfold(t, i), (-1, ))
         for j in range(n_samples):  # test for each sample
-            T.assert_array_equal(unfolded.T[j], unfolded_X+j)
+            T.assert_array_equal(T.transpose(unfolded)[j], unfolded_X+j)
 
 def test_partial_fold():
     """Test for partial_fold
@@ -178,7 +179,7 @@ def test_partial_fold():
     refolding partially folded tensors results in
     the original tensor.
     """
-    X = T.arange(24).reshape((3, 4, 2))
+    X = T.reshape(T.arange(24), (3, 4, 2))
     unfolded = T.tensor([[[ 0,  1,  2,  3,  4,  5,  6,  7],
                           [ 8,  9, 10, 11, 12, 13, 14, 15],
                           [16, 17, 18, 19, 20, 21, 22, 23]],
@@ -231,7 +232,7 @@ def test_partial_tensor_to_vec():
     vectorised = partial_tensor_to_vec(tensor, skip_end=1, skip_begin=0)
     vec_X = tensor_to_vec(T.tensor(X))
     for j in range(n_samples): # test for each sample
-        T.assert_array_equal(vectorised.T[j], vec_X+j)
+        T.assert_array_equal(T.transpose(vectorised)[j], vec_X+j)
 
 
 def test_partial_vec_to_tensor():

@@ -65,10 +65,10 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
 
     # Optional part, testing whether the matrices have the proper size
     for i, matrix in enumerate(matrices):
-        if matrix.ndim != 2:
+        if T.ndim(matrix) != 2:
             raise ValueError('All the matrices must have exactly 2 dimensions!'
                              'Matrix {} has dimension {} != 2.'.format(
-                                 i, matrix.ndim))
+                                 i, T.ndim(matrix)))
         if matrix.shape[1] != n_columns:
             raise ValueError('All matrices must have same number of columns!'
                              'Matrix {} has {} columns != {}.'.format(

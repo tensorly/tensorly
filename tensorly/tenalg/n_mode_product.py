@@ -27,7 +27,7 @@ def mode_dot(tensor, matrix_or_vector, mode):
         fold_mode = mode
         new_shape = list(tensor.shape)
 
-        if matrix_or_vector.ndim == 2:  # Tensor times matrix
+        if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
             # Test for the validity of the operation
             if matrix_or_vector.shape[1] != tensor.shape[mode]:
                 raise ValueError(
@@ -36,7 +36,7 @@ def mode_dot(tensor, matrix_or_vector, mode):
                     ))
             new_shape[mode] = matrix_or_vector.shape[0]
 
-        elif matrix_or_vector.ndim == 1:  # Tensor times vector
+        elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
             if matrix_or_vector.shape[0] != tensor.shape[mode]:
                 raise ValueError(
                     'shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)'.format(
@@ -50,7 +50,7 @@ def mode_dot(tensor, matrix_or_vector, mode):
 
         else:
             raise ValueError('Can only take n_mode_product with a vector or a matrix.'
-                             'Provided array of dimension {} not in [1, 2].'.format(matrix_or_vector.ndim))
+                             'Provided array of dimension {} not in [1, 2].'.format(T.ndim(matrix_or_vector)))
 
         res = T.dot(matrix_or_vector, unfold(tensor, mode))
 
@@ -97,11 +97,11 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             continue
 
         if transpose:
-            res = mode_dot(res, matrix_or_vec.T, mode - decrement)
+            res = mode_dot(res, T.transpose(matrix_or_vec), mode - decrement)
         else:
             res = mode_dot(res, matrix_or_vec, mode - decrement)
 
-        if matrix_or_vec.ndim == 1:
+        if T.ndim(matrix_or_vec) == 1:
             decrement = 1
 
     return res

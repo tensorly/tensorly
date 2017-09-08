@@ -8,14 +8,18 @@ def test_RPCA():
     """Test for RPCA"""
     tol = 1e-5
 
-    sample = np.array([[1, 2, 3, 4],
+    sample = np.array([[1., 2, 3, 4],
                        [2, 4, 6, 8]])
-    clean = T.tensor(np.vstack([sample[None, ...]]*100))
+    clean = np.vstack([sample[None, ...]]*100)
     noise_probability = 0.05
     rng = check_random_state(12345)
-    noise = T.tensor(rng.choice([0., 100., -100.], size=clean.shape, replace=True,
-                                p=[1 - noise_probability, noise_probability/2, noise_probability/2]))
-    tensor = clean + noise
+    noise = rng.choice([0., 100., -100.], size=clean.shape, replace=True,
+                      p=[1 - noise_probability, noise_probability/2, noise_probability/2])
+    tensor = T.tensor(clean + noise)
+    corrupted_clean = np.copy(clean)
+    corrupted_noise = np.copy(noise)
+    clean = T.tensor(clean)
+    noise = T.tensor(noise)
     clean_pred, noise_pred = robust_pca(tensor, mask=None, reg_E=0.4, mu_max=10e12, 
                                         learning_rate=1.2,
                                         n_iter_max=200, tol=tol, verbose=True)
@@ -31,12 +35,12 @@ def test_RPCA():
     ############################
     # Test with missing values #
     ############################
-    corrupted_clean = T.to_numpy(clean)
     # Add some corruption (missing values, replaced by ones)
     mask = rng.choice([0, 1], clean.shape, replace=True, p=[0.05, 0.95])
     corrupted_clean[mask == 0] = 1
+    tensor = T.tensor(corrupted_clean + corrupted_noise)
+    corrupted_noise = T.tensor(corrupted_noise)
     corrupted_clean = T.tensor(corrupted_clean)
-    tensor = T.tensor(corrupted_clean) + noise
     mask = T.tensor(mask)
     # Decompose the tensor
     clean_pred, noise_pred = robust_pca(tensor, mask=mask, reg_E=0.4, mu_max=10e12, 

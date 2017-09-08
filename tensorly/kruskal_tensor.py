@@ -38,7 +38,7 @@ def kruskal_to_tensor(factors):
     summing over r and updating an outer product of vectors.
     """
     shape = [factor.shape[0] for factor in factors]
-    full_tensor = T.dot(factors[0], khatri_rao(factors[1:]).T)
+    full_tensor = T.dot(factors[0], T.transpose(khatri_rao(factors[1:])))
     return fold(full_tensor, 0, shape)
 
 
@@ -67,7 +67,7 @@ def kruskal_to_unfolded(factors, mode):
     Writing factors = [U_1, ..., U_n], we exploit the fact that
     ``U_k = U[k].dot(khatri_rao(U_1, ..., U_k-1, U_k+1, ..., U_n))``
     """
-    return T.dot(factors[mode], khatri_rao(factors, skip_matrix=mode).T)
+    return T.dot(factors[mode], T.transpose(khatri_rao(factors, skip_matrix=mode)))
 
 
 def kruskal_to_vec(factors):
