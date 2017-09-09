@@ -42,12 +42,12 @@ def test_tucker_to_unfolded():
     """
     G = T.tensor(np.random.random((4, 3, 5, 2)))
     ranks = [2, 2, 3, 4]
-    U = [T.tensor(np.random.random((ranks[i], G.shape[i]))) for i in range(G.ndim)]
+    U = [T.tensor(np.random.random((ranks[i], G.shape[i]))) for i in range(T.ndim(G))]
     full_tensor = tucker_to_tensor(G, U)
-    for mode in range(G.ndim):
+    for mode in range(T.ndim(G)):
         T.assert_array_almost_equal(tucker_to_unfolded(G, U, mode), unfold(full_tensor, mode))
         T.assert_array_almost_equal(tucker_to_unfolded(G, U, mode),
-                                    T.dot(T.dot(U[mode], unfold(G, mode)), kronecker(U, skip_matrix=mode).T),
+                                    T.dot(T.dot(U[mode], unfold(G, mode)), T.transpose(kronecker(U, skip_matrix=mode))),
                                     decimal=5)
 
 
@@ -60,7 +60,7 @@ def test_tucker_to_vec():
     """
     G = T.tensor(np.random.random((4, 3, 5, 2)))
     ranks = [2, 2, 3, 4]
-    U = [T.tensor(np.random.random((ranks[i], G.shape[i]))) for i in range(G.ndim)]
+    U = [T.tensor(np.random.random((ranks[i], G.shape[i]))) for i in range(T.ndim(G))]
     vec = tensor_to_vec(tucker_to_tensor(G, U))
     T.assert_array_almost_equal(tucker_to_vec(G, U), vec)
     T.assert_array_almost_equal(tucker_to_vec(G, U), T.dot(kronecker(U), tensor_to_vec(G)), decimal=5)

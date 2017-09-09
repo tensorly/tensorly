@@ -31,7 +31,7 @@ def test_cp_tensor():
     rank = 4
     
     tensor = cp_tensor(shape, rank, full=True)
-    for i in range(tensor.ndim):
+    for i in range(T.ndim(tensor)):
         T.assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
         
     factors = cp_tensor(shape, rank, full=False)
@@ -46,7 +46,7 @@ def test_tucker_tensor():
     rank = 4
     
     tensor = tucker_tensor(shape, rank, full=True)
-    for i in range(tensor.ndim):
+    for i in range(T.ndim(tensor)):
         T.assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
         
     core, factors = tucker_tensor(shape, rank, full=False)
@@ -58,7 +58,7 @@ def test_tucker_tensor():
     shape = (10, 11, 12)
     rank = (6, 4, 5)
     tensor = tucker_tensor(shape, rank, full=True)
-    for i in range(tensor.ndim):
+    for i in range(T.ndim(tensor)):
         T.assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))),  min(shape[i], rank[i]))
         
     core, factors = tucker_tensor(shape, rank, full=False)
@@ -69,7 +69,7 @@ def test_tucker_tensor():
     T.assert_equal(core.shape, rank, err_msg='core has shape {}, expected {}.'.format(
                                      core.shape, rank))
     for factor in factors:
-        T.assert_array_almost_equal(T.dot(factor.T, factor), T.tensor(np.eye(factor.shape[1])))
+        T.assert_array_almost_equal(T.dot(T.transpose(factor), factor), T.tensor(np.eye(factor.shape[1])))
     tensor = tucker_to_tensor(core, factors)
     reconstructed = multi_mode_dot(tensor, factors, transpose=True)
     T.assert_array_almost_equal(core, reconstructed)

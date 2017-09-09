@@ -46,11 +46,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     rng = check_random_state(random_state)
 
     if init is 'random':
-        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank))) for i in range(tensor.ndim)]
+        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank))) for i in range(T.ndim(tensor))]
 
     elif init is 'svd':
         factors = []
-        for mode in range(tensor.ndim):
+        for mode in range(T.ndim(tensor)):
             U, _, _ = T.partial_svd(unfold(tensor, mode), n_eigenvecs=rank)
 
             if tensor.shape[mode] < rank:
@@ -58,20 +58,20 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
                 factor = T.tensor(np.zeros((U.shape[0], rank)))
                 factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])))
                 factor[:, :tensor.shape[mode]] = U
-                U = T.tensor(factor)
+                U = factor
             factors.append(U[:, :rank])
 
     rec_errors = []
     norm_tensor = T.norm(tensor, 2)
 
     for iteration in range(n_iter_max):
-        for mode in range(tensor.ndim):
+        for mode in range(T.ndim(tensor)):
             pseudo_inverse = T.tensor(np.ones((rank, rank)))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse[:] = pseudo_inverse*T.dot(factor.T, factor)
+                    pseudo_inverse[:] = pseudo_inverse*T.dot(T.transpose(factor), factor)
             factor = T.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode))
-            factor = T.solve(pseudo_inverse.T, factor.T).T
+            factor = T.transpose(T.solve(T.transpose(pseudo_inverse), T.transpose(factor)))
             factors[mode] = factor
 
         #if verbose or tol:
@@ -140,15 +140,15 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     rec_errors = []
 
     for iteration in range(n_iter_max):
-        for mode in range(tensor.ndim):
+        for mode in range(T.ndim(tensor)):
             # khatri_rao(factors).T.dot(khatri_rao(factors))
             # simplifies to multiplications
             sub_indices = [i for i in range(n_factors) if i != mode]
             for i, e in enumerate(sub_indices):
                 if i:
-                    accum[:] = accum*T.dot(nn_factors[e].T, nn_factors[e])
+                    accum[:] = accum*T.dot(T.transpose(nn_factors[e]), nn_factors[e])
                 else:
-                    accum = T.dot(nn_factors[e].T, nn_factors[e])
+                    accum = T.dot(T.transpose(nn_factors[e]), nn_factors[e])
 
             numerator = T.dot(unfold(tensor, mode), khatri_rao(nn_factors, skip_matrix=mode))
             numerator = T.clip(numerator, a_min=epsilon, a_max=None)

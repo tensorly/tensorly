@@ -69,8 +69,8 @@ class KruskalRegressor():
 
         # Initialise randomly the weights
         W = []
-        for i in range(1, X.ndim):  # The first dimension of X is the number of samples
-            W.append(rng.randn(X.shape[i], self.weight_rank))
+        for i in range(1, T.ndim(X)):  # The first dimension of X is the number of samples
+            W.append(T.tensor(rng.randn(X.shape[i], self.weight_rank)))
 
         # Norm of the weight tensor at each iteration
         norm_W = []
@@ -83,8 +83,8 @@ class KruskalRegressor():
                           T.dot(partial_unfold(X, i, skip_begin=1),
                                 khatri_rao(W, skip_matrix=i)),
                       (X.shape[0], -1))
-                inv_term = T.dot(phi.T, phi) + self.reg_W*T.tensor(np.eye(phi.shape[1]))
-                W[i] = T.reshape(T.solve(inv_term, T.dot(phi.T, y)), (X.shape[i + 1], self.weight_rank))
+                inv_term = T.dot(T.transpose(phi), phi) + self.reg_W*T.tensor(np.eye(phi.shape[1]))
+                W[i] = T.reshape(T.solve(inv_term, T.dot(T.transpose(phi), y)), (X.shape[i + 1], self.weight_rank))
 
             weight_tensor_ = kruskal_to_tensor(W)
             norm_W.append(T.norm(weight_tensor_, 2))

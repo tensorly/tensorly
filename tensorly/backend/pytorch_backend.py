@@ -6,8 +6,7 @@ import numpy
 import scipy.linalg
 import scipy.sparse.linalg
 from numpy import testing
-import mxnet as mx
-from mxnet import nd as np
+import torch
 from . import numpy_backend
 
 #import numpy as np
@@ -15,12 +14,12 @@ from . import numpy_backend
 
 # License: BSD 3 clause
 
-def tensor(data, ctx=mx.cpu(), dtype="float64"):
+def tensor(data, dtype=torch.FloatTensor):
     """Tensor class
     """
-    if dtype is None and isinstance(data, numpy.ndarray):
-        dtype = data.dtype
-    return np.array(data, ctx=ctx, dtype=dtype)
+    if isinstance(data, numpy.ndarray):
+        return torch.from_numpy(numpy.copy(data)).type(dtype)
+    return torch.Tensor(data).type(dtype)
 
 def to_numpy(tensor):
     """Convert a tensor to numpy format
@@ -33,19 +32,19 @@ def to_numpy(tensor):
     -------
     ndarray
     """
-    if isinstance(tensor, np.NDArray):
-        return tensor.asnumpy()
+    if torch.is_tensor(tensor):
+        return tensor.numpy()
     elif isinstance(tensor, numpy.ndarray):
         return tensor
     else:
-        raise ValueError('Only mx.nd.array or np.ndarray) are accepted,'
+        raise ValueError('Only torch.Tensor or np.ndarray) are accepted,'
                          'given {}'.format(type(tensor)))
 
 
 def assert_array_equal(a, b, **kwargs):
     testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
 
-def assert_array_almost_equal(a, b, decimal=4, **kwargs):
+def assert_array_almost_equal(a, b, decimal=3, **kwargs):
     testing.assert_array_almost_equal(to_numpy(a), to_numpy(b), decimal=decimal, **kwargs)
 
 assert_raises = testing.assert_raises
@@ -53,22 +52,49 @@ assert_equal = testing.assert_equal
 assert_ = testing.assert_
 
 def shape(tensor):
-    return tensor.shape
+    return tensor.size()
 
 def ndim(tensor):
-    return tensor.ndim
+    return tensor.dim()
 
 def arange(start, stop=None, step=1.0):
-    return np.arange(start, stop, step)
+    if stop is None:
+        return torch.arange(start=0., end=float(start), step=float(step))
+    else:
+        return torch.arange(float(start), float(stop), float(step))
 
 def reshape(tensor, shape):
-    return np.reshape(tensor, shape=shape)
+    try:
+        return tensor.view(shape)
+    except RuntimeError:
+        return tensor.contiguous().view(shape)
 
 def moveaxis(tensor, source, target):
-    return np.moveaxis(tensor, source, target)
+    axes = list(range(ndim(tensor)))
+    try:
+        axes.pop(source)
+    except IndexError:
+        raise ValueError('Source should verify 0 <= source < tensor.ndim'
+                         'Got %d' % source)
+    try:
+        axes.insert(target, source)
+    except IndexError:
+        raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
+                         'Got %d' % target)
+    return tensor.permute(*axes)
 
 def dot(matrix1, matrix2):
-    return np.dot(matrix1, matrix2)
+    output_shape = list(matrix1.shape)[:-1] + list(matrix2.shape)[1:]
+    try:
+        res = reshape(matrix1, (-1, matrix1.shape[-1])).mm(
+                            reshape(matrix2, (matrix2.shape[0], -1)))
+    except TypeError:
+        matrix1 = matrix1.type(torch.FloatTensor) 
+        matrix2 = matrix2.type(torch.FloatTensor) 
+        res = reshape(matrix1, (-1, matrix1.shape[-1])).mm(
+            reshape(matrix2, (matrix2.shape[0], -1)))
+
+    return reshape(res, output_shape)
 
 def kron(matrix1, matrix2):
     return tensor(numpy.kron(to_numpy(matrix1), to_numpy(matrix2)))
@@ -77,10 +103,10 @@ def solve(matrix1, matrix2):
     return tensor(numpy.linalg.solve(to_numpy(matrix1), to_numpy(matrix2)))
 
 def min(tensor, *args, **kwargs):
-    return np.min(tensor, *args, **kwargs).asscalar()
+    return torch.min(tensor, *args, **kwargs)
 
 def max(tensor, *args, **kwargs):
-    return np.min(tensor, *args, **kwargs).asscalar()
+    return torch.min(tensor, *args, **kwargs)
 
 def norm(tensor, order):
     """Computes the l-`order` norm of tensor
@@ -94,14 +120,14 @@ def norm(tensor, order):
         l-`order` norm of tensor
     """
     if order == 'inf':
-        return np.max(np.abs(tensor)).asscalar()
+        return torch.max(torch.abs(tensor))
     if order == 1:
-        res =  np.sum(np.abs(tensor))
+        res =  torch.sum(torch.abs(tensor))
     elif order == 2:
-        res = np.sqrt(np.sum(tensor**2))
+        res = numpy.sqrt(torch.sum(tensor**2))
     else:
-        res = np.sum(np.abs(tensor)**order)**(1/order)
-    return res.asscalar()
+        res = torch.sum(torch.abs(tensor)**order)**(1/order)
+    return res
 
 
 def kr(matrices):
@@ -159,9 +185,9 @@ def partial_svd(matrix, n_eigenvecs=None):
         contains the left singular vectors
     """
     # Check that matrix is... a matrix!
-    if matrix.ndim != 2:
+    if ndim(matrix) != 2:
         raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
-            matrix.ndim))
+            ndim(matrix)))
 
     # Choose what to do depending on the params
     matrix = to_numpy(matrix)
@@ -194,48 +220,37 @@ def partial_svd(matrix, n_eigenvecs=None):
         return tensor(U), tensor(S), tensor(V.T)
 
 def clip(tensor, a_min=None, a_max=None, inplace=False):
-    if a_min is not None and a_max is not None:
-        if inplace:
-            tensor[:] = np.maximum(np.minimum(tensor, a_max), a_min)
-        else:
-            tensor = np.maximum(np.minimum(tensor, a_max), a_min)
-    elif min is not None:
-        if inplace:
-            tensor[:] = np.maximum(tensor, a_min)
-        else:
-            tensor = np.maximum(tensor, a_min)
-    elif max is not None:
-        if inplace:
-            tensor[:] = np.minimum(tensor, a_max)
-        else:
-            tensor = np.minimum(tensor, a_max)
-    return tensor
+    if a_max is None:
+        a_max = torch.max(tensor)
+    if a_min is None:
+        a_min = torch.min(tensor)
+    if inplace:
+        return torch.clamp(tensor, a_min, a_max, out=tensor)
+    else:
+        return torch.clamp(tensor, a_min, a_max)
 
 def all(tensor):
-    return np.sum(tensor != 0).asscalar()
+    return torch.sum(tensor != 0)
 
 def mean(tensor, *args, **kwargs):
-    res = np.mean(tensor, *args, **kwargs)
-    if res.shape == (1,):
-        return res.asscalar()
-    else:
-        return res
+    res = torch.mean(tensor, *args, **kwargs)
+    return res
 
-sqrt = np.sqrt
-abs = np.abs
+sqrt = torch.sqrt
+abs = torch.abs
 def sum(tensor, *args, **kwargs):
-    res = np.sum(tensor, *args, **kwargs)
-    if res.shape == (1,):
-        return res.asscalar()
-    else:
-        return res
+    res = torch.sum(tensor, *args, **kwargs)
+    return res
 
-zeros = np.zeros
-zeros_like = np.zeros_like
-ones = np.ones
-sign = np.sign
-where = np.where
-maximum = np.maximum
-transpose = np.transpose
+def transpose(tensor):
+    axes = list(range(ndim(tensor)))[::-1]
+    return tensor.permute(*axes)
+
+zeros = torch.zeros
+def zeros_like(tensor):
+    return torch.zeros(tensor.size())
+ones = torch.ones
+sign = torch.sign
+maximum = torch.max
 def copy(tensor):
-    return tensor.copy()
+    return tensor.clone()

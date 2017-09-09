@@ -47,7 +47,7 @@ def soft_thresholding(tensor, threshold):
     inplace_soft_thresholding : Inplace version of the soft-thresholding operator
     svd_thresholding : SVD-thresholding operator
     """
-    return T.sign(tensor)*T.maximum(T.abs(tensor) - threshold, 0)
+    return T.sign(tensor)*T.clip(T.abs(tensor) - threshold, a_min=0)
 
 
 

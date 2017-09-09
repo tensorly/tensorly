@@ -12,6 +12,7 @@ test:
 test-all:
 	TENSORLY_BACKEND='mxnet' pytest -v tensorly
 	TENSORLY_BACKEND='numpy' pytest -v tensorly
+	TENSORLY_BACKEND='pytorch' pytest -v tensorly
 
 test-coverage:
 	TENSORLY_BACKEND=$(BACKEND) pytest -v --cov tensorly tensorly
