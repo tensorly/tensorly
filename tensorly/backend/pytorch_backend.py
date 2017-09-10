@@ -1,5 +1,5 @@
 """
-Core tensor operations with MXnet.
+Core tensor operations with PyTorch.
 """
 
 import numpy
