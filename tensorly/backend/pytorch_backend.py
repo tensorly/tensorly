@@ -97,6 +97,7 @@ def dot(matrix1, matrix2):
     return reshape(res, output_shape)
 
 def kron(matrix1, matrix2):
+    """Kronecker product"""
     return tensor(numpy.kron(to_numpy(matrix1), to_numpy(matrix2)))
 
 def solve(matrix1, matrix2):
