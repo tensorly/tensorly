@@ -58,8 +58,8 @@ def shape(tensor):
 def ndim(tensor):
     return tensor.ndim
 
-def arange(start, stop=None, step=1.0):
-    return np.arange(start, stop, step, dtype="float64")
+def arange(start, stop=None, step=1.0, dtype="float64"):
+    return np.arange(start, stop, step, dtype=dtype)
 
 def reshape(tensor, shape):
     return np.reshape(tensor, shape=shape)

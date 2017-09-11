@@ -11,11 +11,21 @@ from .tenalg import khatri_rao
 # License: BSD 3 clause
 
 
-def kruskal_to_tensor(factors, eigenvalues=None):
+def kruskal_to_tensor(factors, weights=None):
     """Turns the Khatri-product of matrices into a full tensor
 
-        ``factor_matrices = [|U_1, ... U_n|]`` becomes
-        a tensor shape ``(U[1].shape[0], U[2].shape[0], ... U[-1].shape[0])``
+        ``factor_matrices = [|U_1, ... U_n|]``
+
+    becomes a tensor shape
+
+        ``(U[1].shape[0], U[2].shape[0], ... U[-1].shape[0])``
+
+    If a vector of `n` `weights` is provided then the product
+
+        ``factor_matrices = [| weights; U_1, ... U_n |]``
+
+    is computed; each rank-1 component is scaled by the corresponding element
+    of the vector `weights`.
 
     Parameters
     ----------
@@ -23,9 +33,9 @@ def kruskal_to_tensor(factors, eigenvalues=None):
         list of factor matrices, all with the same number of columns
         i.e. for all matrix U in factor_matrices:
         U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
-    eigenvalues : ndarray
-        (Optional) List of `n` eigenvalues. If provided, will compute the
-        tensor with scaled rank-1 components.
+    weights : ndarray
+        (Optional) List of `n` weights. If provided, will compute the tensor
+        with scaled rank-1 components.
 
     Returns
     -------
@@ -43,11 +53,9 @@ def kruskal_to_tensor(factors, eigenvalues=None):
     """
     shape = [factor.shape[0] for factor in factors]
     first_factor = factors[0]
-    remaining_factors = factors[1:]
-    if eigenvalues is not None:
-        full_tensor = T.dot(first_factor*eigenvalues, khatri_rao(remaining_factors).T)
-    else:
-        full_tensor = T.dot(first_factor, khatri_rao(remaining_factors).T)
+    if weights is not None:
+        first_factor *= eigenvalues
+    full_tensor = T.dot(first_factor, khatri_rao(factors[1:]).T)
     return fold(full_tensor, 0, shape)
 
 

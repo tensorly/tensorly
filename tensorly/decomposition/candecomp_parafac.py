@@ -52,19 +52,12 @@ def initialize_factors(tensor, rank, init='svd', random_state=None):
 
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
-            random_state=None, with_eigenvalues=False, verbose=False):
+            random_state=None, verbose=False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
         ``tensor = [| factors[0], ..., factors[-1] |]``.
-
-    If `with_eigenvalues == True` returns the decomposition such that,
-
-        ``tensor = [| lambda; factors[0], ..., factors[-1] |]``.
-
-    where `lambda` is an array of `rank` eigenvalues of the decomposition and
-    the columns of the factor matrices have unit norm.
 
     Parameters
     ----------
@@ -78,9 +71,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
         Tolerance: the algorithm stops when the variation in the reconstruction
         error is less than the tolerance.
     random_state : {None, int, np.random.RandomState}
-    with_eigenvalues : bool
-        If `True`, normalizes the columns of the factor matrices and returns
-        the eigenvalues along with the list of factors.
     verbose : int, optional
         Level of verbosity
 
@@ -92,6 +82,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     eigenvalues : ndarray, optional
         Array of length `rank`. Output when `with_eigenvalues == True`.
         (See above.)
+
+    See Also
+    --------
+    kruskal_to_tensor
 
     References
     ----------
@@ -111,14 +105,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
                 if i != mode:
                     pseudo_inverse *= T.dot(factor.T, factor)
             factor = T.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode))
-            factor = T.solve(pseudo_inverse.T, factor.T).T
-            if with_eigenvalues:
-                eigenvalues = T.norm(factor, axis=0)
-                factor /= eigenvalues
-            factors[mode] = factor
+            factors[mode] = T.solve(pseudo_inverse.T, factor.T).T
 
         #if verbose or tol:
-        rec_error = T.norm(tensor - kruskal_to_tensor(factors, eigenvalues=eigenvalues), 2) / norm_tensor
+        rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
         rec_errors.append(rec_error)
 
         if iteration > 1:
@@ -131,8 +121,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
                     print('converged in {} iterations.'.format(iteration))
                 break
 
-    if with_eigenvalues:
-        return factors, eigenvalues
     return factors
 
 
