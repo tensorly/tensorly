@@ -93,3 +93,41 @@ def kruskal_to_vec(factors):
         vectorised tensor
     """
     return tensor_to_vec(kruskal_to_tensor(factors))
+
+def normalize_kruskal(factors):
+    """Normalizes factors to unit length and returns factor magnitudes
+        turns  ``factors = [|U_1, ... U_n|]`` into ``[lam; |V_1, ... V_n|]``,
+        where the norm of the columns of all `U_k` are absorbed into the
+        weights `lam` and so that the columns of all `V_k` have unit
+        Euclidean norm. In the special case that `factors` represents a 
+        symmetric tensor the weights `lam` correspond to higher-order
+        eigenvalues and the normalized factors `V_k` correspond to
+        higher-order eigenvectors.
+    Parameters
+    ----------
+    factors : ndarray list
+        list of matrices, all with the same number of columns
+        i.e.::
+            for u in U:
+                u[i].shape == (s_i, R)
+                
+        where `R` is fixed while `s_i` can vary with `i`
+    Returns
+    -------
+    normalized_factors : ndarray list
+        list of matrices with the same shape as `factors`
+    lam : ndarray
+        vector of length `R` holding weights
+    """
+
+    # allocate variables for weights, and normalized factors
+    lam = np.ones(rank)
+    V = []
+
+    # normalize columns of factor matrices
+    for fact in factors:
+        s = np.linalg.norm(fact, axis=0)
+        lam *= s
+        V.append(fact / np.where(s==0, 1, s))
+
+    return V, lam
