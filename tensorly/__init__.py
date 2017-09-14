@@ -3,7 +3,7 @@ import importlib
 import os
 
 # Set the default backend
-default_backend = 'mxnet'
+default_backend = 'numpy'
 try:
     if _BACKEND is None:
         _BACKEND = os.environ.get('TENSORLY_BACKEND', default_backend)

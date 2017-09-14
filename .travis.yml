@@ -1,18 +1,42 @@
 language: python
+
 dist: trusty
+
 python:
     - "3.5"
     - "3.6"
-# command to install dependencies
-install: 
-    - pip install -r requirements.txt
-    - pip install coveralls
+
 env:
     matrix:
         - BACKEND=numpy
         - BACKEND=mxnet
-# command to run tests
+        - BACKEND=pytorch
+
+
+install: 
+    # Install miniconda
+    - deactivate
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PATH"
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    # Useful for debugging any issues with conda
+    - conda info -a
+    # Replace dep1 dep2 ... with your dependencies
+    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy
+    - source activate test-environment
+    - pip install coveralls pytest pytest-cov nose
+    - if [[ "$BACKEND" == "mxnet" ]]; then
+        pip install --pre mxnet;
+      elif [[ "$BACKEND" == "pytorch" ]]; then
+        conda install pytorch torchvision -c soumith;
+      fi
+    - pip install -e .
+
 script:
-    - travis_wait make BACKEND=numpy test-coverage
+    - travis_wait make BACKEND=$BACKEND test-coverage
+
 after_success:
     - coveralls
