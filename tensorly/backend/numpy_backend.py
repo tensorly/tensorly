@@ -7,6 +7,12 @@ import numpy as np
 import scipy.linalg
 import scipy.sparse.linalg
 
+from numpy import reshape, moveaxis, where, copy, transpose
+from numpy import arange, ones, zeros, zeros_like
+from numpy import dot, kron
+from numpy import max, min, maximum, all, mean, sum, sign, abs
+from numpy.linalg import solve
+
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
@@ -37,31 +43,8 @@ def shape(tensor):
 def ndim(tensor):
     return tensor.ndim
 
-arange = np.arange
-reshape = np.reshape
-moveaxis = np.moveaxis
-dot = np.dot
-kron = np.kron
-abs = np.abs
-max = np.max
-min = np.min
-maximum = np.maximum
-all = np.all
-mean = np.mean
-solve = np.linalg.solve
-ones = np.ones
-zeros = np.zeros
-zeros_like = np.zeros_like
-sum = np.sum
-sign = np.sign
-where = np.where
-copy = np.copy
-transpose = np.transpose
-
 def clip(tensor, a_min=None, a_max=None, inplace=False):
     return np.clip(tensor, a_min, a_max)
-
-
 
 def norm(tensor, order):
     """Computes the l-`order` norm of tensor
@@ -82,7 +65,6 @@ def norm(tensor, order):
         return np.sqrt(np.sum(tensor**2))
     else:
         return np.sum(np.abs(tensor)**order)**(1/order)
-
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
@@ -132,7 +114,6 @@ def kr(matrices):
     source = ','.join(i+common_dim for i in target)
     operation = source+'->'+target+common_dim
     return np.einsum(operation, *matrices).reshape((-1, n_columns))
-
 
 def partial_svd(matrix, n_eigenvecs=None):
     """Computes a fast partial SVD on `matrix`
