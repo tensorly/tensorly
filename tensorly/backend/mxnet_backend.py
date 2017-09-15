@@ -10,6 +10,11 @@ import mxnet as mx
 from mxnet import nd as np
 from . import numpy_backend
 
+from mxnet.ndarray import arange, zeros, zeros_like, ones
+from mxnet.ndarray import reshape, moveaxis, dot, transpose
+from mxnet.ndarray import sqrt, abs, where, maximum, sign
+
+
 #import numpy as np
 # Author: Jean Kossaifi
 
@@ -58,18 +63,6 @@ def shape(tensor):
 def ndim(tensor):
     return tensor.ndim
 
-def arange(start, stop=None, step=1.0):
-    return np.arange(start, stop, step)
-
-def reshape(tensor, shape):
-    return np.reshape(tensor, shape=shape)
-
-def moveaxis(tensor, source, target):
-    return np.moveaxis(tensor, source, target)
-
-def dot(matrix1, matrix2):
-    return np.dot(matrix1, matrix2)
-
 def kron(matrix1, matrix2):
     return tensor(numpy.kron(to_numpy(matrix1), to_numpy(matrix2)))
 
@@ -102,7 +95,6 @@ def norm(tensor, order):
     else:
         res = np.sum(np.abs(tensor)**order)**(1/order)
     return res.asscalar()
-
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
@@ -196,17 +188,17 @@ def partial_svd(matrix, n_eigenvecs=None):
 def clip(tensor, a_min=None, a_max=None, inplace=False):
     if a_min is not None and a_max is not None:
         if inplace:
-            tensor[:] = np.maximum(np.minimum(tensor, a_max), a_min)
+            np.max(np.min(tensor, a_max, out=tensor), a_min, out=tensor)
         else:
             tensor = np.maximum(np.minimum(tensor, a_max), a_min)
     elif min is not None:
         if inplace:
-            tensor[:] = np.maximum(tensor, a_min)
+            np.max(tensor, a_min, out=tensor)
         else:
             tensor = np.maximum(tensor, a_min)
     elif max is not None:
         if inplace:
-            tensor[:] = np.minimum(tensor, a_max)
+            np.min(tensor, a_max, out=tensor)
         else:
             tensor = np.minimum(tensor, a_max)
     return tensor
@@ -221,8 +213,6 @@ def mean(tensor, *args, **kwargs):
     else:
         return res
 
-sqrt = np.sqrt
-abs = np.abs
 def sum(tensor, *args, **kwargs):
     res = np.sum(tensor, *args, **kwargs)
     if res.shape == (1,):
@@ -230,12 +220,5 @@ def sum(tensor, *args, **kwargs):
     else:
         return res
 
-zeros = np.zeros
-zeros_like = np.zeros_like
-ones = np.ones
-sign = np.sign
-where = np.where
-maximum = np.maximum
-transpose = np.transpose
 def copy(tensor):
     return tensor.copy()
