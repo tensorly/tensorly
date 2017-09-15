@@ -128,6 +128,6 @@ def normalize_kruskal(factors):
     for factor in factors:
         s = T.norm(factor, axis=0)
         weights *= s
-        V.append(factor / T.where(s==0, 1, s))
+        V.append(factor / T.where(s==0, T.ones(s.size), s))
 
     return V, weights
