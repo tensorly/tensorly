@@ -9,10 +9,19 @@ from numpy import testing
 import torch
 from . import numpy_backend
 
+from torch import ones, zeros
+from torch import max, min
+from torch import sum, mean, abs, sqrt, sign
+
+# Equivalent functions in pytorch 
+maximum = max
+
+
 #import numpy as np
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
+
 
 def tensor(data, dtype=torch.FloatTensor):
     """Tensor class
@@ -69,6 +78,29 @@ def reshape(tensor, shape):
     except RuntimeError:
         return tensor.contiguous().view(shape)
 
+def clip(tensor, a_min=None, a_max=None, inplace=False):
+    if a_max is None:
+        a_max = torch.max(tensor)
+    if a_min is None:
+        a_min = torch.min(tensor)
+    if inplace:
+        return torch.clamp(tensor, a_min, a_max, out=tensor)
+    else:
+        return torch.clamp(tensor, a_min, a_max)
+
+def all(tensor):
+    return torch.sum(tensor != 0)
+
+def transpose(tensor):
+    axes = list(range(ndim(tensor)))[::-1]
+    return tensor.permute(*axes)
+
+def zeros_like(tensor):
+    return torch.zeros(tensor.size())
+
+def copy(tensor):
+    return tensor.clone()
+
 def moveaxis(tensor, source, target):
     axes = list(range(ndim(tensor)))
     try:
@@ -98,16 +130,17 @@ def dot(matrix1, matrix2):
 
 def kron(matrix1, matrix2):
     """Kronecker product"""
-    return tensor(numpy.kron(to_numpy(matrix1), to_numpy(matrix2)))
+    s1, s2 = shape(matrix1)
+    s3, s4 = shape(matrix2)
+    return reshape(
+        reshape(matrix1, (s1, 1, s2, 1))*reshape(matrix2, (1, s3, 1, s4)),
+        (s1*s3, s2*s4))
+
 
 def solve(matrix1, matrix2):
-    return tensor(numpy.linalg.solve(to_numpy(matrix1), to_numpy(matrix2)))
+    solution, _ = torch.gesv(matrix2, matrix1)
+    return solution
 
-def min(tensor, *args, **kwargs):
-    return torch.min(tensor, *args, **kwargs)
-
-def max(tensor, *args, **kwargs):
-    return torch.min(tensor, *args, **kwargs)
 
 def norm(tensor, order):
     """Computes the l-`order` norm of tensor
@@ -122,13 +155,8 @@ def norm(tensor, order):
     """
     if order == 'inf':
         return torch.max(torch.abs(tensor))
-    if order == 1:
-        res =  torch.sum(torch.abs(tensor))
-    elif order == 2:
-        res = numpy.sqrt(torch.sum(tensor**2))
     else:
-        res = torch.sum(torch.abs(tensor)**order)**(1/order)
-    return res
+        return torch.norm(tensor, p=order)
 
 
 def kr(matrices):
@@ -158,7 +186,20 @@ def kr(matrices):
          \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
          \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\text{ is of size } (\\prod_{k=1}^n I_k \\times R)
     """
-    return tensor(numpy_backend.kr([to_numpy(matrix) for matrix in matrices]))
+    if len(matrices) < 2:
+        raise ValueError('kr requires a list of at least 2 matrices, but {} given.'.format(len(matrices)))
+
+    n_col = shape(matrices[0])[1]
+    for i, e in enumerate(matrices[1:]):
+        if not i:
+            res = matrices[0]
+        s1, s2 = shape(res)
+        s3, s4 = shape(e)
+        if not s2 == s4 == n_col:
+            raise ValueError('All matrices should have the same number of columns.')
+        res = reshape(reshape(res, (s1, 1, s2))*reshape(e, (1, s3, s4)),
+                      (-1, n_col))
+    return res
 
 
 def partial_svd(matrix, n_eigenvecs=None):
@@ -190,68 +231,7 @@ def partial_svd(matrix, n_eigenvecs=None):
         raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
             ndim(matrix)))
 
-    # Choose what to do depending on the params
-    matrix = to_numpy(matrix)
-    dim_1, dim_2 = matrix.shape
-    if dim_1 <= dim_2:
-        min_dim = dim_1
-    else:
-        min_dim = dim_2
+    U, S, V = torch.svd(matrix, some=False)
+    U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V.t()[:n_eigenvecs, :]
+    return U, S, V
 
-    if n_eigenvecs is None or n_eigenvecs >= min_dim:
-        # Default on standard SVD
-        U, S, V = scipy.linalg.svd(matrix)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        return tensor(U), tensor(S), tensor(V)
-
-    else:
-        # We can perform a partial SVD
-        # First choose whether to use X * X.T or X.T *X
-        if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(numpy.dot(matrix, matrix.T), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            V = numpy.dot(matrix.T, U * 1/S.reshape((1, -1)))
-        else:
-            S, V = scipy.sparse.linalg.eigsh(numpy.dot(matrix.T, matrix), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            U = numpy.dot(matrix, V) * 1/S.reshape((1, -1))
-
-        # WARNING: here, V is still the transpose of what it should be
-        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return tensor(U), tensor(S), tensor(V.T)
-
-def clip(tensor, a_min=None, a_max=None, inplace=False):
-    if a_max is None:
-        a_max = torch.max(tensor)
-    if a_min is None:
-        a_min = torch.min(tensor)
-    if inplace:
-        return torch.clamp(tensor, a_min, a_max, out=tensor)
-    else:
-        return torch.clamp(tensor, a_min, a_max)
-
-def all(tensor):
-    return torch.sum(tensor != 0)
-
-def mean(tensor, *args, **kwargs):
-    res = torch.mean(tensor, *args, **kwargs)
-    return res
-
-sqrt = torch.sqrt
-abs = torch.abs
-def sum(tensor, *args, **kwargs):
-    res = torch.sum(tensor, *args, **kwargs)
-    return res
-
-def transpose(tensor):
-    axes = list(range(ndim(tensor)))[::-1]
-    return tensor.permute(*axes)
-
-zeros = torch.zeros
-def zeros_like(tensor):
-    return torch.zeros(tensor.size())
-ones = torch.ones
-sign = torch.sign
-maximum = torch.max
-def copy(tensor):
-    return tensor.clone()
