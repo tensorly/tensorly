@@ -125,9 +125,9 @@ def normalize_kruskal(factors):
     V = []
 
     # normalize columns of factor matrices
-    for fact in factors:
-        s = T.norm(fact, axis=0)
+    for factor in factors:
+        s = T.norm(factor, axis=0)
         weights *= s
-        V.append(fact / T.where(s==0, 1, s))
+        V.append(factor / T.where(s==0, 1, s))
 
-    return V, lam
+    return V, weights
