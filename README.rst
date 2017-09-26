@@ -6,6 +6,9 @@
 
 .. image:: https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master
     :target: https://coveralls.io/github/tensorly/tensorly?branch=master
+    
+.. image:: https://badges.gitter.im/tensorly/tensorly.svg
+    :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
 
 TensorLy
 ========
