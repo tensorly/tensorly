@@ -29,7 +29,7 @@ install:
     - source activate test-environment
     - pip install coveralls pytest pytest-cov nose
     - if [[ "$BACKEND" == "mxnet" ]]; then
-        pip install --pre mxnet;
+        pip install mxnet;
       elif [[ "$BACKEND" == "pytorch" ]]; then
         conda install pytorch torchvision -c soumith;
       fi
