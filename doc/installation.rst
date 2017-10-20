@@ -30,3 +30,16 @@ You can run all the tests using `pytest`::
 
    pytest tensorly
 
+
+Compiling the documentation
+===========================
+
+You will need to install slimit and minify::
+
+   pip install slimit rcssmin
+
+You are now ready to build the doc (here in html)::
+
+   make html
+
+The results will be in `_build/html`
