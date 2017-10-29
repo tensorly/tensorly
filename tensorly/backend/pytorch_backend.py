@@ -12,6 +12,7 @@ from . import numpy_backend
 from torch import ones, zeros
 from torch import max, min
 from torch import sum, mean, abs, sqrt, sign
+from torch import matmul as dot
 
 # Equivalent functions in pytorch 
 maximum = max
@@ -114,19 +115,6 @@ def moveaxis(tensor, source, target):
         raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
                          'Got %d' % target)
     return tensor.permute(*axes)
-
-def dot(matrix1, matrix2):
-    output_shape = list(matrix1.shape)[:-1] + list(matrix2.shape)[1:]
-    try:
-        res = reshape(matrix1, (-1, matrix1.shape[-1])).mm(
-                            reshape(matrix2, (matrix2.shape[0], -1)))
-    except TypeError:
-        matrix1 = matrix1.type(torch.FloatTensor) 
-        matrix2 = matrix2.type(torch.FloatTensor) 
-        res = reshape(matrix1, (-1, matrix1.shape[-1])).mm(
-            reshape(matrix2, (matrix2.shape[0], -1)))
-
-    return reshape(res, output_shape)
 
 def kron(matrix1, matrix2):
     """Kronecker product"""
