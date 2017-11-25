@@ -142,3 +142,6 @@ def test_khatri_rao():
     res_1 = khatri_rao(U, skip_matrix=0)
     res_2 = khatri_rao(U[1:])
     T.assert_array_equal(res_1, res_2)
+
+    # Test with one matrix only: khatri-rao of one matrix = that matrix
+    T.assert_array_equal(khatri_rao([U[0]]), U[0])

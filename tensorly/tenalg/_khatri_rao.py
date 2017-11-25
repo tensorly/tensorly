@@ -12,6 +12,8 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
         This can be seen as a column-wise kronecker product.
         (see [1]_ for more details).
 
+        If one matrix only is given, that matrix is directly returned.
+
     Parameters
     ----------
     matrices : ndarray list
@@ -60,6 +62,10 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
     """
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+
+    # Khatri-rao of only one matrix: just return that matrix
+    if len(matrices) == 1:
+        return matrices[0]
 
     n_columns = matrices[0].shape[1]
 
