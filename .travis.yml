@@ -29,6 +29,8 @@ install:
     - source activate test-environment
     - pip install coveralls pytest pytest-cov nose
     - if [[ "$BACKEND" == "mxnet" ]]; then
+        sudo apt-get -qq update;
+        sudo apt-get install -y libatlas-base-dev;
         pip install mxnet;
       elif [[ "$BACKEND" == "pytorch" ]]; then
         conda install pytorch torchvision -c soumith;
