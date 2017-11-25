@@ -75,9 +75,9 @@ def arange(start, stop=None, step=1.0):
 
 def reshape(tensor, shape):
     try:
-        return tensor.view(shape)
+        return tensor.view(*shape)
     except RuntimeError:
-        return tensor.contiguous().view(shape)
+        return tensor.contiguous().view(*shape)
 
 def clip(tensor, a_min=None, a_max=None, inplace=False):
     if a_max is None:
