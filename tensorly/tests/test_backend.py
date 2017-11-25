@@ -3,12 +3,30 @@ from scipy.sparse.linalg import svds
 from scipy.linalg import svd
 
 from .. import backend as T
+import tensorly as tl
 from ..base import fold, unfold
 from ..base import partial_fold, partial_unfold
 from ..base import tensor_to_vec, vec_to_tensor
 from ..base import partial_tensor_to_vec, partial_vec_to_tensor
 
 # Author: Jean Kossaifi
+
+
+def test_set_backend():
+    print('Testing set_backend for backend = {}'.format(tl._BACKEND))
+    tensor = T.tensor(np.arange(12).reshape((4, 3)))
+    tensor2 = tl.tensor(np.arange(12).reshape((4, 3)))
+    if tl._BACKEND == 'pytorch':
+        import torch
+        assert type(tensor) == type(tensor2) == torch.FloatTensor
+    elif tl._BACKEND == 'numpy':
+        assert type(tensor) == type(tensor2) == np.ndarray
+    elif tl._BACKEND == 'mxnet':
+        import mxnet as mx
+        assert type(tensor) == type(tensor2) == mx.nd.NDArray
+    else:
+        raise ValueError('_BACKEND not recognised (got {})'.format(tl._BACKEND))
+
 
 def test_unfold():
     """Test for unfold
