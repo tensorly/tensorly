@@ -1,0 +1,42 @@
+from ... import backend as T
+from ..generalised_inner_product import inner
+import numpy as np
+
+# Author: Jean Kossaifi
+# License: BSD 3 clause
+
+def inner(tensor1, tensor2, n_modes=None):
+    """Generalised inner products between tensors
+
+        Takes the inner product between the last (respectively first)
+        `n_modes` of `tensor1` (respectively `tensor2`)
+
+    Parameters
+    ----------
+    tensor1, tensor2 : tensor
+    n_modes : int, default is None
+        * if None, the traditional inner product is returned (i.e. a float)
+        * otherwise, the product between the `n_modes` last modes of `tensor1`
+            and the `n_modes` first modes of `tensor2` is returned.
+            The resulting tensor's order is `ndim(tensor1) - n_modes`.
+
+    Returns
+    -------
+    inner_product : float if n_modes is None, tensor otherwise
+    """
+    # Traditional inner product
+    if n_modes is None:
+        return T.sum(tensor1*tensor2)
+
+    # Inner product along `n_modes` common modes
+    shape_t1 = list(tensor1.shape)
+    shape_t2 = list(tensor2.shape)
+    common_modes = shape_t1[-n_modes:]
+    output_size = tensor1.shape[:-n_modes] + tensor2.shape[n_modes:]
+
+    if common_modes != shape_t2[:n_modes]:
+        raise ValueError('Incorrect shapes for inner product along {} common modes.'
+                         'tensor_1.shape={}, tensor_2.shape={}'.format(n_modes, shape_t1, shape_t2))
+    inner_product = T.dot(T.reshape(tensor1, (-1, common_modes)),
+                          T.reshape(tensor2, (common_modes, -1)))
+    return T.reshape(inner_product, common_modes)
