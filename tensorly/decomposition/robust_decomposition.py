@@ -33,7 +33,7 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
         regularisation on the low rank part `D`
     mu_init : float, optional, default is 10e-5
         initial value for mu
-    mu_max : float, optional, default is 10e-5
+    mu_max : float, optional, default is 10e9
         maximal value for mu
     learning_rate : float, optional, default is 1.1
         percentage increase of mu at each iteration
