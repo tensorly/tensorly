@@ -11,6 +11,14 @@ except NameError:
     _BACKEND = os.environ.get('TENSORLY_BACKEND', default_backend)
 
 def set_backend(backend_name):
+    """Sets the backend for TensorLy
+
+        The backend will be set as specified and operations will used that backend
+
+    Parameters
+    ----------
+    backend_name : {'mxnet', 'numpy', 'pytorch'}, default is 'numpy'
+    """
     global _BACKEND
     _BACKEND = backend_name
 
@@ -24,6 +32,17 @@ def set_backend(backend_name):
             {k: v for (k, v) in backend.__dict__.items() if not k.startswith('_')
             })
 
+def get_backend():
+    """Returns the backend currently used
+
+    Returns
+    -------
+    backend_used : str
+        the backend currently in use
+    """
+    global _BACKEND
+    backend_used = _BACKEND
+    return backend_used
 
 from .backend import *
 from .base import unfold, fold
