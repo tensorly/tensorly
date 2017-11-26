@@ -2,8 +2,22 @@
 API reference
 =============
 
+:mod:`tensorly`: Setting the backend
+====================================
+
+.. automodule:: tensorly
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary:: 
+    :toctree: generated
+    :template: function.rst
+
+    set_backend
+    get_backend
+
 :mod:`tensorly.base`: Core tensor functions
-=============================================
+============================================
 
 .. automodule:: tensorly.base
     :no-members:
