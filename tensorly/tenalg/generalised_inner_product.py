@@ -4,6 +4,7 @@ import numpy as np
 # Author: Jean Kossaifi
 # License: BSD 3 clause
 
+
 def inner(tensor1, tensor2, n_modes=None):
     """Generalised inner products between tensors
 
@@ -25,12 +26,17 @@ def inner(tensor1, tensor2, n_modes=None):
     """
     # Traditional inner product
     if n_modes is None:
+        if tensor1.shape != tensor2.shape:
+            raise ValueError('Taking a generalised product between two tensors without specifying common modes'
+                             ' is equivalent to taking inner product.'
+                             'This requires tensor1.shape == tensor2.shape.'
+                             'However, got tensor1.shape={} and tensor2.shape={}'.format(tensor1.shape, tensor2.shape))
         return T.sum(tensor1*tensor2)
 
     # Inner product along `n_modes` common modes
     shape_t1 = list(tensor1.shape)
     shape_t2 = list(tensor2.shape)
-    common_modes = shape_t1[-n_modes:]
+    common_modes = shape_t1[len(shape_t1) - n_modes:]
     common_size = int(np.prod(common_modes))
     output_shape = tensor1.shape[:-n_modes] + tensor2.shape[n_modes:]
 
@@ -40,3 +46,4 @@ def inner(tensor1, tensor2, n_modes=None):
     inner_product = T.dot(T.reshape(tensor1, (-1, common_size)),
                           T.reshape(tensor2, (common_size, -1)))
     return T.reshape(inner_product, output_shape)
+
