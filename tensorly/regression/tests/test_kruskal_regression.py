@@ -13,7 +13,7 @@ def test_KruskalRegressor():
     image_height = 8
     image_width = 8
     n_channels = 3
-    tol = 0.005
+    tol = 0.05
 
     # Generate random samples
     rng = check_random_state(1234)

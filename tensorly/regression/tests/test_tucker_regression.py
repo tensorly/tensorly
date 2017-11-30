@@ -13,7 +13,7 @@ def test_TuckerRegressor():
     image_width = 10
     n_channels = 3
     ranks = [5, 5, 2]
-    tol = 10e-3
+    tol = 0.05
 
     # Generate random samples
     X = T.tensor(np.random.normal(size=(1200, image_height, image_width, n_channels), loc=0, scale=1))
