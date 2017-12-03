@@ -12,7 +12,7 @@ TensorLy: Tensor Learning in Python
    modules/api
    auto_examples/index
    development_guide/index
-   Jupyter notebooks <https://github.com/JeanKossaifi/tensorly_notebooks>
+   Notebooks <https://github.com/JeanKossaifi/tensorly-notebooks>
    authors
 
 
