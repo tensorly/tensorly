@@ -21,7 +21,7 @@ config = {
     'version': version,
     'url': 'https://github.com/tensorly/tensorly',
     'download_url': 'https://github.com/tensorly/tensorly/tarball/' + version,
-    'install_requires': ['numpy', 'scipy', 'mxnet'],
+    'install_requires': ['numpy', 'scipy'],
     'license': 'Modified BSD',
     'scripts': [],
     'classifiers': [
