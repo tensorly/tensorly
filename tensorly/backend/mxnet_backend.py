@@ -20,6 +20,11 @@ from mxnet.ndarray import sqrt, abs, where, maximum, sign
 
 # License: BSD 3 clause
 
+def context(tensor):
+    """Returns the context of a tensor
+    """
+    return {'ctx':tensor.context, 'dtype':tensor.dtype}
+
 def tensor(data, ctx=mx.cpu(), dtype="float64"):
     """Tensor class
     """
@@ -72,7 +77,7 @@ def kron(matrix1, matrix2):
                 (s1*s3, s2*s4))
 
 def solve(matrix1, matrix2):
-    return tensor(numpy.linalg.solve(to_numpy(matrix1), to_numpy(matrix2)))
+    return tensor(numpy.linalg.solve(to_numpy(matrix1), to_numpy(matrix2)), **context(matrix1))
 
 def min(tensor, *args, **kwargs):
     return nd.min(tensor, *args, **kwargs).asscalar()
@@ -172,6 +177,7 @@ def partial_svd(matrix, n_eigenvecs=None):
             matrix.ndim))
 
     # Choose what to do depending on the params
+    ctx = context(matrix)
     matrix = to_numpy(matrix)
     dim_1, dim_2 = matrix.shape
     if dim_1 <= dim_2:
@@ -183,7 +189,7 @@ def partial_svd(matrix, n_eigenvecs=None):
         # Default on standard SVD
         U, S, V = scipy.linalg.svd(matrix)
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        return tensor(U), tensor(S), tensor(V)
+        return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
 
     else:
         # We can perform a partial SVD
@@ -199,7 +205,7 @@ def partial_svd(matrix, n_eigenvecs=None):
 
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return tensor(U), tensor(S), tensor(V.T)
+        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T, **ctx)
 
 def clip(tensor, a_min=None, a_max=None, indlace=False):
     if a_min is not None and a_max is not None:

@@ -17,6 +17,14 @@ from numpy.linalg import solve
 
 # License: BSD 3 clause
 
+
+def context(tensor):
+    """Returns the context of a tensor
+    """
+    return {'dtype':tensor.dtype}
+
+
+
 def tensor(data, dtype=np.float64):
     """Tensor class
     """

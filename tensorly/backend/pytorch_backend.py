@@ -23,6 +23,11 @@ maximum = max
 
 # License: BSD 3 clause
 
+def context(tensor):
+    """Returns the context of a tensor
+    """
+    return {'dtype':tensor.type()}
+
 
 def tensor(data, dtype=torch.FloatTensor):
     """Tensor class
