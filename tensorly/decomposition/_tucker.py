@@ -51,8 +51,8 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
             factors.append(eigenvecs)
     else:
         rng = check_random_state(random_state)
-        core = T.tensor(rng.random_sample(ranks))
-        factors = [T.tensor(rng.random_sample((tensor.shape[mode], ranks[index]))) for (index, mode) in enumerate(modes)]
+        core = T.tensor(rng.random_sample(ranks), **T.context(tensor))
+        factors = [T.tensor(rng.random_sample((tensor.shape[mode], ranks[index])), **T.context(tensor)) for (index, mode) in enumerate(modes)]
 
     rec_errors = []
     norm_tensor = T.norm(tensor, 2)
@@ -163,8 +163,8 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
         nn_core = T.abs(core)
     else:
         rng = check_random_state(random_state)
-        core = T.tensor(rng.random_sample(ranks) + 0.01)  # Check this
-        factors = [T.tensor(rng.random_sample(s)) for s in zip(tensor.shape, ranks)]
+        core = T.tensor(rng.random_sample(ranks) + 0.01, **T.context(tensor))  # Check this
+        factors = [T.tensor(rng.random_sample(s), **T.context(tensor)) for s in zip(tensor.shape, ranks)]
         nn_factors = [T.abs(f) for f in factors]
         nn_core = T.abs(core)
 

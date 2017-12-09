@@ -46,7 +46,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     rng = check_random_state(random_state)
 
     if init is 'random':
-        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank))) for i in range(T.ndim(tensor))]
+        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank)), **T.context(tensor)) for i in range(T.ndim(tensor))]
 
     elif init is 'svd':
         factors = []
@@ -55,8 +55,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
-                factor = T.tensor(np.zeros((U.shape[0], rank)))
-                factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])))
+                factor = T.tensor(np.zeros((U.shape[0], rank)), **T.context(tensor))
+                factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])), **T.context(tensor))
                 factor[:, :tensor.shape[mode]] = U
                 U = factor
             factors.append(U[:, :rank])
@@ -66,7 +66,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
 
     for iteration in range(n_iter_max):
         for mode in range(T.ndim(tensor)):
-            pseudo_inverse = T.tensor(np.ones((rank, rank)))
+            pseudo_inverse = T.tensor(np.ones((rank, rank)), **T.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
                     pseudo_inverse[:] = pseudo_inverse*T.dot(T.transpose(factor), factor)
@@ -133,7 +133,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
         nn_factors = [T.abs(f) for f in factors]
     else:
         rng = check_random_state(random_state)
-        nn_factors = [T.tensor(np.abs(rng.random_sample((s, rank)))) for s in tensor.shape]
+        nn_factors = [T.tensor(np.abs(rng.random_sample((s, rank))), **T.context(tensor)) for s in tensor.shape]
 
     n_factors = len(nn_factors)
     norm_tensor = T.norm(tensor, 2)
