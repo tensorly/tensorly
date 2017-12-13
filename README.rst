@@ -17,7 +17,7 @@ TensorLy is a fast and simple Python library for tensor learning. It builds on t
 
 - **Website:** http://tensorly.github.io
 - **Source:**  https://github.com/tensorly/tensorly
-- **Jupyter Notebooks:** https://github.com/JeanKossaifi/tensorly_notebooks
+- **Jupyter Notebooks:** https://github.com/JeanKossaifi/tensorly-notebooks
 
 
 How to install
