@@ -101,8 +101,8 @@ def transpose(tensor):
     axes = list(range(ndim(tensor)))[::-1]
     return tensor.permute(*axes)
 
-def zeros_like(tensor):
-    return torch.zeros(tensor.size())
+def zeros_like(tensor, dtype=torch.FloatTensor):
+    return torch.zeros(tensor.size()).type(dtype)
 
 def copy(tensor):
     return tensor.clone()

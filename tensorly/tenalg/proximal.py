@@ -50,7 +50,6 @@ def soft_thresholding(tensor, threshold):
     return T.sign(tensor)*T.clip(T.abs(tensor) - threshold, a_min=0)
 
 
-
 def svd_thresholding(matrix, threshold):
     """Singular value thresholding operator
 

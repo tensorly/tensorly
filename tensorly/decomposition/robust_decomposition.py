@@ -75,11 +75,11 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
         mask = 1
 
     # Initialise the decompositions
-    D = T.zeros_like(X)  # low rank part
-    E = T.zeros_like(X)  # sparse part
-    L_x = T.zeros_like(X)  # Lagrangian variables for the (X - D - E - L_x/mu) term
-    J = [T.zeros_like(X) for _ in range(T.ndim(X))] # Low-rank modes of X
-    L = [T.zeros_like(X) for _ in range(T.ndim(X))] # Lagrangian or J
+    D = T.zeros_like(X, **T.context(X))  # low rank part
+    E = T.zeros_like(X, **T.context(X))  # sparse part
+    L_x = T.zeros_like(X, **T.context(X))  # Lagrangian variables for the (X - D - E - L_x/mu) term
+    J = [T.zeros_like(X, **T.context(X)) for _ in range(T.ndim(X))] # Low-rank modes of X
+    L = [T.zeros_like(X, **T.context(X)) for _ in range(T.ndim(X))] # Lagrangian or J
 
     # Norm of the reconstructions at each iteration
     rec_X = []
