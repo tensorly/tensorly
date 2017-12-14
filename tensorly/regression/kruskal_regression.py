@@ -83,7 +83,7 @@ class KruskalRegressor():
                           T.dot(partial_unfold(X, i, skip_begin=1),
                                 khatri_rao(W, skip_matrix=i)),
                       (X.shape[0], -1))
-                inv_term = T.dot(T.transpose(phi), phi) + self.reg_W*T.tensor(np.eye(phi.shape[1]))
+                inv_term = T.dot(T.transpose(phi), phi) + self.reg_W*T.tensor(np.eye(phi.shape[1]), **T.context(X))
                 W[i] = T.reshape(T.solve(inv_term, T.dot(T.transpose(phi), y)), (X.shape[i + 1], self.weight_rank))
 
             weight_tensor_ = kruskal_to_tensor(W)
