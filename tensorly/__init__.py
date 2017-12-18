@@ -2,6 +2,8 @@ import sys
 import importlib
 import os
 
+__version__ = '0.3.0'
+
 # Set the default backend
 default_backend = 'numpy'
 try:
@@ -54,7 +56,6 @@ from .kruskal_tensor import kruskal_to_tensor, kruskal_to_unfolded, kruskal_to_v
 from .tucker_tensor import tucker_to_tensor, tucker_to_unfolded, tucker_to_vec
 
 
-__version__ = '0.2.0'
 
 
 
