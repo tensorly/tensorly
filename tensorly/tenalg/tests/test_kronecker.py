@@ -64,7 +64,7 @@ def test_kronecker():
     # Khatri-rao product is a column-wise kronecker product
     kr = khatri_rao(W)
     for i, shape in enumerate(shapes):
-        T.assert_array_equal(res, kr)
+        T.assert_array_almost_equal(res, kr)
 
     a = T.tensor([[1, 2],
                   [0, 3]])
