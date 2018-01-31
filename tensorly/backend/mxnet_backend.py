@@ -2,20 +2,21 @@
 Core tensor operations with MXnet.
 """
 
+import warnings
+
+import mxnet as mx
 import numpy
 import scipy.linalg
 import scipy.sparse.linalg
-from numpy import testing
-import mxnet as mx
-from mxnet import nd as nd
-from . import numpy_backend
 
+from numpy import testing
+from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones
-from mxnet.ndarray import reshape, moveaxis, dot, transpose
+from mxnet.ndarray import moveaxis, dot, transpose, reshape
 from mxnet.ndarray import sqrt, abs, where, maximum, sign
 
+from . import numpy_backend
 
-#import numpy as nd
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
@@ -85,26 +86,36 @@ def min(tensor, *args, **kwargs):
 def max(tensor, *args, **kwargs):
     return nd.min(tensor, *args, **kwargs).asscalar()
 
-def norm(tensor, order):
+def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor
+
     Parameters
     ----------
     tensor : ndarray
     order : int
+    axis : int or tuple
+
     Returns
     -------
-    float
-        l-`order` norm of tensor
+    float or tensor
+        If `axis` is provided returns a tensor.
     """
+    # handle difference in default axis notation
+    if axis is None:
+        axis = ()
+
     if order == 'inf':
-        return nd.max(nd.abs(tensor)).asscalar()
+        return nd.max(nd.abs(tensor), axis=axis).asscalar()
     if order == 1:
-        res =  nd.sum(nd.abs(tensor))
+        res =  nd.sum(nd.abs(tensor), axis=axis)
     elif order == 2:
-        res = nd.sqrt(nd.sum(tensor**2))
+        res = nd.sqrt(nd.sum(tensor**2, axis=axis))
     else:
-        res = nd.sum(nd.abs(tensor)**order)**(1/order)
-    return res.asscalar()
+        res = nd.sum(nd.abs(tensor)**order, axis=axis)**(1/order)
+
+    if res.shape == (1,):
+        return res.asscalar()
+    return res
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
@@ -206,6 +217,17 @@ def partial_svd(matrix, n_eigenvecs=None):
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T, **ctx)
+
+def qr(matrix, **kwds):
+    # NOTE - should be replaced with geqrf when available
+    try:
+        Q, R = map(nd.transpose, nd.linalg.gelqf(matrix.T))
+    except AttributeError:
+        warnings.warn('This version of MXNet does not include the linear '
+                      'algebra function gelqf(). Substituting with numpy.')
+        Q, R = map(tensor, numpy_backend.qr(to_numpy(matrix), **kwds))
+
+    return Q, R
 
 def clip(tensor, a_min=None, a_max=None, indlace=False):
     if a_min is not None and a_max is not None:

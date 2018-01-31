@@ -54,25 +54,32 @@ def ndim(tensor):
 def clip(tensor, a_min=None, a_max=None, inplace=False):
     return np.clip(tensor, a_min, a_max)
 
-def norm(tensor, order):
+def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor
+
     Parameters
     ----------
     tensor : ndarray
     order : int
+    axis : int or tuple
+
     Returns
     -------
-    float
-        l-`order` norm of tensor
+    float or tensor
+        If `axis` is provided returns a tensor.
     """
+    # handle difference in default axis notation
+    if axis == ():
+        axis = None
+
     if order == 'inf':
-        return np.max(np.abs(tensor))
+        return np.max(np.abs(tensor), axis=axis)
     if order == 1:
-        return np.sum(np.abs(tensor))
+        return np.sum(np.abs(tensor), axis=axis)
     elif order == 2:
-        return np.sqrt(np.sum(tensor**2))
+        return np.sqrt(np.sum(tensor**2, axis=axis))
     else:
-        return np.sum(np.abs(tensor)**order)**(1/order)
+        return np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
@@ -181,3 +188,5 @@ def partial_svd(matrix, n_eigenvecs=None):
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T
 
+def qr(matrix, **kwds):
+    return np.linalg.qr(matrix, **kwds)
