@@ -135,21 +135,29 @@ def solve(matrix1, matrix2):
     return solution
 
 
-def norm(tensor, order):
-    """Computes the l-`order` norm of tensor
+def norm(tensor, order=2, axis=None, **kwds):
+    """Computes the l-`order` norm of tensor.
+
     Parameters
     ----------
     tensor : ndarray
     order : int
+    axis : int
+
     Returns
     -------
-    float
-        l-`order` norm of tensor
+    float or tensor
+        If `axis` is provided returns a tensor.
     """
+    # pytorch does not accept `None` for any keyword arguments
+    if order and order != 'inf':
+        kwds['p'] = order
+    if axis is not None:
+        kwds['dim'] = axis
+
     if order == 'inf':
-        return torch.max(torch.abs(tensor))
-    else:
-        return torch.norm(tensor, p=order)
+        return torch.max(torch.abs(tensor), **kwds)
+    return torch.norm(tensor, **kwds)
 
 
 def kr(matrices):
@@ -228,3 +236,6 @@ def partial_svd(matrix, n_eigenvecs=None):
     U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V.t()[:n_eigenvecs, :]
     return U, S, V
 
+
+def qr(tensor, **kwds):
+    return torch.qr(tensor, **kwds)
