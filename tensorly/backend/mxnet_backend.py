@@ -13,7 +13,7 @@ from numpy import testing
 from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones
 from mxnet.ndarray import moveaxis, dot, transpose, reshape
-from mxnet.ndarray import sqrt, abs, where, maximum, sign
+from mxnet.ndarray import sqrt, abs, where, maximum, sign, prod
 
 from . import numpy_backend
 

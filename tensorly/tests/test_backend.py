@@ -376,4 +376,7 @@ def test_qr():
             assert abs(dot_product) < 1e-6, 'Columns of Q not orthogonal'
 
 
-
+def test_prod():
+    v = T.tensor([3, 4, 5])
+    x = T.to_numpy(T.prod(v))
+    T.assert_equal(x, 60)
