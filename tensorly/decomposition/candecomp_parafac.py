@@ -1,66 +1,152 @@
+import logging
+
 import numpy as np
+
 from .. import backend as T
 from ..random import check_random_state
 from ..base import unfold
 from ..kruskal_tensor import kruskal_to_tensor
 from ..tenalg import khatri_rao
 
+logger = logging.getLogger(__name__)
+
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+# Author: Chris Swierczewski <csw@amazon.com>
 
 # License: BSD 3 clause
 
 
-def parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
-            random_state=None, verbose=False):
-    """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
+def normalize_factors(factors):
+    """Normalizes factors to unit length and returns factor magnitudes
 
-        Computes a rank-`rank` decomposition of `tensor` [1]_ such that:
-        ``tensor = [| factors[0], ..., factors[-1] |]``
+    Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
+    where the columns of each `V_k` are normalized to unit Euclidean length
+    from the columns of `U_k` with the normalizing constants absorbed into
+    `weights`. In the special case of a symmetric tensor, `weights` holds the
+    eigenvalues of the tensor.
+
+    Parameters
+    ----------
+    factors : ndarray list
+        list of matrices, all with the same number of columns
+        i.e.::
+            for u in U:
+                u[i].shape == (s_i, R)
+
+        where `R` is fixed while `s_i` can vary with `i`
+
+    Returns
+    -------
+    normalized_factors : list of ndarrays
+        list of matrices with the same shape as `factors`
+    weights : ndarray
+        vector of length `R` holding normalizing constants
+
+    """
+    # allocate variables for weights, and normalized factors
+    rank = factors[0].shape[1]
+    weights = T.ones(rank)
+    normalized_factors = []
+
+    # normalize columns of factor matrices
+    for factor in factors:
+        scales = T.norm(factor, axis=0)
+        weights *= scales
+        scales_non_zero = T.where(scales==0, T.ones(T.shape(scales)), scales)
+        normalized_factors.append(factor/scales_non_zero)
+    return normalized_factors, weights
+
+
+def initialize_factors(tensor, rank, init='svd', random_state=None):
+    r"""Initialize factors used in `parafac`.
+
+    The type of initialization is set using `init`. If `init == 'random'` then
+    initialize factor matrices using `random_state`. If `init == 'svd'` then
+    initialize the `m`th factor matrix using the `rank` left singular vectors
+    of the `m`th unfolding of the input tensor.
 
     Parameters
     ----------
     tensor : ndarray
-    rank  : int
-            number of components
-    n_iter_max : int
-                 maximum number of iteration
+    rank : int
     init : {'svd', 'random'}, optional
-    tol : float, optional
-          tolerance: the algorithm stops when the variation in
-          the reconstruction error is less than the tolerance
-    random_state : {None, int, np.random.RandomState}
-    verbose : int, optional
-        level of verbosity
 
     Returns
     -------
     factors : ndarray list
-            list of factors of the CP decomposition
-            element `i` is of shape (tensor.shape[i], rank)
+        List of initialized factors of the CP decomposition where element `i`
+        is of shape (tensor.shape[i], rank)
 
-    References
-    ----------
-    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
-       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
     rng = check_random_state(random_state)
 
     if init is 'random':
-        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank)), **T.context(tensor)) for i in range(T.ndim(tensor))]
+        logger.info('[CPDecomp] Using random initialization')
+        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank))) for i in range(T.ndim(tensor))]
+        factors, _ = normalize_factors(factors)
+        return factors
 
-    elif init is 'svd':
+    if init is 'svd':
+        logger.info('[CPDecomp] Using svd initialization')
         factors = []
         for mode in range(T.ndim(tensor)):
             U, _, _ = T.partial_svd(unfold(tensor, mode), n_eigenvecs=rank)
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
-                factor = T.tensor(np.zeros((U.shape[0], rank)), **T.context(tensor))
-                factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])), **T.context(tensor))
+                factor = T.tensor(np.zeros((U.shape[0], rank)))
+                factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])))
                 factor[:, :tensor.shape[mode]] = U
-                U = factor
+                U = T.tensor(factor)
             factors.append(U[:, :rank])
+        return factors
 
+    raise ValueError('Initialization method "{}" not recognized'.format(init))
+
+
+def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-7,
+            random_state=None, verbose=False):
+    """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
+
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
+
+        ``tensor = [| factors[0], ..., factors[-1] |]``.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank  : int
+        Number of components.
+    n_iter_max : int
+        Maximum number of iteration
+    init : {'svd', 'random'}, optional
+        Type of factor matrix initialization. See `initialize_factors`.
+    tol : float, optional
+        (Default: 1e-6) Relative reconstruction error tolerance. The
+        algorithm is considered to have found the global minimum when the
+        reconstruction error is less than `tol`.
+    random_state : {None, int, np.random.RandomState}
+    verbose : int, optional
+        Level of verbosity
+
+
+    Returns
+    -------
+    factors : ndarray list
+        List of factors of the CP decomposition element `i` is of shape
+        (tensor.shape[i], rank)
+    weights : ndarray, optional
+        Array of length `rank` of weights for each factor matrix. See the
+        `with_weights` keyword attribute.
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+    """
+    factors = initialize_factors(tensor, rank, init=init, random_state=random_state)
     rec_errors = []
     norm_tensor = T.norm(tensor, 2)
 
