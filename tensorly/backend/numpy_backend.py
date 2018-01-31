@@ -11,7 +11,7 @@ from numpy import reshape, moveaxis, where, copy, transpose
 from numpy import arange, ones, zeros, zeros_like
 from numpy import dot, kron
 from numpy import max, min, maximum, all, mean, sum, sign, abs, prod
-from numpy.linalg import solve
+from numpy.linalg import solve, qr
 
 # Author: Jean Kossaifi
 
@@ -187,6 +187,3 @@ def partial_svd(matrix, n_eigenvecs=None):
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T
-
-def qr(matrix):
-    return np.linalg.qr(matrix)
