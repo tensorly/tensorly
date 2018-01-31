@@ -1,9 +1,99 @@
 import numpy as np
-from ..candecomp_parafac import parafac
-from ..candecomp_parafac import non_negative_parafac
+import pytest
+
+from ..candecomp_parafac import parafac, non_negative_parafac, normalize_factors
 from ...kruskal_tensor import kruskal_to_tensor
 from ...random import check_random_state
 from ... import backend as T
+
+
+randomized_test_cases = {
+    'order3_small': {
+        'dimensions': (8, 8, 8), 'rank': 4, 'seed': 0},
+    'order3_large': {
+        'dimensions': (16, 16, 16), 'rank': 12, 'seed': 0},
+    'order3_mixed': {
+        'dimensions': (16, 12, 8), 'rank': 8, 'seed': 0},
+    'order3_small_orthogonal': {
+        'dimensions': (8, 8, 8), 'rank': 4, 'seed': 0, 'orthogonal': True},
+    'order3_large_orthogonal': {
+        'dimensions': (16, 16, 16), 'rank': 12, 'seed': 0, 'orthogonal': True},
+    'order3_mixed_orthogonal': {
+        'dimensions': (16, 12, 8), 'rank': 8, 'seed': 0, 'orthogonal': True},
+    'order4': {
+        'dimensions': (8, 8, 8, 8), 'rank': 4, 'seed': 0},
+    'order4_orthogonal': {
+        'dimensions': (8, 8, 8, 8), 'rank': 4, 'seed': 0, 'orthogonal': True},
+}
+
+
+def create_random_decomposition(dimensions=(10,10,10), rank=10, seed=None,
+                                orthogonal=False, noisy=False):
+    r"""Random tensor generation used in testing.
+
+    Returns a random tensor of specified order along with a list of its
+    constituent normalized factor matrices and corresponding weight vector.
+
+    Parameters
+    ----------
+    dimensions : tuple
+    rank : int
+        The desired rank of the tensor. Note that if `orthogonal == True` then
+        the rank must be less than or equal to the smallest dimension of the
+        tensor.
+    seed : int
+        Random number generation seed.
+    orthogonal : bool
+        If `True`, creates a tensor with orthogonal rank-1 components.
+    noisy : bool
+        If `True`, adds Gaussian noise to the tensor. (Useful when constructing
+        near-orthogonal tensors for experimentation.)
+
+    Returns
+    -------
+    tensor : ndarray
+    factors : list of 2D ndarrays
+        A list of random ALS factors.
+    weights : 1D ndarray
+        A list of random weights.
+
+    """
+    order = len(dimensions)
+    dim = min(dimensions)
+    if (rank > dim) and (orthogonal or near_orthogonal):
+        raise ValueError('Can only construct orthogonal and near-orthogonal '
+                        'tensors when rank <= min(dimensions)')
+
+    np.random.seed(seed)
+    weights = 4*T.arange(1, rank+1)
+    factors = [T.tensor(np.random.randn(dim,rank)) for dim in dimensions]
+
+    if orthogonal:
+        factors = [T.qr(factor)[0] for factor in factors]
+    tensor = kruskal_to_tensor(factors, weights)
+
+    if noisy:
+        scale = rank/(rank+32.)  # theoretical error approx. 1e-2 to 1e-3
+        tensor += T.tensor(scale*np.random.randn(*dimensions))
+    return tensor, factors, weights
+
+
+@pytest.mark.parametrize(
+    'params',
+    list(randomized_test_cases.values()),
+    ids=list(randomized_test_cases.keys()))
+def test_parafac_random(params):
+    rank = params['rank']
+    tensor, weights, factors = create_random_decomposition(**params)
+    factors_estimated = parafac(tensor, rank, n_iter_max=500, tol=1e-8)
+    factors_estimated, weights_estimated = normalize_factors(factors_estimated)
+    tensor_estimted = kruskal_to_tensor(
+        factors_estimated, weights=weights_estimated)
+
+    error = T.norm(tensor - tensor_estimted)/T.norm(tensor)
+    T.assert_(error < 1e-4,
+              '2-Norm relative error between known and recovered tensor too large')
+
 
 def test_parafac():
     """Test for the CANDECOMP-PARAFAC decomposition
