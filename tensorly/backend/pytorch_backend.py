@@ -11,7 +11,7 @@ from . import numpy_backend
 
 from torch import ones, zeros
 from torch import max, min
-from torch import sum, mean, abs, sqrt, sign
+from torch import sum, mean, abs, sqrt, sign, prod
 from torch import matmul as dot
 
 # Equivalent functions in pytorch 
