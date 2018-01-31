@@ -13,6 +13,7 @@ from torch import ones, zeros
 from torch import max, min
 from torch import sum, mean, abs, sqrt, sign, prod
 from torch import matmul as dot
+from torch import qr
 
 # Equivalent functions in pytorch 
 maximum = max
@@ -243,7 +244,3 @@ def partial_svd(matrix, n_eigenvecs=None):
     U, S, V = torch.svd(matrix, some=False)
     U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V.t()[:n_eigenvecs, :]
     return U, S, V
-
-
-def qr(tensor):
-    return torch.qr(tensor)
