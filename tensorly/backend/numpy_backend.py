@@ -188,5 +188,5 @@ def partial_svd(matrix, n_eigenvecs=None):
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T
 
-def qr(matrix, **kwds):
-    return np.linalg.qr(matrix, **kwds)
+def qr(matrix):
+    return np.linalg.qr(matrix)
