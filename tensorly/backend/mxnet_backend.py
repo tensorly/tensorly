@@ -105,8 +105,8 @@ def norm(tensor, order=2, axis=None):
         axis = ()
 
     if order == 'inf':
-        return nd.max(nd.abs(tensor), axis=axis).asscalar()
-    if order == 1:
+        res = nd.max(nd.abs(tensor), axis=axis)
+    elif order == 1:
         res =  nd.sum(nd.abs(tensor), axis=axis)
     elif order == 2:
         res = nd.sqrt(nd.sum(tensor**2, axis=axis))
@@ -218,16 +218,16 @@ def partial_svd(matrix, n_eigenvecs=None):
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T, **ctx)
 
-def qr(matrix, **kwds):
-    # NOTE - should be replaced with geqrf when available
+def qr(matrix):
     try:
-        Q, R = map(nd.transpose, nd.linalg.gelqf(matrix.T))
+        # NOTE - should be replaced with geqrf when available
+        Q, L = nd.linalg.gelqf(matrix.T)
+        return Q.T, L.T
     except AttributeError:
         warnings.warn('This version of MXNet does not include the linear '
                       'algebra function gelqf(). Substituting with numpy.')
-        Q, R = map(tensor, numpy_backend.qr(to_numpy(matrix), **kwds))
-
-    return Q, R
+        Q, R = numpy_backend.qr(to_numpy(matrix))
+        return tensor(Q), tensor(R)
 
 def clip(tensor, a_min=None, a_max=None, indlace=False):
     if a_min is not None and a_max is not None:

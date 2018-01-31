@@ -138,7 +138,7 @@ def solve(matrix1, matrix2):
     return solution
 
 
-def norm(tensor, order=2, axis=None, **kwds):
+def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor.
 
     Parameters
@@ -152,14 +152,19 @@ def norm(tensor, order=2, axis=None, **kwds):
     float or tensor
         If `axis` is provided returns a tensor.
     """
-    # pytorch does not accept `None` for any keyword arguments
-    if order and order != 'inf':
-        kwds['p'] = order
+    # pytorch does not accept `None` for any keyword arguments. additionally,
+    # pytorch doesn't seems to support keyword arguments in the first place
+    kwds = {}
     if axis is not None:
         kwds['dim'] = axis
+    if order and order != 'inf':
+        kwds['p'] = order
 
     if order == 'inf':
-        return torch.max(torch.abs(tensor), **kwds)
+        res = torch.max(torch.abs(tensor), **kwds)
+        if axis is not None:
+            return res[0]  # ignore indices output
+        return res
     return torch.norm(tensor, **kwds)
 
 
@@ -240,5 +245,5 @@ def partial_svd(matrix, n_eigenvecs=None):
     return U, S, V
 
 
-def qr(tensor, **kwds):
-    return torch.qr(tensor, **kwds)
+def qr(tensor):
+    return torch.qr(tensor)

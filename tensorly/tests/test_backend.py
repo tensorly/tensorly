@@ -358,10 +358,15 @@ def test_norm():
     T.assert_array_almost_equal(column_norms10, T.tensor([4.00039053, 5.00301552]))
     T.assert_array_almost_equal(row_norms10, T.tensor([1., 3.00516224, 5.05125666]))
 
+    column_norms_oo = T.norm(A, 'inf', axis=0)
+    row_norms_oo = T.norm(A, 'inf', axis=1)
+    T.assert_array_equal(column_norms_oo, T.tensor([4, 5]))
+    T.assert_array_equal(row_norms_oo, T.tensor([1, 3, 5]))
+
 
 def test_qr():
     M = 8; N = 5
-    A = T.tensor(np.random.random((8,5)))
+    A = T.tensor(np.random.random((M,N)))
     Q, R = T.qr(A)
 
     assert T.shape(Q) == (M,N), 'Unexpected shape'
@@ -374,6 +379,9 @@ def test_qr():
         for j in range(i):
             dot_product = T.to_numpy(T.dot(Q[:,i], Q[:,j]))
             assert abs(dot_product) < 1e-6, 'Columns of Q not orthogonal'
+
+    A_reconstructed = T.dot(Q, R)
+    T.assert_array_almost_equal(A, A_reconstructed)
 
 
 def test_prod():
