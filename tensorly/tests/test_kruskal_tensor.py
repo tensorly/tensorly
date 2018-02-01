@@ -67,6 +67,15 @@ def test_kruskal_to_tensor():
         tl.assert_array_almost_equal(reconstructed, unfolded)
         matrices.insert(i, U_i)
 
+def test_kruskal_to_tensor_with_weights():
+    A = tl.reshape(tl.arange(1,5), (2,2))
+    B = tl.reshape(tl.arange(5,9), (2,2))
+    weights = tl.tensor([2,-1])
+
+    out = kruskal_to_tensor([A,B], weights=weights)
+    expected = tl.tensor([[-2,-2], [6, 10]])  # computed by hand
+    tl.assert_array_equal(out, expected)
+
 
 def test_kruskal_to_unfolded():
     """Test for kruskal_to_unfolded.

@@ -11,7 +11,7 @@ from .tenalg import khatri_rao
 # License: BSD 3 clause
 
 
-def kruskal_to_tensor(factors):
+def kruskal_to_tensor(factors, weights=None):
     """Turns the Khatri-product of matrices into a full tensor
 
         ``factor_matrices = [|U_1, ... U_n|]`` becomes
@@ -37,8 +37,11 @@ def kruskal_to_tensor(factors):
     There are other possible and equivalent alternate implementation, e.g.
     summing over r and updating an outer product of vectors.
     """
-    shape = [factor.shape[0] for factor in factors]
-    full_tensor = T.dot(factors[0], T.transpose(khatri_rao(factors[1:])))
+    shape = [T.shape(factor)[0] for factor in factors]
+    if weights is not None:
+        full_tensor = T.dot(factors[0]*weights, T.transpose(khatri_rao(factors[1:])))
+    else:
+        full_tensor = T.dot(factors[0], T.transpose(khatri_rao(factors[1:])))
     return fold(full_tensor, 0, shape)
 
 
