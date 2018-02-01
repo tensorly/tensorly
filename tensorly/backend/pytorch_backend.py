@@ -98,6 +98,22 @@ def clip(tensor, a_min=None, a_max=None, inplace=False):
     else:
         return torch.clamp(tensor, a_min, a_max)
 
+def where(condition, x, y):
+    assert condition.shape == x.shape == y.shape, 'Dimension mismatch'
+    N = condition.nelement()
+    out = torch.zeros_like(x)
+
+    # unroll inputs and outputs for ease of iteration through elements
+    condition_ = condition.view(N)
+    x_ = x.view(N)
+    y_ = y.view(N)
+    out_ = out.view(N)
+
+    for i in range(N):
+        out_[i] = x_[i] if condition_[i] else y_[i]
+    return out
+
+
 def all(tensor):
     return torch.sum(tensor != 0)
 
