@@ -101,7 +101,12 @@ def clip(tensor, a_min=None, a_max=None, inplace=False):
 def where(condition, x, y):
     assert condition.shape == x.shape == y.shape, 'Dimension mismatch'
     N = condition.nelement()
-    out = torch.zeros_like(x)
+
+    # See https://github.com/pytorch/pytorch/issues/2813
+    try:
+        out = torch.zeros_like(x)
+    except AttributeError:
+        out = x.new(x.size()).zero_()
 
     # unroll inputs and outputs for ease of iteration through elements
     condition_ = condition.view(N)
