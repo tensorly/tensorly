@@ -26,7 +26,7 @@ def context(tensor):
     """
     return {'ctx':tensor.context, 'dtype':tensor.dtype}
 
-def tensor(data, ctx=mx.cpu(), dtype="float64"):
+def tensor(data, ctx=mx.cpu(), dtype='float32'):
     """Tensor class
     """
     if dtype is None and isinstance(data, numpy.ndarray):
