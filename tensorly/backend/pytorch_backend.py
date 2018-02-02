@@ -100,24 +100,10 @@ def clip(tensor, a_min=None, a_max=None, inplace=False):
 
 def where(condition, x, y):
     assert condition.shape == x.shape == y.shape, 'Dimension mismatch'
-    N = condition.nelement()
-
-    # See https://github.com/pytorch/pytorch/issues/2813
-    try:
-        out = torch.zeros_like(x)
-    except AttributeError:
-        out = x.new(x.size()).zero_()
-
-    # unroll inputs and outputs for ease of iteration through elements
-    condition_ = condition.view(N)
-    x_ = x.view(N)
-    y_ = y.view(N)
-    out_ = out.view(N)
-
-    for i in range(N):
-        out_[i] = x_[i] if condition_[i] else y_[i]
-    return out
-
+    result = zeros_like(condition, **context(x))
+    result[condition] = x
+    result[~condition] = y
+    return result
 
 def all(tensor):
     return torch.sum(tensor != 0)
