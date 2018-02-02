@@ -1,9 +1,11 @@
 import numpy as np
+import tensorly as tl
+
 from scipy.sparse.linalg import svds
 from scipy.linalg import svd
 
+from .. import numpy_backend
 from .. import backend as T
-import tensorly as tl
 from ..base import fold, unfold
 from ..base import partial_fold, partial_unfold
 from ..base import tensor_to_vec, vec_to_tensor
@@ -405,6 +407,16 @@ def test_where():
                     assert out[i,j,k] == 0, 'Unexpected result on 3-tensor'
                 else:
                     assert out[i,j,k] == 1, 'Unexpected result on 3-tensor'
+
+    # random testing against Numpy's output
+    shapes = (16,8,4,2)
+    for order in range(1,5):
+        shape = shapes[:order]
+        tensor = T.tensor(np.random.randn(*shape))
+        args = (tensor < 0, T.zeros(shape), T.ones(shape))
+        result = T.where(*args)
+        expected = np.where(*map(T.to_numpy, args))
+        T.assert_array_equal(result, expected)
 
 
 def test_qr():
