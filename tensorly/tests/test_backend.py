@@ -364,7 +364,8 @@ def test_norm():
     T.assert_array_equal(row_norms_oo, T.tensor([1, 3, 5]))
 
 
-def test_where_1d():
+def test_where():
+    # 1D
     shape = (2*3*4,); N = np.prod(shape)
     X = T.arange(N)
     zeros = T.zeros(X.shape)
@@ -372,11 +373,11 @@ def test_where_1d():
     out = T.where(X < 2*3, zeros, ones)
     for i in range(N):
         if i < 2*3:
-            assert out[i] == 0
+            assert out[i] == 0, 'Unexpected result on vector'
         else:
-            assert out[i] == 1
+            assert out[i] == 1, 'Unexpected result on vector'
 
-def test_where_2d():
+    # 2D
     shape = (2*3,4); N = np.prod(shape)
     X = T.reshape(T.arange(N), shape)
     zeros = T.zeros(X.shape)
@@ -386,11 +387,11 @@ def test_where_2d():
         for j in range(shape[1]):
             index = i*shape[1] + j
             if index < 2*3:
-                assert out[i,j] == 0
+                assert out[i,j] == 0, 'Unexpected result on matrix'
             else:
-                assert out[i,j] == 1
+                assert out[i,j] == 1, 'Unexpected result on matrix'
 
-def test_where_3d():
+    # 3D
     shape = (2,3,4); N = np.prod(shape)
     X = T.reshape(T.arange(N), shape)
     zeros = T.zeros(X.shape)
@@ -401,9 +402,10 @@ def test_where_3d():
             for k in range(shape[2]):
                 index = (i*shape[1] + j)*shape[2] + k
                 if index < 2*3:
-                    assert out[i,j,k] == 0
+                    assert out[i,j,k] == 0, 'Unexpected result on 3-tensor'
                 else:
-                    assert out[i,j,k] == 1
+                    assert out[i,j,k] == 1, 'Unexpected result on 3-tensor'
+
 
 def test_qr():
     M = 8; N = 5
