@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from ..candecomp_parafac import parafac, non_negative_parafac, normalize_factors
+from ..candecomp_parafac import (
+    parafac, non_negative_parafac, normalize_factors, initialize_factors)
 from ...kruskal_tensor import kruskal_to_tensor
 from ...random import check_random_state
 from ... import backend as T
@@ -78,9 +79,15 @@ def create_random_decomposition(dimensions=(10,10,10), rank=10, seed=None,
     return tensor, factors, weights
 
 
-def test_parafac_raises_value_error():
+def test_parafac_errors():
     with pytest.raises(ValueError) as e:
         create_random_decomposition(dimensions=(8,8,8), rank=10, orthogonal=True)
+
+    tensor = T.tensor([[1,2],[3,4]])
+    rank = 1
+    with pytest.raises(ValueError) as e:
+        initialize_factors(tensor, rank, init='invalid initialization')
+
 
 @pytest.mark.parametrize(
     'params',
@@ -142,7 +149,6 @@ def test_parafac():
             'norm 2 of difference between svd and random init too high')
     T.assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
-
 
 
 def test_non_negative_parafac():
