@@ -60,9 +60,9 @@ def create_random_decomposition(dimensions=(10,10,10), rank=10, seed=None,
     """
     order = len(dimensions)
     dim = min(dimensions)
-    if (rank > dim) and (orthogonal or near_orthogonal):
-        raise ValueError('Can only construct orthogonal and near-orthogonal '
-                        'tensors when rank <= min(dimensions)')
+    if (rank > dim) and orthogonal:
+        raise ValueError('Can only construct orthogonal tensors when '
+                         'rank <= min(dimensions)')
 
     np.random.seed(seed)
     weights = 4*T.arange(1, rank+1)
@@ -73,10 +73,14 @@ def create_random_decomposition(dimensions=(10,10,10), rank=10, seed=None,
     tensor = kruskal_to_tensor(factors, weights)
 
     if noisy:
-        scale = rank/(rank+32.)  # theoretical error approx. 1e-2 to 1e-3
+        scale = rank/(rank+10.**(order-1))
         tensor += T.tensor(scale*np.random.randn(*dimensions))
     return tensor, factors, weights
 
+
+def test_parafac_raises_value_error():
+    with pytest.raises(ValueError) as e:
+        create_random_decomposition(dimensions=(8,8,8), rank=10, orthogonal=True)
 
 @pytest.mark.parametrize(
     'params',
@@ -92,6 +96,22 @@ def test_parafac_random(params):
 
     error = T.norm(tensor - tensor_estimted)/T.norm(tensor)
     T.assert_(error < 1e-4,
+              '2-Norm relative error between known and recovered tensor too large')
+
+@pytest.mark.parametrize(
+    'params',
+    list(randomized_test_cases.values()),
+    ids=list(randomized_test_cases.keys()))
+def test_parafac_random_noisy(params):
+    rank = params['rank']
+    tensor, weights, factors = create_random_decomposition(noisy=True, **params)
+    factors_estimated = parafac(tensor, rank, n_iter_max=500, tol=1e-8)
+    factors_estimated, weights_estimated = normalize_factors(factors_estimated)
+    tensor_estimted = kruskal_to_tensor(
+        factors_estimated, weights=weights_estimated)
+
+    error = T.norm(tensor - tensor_estimted)/T.norm(tensor)
+    T.assert_(error < 1e-1,
               '2-Norm relative error between known and recovered tensor too large')
 
 
