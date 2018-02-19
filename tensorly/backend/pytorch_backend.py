@@ -15,9 +15,11 @@ from torch import sum, mean, abs, sqrt, sign, prod
 from torch import matmul as dot
 from torch import qr
 
+# Order 0 tensor, mxnet....
+from math import sqrt as scalar_sqrt
+
 # Equivalent functions in pytorch 
 maximum = max
-
 
 #import numpy as np
 # Author: Jean Kossaifi
@@ -175,6 +177,17 @@ def norm(tensor, order=2, axis=None):
         return res
     return torch.norm(tensor, **kwds)
 
+def mean(tensor, axis=None):
+    if axis is None:
+        return torch.mean(tensor)
+    else:
+        return torch.mean(tensor, dim=axis)
+
+def sum(tensor, axis=None):
+    if axis is None:
+        return torch.sum(tensor)
+    else:
+        return torch.sum(tensor, dim=axis)
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
@@ -251,3 +264,10 @@ def partial_svd(matrix, n_eigenvecs=None):
     U, S, V = torch.svd(matrix, some=False)
     U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V.t()[:n_eigenvecs, :]
     return U, S, V
+
+def sqrt(tensor, *args, **kwargs):
+    if torch.is_tensor(tensor):
+        return torch.sqrt(tensor, *args, **kwargs)
+    else:
+        return scalar_sqrt(tensor)
+
