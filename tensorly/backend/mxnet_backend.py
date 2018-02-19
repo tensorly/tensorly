@@ -13,7 +13,10 @@ from numpy import testing
 from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones
 from mxnet.ndarray import moveaxis, dot, transpose, reshape
-from mxnet.ndarray import sqrt, abs, where, maximum, sign, prod
+from mxnet.ndarray import abs, where, maximum, sign, prod
+
+# Order 0 tensor, mxnet....
+from math import sqrt as scalar_sqrt
 
 from . import numpy_backend
 
@@ -49,9 +52,7 @@ def to_numpy(tensor):
     elif isinstance(tensor, numpy.ndarray):
         return tensor
     else:
-        raise ValueError('Only mx.nd.array or nd.ndarray) are accepted,'
-                         'given {}'.format(type(tensor)))
-
+        return numpy.array(tensor)
 
 def assert_array_equal(a, b, **kwargs):
     testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
@@ -250,19 +251,29 @@ def clip(tensor, a_min=None, a_max=None, indlace=False):
 def all(tensor):
     return nd.sum(tensor != 0).asscalar()
 
-def mean(tensor, *args, **kwargs):
-    res = nd.mean(tensor, *args, **kwargs)
+def mean(tensor, axis=None, **kwargs):
+    if axis is None:
+        axis = ()
+    res = nd.mean(tensor, axis=axis, **kwargs)
     if res.shape == (1,):
         return res.asscalar()
     else:
         return res
 
-def sum(tensor, *args, **kwargs):
-    res = nd.sum(tensor, *args, **kwargs)
+def sum(tensor, axis=None, **kwargs):
+    if axis is None:
+        axis = ()
+    res = nd.sum(tensor, axis=axis, **kwargs)
     if res.shape == (1,):
         return res.asscalar()
     else:
         return res
+
+def sqrt(tensor, *args, **kwargs):
+    if isinstance(tensor, nd.NDArray):
+        return nd.sqrt(tensor, *args, **kwargs)
+    else:
+        return scalar_sqrt(tensor)
 
 def copy(tensor):
     return tensor.copy()
