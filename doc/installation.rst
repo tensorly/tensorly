@@ -5,6 +5,8 @@ Installing tensorly
 Installing with pip
 ===================
 
+NOTE: TensorLy is developed/tested only for Python3
+
 Simply run::
 
    pip install tensorly
