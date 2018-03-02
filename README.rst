@@ -29,6 +29,8 @@ Easy option: install with pip
 Simply run::
 
    pip install -U tensorly
+   
+NOTE: TensorLy is developed/tested only for Python 3
 
 That's it!
 
@@ -58,4 +60,5 @@ Testing and documentation are an essential part of this package and all function
 You can run all the tests using the `nose` package::
 
    nosetests -v tensorly
+
 
