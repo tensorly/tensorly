@@ -36,6 +36,10 @@ def test_parafac():
     T.assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
 
+    with np.testing.assert_raises(ValueError):
+        rank = 4
+        _ = initialize_factors(tensor, rank, init='bogus init type')
+
 def test_non_negative_parafac():
     """Test for non-negative PARAFAC
 
