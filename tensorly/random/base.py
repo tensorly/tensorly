@@ -28,9 +28,9 @@ def check_random_state(seed):
 
     raise ValueError('Seed should be None, int or np.random.RandomState')
 
-def cp_tensor(shape, rank, full=False, random_state=None):
+def cp_tensor(shape, rank, full=False, orthogonal=False, random_state=None):
     """Generates a random CP tensor
-    
+
     Parameters
     ----------
     shape : tuple
@@ -40,25 +40,33 @@ def cp_tensor(shape, rank, full=False, random_state=None):
     full : bool, optional, default is False
         if True, a full tensor is returned
         otherwise, the decomposed tensor is returned
+    orthogonal : bool, optional, default is False
+        if True, creates a tensor with orthogonal components
     random_state : `np.random.RandomState`
-        
+
     Returns
     -------
     cp_tensor : ND-array or 2D-array list
         ND-array : full tensor if `full` is True
         2D-array list : list of factors otherwise
     """
+    if (rank > min(shape)) and orthogonal:
+        raise ValueError('Can only construct orthogonal tensors when rank <= '
+                         'min(shape)')
+
     rns = check_random_state(random_state)
     factors = [T.tensor(rns.random_sample((s, rank))) for s in shape]
+    if orthogonal:
+        factors = [T.qr(factor)[0] for factor in factors]
+
     if full:
         return kruskal_to_tensor(factors)
     else:
         return factors
-    
 
 def tucker_tensor(shape, rank, full=False, random_state=None):
     """Generates a random Tucker tensor
-    
+
     Parameters
     ----------
     shape : tuple
@@ -71,7 +79,7 @@ def tucker_tensor(shape, rank, full=False, random_state=None):
         if True, a full tensor is returned
         otherwise, the decomposed tensor is returned
     random_state : `np.random.RandomState`
-        
+
     Returns
     -------
     tucker_tensor : ND-array or (ND-array, 2D-array list)
@@ -97,5 +105,3 @@ def tucker_tensor(shape, rank, full=False, random_state=None):
         return tucker_to_tensor(core, factors)
     else:
         return core, factors
-
-

@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 
 from .. import backend as T
@@ -7,8 +5,6 @@ from ..random import check_random_state
 from ..base import unfold
 from ..kruskal_tensor import kruskal_to_tensor
 from ..tenalg import khatri_rao
-
-logger = logging.getLogger(__name__)
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 # Author: Chris Swierczewski <csw@amazon.com>
@@ -81,23 +77,21 @@ def initialize_factors(tensor, rank, init='svd', random_state=None):
     rng = check_random_state(random_state)
 
     if init is 'random':
-        logger.info('[CPDecomp] Using random initialization')
         factors = [T.tensor(rng.random_sample((tensor.shape[i], rank))) for i in range(T.ndim(tensor))]
         factors, _ = normalize_factors(factors)
         return factors
 
     if init is 'svd':
-        logger.info('[CPDecomp] Using svd initialization')
         factors = []
         for mode in range(T.ndim(tensor)):
             U, _, _ = T.partial_svd(unfold(tensor, mode), n_eigenvecs=rank)
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
-                factor = T.tensor(np.zeros((U.shape[0], rank)))
-                factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])))
+                factor = T.tensor(np.zeros((U.shape[0], rank)), **T.context(tensor))
+                factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])), **T.context(tensor))
                 factor[:, :tensor.shape[mode]] = U
-                U = T.tensor(factor)
+                U = factor
             factors.append(U[:, :rank])
         return factors
 
