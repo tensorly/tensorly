@@ -77,11 +77,10 @@ def initialize_factors(tensor, rank, init='svd', random_state=None):
     rng = check_random_state(random_state)
 
     if init is 'random':
-        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank))) for i in range(T.ndim(tensor))]
+        factors = [T.tensor(rng.random_sample((tensor.shape[i], rank)), **T.context(tensor)) for i in range(T.ndim(tensor))]
         factors, _ = normalize_factors(factors)
         return factors
-
-    if init is 'svd':
+    elif init is 'svd':
         factors = []
         for mode in range(T.ndim(tensor)):
             U, _, _ = T.partial_svd(unfold(tensor, mode), n_eigenvecs=rank)
