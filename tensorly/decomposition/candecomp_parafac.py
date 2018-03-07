@@ -78,7 +78,6 @@ def initialize_factors(tensor, rank, init='svd', random_state=None):
 
     if init is 'random':
         factors = [T.tensor(rng.random_sample((tensor.shape[i], rank)), **T.context(tensor)) for i in range(T.ndim(tensor))]
-        factors, _ = normalize_factors(factors)
         return factors
     elif init is 'svd':
         factors = []
