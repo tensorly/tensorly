@@ -38,6 +38,15 @@ Alternatively, you can pip install from the git repository::
 
    pip install git+https://github.com/tensorly/tensorly
 
+Second option: install with conda
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Simply run::
+
+  conda install -c conda-forge tensorly
+
+That's it!
+
 Development: install from git
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
