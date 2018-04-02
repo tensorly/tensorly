@@ -1,11 +1,17 @@
+import re
+import ast
+
 try:
     from setuptools import setup, find_packages
 except ImportError:
     from distutils.core import setup, find_packages
 
-import tensorly
-version = tensorly.__version__
+# Grab the version
+_version_re = re.compile(r'__version__\s+=\s+(.*)')
 
+with open('tensorly/__init__.py', 'rb') as f:
+    version = str(ast.literal_eval(_version_re.search(
+        f.read().decode('utf-8')).group(1)))
 
 def readme():
     with open('README.rst') as f:
