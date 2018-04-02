@@ -94,6 +94,7 @@ API reference
     proximal.soft_thresholding
     proximal.svd_thresholding
     proximal.procrustes
+    inner
 
 
 :mod:`tensorly.decomposition`: Tensor Decomposition
