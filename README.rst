@@ -43,7 +43,7 @@ Second option: install with conda
 
 Simply run::
 
-  conda install -c conda-forge tensorly
+  conda install -c tensorly tensorly
 
 That's it!
 
