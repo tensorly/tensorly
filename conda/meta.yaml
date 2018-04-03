@@ -1,0 +1,36 @@
+package:
+  name: tensorly
+  version: "0.3.0"
+
+source:
+  path: ../
+
+build:
+  number: 0
+  noarch: generic
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python >=3.4
+    - setuptools
+
+  run:
+    - python
+    - numpy
+    - scipy
+    - matplotlib
+
+test:
+  requires:
+    - pytest
+    # NumPy requires nosetests e.g. for assert_raises.....
+    - nose
+
+  commands:
+    - TENSORLY_BACKEND='numpy' pytest -v $SP_DIR/tensorly
+
+about:
+  home: https://github.com/tensorly/tensorly/
+  license: BSD
+  summary: "Tensor learning in Python"
