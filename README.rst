@@ -1,5 +1,8 @@
 .. image:: https://badge.fury.io/py/tensorly.svg
     :target: https://badge.fury.io/py/tensorly
+    
+.. image:: https://anaconda.org/tensorly/tensorly/badges/version.svg   
+    :target: https://anaconda.org/tensorly/tensorly
 
 .. image:: https://travis-ci.org/tensorly/tensorly.svg?branch=master
     :target: https://travis-ci.org/tensorly/tensorly
