@@ -81,3 +81,61 @@ Alternatively, you can specify for which backend you wish to run the tests:
    TENSORLY_BACKEND='numpy' pytest -v tensorly
   
 ------------------
+
+Quickstart
+==========
+
+.. code:: python
+
+   import tensorly as tl
+   import numpy as np
+
+Create a small third order tensor of size 3 x 4 x 2:
+
+.. code:: python
+
+   tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)))
+
+You can perform basic operations on the tensor:
+
+.. code:: python
+
+   unfolded = unfold(tensor, mode=0)
+   fold(unfolded, mode=0, shape=tensor.shape)
+
+
+Applying tensor decomposition is easy:
+
+.. code:: python
+
+   from tensorly.decomposition import tucker
+   # Apply Tucker decomposition 
+   core, factors = tucker(tensor, rank=[2, 2, 2])
+   # Reconstruct the full tensor from the decomposed form
+   tl.tucker_to_tensor(core, factors) 
+
+Changing the backend to perform computation on GPU for instance (options are ``numpy``, ``mxnet`` or ``pytorch``). Note that using MXNet or PyTorch requires to have installed them first:
+
+.. code:: python
+
+   tl.set_backend('pytorch')
+
+Now all the computation is done by PyTorch:
+
+.. code:: python
+
+   tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)))
+   type(tensor) # torch.FloatTensor
+
+You can also create the tensor on GPU:
+
+.. code:: python
+
+   import torch
+   tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)), dtype=torch.cuda.FloatTensor)
+   type(tensor) # torch.cuda.FloatTensor
+
+For more information on getting started, checkout the `user-guide <https://tensorly.github.io/dev/user_guide/index.html>`_  and for a detailed reference of the functions and their documentation, refer to
+the `API <https://tensorly.github.io/dev/modules/api.html>`_   
+
+If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_, or better yet, a `pull-request <https://github.com/tensorly/tensorly/pulls>`_!
