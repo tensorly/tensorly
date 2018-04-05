@@ -1,21 +1,29 @@
-.. image:: https://badge.fury.io/py/tensorly.svg
-    :target: https://badge.fury.io/py/tensorly
-    
-.. image:: https://anaconda.org/tensorly/tensorly/badges/version.svg   
-    :target: https://anaconda.org/tensorly/tensorly
+.. raw:: html
 
-.. image:: https://travis-ci.org/tensorly/tensorly.svg?branch=master
-    :target: https://travis-ci.org/tensorly/tensorly
+    <p align="center"><img width="35%" src="doc/_static/TensorLy_logo.png" /></p>
 
-.. image:: https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master
-    :target: https://coveralls.io/github/tensorly/tensorly?branch=master
+.. raw:: html
     
-.. image:: https://badges.gitter.im/tensorly/tensorly.svg
-    :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+    <p align="center">
+        <img src="https://badge.fury.io/py/tensorly.svg" 
+            href="https://badge.fury.io/py/tensorly" />
+        <img src="https://anaconda.org/tensorly/tensorly/badges/version.svg" 
+            href="https://anaconda.org/tensorly/tensorly" />
+        <img src="https://travis-ci.org/tensorly/tensorly.svg?branch=master" 
+            href="https://travis-ci.org/tensorly/tensorly" />
+        <img src="https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master" 
+            href="https://coveralls.io/github/tensorly/tensorly?branch=master" />
+        <img src="https://badges.gitter.im/tensorly/tensorly.svg"
+            href="https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge" />
+    </p>
+    
+
+\ 
 
 ========
 TensorLy
 ========
+
 
 TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, MXNet or PyTorch and run methods at scale on CPU or GPU.
 
@@ -120,14 +128,7 @@ Changing the backend to perform computation on GPU for instance (options are ``n
 
    tl.set_backend('pytorch')
 
-Now all the computation is done by PyTorch:
-
-.. code:: python
-
-   tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)))
-   type(tensor) # torch.FloatTensor
-
-You can also create the tensor on GPU:
+Now all the computation is done by PyTorch, and tensors can be created on GPU:
 
 .. code:: python
 
