@@ -13,64 +13,73 @@
 .. image:: https://badges.gitter.im/tensorly/tensorly.svg
     :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
 
+========
 TensorLy
 ========
 
 TensorLy is a fast and simple Python library for tensor learning. It builds on top of NumPy, SciPy and MXNet and allows for fast and straightforward tensor decomposition, tensor learning and tensor algebra.
 
 - **Website:** http://tensorly.github.io
-- **Source:**  https://github.com/tensorly/tensorly
+- **Source-code:**  https://github.com/tensorly/tensorly
 - **Jupyter Notebooks:** https://github.com/JeanKossaifi/tensorly-notebooks
 
+----------------------------
 
-How to install
---------------
+Installing TensorLy
+===================
+
+
+
++-------------------------------------------+---------------------------------------------------+
+|      **With pip** (recommended)           |         **With conda**                            |
++-------------------------------------------+---------------------------------------------------+
+|                                           |                                                   |
+| .. code::                                 | .. code::                                         |
+|                                           |                                                   |
+|   pip install -U tensorly                 |   conda install -c tensorly tensorly              |
+|                                           |                                                   |
+|                                           |                                                   |
++-------------------------------------------+---------------------------------------------------+
+|                               **Development (from git)**                                      |
++-------------------------------------------+---------------------------------------------------+
+|                                                                                               |
+|          .. code::                                                                            |
+|                                                                                               |
+|             git clone https://github.com/tensorly/tensorly                                    |
+|             cd tensorly                                                                       |
+|             # Install in editable mode with `-e` or, equivalently, `--editable`               |
+|             pip install -e .                                                                  |
+|                                                                                               |
++-----------------------------------------------------------------------------------------------+  
  
-Easy option: install with pip
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Note:** TensorLy depends on NumPy by default. If you want to use the MXNet or PyTorch backends, you will need to install these packages separately.
 
-Simply run::
+For detailed instruction, checkout the `documentation <https://tensorly.github.io/stable/installation.html>`_.
 
-   pip install -U tensorly
-   
-NOTE: TensorLy is developed/tested only for Python 3
-
-That's it!
-
-Alternatively, you can pip install from the git repository::
-
-   pip install git+https://github.com/tensorly/tensorly
-
-Second option: install with conda
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Simply run::
-
-  conda install -c tensorly tensorly
-
-That's it!
-
-Development: install from git
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The library is still very new and under heavy developement. To install the last version:
-
-Clone the repository and cd there::
-
-   git clone https://github.com/tensorly/tensorly
-   cd tensorly
-
-Then install the package (here in editable mode with `-e` or equivalently `--editable`)::
-
-   pip install -e .
+--------------------------
 
 Running the tests
-~~~~~~~~~~~~~~~~~
+=================
 
 Testing and documentation are an essential part of this package and all functions come with uni-tests and documentation.
 
-You can run all the tests using the `nose` package::
+The tests are ran using the `pytest` package (though you can also use `nose`). 
+First install `pytest`::
 
-   nosetests -v tensorly
+    pip install pytest
+    
+Then to run the test, simply run, in the terminal:
+
+.. code::
+
+   pytest -v tensorly
+   
+Alternatively, you can specify for which backend you wish to run the tests:
+
+.. code::
+   
+   TENSORLY_BACKEND='numpy' pytest -v tensorly
+  
+------------------
 
 
