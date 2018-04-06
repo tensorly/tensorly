@@ -1,23 +1,25 @@
 .. raw:: html
 
     <p align="center"><img width="35%" src="doc/_static/TensorLy_logo.png" /></p>
-
-.. raw:: html
     
     <p align="center">
-        <img src="https://badge.fury.io/py/tensorly.svg" 
-            href="https://badge.fury.io/py/tensorly" />
-        <img src="https://anaconda.org/tensorly/tensorly/badges/version.svg" 
-            href="https://anaconda.org/tensorly/tensorly" />
-        <img src="https://travis-ci.org/tensorly/tensorly.svg?branch=master" 
-            href="https://travis-ci.org/tensorly/tensorly" />
-        <img src="https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master" 
-            href="https://coveralls.io/github/tensorly/tensorly?branch=master" />
-        <img src="https://badges.gitter.im/tensorly/tensorly.svg"
-            href="https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge" />
+        <a href="https://badge.fury.io/py/tensorly" target=blank>
+            <img src="https://badge.fury.io/py/tensorly.svg"
+        </a>
+        <a href="https://anaconda.org/tensorly/tensorly" target=blank>
+            <img src="https://anaconda.org/tensorly/tensorly/badges/version.svg" 
+        </a>
+        <a href="https://travis-ci.org/tensorly/tensorly" target=blank>
+            <img src="https://travis-ci.org/tensorly/tensorly.svg?branch=master" 
+        </a>
+        <a href="https://coveralls.io/github/tensorly/tensorly?branch=master" target=blank>
+            <img src="https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master" 
+        </a>
+        <a href="https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge" target=blank>
+            <img src="https://badges.gitter.im/tensorly/tensorly.svg"
+        </a>
     </p>
     
-
 \ 
 
 ========
@@ -98,18 +100,13 @@ Quickstart
    import tensorly as tl
    import numpy as np
 
-Create a small third order tensor of size 3 x 4 x 2:
+Create a small third order tensor of size 3 x 4 x 2 and perform simple operations on it:
 
 .. code:: python
 
    tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)))
-
-You can perform basic operations on the tensor:
-
-.. code:: python
-
-   unfolded = unfold(tensor, mode=0)
-   fold(unfolded, mode=0, shape=tensor.shape)
+   tl.unfolded = unfold(tensor, mode=0)
+   tl.fold(unfolded, mode=0, shape=tensor.shape)
 
 
 Applying tensor decomposition is easy:
@@ -122,11 +119,11 @@ Applying tensor decomposition is easy:
    # Reconstruct the full tensor from the decomposed form
    tl.tucker_to_tensor(core, factors) 
 
-Changing the backend to perform computation on GPU for instance (options are ``numpy``, ``mxnet`` or ``pytorch``). Note that using MXNet or PyTorch requires to have installed them first:
+Changing the backend to perform computation on GPU for instance. Note that using MXNet or PyTorch requires to have installed them first:
 
 .. code:: python
 
-   tl.set_backend('pytorch')
+   tl.set_backend('pytorch') # Or 'mxnet' or 'numpy'
 
 Now all the computation is done by PyTorch, and tensors can be created on GPU:
 
@@ -140,3 +137,5 @@ For more information on getting started, checkout the `user-guide <https://tenso
 the `API <https://tensorly.github.io/dev/modules/api.html>`_   
 
 If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_, or better yet, a `pull-request <https://github.com/tensorly/tensorly/pulls>`_!
+
+-------------
