@@ -50,7 +50,9 @@ def to_numpy(tensor):
     -------
     ndarray
     """
-    if torch.is_tensor(tensor):
+    if torch.is_tensor(tensor) and tensor.cuda:
+        return tensor.cpu().numpy()
+    elif torch.is_tensor(tensor):
         return tensor.numpy()
     if isinstance(tensor, numpy.ndarray):
         return tensor
@@ -60,7 +62,6 @@ def to_numpy(tensor):
     except ValueError:
         raise ValueError('Could not convert object of type {} into a Numpy '
                          'NDArray'.format(type(tensor)))
-
 
 def assert_array_equal(a, b, **kwargs):
     testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
@@ -261,9 +262,44 @@ def partial_svd(matrix, n_eigenvecs=None):
         raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
             ndim(matrix)))
 
-    U, S, V = torch.svd(matrix, some=False)
-    U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V.t()[:n_eigenvecs, :]
-    return U, S, V
+    # Choose what to do depending on the params
+    dim_1, dim_2 = matrix.shape
+    if dim_1 <= dim_2:
+        min_dim = dim_1
+    else:
+        min_dim = dim_2
+
+    if n_eigenvecs is None or n_eigenvecs >= min_dim:
+	# Default on standard SVD
+        try:
+            U, S, V = torch.svd(matrix, some=False)
+            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V.t()[:n_eigenvecs, :]
+            return U, S, V
+
+        except RuntimeError: # Probably ran out of memory..
+            ctx = context(matrix)
+            matrix = to_numpy(matrix)
+            U, S, V = scipy.linalg.svd(matrix)
+            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+            return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
+
+    else:
+        ctx = context(matrix)
+        matrix = to_numpy(matrix)
+        # We can perform a partial SVD
+        # First choose whether to use X * X.T or X.T *X
+        if dim_1 < dim_2:
+            S, U = scipy.sparse.linalg.eigsh(numpy.dot(matrix, matrix.T), k=n_eigenvecs, which='LM')
+            S = numpy.sqrt(S)
+            V = numpy.dot(matrix.T, U * 1/S.reshape((1, -1)))
+        else:
+            S, V = scipy.sparse.linalg.eigsh(numpy.dot(matrix.T, matrix), k=n_eigenvecs, which='LM')
+            S = numpy.sqrt(S)
+            U = numpy.dot(matrix, V) * 1/S.reshape((1, -1))
+
+        # WARNING: here, V is still the transpose of what it should be
+        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T, **ctx)
 
 def sqrt(tensor, *args, **kwargs):
     if torch.is_tensor(tensor):
