@@ -29,7 +29,7 @@ TensorLy
 
 TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, MXNet or PyTorch and run methods at scale on CPU or GPU.
 
-- **Website:** http://tensorly.github.io
+- **Website:** http://tensorly.org
 - **Source-code:**  https://github.com/tensorly/tensorly
 - **Jupyter Notebooks:** https://github.com/JeanKossaifi/tensorly-notebooks
 
