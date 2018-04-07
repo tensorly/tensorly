@@ -64,7 +64,7 @@ Installing TensorLy
  
 **Note:** TensorLy depends on NumPy by default. If you want to use the MXNet or PyTorch backends, you will need to install these packages separately.
 
-For detailed instruction, checkout the `documentation <https://tensorly.github.io/stable/installation.html>`_.
+For detailed instruction, checkout the `documentation <http://tensorly.org/dev/installation.html>`_.
 
 --------------------------
 
@@ -133,8 +133,8 @@ Now all the computation is done by PyTorch, and tensors can be created on GPU:
    tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)), dtype=torch.cuda.FloatTensor)
    type(tensor) # torch.cuda.FloatTensor
 
-For more information on getting started, checkout the `user-guide <https://tensorly.github.io/dev/user_guide/index.html>`_  and for a detailed reference of the functions and their documentation, refer to
-the `API <https://tensorly.github.io/dev/modules/api.html>`_   
+For more information on getting started, checkout the `user-guide <http://tensorly.org/dev/user_guide/index.html>`_  and for a detailed reference of the functions and their documentation, refer to
+the `API <http://tensorly.org/dev/modules/api.html>`_   
 
 If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_, or better yet, a `pull-request <https://github.com/tensorly/tensorly/pulls>`_!
 
