@@ -2,11 +2,24 @@
 Core tensor operations with PyTorch.
 """
 
+# Author: Jean Kossaifi
+# License: BSD 3 clause
+
+
+# First check whether PyTorch is installed
+try:
+    import torch
+except ImportError as error:
+    message = ('Impossible to import PyTorch.\n'
+               'To use TensorLy with the PyTorch backend, '
+               'you must first install PyTorch!')
+    raise ImportError(message) from error
+
+
 import numpy
 import scipy.linalg
 import scipy.sparse.linalg
 from numpy import testing
-import torch
 from . import numpy_backend
 
 from torch import ones, zeros
@@ -20,11 +33,6 @@ from math import sqrt as scalar_sqrt
 
 # Equivalent functions in pytorch 
 maximum = max
-
-#import numpy as np
-# Author: Jean Kossaifi
-
-# License: BSD 3 clause
 
 def context(tensor):
     """Returns the context of a tensor

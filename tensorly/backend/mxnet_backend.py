@@ -2,9 +2,20 @@
 Core tensor operations with MXnet.
 """
 
-import warnings
+# Author: Jean Kossaifi
+# License: BSD 3 clause
 
-import mxnet as mx
+
+# First check whether MXNet is installed
+try:
+    import mxnet as mx
+except ImportError as error:
+    message = ('Impossible to import MXNet.\n'
+               'To use TensorLy with the MXNet backend, '
+               'you must first install MXNet!')
+    raise ImportError(message) from error
+
+import warnings
 import numpy
 import scipy.linalg
 import scipy.sparse.linalg
@@ -19,10 +30,6 @@ from mxnet.ndarray import abs, where, maximum, sign, prod
 from math import sqrt as scalar_sqrt
 
 from . import numpy_backend
-
-# Author: Jean Kossaifi
-
-# License: BSD 3 clause
 
 def context(tensor):
     """Returns the context of a tensor
