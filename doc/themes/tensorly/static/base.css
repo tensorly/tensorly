@@ -376,24 +376,7 @@ div.admonition dd {
     margin-left: 4em;
     margin-bottom: 1em;
 }
-.admonition.important {
-    border: solid #008c77;
-    padding: 0;
-    margin: 1em 0;
-    background: #b3f9ee;
-}
-.admonition.important p{
-    padding: 1em;
-}
-.admonition.important p.first.admonition-title {
-    padding: .5em .75em;
-    margin: 0;
-    font-weight: 700;
-    color: #f5f5f5;
-    background: #008c77;
-    border-top: none;
-    margin-top: 0;
-}
+/* Warning directive */
 .admonition.warning {
     border: solid #9a2c42;
     margin: 1em 0;
@@ -412,7 +395,44 @@ div.admonition dd {
     border-top: none;
     margin-top: 0;
 }
-
+/* Important directive */
+.admonition.important {
+    border: solid #356392;
+    margin: 1em 0;
+    padding: 0;
+    background: #d2e5f9;
+}
+.admonition.important p{
+    padding: 1em;
+}
+.admonition.important p.first.admonition-title {
+    padding: .5em .75em;
+    margin: 0;
+    font-weight: 700;
+    color: #f5f5f5;
+    background: #467cb3;
+    border-top: none;
+    margin-top: 0;
+}
+/* Note directive */
+.admonition.note {
+    border: solid #008c77;
+    padding: 0;
+    margin: 1em 0;
+    background: #b3f9ee;
+}
+.admonition.note p{
+    padding: 1em;
+}
+.admonition.note p.first.admonition-title {
+    padding: .5em .75em;
+    margin: 0;
+    font-weight: 700;
+    color: #f5f5f5;
+    background: #008c77;
+    border-top: none;
+    margin-top: 0;
+}
 
 /* ********
  * EXAMPLES 
