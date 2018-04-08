@@ -13,7 +13,7 @@ except ImportError as error:
     message = ('Impossible to import MXNet.\n'
                'To use TensorLy with the MXNet backend, '
                'you must first install MXNet!')
-    raise ImportError(message) from error
+    raise ImportError(message)
 
 import warnings
 import numpy
