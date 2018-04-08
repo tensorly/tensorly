@@ -13,7 +13,7 @@ from .. import backend as T
 def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
                mu_init=10e-5, mu_max=10e9, learning_rate=1.1,
                n_iter_max=100, random_state=None, verbose=1):
-    """Robust Tensor PCA via ALM
+    """Robust Tensor PCA via ALM with support for missing values
 
         Decomposes a tensor `X` into the sum of a low-rank component `D`
         and a sparse component `E`.

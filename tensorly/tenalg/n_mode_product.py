@@ -2,7 +2,7 @@ from .. import backend as T
 from ..base import unfold, fold
 
 def mode_dot(tensor, matrix_or_vector, mode):
-        """n-mode product of a tensor by a matrix at the specified mode.
+        """n-mode product of a tensor and a matrix or vector at the specified mode
 
         Mathematically: :math:`\\text{tensor} \\times_{\\text{mode}} \\text{matrix or vector}`
 
@@ -22,6 +22,10 @@ def mode_dot(tensor, matrix_or_vector, mode):
             `mode`-mode product of `tensor` by `matrix_or_vector`
             * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
             * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
+
+        See also
+        --------
+        multi_mode_dot : chaining several mode_dot in one call
         """
         # the mode along which to fold might decrease if we take product with a vector
         fold_mode = mode
@@ -57,7 +61,7 @@ def mode_dot(tensor, matrix_or_vector, mode):
         return fold(res, fold_mode, new_shape)
 
 def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False):
-    """n-mode product of a tensor and several matrices or vectors
+    """n-mode product of a tensor and several matrices or vectors over several modes
 
     Parameters
     ----------
@@ -84,6 +88,10 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     If no modes are specified, just assumes there is one matrix or vector per mode and returns:
 
     :math:`\\text{tensor  }\\times_0 \\text{ matrix or vec list[0] }\\times_1 \\cdots \\times_n \\text{ matrix or vec list[n] }`
+
+    See also
+    --------
+    mode_dot
     """
     if modes is None:
         modes = range(len(matrix_or_vec_list))
