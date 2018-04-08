@@ -25,8 +25,11 @@ def set_backend(backend_name):
     _BACKEND = backend_name
 
     # reloads tensorly.backend
-    importlib.reload(backend)
-
+    try:
+        importlib.reload(backend)
+    except:
+        reload(backend)
+        
     # reload from .backend import * (e.g. tensorly.tensor)
     globals().update(
             {fun: getattr(backend, fun) for n in backend.__all__} if hasattr(backend, '__all__') 
