@@ -13,7 +13,7 @@ except ImportError as error:
     message = ('Impossible to import PyTorch.\n'
                'To use TensorLy with the PyTorch backend, '
                'you must first install PyTorch!')
-    raise ImportError(message) from error
+    raise ImportError(message)
 
 
 import numpy
