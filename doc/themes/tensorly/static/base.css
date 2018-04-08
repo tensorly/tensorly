@@ -362,6 +362,9 @@ code.descname {
     font-weight: bold;
     color: #007365;
 }
+.admonition p {
+	margin: 0!important;
+}
 .rubric, .admonition-title {
     padding: 0.5em 0.75em;
     font-weight: bold;
