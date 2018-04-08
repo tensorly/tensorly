@@ -38,7 +38,7 @@ TensorLy is a Python library that aims at making tensor learning simple and acce
 Installing TensorLy
 ===================
 
-
+The only pre-requisite is to have **Python 3** installed. The easiest way is via the `Anaconda distribution <https://www.anaconda.com/download/>`_.
 
 +-------------------------------------------+---------------------------------------------------+
 |      **With pip** (recommended)           |         **With conda**                            |
@@ -55,6 +55,7 @@ Installing TensorLy
 |                                                                                               |
 |          .. code::                                                                            |
 |                                                                                               |
+|             # clone the repository                                                            |
 |             git clone https://github.com/tensorly/tensorly                                    |
 |             cd tensorly                                                                       |
 |             # Install in editable mode with `-e` or, equivalently, `--editable`               |
