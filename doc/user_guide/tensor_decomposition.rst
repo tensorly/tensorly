@@ -20,7 +20,8 @@ We demonstrate here how to perform a Canonical Polyadic Decomposition. A rank-r 
 
 First, let's create a second order tensor that is zero everywhere except in a swiss shape that is one.
 
-.. code-block::python
+.. code-block:: python
+                
    >>> import numpy as np
    >>> import tensorly as tl
    >>> tensor = tl.tensor([[ 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
@@ -98,7 +99,7 @@ Using the same tensor as previously, we will perform a rank [2, 3]-decomposition
    >>> [f.shape for f in factors]
    [(12, 2), (12, 3)]
 
-As previously, we can reconstruct a full tensor from our Tucker decomposition:
+As before, we can reconstruct a full tensor from our Tucker decomposition:
 
 .. code:: python
    
