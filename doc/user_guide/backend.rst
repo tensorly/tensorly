@@ -5,11 +5,11 @@ TensorLy's backend system
 
 Backend?
 --------
-To represent tensors and for numerical computation, TensorLy supports several backends transparently: the ubuquitous NumPy (the default), MXNet, and PyTorch.
+To represent tensors and for numerical computation, TensorLy supports several backends transparently: the ubiquitous NumPy (the default), MXNet, and PyTorch.
 For the end user, the interface is exactly the same, but under the hood, a different library is used to represent multi-dimensional arrays and perform computations on these. In other words, you write your code using TensorLy and can then decide whether the computation is done using NumPy, PyTorch or MXNet.
 
-Why backends
-------------
+Why backends?
+-------------
 The goal of TensorLy is to make tensor methods accessible. While NumPy needs no introduction, the MXNet and PyTorch backends are especially useful as they allows to perform transparently computation on CPU or GPU. Last but not least, using MXNet or PyTorch as a backend, we are able to combine tensor methods and deep learning easily!
 
 How do I change the backend?
@@ -30,7 +30,7 @@ Once you change the backend, all the computation is done using that backend.
 Context of a tensor
 -------------------
 
-Different backends have different parameters associated with the tensors. For instance, in NumPy mwe traditionally set the dtype when creating an ndarray, while in mxnet we also have to change the *context* (GPU or CPU), with the `ctx` argument. Similarly, in PyTorch, we might want to create a FloatTensor for CPU and a cuda.FloatTensor for GPU. 
+Different backends have different parameters associated with the tensors. For instance, in NumPy we traditionally set the dtype when creating an ndarray, while in mxnet we also have to change the *context* (GPU or CPU), with the `ctx` argument. Similarly, in PyTorch, we might want to create a FloatTensor for CPU and a cuda.FloatTensor for GPU. 
 
 To handle this difference, we implemented a `context` function, that, given a tensor, returns a dictionary of values characterising that tensor. A function getting a tensor as input and creating a new tensor should use that context to create the new tensor.
 
