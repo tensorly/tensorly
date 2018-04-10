@@ -8,7 +8,7 @@ Setting
 
 Tensor regression is available in the module :mod:`tensorly.regression`.
 
-Given a series of :math:`N` tensor samples/observations, :math:`\tilde X_i, i={1, \cdots, N}`, and corresponding labels :math:`y_i, i={1, \cdots, N}`, we want to find the weight tesor :math:`\tilde W` such that, for each :math:`i={1, \cdots, N}`: 
+Given a series of :math:`N` tensor samples/observations, :math:`\tilde X_i, i={1, \cdots, N}`, and corresponding labels :math:`y_i, i={1, \cdots, N}`, we want to find the weight tensor :math:`\tilde W` such that, for each :math:`i={1, \cdots, N}`: 
 
 .. math::
 
