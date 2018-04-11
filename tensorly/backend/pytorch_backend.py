@@ -299,7 +299,7 @@ def partial_svd(matrix, n_eigenvecs=None):
         if dim_1 < dim_2:
             S, U = scipy.sparse.linalg.eigsh(numpy.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
             S = numpy.sqrt(S)
-            V = numpy.dot(matrix.T, U * 1/S.reshape((1, -1)))
+            V = numpy.dot(matrix.T.conj(), U * 1/S.reshape((1, -1)))
         else:
             S, V = scipy.sparse.linalg.eigsh(numpy.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
             S = numpy.sqrt(S)
@@ -307,7 +307,7 @@ def partial_svd(matrix, n_eigenvecs=None):
 
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T, **ctx)
+        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
 
 def sqrt(tensor, *args, **kwargs):
     if torch.is_tensor(tensor):

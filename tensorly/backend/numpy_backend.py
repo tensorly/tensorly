@@ -178,7 +178,7 @@ def partial_svd(matrix, n_eigenvecs=None):
         if dim_1 < dim_2:
             S, U = scipy.sparse.linalg.eigsh(np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
             S = np.sqrt(S)
-            V = np.dot(matrix.T, U * 1/S[None, :])
+            V = np.dot(matrix.T.conj(), U * 1/S[None, :])
         else:
             S, V = scipy.sparse.linalg.eigsh(np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
             S = np.sqrt(S)
@@ -186,4 +186,4 @@ def partial_svd(matrix, n_eigenvecs=None):
 
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return U, S, V.T
+        return U, S, V.T.conj()
