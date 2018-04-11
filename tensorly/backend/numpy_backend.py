@@ -176,11 +176,11 @@ def partial_svd(matrix, n_eigenvecs=None):
         # We can perform a partial SVD
         # First choose whether to use X * X.T or X.T *X
         if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(np.dot(matrix, matrix.T), k=n_eigenvecs, which='LM')
+            S, U = scipy.sparse.linalg.eigsh(np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
             S = np.sqrt(S)
             V = np.dot(matrix.T, U * 1/S[None, :])
         else:
-            S, V = scipy.sparse.linalg.eigsh(np.dot(matrix.T, matrix), k=n_eigenvecs, which='LM')
+            S, V = scipy.sparse.linalg.eigsh(np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
             S = np.sqrt(S)
             U = np.dot(matrix, V) * 1/S[None, :]
 
