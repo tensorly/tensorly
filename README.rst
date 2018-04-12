@@ -1,6 +1,6 @@
 .. raw:: html
 
-    <p align="center"><img width="35%" src="doc/_static/TensorLy_logo.png" /></p>
+    <p align="center"><img width="35%" src="http://tensorly.org/stable/_static/TensorLy_logo.png" /></p>
     
     <p align="center">
         <a href="https://badge.fury.io/py/tensorly" target=blank>
@@ -65,7 +65,7 @@ The only pre-requisite is to have **Python 3** installed. The easiest way is via
  
 **Note:** TensorLy depends on NumPy by default. If you want to use the MXNet or PyTorch backends, you will need to install these packages separately.
 
-For detailed instruction, checkout the `documentation <http://tensorly.org/dev/installation.html>`_.
+For detailed instruction, please see the `documentation <http://tensorly.org/dev/installation.html>`_.
 
 --------------------------
 
@@ -96,14 +96,13 @@ Alternatively, you can specify for which backend you wish to run the tests:
 Quickstart
 ==========
 
+Create a small third order tensor of size 3 x 4 x 2 and perform simple operations on it:
+
 .. code:: python
 
    import tensorly as tl
    import numpy as np
 
-Create a small third order tensor of size 3 x 4 x 2 and perform simple operations on it:
-
-.. code:: python
 
    tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)))
    tl.unfolded = unfold(tensor, mode=0)
@@ -120,16 +119,12 @@ Applying tensor decomposition is easy:
    # Reconstruct the full tensor from the decomposed form
    tl.tucker_to_tensor(core, factors) 
 
-Changing the backend to perform computation on GPU for instance. Note that using MXNet or PyTorch requires to have installed them first:
+Changing the backend to perform computation on GPU for instance. Note that using MXNet or PyTorch requires to have installed them first. For instance, after setting the backend to pytorch, all the computation is done by PyTorch, and tensors can be created on GPU:
 
 .. code:: python
 
    tl.set_backend('pytorch') # Or 'mxnet' or 'numpy'
-
-Now all the computation is done by PyTorch, and tensors can be created on GPU:
-
-.. code:: python
-
+   
    import torch
    tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)), dtype=torch.cuda.FloatTensor)
    type(tensor) # torch.cuda.FloatTensor
