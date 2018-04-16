@@ -86,10 +86,11 @@ def initialize_factors(tensor, rank, init='svd', random_state=None):
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
-                factor = T.tensor(np.zeros((U.shape[0], rank)), **T.context(tensor))
-                factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - tensor.shape[mode])), **T.context(tensor))
-                factor[:, :tensor.shape[mode]] = U
-                U = factor
+                # factor = T.tensor(np.zeros((U.shape[0], rank)), **T.context(tensor))
+                # factor[:, tensor.shape[mode]:] = T.tensor(rng.random_sample((U.shape[0], rank - T.shape(tensor)[mode])), **T.context(tensor))
+                # factor[:, :tensor.shape[mode]] = U
+                random_part = T.tensor(rng.random_sample((U.shape[0], rank - T.shape(tensor)[mode])), **T.context(tensor))
+                U = T.concatenate([U, random_part], axis=1)
             factors.append(U[:, :rank])
         return factors
 
@@ -147,7 +148,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-7,
             pseudo_inverse = T.tensor(np.ones((rank, rank)), **T.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse[:] = pseudo_inverse*T.dot(T.transpose(factor), factor)
+                    pseudo_inverse = pseudo_inverse*T.dot(T.transpose(factor), factor)
             factor = T.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode))
             factor = T.transpose(T.solve(T.transpose(pseudo_inverse), T.transpose(factor)))
             factors[mode] = factor
@@ -224,7 +225,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             sub_indices = [i for i in range(n_factors) if i != mode]
             for i, e in enumerate(sub_indices):
                 if i:
-                    accum[:] = accum*T.dot(T.transpose(nn_factors[e]), nn_factors[e])
+                    accum = accum*T.dot(T.transpose(nn_factors[e]), nn_factors[e])
                 else:
                     accum = T.dot(T.transpose(nn_factors[e]), nn_factors[e])
 
@@ -232,7 +233,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             numerator = T.clip(numerator, a_min=epsilon, a_max=None)
             denominator = T.dot(nn_factors[mode], accum)
             denominator = T.clip(denominator, a_min=epsilon, a_max=None)
-            nn_factors[mode][:] = nn_factors[mode]* numerator / denominator
+            nn_factors[mode] = nn_factors[mode]* numerator / denominator
 
         rec_error = T.norm(tensor - kruskal_to_tensor(nn_factors), 2) / norm_tensor
         rec_errors.append(rec_error)

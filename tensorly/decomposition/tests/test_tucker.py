@@ -58,7 +58,7 @@ def test_tucker():
         T.assert_equal(factors[i].shape, (tensor.shape[i], ranks[i]),
                      err_msg="factors[{}].shape={}, expected {}".format(
                          i, factors[i].shape, (tensor.shape[i], ranks[i])))
-        T.assert_equal(core.shape[i], rank, err_msg="Core.shape[{}]={}, "
+        T.assert_equal(T.shape(core)[i], rank, err_msg="Core.shape[{}]={}, "
                      "expected {}".format(i, core.shape[i], rank))
 
     # Random and SVD init should converge to a similar solution

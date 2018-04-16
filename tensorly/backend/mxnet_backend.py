@@ -68,8 +68,20 @@ def assert_array_almost_equal(a, b, decimal=4, **kwargs):
     testing.assert_array_almost_equal(to_numpy(a), to_numpy(b), decimal=decimal, **kwargs)
 
 assert_raises = testing.assert_raises
-assert_equal = testing.assert_equal
 assert_ = testing.assert_
+
+def assert_equal(actual, desired, err_msg='', verbose=True):
+    if isinstance(actual, nd.NDArray):
+        actual =  actual.asnumpy()
+        if actual.shape == (1, ):
+            actual = actual[0]
+    if isinstance(desired, nd.NDArray):
+        desired =  desired.asnumpy()
+        if desired.shape == (1, ):
+            desired = desired[0]
+    testing.assert_equal(actual, desired)
+
+
 
 def shape(tensor):
     return tensor.shape
@@ -284,3 +296,6 @@ def sqrt(tensor, *args, **kwargs):
 
 def copy(tensor):
     return tensor.copy()
+
+def concatenate(tensors, axis):
+    return nd.concat(*tensors, dim=axis)

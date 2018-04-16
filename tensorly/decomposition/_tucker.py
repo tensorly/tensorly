@@ -41,7 +41,7 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
             with ``core.shape[i] == (tensor.shape[i], ranks[i]) for i in modes``
     """
     if ranks is None:
-        ranks = [tensor.shape[mode] for mode in modes]
+        ranks = [T.shape(tensor)[mode] for mode in modes]
 
     # SVD init
     if init == 'svd':
@@ -52,7 +52,7 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
     else:
         rng = check_random_state(random_state)
         core = T.tensor(rng.random_sample(ranks), **T.context(tensor))
-        factors = [T.tensor(rng.random_sample((tensor.shape[mode], ranks[index])), **T.context(tensor)) for (index, mode) in enumerate(modes)]
+        factors = [T.tensor(rng.random_sample((T.shape(tensor)[mode], ranks[index])), **T.context(tensor)) for (index, mode) in enumerate(modes)]
 
     rec_errors = []
     norm_tensor = T.norm(tensor, 2)
@@ -61,6 +61,7 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
             eigenvecs, _, _ = T.partial_svd(unfold(core_approximation, mode), n_eigenvecs=ranks[index])
+            print(eigenvecs.shape)
             factors[index] = eigenvecs
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
@@ -164,7 +165,7 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
     else:
         rng = check_random_state(random_state)
         core = T.tensor(rng.random_sample(ranks) + 0.01, **T.context(tensor))  # Check this
-        factors = [T.tensor(rng.random_sample(s), **T.context(tensor)) for s in zip(tensor.shape, ranks)]
+        factors = [T.tensor(rng.random_sample(s), **T.context(tensor)) for s in zip(T.shape(tensor), ranks)]
         nn_factors = [T.abs(f) for f in factors]
         nn_core = T.abs(core)
 

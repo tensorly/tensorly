@@ -28,7 +28,8 @@ def test_RPCA():
     # check low rank recovery
     T.assert_array_almost_equal(clean, clean_pred, decimal=1)
     # Check for sparsity of the gross error
-    assert T.sum(noise_pred > 0.01) == T.sum(noise > 0.01)
+    # assert T.sum(noise_pred > 0.01) == T.sum(noise > 0.01)
+    T.assert_array_equal((noise_pred > 0.01), (noise > 0.01))
     # check sparse gross error recovery
     T.assert_array_almost_equal(noise, noise_pred, decimal=1)
 

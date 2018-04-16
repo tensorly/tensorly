@@ -9,7 +9,7 @@ import scipy.sparse.linalg
 
 from numpy import reshape, moveaxis, where, copy, transpose
 from numpy import arange, ones, zeros, zeros_like
-from numpy import dot, kron
+from numpy import dot, kron, concatenate
 from numpy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from numpy.linalg import solve, qr
 

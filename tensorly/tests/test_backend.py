@@ -20,12 +20,16 @@ def test_set_backend():
     tensor2 = tl.tensor(np.arange(12).reshape((4, 3)))
     if tl._BACKEND == 'pytorch':
         import torch
-        assert type(tensor) == type(tensor2) == torch.FloatTensor
+        assert torch.is_tensor(tensor) and torch.is_tensor(tensor2)
+        # assert type(tensor) == type(tensor2) == torch.FloatTensor
     elif tl._BACKEND == 'numpy':
         assert type(tensor) == type(tensor2) == np.ndarray
     elif tl._BACKEND == 'mxnet':
         import mxnet as mx
         assert type(tensor) == type(tensor2) == mx.nd.NDArray
+    elif tl._BACKEND == 'tensorflow':
+        import tensorflow as tf
+        assert isinstance(tensor, tf.Tensor) and isinstance(tensor2, tf.Tensor)
     else:
         raise ValueError('_BACKEND not recognised (got {})'.format(tl._BACKEND))
 
@@ -338,7 +342,7 @@ def test_ndim():
 
 
 def test_norm():
-    v = T.tensor([1,2,3])
+    v = T.tensor([1., 2., 3.])
     T.assert_equal(T.norm(v,1), 6)
 
     A = T.reshape(T.arange(6), (3,2))
@@ -346,7 +350,7 @@ def test_norm():
 
     column_norms1 = T.norm(A, 1, axis=0)
     row_norms1 = T.norm(A, 1, axis=1)
-    T.assert_array_equal(column_norms1, T.tensor([6, 9]))
+    T.assert_array_equal(column_norms1, T.tensor([6., 9]))
     T.assert_array_equal(row_norms1, T.tensor([1, 5, 9]))
 
     column_norms2 = T.norm(A, 2, axis=0)
@@ -375,9 +379,9 @@ def test_where():
     out = T.where(X < 2*3, zeros, ones)
     for i in range(N):
         if i < 2*3:
-            assert out[i] == 0, 'Unexpected result on vector'
+            T.assert_equal(out[i], 0, 'Unexpected result on vector for element {}'.format(i))
         else:
-            assert out[i] == 1, 'Unexpected result on vector'
+            T.assert_equal(out[i], 1, 'Unexpected result on vector for element {}'.format(i))
 
     # 2D
     shape = (2*3,4); N = np.prod(shape)
@@ -389,9 +393,9 @@ def test_where():
         for j in range(shape[1]):
             index = i*shape[1] + j
             if index < 2*3:
-                assert out[i,j] == 0, 'Unexpected result on matrix'
+                T.assert_equal(out[i,j], 0, 'Unexpected result on matrix')
             else:
-                assert out[i,j] == 1, 'Unexpected result on matrix'
+                T.assert_equal(out[i,j], 1, 'Unexpected result on matrix')
 
     # 3D
     shape = (2,3,4); N = np.prod(shape)
@@ -404,9 +408,9 @@ def test_where():
             for k in range(shape[2]):
                 index = (i*shape[1] + j)*shape[2] + k
                 if index < 2*3:
-                    assert out[i,j,k] == 0, 'Unexpected result on 3-tensor'
+                    T.assert_equal(out[i,j, k], 0, 'Unexpected result on matrix')
                 else:
-                    assert out[i,j,k] == 1, 'Unexpected result on 3-tensor'
+                    T.assert_equal(out[i,j, k], 1, 'Unexpected result on matrix')
 
     # random testing against Numpy's output
     shapes = (16,8,4,2)

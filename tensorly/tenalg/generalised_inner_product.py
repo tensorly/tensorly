@@ -34,11 +34,11 @@ def inner(tensor1, tensor2, n_modes=None):
         return T.sum(tensor1*tensor2)
 
     # Inner product along `n_modes` common modes
-    shape_t1 = list(tensor1.shape)
-    shape_t2 = list(tensor2.shape)
+    shape_t1 = list(T.shape(tensor1))
+    shape_t2 = list(T.shape(tensor2))
     common_modes = shape_t1[len(shape_t1) - n_modes:]
     common_size = int(np.prod(common_modes))
-    output_shape = tensor1.shape[:-n_modes] + tensor2.shape[n_modes:]
+    output_shape = shape_t1[:-n_modes] + shape_t2[n_modes:]
 
     if common_modes != shape_t2[:n_modes]:
         raise ValueError('Incorrect shapes for inner product along {} common modes.'

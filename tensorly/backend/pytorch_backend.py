@@ -315,3 +315,5 @@ def sqrt(tensor, *args, **kwargs):
     else:
         return scalar_sqrt(tensor)
 
+def concatenate(tensors, axis=0):
+    return torch.cat(tensors, dim=axis)
