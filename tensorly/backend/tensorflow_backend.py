@@ -16,7 +16,8 @@ except ImportError as error:
     raise ImportError(message) from error
 
 import tensorflow.contrib.eager as tfe
-tfe.enable_eager_execution()
+tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
+
 
 import numpy
 import scipy.linalg
@@ -53,14 +54,16 @@ def context(tensor):
     """
     return {'dtype':tensor.dtype}
 
-def tensor(data, dtype=numpy.float32):
+def tensor(data, dtype=numpy.float32, device=None, device_id=None):
     """Tensor class
     """
     if isinstance(data, tf.Tensor):
         return data
     else:
-        return tf.constant(data, dtype=dtype)
-
+        if 'device' is not None and 'device' == 'GPU':
+            return tf.constant(data, dtype=dtype).gpu(device_id)                                                                                                                                            
+        else:
+            return tf.constant(data, dtype=dtype)
 def to_numpy(tensor):
     """Returns a copy of the tensor as a NumPy array"""
     if isinstance(tensor, numpy.ndarray):
@@ -219,9 +222,29 @@ def partial_svd(matrix, n_eigenvecs=None):
     else:
         min_dim = dim_2
 
-    S, U, V = tf.svd(matrix, full_matrices=True)
-    U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], transpose(V)[:n_eigenvecs, :]
-    return U, S, V
+    if n_eigenvecs is None or n_eigenvecs >= min_dim:
+	# Default on standard SVD
+        S, U, V = tf.svd(matrix, full_matrices=True)
+        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], transpose(V)[:n_eigenvecs, :]
+        return U, S, V
+    
+    else:
+        ctx = context(matrix)
+        matrix = to_numpy(matrix)
+        # We can perform a partial SVD
+        # First choose whether to use X * X.T or X.T *X
+        if dim_1 < dim_2:
+            S, U = scipy.sparse.linalg.eigsh(numpy.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
+            S = numpy.sqrt(S)
+            V = numpy.dot(matrix.T.conj(), U * 1/S.reshape((1, -1)))
+        else:
+            S, V = scipy.sparse.linalg.eigsh(numpy.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
+            S = numpy.sqrt(S)
+            U = numpy.dot(matrix, V) * 1/S.reshape((1, -1))
+
+        # WARNING: here, V is still the transpose of what it should be
+        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
 
 
 def norm(tensor, order=2, axis=None):                                                                                                                                                                       
