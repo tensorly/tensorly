@@ -61,7 +61,6 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
             eigenvecs, _, _ = T.partial_svd(unfold(core_approximation, mode), n_eigenvecs=ranks[index])
-            print(eigenvecs.shape)
             factors[index] = eigenvecs
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
