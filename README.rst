@@ -105,8 +105,8 @@ Create a small third order tensor of size 3 x 4 x 2 and perform simple operation
 
 
    tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)))
-   tl.unfolded = tl.unfold(tensor, mode=0)
-   tl.fold(tl.unfolded, mode=0, shape=tensor.shape)
+   unfolded = tl.unfold(tensor, mode=0)
+   tl.fold(unfolded, mode=0, shape=tensor.shape)
 
 
 Applying tensor decomposition is easy:
