@@ -4,7 +4,7 @@ import tensorly as tl
 from scipy.sparse.linalg import svds
 from scipy.linalg import svd
 
-from .. import numpy_backend
+from ..backend import numpy_backend
 from .. import backend as T
 from ..base import fold, unfold
 from ..base import partial_fold, partial_unfold
@@ -30,6 +30,9 @@ def test_set_backend():
     elif tl._BACKEND == 'tensorflow':
         import tensorflow as tf
         assert isinstance(tensor, tf.Tensor) and isinstance(tensor2, tf.Tensor)
+    elif tl._BACKEND == 'cupy':
+        import cupy as cp
+        assert isinstance(tensor, cp.ndarray) and isinstance(tensor2, cp.ndarray)
     else:
         raise ValueError('_BACKEND not recognised (got {})'.format(tl._BACKEND))
 
