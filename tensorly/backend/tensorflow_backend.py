@@ -60,10 +60,11 @@ def tensor(data, dtype=numpy.float32, device=None, device_id=None):
     if isinstance(data, tf.Tensor):
         return data
     else:
-        if 'device' is not None and 'device' == 'GPU':
+        if device is not None and device == 'GPU':
             return tf.constant(data, dtype=dtype).gpu(device_id)                                                                                                                                            
         else:
             return tf.constant(data, dtype=dtype)
+
 def to_numpy(tensor):
     """Returns a copy of the tensor as a NumPy array"""
     if isinstance(tensor, numpy.ndarray):
