@@ -20,12 +20,13 @@ import scipy.linalg
 import scipy.sparse.linalg
 from numpy import testing
 import numpy
+import warnings
 
 from cupy import reshape, moveaxis, where, copy, transpose
 from cupy import arange, ones, zeros, zeros_like
 from cupy import dot, kron, concatenate
 from cupy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
-from cupy.linalg import solve, qr
+from cupy.linalg import qr
 
 
 def context(tensor):
@@ -219,4 +220,10 @@ def partial_svd(matrix, n_eigenvecs=None):
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
 
-
+def solve(matrix1, matrix2):
+    try:
+        cp.linalg.solve(matrix1, matrix2)
+    except cp.cuda.cusolver.CUSOLVERError:
+        warnings.warn('CuPy solver failed, using numpy.linalg.solve instead.')
+        return tensor(numpy.linalg.solve(to_numpy(matrix1), to_numpy(matrix2)),
+                      **context(matrix1))
