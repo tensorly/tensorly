@@ -15,7 +15,7 @@ matrix:
        env: BACKEND=pytorch
      - os: linux
        python: 3.6
-       env: BACKEND=numpy DEPLOY_DOCS = 1
+       env: BACKEND=numpy DEPLOY_DOCS=1
 
 install: 
     # Install miniconda
