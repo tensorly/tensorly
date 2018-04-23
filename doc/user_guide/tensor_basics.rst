@@ -54,18 +54,18 @@ Unfolding
 ---------
 Also called **matrization**, **unfolding** a tensor is done by reading the element in a given way as to obtain a matrix instead of a tensor.
 
-For a tensor of size :math:`(I_1, I_2, \cdots, I_N)`, the n-mode unfolding of this tensor will be of size :math:`(I_n, I_1 \times \cdots \times I_{n-1} \times I_{n+1} \cdots \times I_N)`.
+For a tensor of size :math:`(I_0, I_1, \cdots, I_N)`, the n-mode unfolding of this tensor will be of size :math:`(I_n, I_0, I_1 \times \cdots \times I_{n-1} \times I_{n+1} \cdots \times I_N)`.
 
 .. important::
    In tensorly we use an unfolding different from the classical one as defined in [1]_ for better performance.
 
-   Given a tensor :math:`\tilde X \in \mathbb{R}^{I_1 \times I_2 \times \cdots \times I_N}`, the
+   Given a tensor :math:`\tilde X \in \mathbb{R}^{I_0, I_1 \times I_2 \times \cdots \times I_N}`, the
    mode-n unfolding of :math:`\tilde X` is a matrix :math:`\mathbf{X}_{[n]} \in \mathbb{R}^{I_n, I_M}`,
-   with :math:`M = \prod_{\substack{k=1,\\k \neq n}}^N I_k` and is defined by
-   the mapping from element :math:`(i_1, i_2, \cdots, i_N)` to :math:`(i_n, j)`, with
+   with :math:`M = \prod_{\substack{k=0,\\k \neq n}}^N I_k` and is defined by
+   the mapping from element :math:`(i_0, i_1, \cdots, i_N)` to :math:`(i_n, j)`, with
 
    .. math::
-      j = \sum_{\substack{k=1,\\k \neq n}}^N i_k \times \prod_{\substack{m=k+1,\\ k \neq n}}^N I_m.
+      j = \sum_{\substack{k=0,\\k \neq n}}^N i_k \times \prod_{\substack{m=k+1,\\ k \neq n}}^N I_m.
 
 
 .. warning::
