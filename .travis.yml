@@ -2,16 +2,20 @@ language: python
 
 dist: trusty
 
-python:
-    - "3.5"
-    - "3.6"
-
-env:
-    matrix:
-        - BACKEND=numpy
-          DEPLOY_DOCS = 1
-        - BACKEND=mxnet
-        - BACKEND=pytorch
+matrix:
+    include:
+     - os: linux
+       python: 3.5
+       env: BACKEND=numpy
+     - os: linux
+       python: 3.6
+       env: BACKEND=mxnet
+     - os: linux
+       python: 3.6
+       env: BACKEND=pytorch
+     - os: linux
+       python: 3.6
+       env: BACKEND=numpy DEPLOY_DOCS = 1
 
 install: 
     # Install miniconda
