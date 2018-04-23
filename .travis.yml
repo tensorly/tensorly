@@ -3,15 +3,14 @@ language: python
 dist: trusty
 
 python:
-    - "3.5"
+    # - "3.5"
     - "3.6"
 
 env:
     matrix:
         - BACKEND=numpy
-        - BACKEND=mxnet
-        - BACKEND=pytorch
-
+        #- BACKEND=mxnet
+        # - BACKEND=pytorch
 
 install: 
     # Install miniconda
@@ -42,3 +41,4 @@ script:
 
 after_success:
     - coveralls
+    - bash deploy_docs.sh
