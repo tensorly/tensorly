@@ -83,3 +83,4 @@ def standard_deviation(y, axis=None):
 def correlation(y_true, y_pred, axis=None):
     """Pearson's product moment correlation coefficient"""
     return covariance(y_true, y_pred, axis=axis)/T.sqrt(variance(y_true, axis)*variance(y_pred, axis))
+

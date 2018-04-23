@@ -14,7 +14,7 @@ def test_partial_tucker():
     tol_max_abs = 10e-1
     tensor = T.tensor(rng.random_sample((3, 4, 3)))
     modes = [1, 2]
-    core, factors = partial_tucker(tensor, modes, ranks=None, n_iter_max=200, verbose=True)
+    core, factors = partial_tucker(tensor, modes, rank=None, n_iter_max=200, verbose=True)
     reconstructed_tensor = multi_mode_dot(core, factors, modes=modes)
     norm_rec = T.norm(reconstructed_tensor, 2)
     norm_tensor = T.norm(tensor, 2)
@@ -25,7 +25,7 @@ def test_partial_tucker():
 
     # Test the shape of the core and factors
     ranks = [3, 1]
-    core, factors = partial_tucker(tensor, modes=modes, ranks=ranks, n_iter_max=100, verbose=1)
+    core, factors = partial_tucker(tensor, modes=modes, rank=ranks, n_iter_max=100, verbose=1)
     for i, rank in enumerate(ranks):
         T.assert_equal(factors[i].shape, (tensor.shape[i+1], ranks[i]),
                      err_msg="factors[{}].shape={}, expected {}".format(
@@ -42,7 +42,7 @@ def test_tucker():
     tol_norm_2 = 10e-3
     tol_max_abs = 10e-1
     tensor = T.tensor(rng.random_sample((3, 4, 3)))
-    core, factors = tucker(tensor, ranks=None, n_iter_max=200, verbose=True)
+    core, factors = tucker(tensor, rank=None, n_iter_max=200, verbose=True)
     reconstructed_tensor = tucker_to_tensor(core, factors)
     norm_rec = T.norm(reconstructed_tensor, 2)
     norm_tensor = T.norm(tensor, 2)
@@ -53,7 +53,7 @@ def test_tucker():
 
     # Test the shape of the core and factors
     ranks = [2, 3, 1]
-    core, factors = tucker(tensor, ranks=ranks, n_iter_max=100, verbose=1)
+    core, factors = tucker(tensor, rank=ranks, n_iter_max=100, verbose=1)
     for i, rank in enumerate(ranks):
         T.assert_equal(factors[i].shape, (tensor.shape[i], ranks[i]),
                      err_msg="factors[{}].shape={}, expected {}".format(
@@ -65,8 +65,8 @@ def test_tucker():
     tol_norm_2 = 10e-1
     tol_max_abs = 10e-1
 
-    core_svd, factors_svd = tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, init='svd', verbose=1)
-    core_random, factors_random = tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
+    core_svd, factors_svd = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, init='svd', verbose=1)
+    core_random, factors_random = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
     rec_svd = tucker_to_tensor(core_svd, factors_svd)
     rec_random = tucker_to_tensor(core_random, factors_random)
     error = T.norm(rec_svd - rec_random, 2)
@@ -85,8 +85,8 @@ def test_non_negative_tucker():
     tol_norm_2 = 10e-1
     tol_max_abs = 10e-1
     tensor = T.tensor(rng.random_sample((3, 4, 3)) + 1)
-    core, factors = tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, verbose=1)
-    nn_core, nn_factors = non_negative_tucker(tensor, ranks=[3, 4, 3], n_iter_max=100)
+    core, factors = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, verbose=1)
+    nn_core, nn_factors = non_negative_tucker(tensor, rank=[3, 4, 3], n_iter_max=100)
 
     # Make sure all components are positive
     for factor in nn_factors:
@@ -104,8 +104,8 @@ def test_non_negative_tucker():
     T.assert_(T.norm(reconstructed_tensor - nn_reconstructed_tensor, 'inf') < tol_max_abs,
               'abs norm of reconstruction error higher than tol')
 
-    core_svd, factors_svd = non_negative_tucker(tensor, ranks=[3, 4, 3], n_iter_max=500, init='svd', verbose=1)
-    core_random, factors_random = non_negative_tucker(tensor, ranks=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
+    core_svd, factors_svd = non_negative_tucker(tensor, rank=[3, 4, 3], n_iter_max=500, init='svd', verbose=1)
+    core_random, factors_random = non_negative_tucker(tensor, rank=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
     rec_svd = tucker_to_tensor(core_svd, factors_svd)
     rec_random = tucker_to_tensor(core_random, factors_random)
     error = T.norm(rec_svd - rec_random, 2)

@@ -5,12 +5,14 @@ from ..tucker_tensor import tucker_to_tensor
 from ..random import check_random_state
 from math import sqrt
 
+import warnings
+
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
 # License: BSD 3 clause
 
-def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
-           random_state=None, verbose=False):
+def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
+                   random_state=None, verbose=False, ranks=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition exclusively along the provided modes.
@@ -40,19 +42,28 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
             list of factors of the Tucker decomposition.
             with ``core.shape[i] == (tensor.shape[i], ranks[i]) for i in modes``
     """
-    if ranks is None:
-        ranks = [T.shape(tensor)[mode] for mode in modes]
+    if ranks is not None:
+        message = "'ranks' is depreciated, please use 'rank' instead"
+        warnings.warn(message, DeprecationWarning)
+        rank = ranks
+
+    if rank is None:
+        rank = [T.shape(tensor)[mode] for mode in modes]
+    elif isinstance(rank, int):
+        message = "Given only one int for 'rank' intead of a list of {} modes. Using this rank for all modes.".format(len(modes))
+        warnings.warn(message, DeprecationWarning)
+        rank = [rank for _ in modes]
 
     # SVD init
     if init == 'svd':
         factors = []
         for index, mode in enumerate(modes):
-            eigenvecs, _, _ = T.partial_svd(unfold(tensor, mode), n_eigenvecs=ranks[index])
+            eigenvecs, _, _ = T.partial_svd(unfold(tensor, mode), n_eigenvecs=rank[index])
             factors.append(eigenvecs)
     else:
         rng = check_random_state(random_state)
-        core = T.tensor(rng.random_sample(ranks), **T.context(tensor))
-        factors = [T.tensor(rng.random_sample((T.shape(tensor)[mode], ranks[index])), **T.context(tensor)) for (index, mode) in enumerate(modes)]
+        core = T.tensor(rng.random_sample(rank), **T.context(tensor))
+        factors = [T.tensor(rng.random_sample((T.shape(tensor)[mode], rank[index])), **T.context(tensor)) for (index, mode) in enumerate(modes)]
 
     rec_errors = []
     norm_tensor = T.norm(tensor, 2)
@@ -60,7 +71,7 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
     for iteration in range(n_iter_max):
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
-            eigenvecs, _, _ = T.partial_svd(unfold(core_approximation, mode), n_eigenvecs=ranks[index])
+            eigenvecs, _, _ = T.partial_svd(unfold(core_approximation, mode), n_eigenvecs=rank[index])
             factors[index] = eigenvecs
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
@@ -82,7 +93,7 @@ def partial_tucker(tensor, modes, ranks=None, n_iter_max=100, init='svd', tol=10
     return core, factors
 
 
-def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
+def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
            random_state=None, verbose=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
@@ -118,12 +129,12 @@ def tucker(tensor, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
     modes = list(range(T.ndim(tensor)))
-    return partial_tucker(tensor, modes, ranks=ranks, n_iter_max=n_iter_max, init=init,
+    return partial_tucker(tensor, modes, rank=rank, ranks=ranks, n_iter_max=n_iter_max, init=init,
                           tol=tol, random_state=random_state, verbose=verbose)
 
 
-def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
-                        random_state=None, verbose=False):
+def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
+                        random_state=None, verbose=False, ranks=None):
     """Non-negative Tucker decomposition
 
         Iterative multiplicative update, see [2]_
@@ -154,17 +165,30 @@ def non_negative_tucker(tensor, ranks, n_iter_max=10, init='svd', tol=10e-5,
        IEEE Conference on Computer Vision and Pattern Recognition s(CVPR),
        pp 1-8, 2007
     """
+    if ranks is not None:
+        message = "'ranks' is depreciated, please use 'rank' instead"
+        warnings.warn(message, DeprecationWarning)
+        rank = ranks
+
+    if rank is None:
+        rank = [T.shape(tensor)[mode] for mode in modes]
+    elif isinstance(rank, int):
+        message = "Given only one int for 'rank' intead of a list of {} modes. Using this rank for all modes.".format(len(modes))
+        warnings.warn(message, DeprecationWarning)
+        rank = [rank for _ in modes]
+
+
     epsilon = 10e-12
 
     # Initialisation
     if init == 'svd':
-        core, factors = tucker(tensor, ranks)
+        core, factors = tucker(tensor, rank)
         nn_factors = [T.abs(f) for f in factors]
         nn_core = T.abs(core)
     else:
         rng = check_random_state(random_state)
-        core = T.tensor(rng.random_sample(ranks) + 0.01, **T.context(tensor))  # Check this
-        factors = [T.tensor(rng.random_sample(s), **T.context(tensor)) for s in zip(T.shape(tensor), ranks)]
+        core = T.tensor(rng.random_sample(rank) + 0.01, **T.context(tensor))  # Check this
+        factors = [T.tensor(rng.random_sample(s), **T.context(tensor)) for s in zip(T.shape(tensor), rank)]
         nn_factors = [T.abs(f) for f in factors]
         nn_core = T.abs(core)
 
