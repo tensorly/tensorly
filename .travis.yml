@@ -19,6 +19,7 @@ matrix:
            packages:
            - texlive
            - texlive-latex-extra
+           - dvipng
 
 install: 
     # Install miniconda
