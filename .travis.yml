@@ -1,6 +1,9 @@
 language: python
 
-dist: trusty
+addons:
+  apt:
+    packages:
+    - texlive
 
 matrix:
     include:
