@@ -1,10 +1,5 @@
 language: python
 
-addons:
-  apt:
-    packages:
-    - texlive
-
 matrix:
     include:
      - os: linux
@@ -19,6 +14,11 @@ matrix:
      - os: linux
        python: 3.6
        env: BACKEND=numpy DEPLOY_DOCS=1
+       addons:
+         apt:
+           packages:
+           - texlive
+           - texlive-latex-extra
 
 install: 
     # Install miniconda
