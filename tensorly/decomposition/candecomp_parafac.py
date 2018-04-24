@@ -159,7 +159,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-7,
 
         if iteration > 1:
             if verbose:
-                print('reconsturction error={}, variation={}.'.format(
+                print('reconstruction error={}, variation={}.'.format(
                     rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
@@ -247,3 +247,96 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             break
 
     return nn_factors
+
+
+# def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=10e-7,
+#                        random_state=None, verbose=0):
+#     """Randomised CP decomposition via sampled ALS
+
+#     Parameters
+#     ----------
+#     tensor : ndarray
+#     rank   : int
+#             number of components
+#     n_iter_max : int
+#                  maximum number of iteration
+#     init : {'svd', 'random'}, optional
+#     tol : float, optional
+#           tolerance: the algorithm stops when the variation in
+#           the reconstruction error is less than the tolerance
+#     random_state : {None, int, np.random.RandomState}
+#     verbose : int, optional
+#         level of verbosity
+
+#     Returns
+#     -------
+#     factors : ndarray list
+#             list of positive factors of the CP decomposition
+#             element `i` is of shape ``(tensor.shape[i], rank)``
+
+#     References
+#     ----------
+#     .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
+#        "A Practical Randomized CP Tensor Decomposition",
+#     """
+#     factors = initialize_factors(tensor, rank, init=init, random_state=random_state)
+#     rec_errors = []
+#     norm_tensor = T.norm(tensor, 2)
+
+#     for iteration in range(n_iter_max):
+#         for mode in range(T.ndim(tensor)):
+#             S_Z, j_ixs = sample_mttkrp(factors, mode, n_samples)
+#             S_Xnt = T.transpose(unfold(tensor, mode))[j_ixs, :]
+
+#             pseudo_inverse = T.tensor(T.dot(T.transpose(S_Z),S_Z), **T.context(tensor))
+#             factor = T.dot(T.transpose(S_Z), T.transpose(S_Xnt))
+#             factor = T.transpose(T.solve(pseudo_inverse, factor))
+#             factors[mode] = factor
+
+#         # if verbose or tol:
+#         rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+#         rec_errors.append(rec_error)
+
+#         if iteration > 1:
+#             if verbose:
+#                 print('reconstruction error={}, variation={}.'.format(
+#                     rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+#             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+#                 if verbose:
+#                     print('converged in {} iterations.'.format(iteration))
+#                 break
+
+#     return factors
+
+
+def sample_mttkrp(factors, mode, n_samples):
+    # NOTE - Uses numpy backend
+    rank = factors[0].shape[1]
+
+    # Calculate the random_ixs for each factor matrix
+    N = len(factors)
+    rand_ixs = np.zeros((n_samples, N), np.int)
+    Ims = np.ones(N, np.int)
+    for i, f in enumerate(factors):
+        # Generated random indices of size n_samples
+        if i != mode:
+            rand_ixs[:, i] = np.random.randint(0, f.shape[0], n_samples)
+
+            if (i+1) < N:
+                Ims[i+1:N] *= f.shape[0]
+
+    # Find the corresponding jth row of X_(n) using Tensorly's unfolding index
+    # mapping
+    j_ix = np.zeros(n_samples, np.int)
+    for i, col in enumerate(np.transpose(rand_ixs)):
+        if i != mode:
+            j_ix = j_ix + col*Ims[i]
+
+    # Sample the Z matrix according to the given ixs
+    sampled_Z = T.ones((n_samples, rank))
+    for i, f in enumerate(factors):
+        if i != mode:
+            sampled_Z *= f[rand_ixs[:, i], :]
+
+    return sampled_Z, j_ix

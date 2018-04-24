@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 from ..candecomp_parafac import (
-    parafac, non_negative_parafac, normalize_factors, initialize_factors)
+    parafac, non_negative_parafac, normalize_factors, initialize_factors,
+    sample_mttkrp)
 from ...kruskal_tensor import kruskal_to_tensor
 from ...random import check_random_state
 from ... import backend as T
@@ -40,6 +41,7 @@ def test_parafac():
         rank = 4
         _ = initialize_factors(tensor, rank, init='bogus init type')
 
+
 def test_non_negative_parafac():
     """Test for non-negative PARAFAC
 
@@ -67,8 +69,8 @@ def test_non_negative_parafac():
     T.assert_(T.max(T.abs(reconstructed_tensor - nn_reconstructed_tensor)) < tol_max_abs,
             'abs norm of reconstruction error higher than tol')
 
-    factors_svd = non_negative_parafac(tensor, rank=3, n_iter_max=100, tol=10e-4,
-                                       init='svd')
+    factors_svd = non_negative_parafac(tensor, rank=3, n_iter_max=100,
+                                       tol=10e-4, init='svd')
     factors_random = non_negative_parafac(tensor, rank=3, n_iter_max=100, tol=10e-4,
                                           init='random', random_state=1234, verbose=0)
     rec_svd = kruskal_to_tensor(factors_svd)
@@ -80,3 +82,21 @@ def test_non_negative_parafac():
     T.assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
 
+
+def test_sample_mttkrp():
+    """ Test for sample_mttkrp 
+    """
+    rng = check_random_state(1234)
+    t_shape = (8, 9, 10)
+    rank = 3
+    tensor = T.tensor(rng.random_sample(t_shape)+1)
+    factors = parafac(tensor, rank=rank, n_iter_max=120)
+    num_samples = 4
+    sampled_Z, j_ix = sample_mttkrp(factors, 1, num_samples)
+    T.assert_(sampled_Z.shape == (num_samples, rank),
+              'Sampled shape of Z is inconsistent')
+    T.assert_(T.max(j_ix) < (t_shape[0] * t_shape[2]),
+              'Calculated j index is bigger than number of columns of'
+              'unfolded matrix')
+    T.assert_(T.min(j_ix) >= 0,
+              'Calculated j index is smaller than 0')
