@@ -15,6 +15,8 @@ API reference
 
     set_backend
     get_backend
+    context
+    to_numpy
 
 :mod:`tensorly.base`: Core tensor functions
 ============================================

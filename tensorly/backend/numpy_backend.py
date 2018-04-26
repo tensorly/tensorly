@@ -20,19 +20,60 @@ from numpy.linalg import solve, qr
 
 def context(tensor):
     """Returns the context of a tensor
+
+        Creates a dictionary of the parameters characterising the tensor
+
+    Parameters
+    ----------
+    tensor : tensorly.tensor
+
+    Returns
+    -------
+    context : dict
+
+    Examples
+    --------
+    >>> import tensorly as tl
+    Using numpy backend.
+
+    Imagine you have an existing tensor `tensor`:
+
+    >>> import numpy as np
+    >>> tensor = tl.tensor([0, 1, 2], dtype=np.float32)
+
+    The context, here, will simply be the dtype:
+
+    >>> tl.context(tensor)
+    {'dtype': dtype('float32')}
+    
+    Note that, if you were using, say, PyTorch, the context would also
+    include the device (i.e. CPU or GPU) and device ID.
+
+    If you want to create a new tensor in the same context, use this context:
+
+    >>> new_tensor = tl.tensor([1, 2, 3], **tl.context(tensor))
     """
     return {'dtype':tensor.dtype}
 
-
-
 def tensor(data, dtype=np.float64):
     """Tensor class
+        
+        Returns a tensor on the specified context, depending on the backend
     """
     return np.array(data, dtype=dtype)
 
 
 def to_numpy(tensor):
-    """Returns a copy of the tensor as a NumPy array"""
+    """Returns a copy of the tensor as a NumPy array
+
+    Parameters
+    ----------
+    tensor : tl.tensor
+
+    Returns
+    -------
+    numpy_tensor : numpy.ndarray
+    """
     return np.copy(tensor)
 
 def assert_array_equal(a, b, **kwargs):
