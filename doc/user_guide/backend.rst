@@ -49,3 +49,25 @@ For instance:
       # when creating a new tensor we use these as parameters
       new_tensor = tl.tensor(tensor + 2, **context)
       return new_tensor
+
+Basic functions
+---------------
+We have isolated the basic functions required for tensor methods in the backend, and provide a uniform API using wrappers when necessary.
+In practice, this means that function like `min`, `max`, `reshape`, etc, are accessible from the backend:
+
+.. code-block:: python
+
+   import tensorly as tl
+   import numpy as np
+
+   tl.set_backend('pytorch') # or any other backend
+
+   tensor = tl.tensor(np.random.random((10, 10, 10)))
+
+   # This will call the correct function depending on the backend
+   min_value = tl.min(tensor)
+   
+   unfolding = tl.unfold(tensor, mode=0)
+   U, S, V = tl.partial_svd(unfolding, n_eigenvecs=5)
+
+This will allow your code to work transparently with any of the backend.

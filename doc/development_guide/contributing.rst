@@ -23,7 +23,32 @@ Backend compatibility
 
 We want algorithms to run transparently with NumPy, MXNet, PyTorch and any other backend added later on!
 
-To do so, we only use functions wrapped in :py:mod:`tensorly.backend`, such as `partial_svd`, etc. If the function you need doesn't exist, either try using other existing ones, or, if you cannot do otherwise, add the required function to all backends.
+To do so, we **only use** functions wrapped in :py:mod:`tensorly.backend`, such as :py:mod:`tensorly.backend.partial_svd`, etc. If the function you need doesn't exist, either try using other existing ones, or, if you cannot do otherwise, add the required function to all backends.
+
+In practice
+~~~~~~~~~~~
+
+Practically, **use the wrapped functions**. For instance:
+
+.. code-block:: python
+
+   import tensorly as tl
+   import numpy as np
+   tensor = tl.tensor(np.random.random((10, 10, 10)))
+
+   # DO THIS:
+   min_value = tl.min(tensor)
+
+   # DO NOT DO THIS:
+   min_value = np.min(tensor) # Don't do it!
+
+
+The reason is that you do not want your code to be restricted to any of the backends. 
+You might be using NumPy but another user might be using MXNet and calling a NumPy function on an MXNet NDArray will most likely fail.
+
+
+Context of a tensor
+~~~~~~~~~~~~~~~~~~~
 
 An other aspect, when developing a new function or algorithm, is to make sure you perform the computation on the correct context specified by the user. To do so, always get the context from tensors you get as input, and use it for the tensors you create.
 
