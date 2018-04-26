@@ -24,7 +24,7 @@ from numpy import testing
 from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones
 from mxnet.ndarray import moveaxis, dot, transpose, reshape
-from mxnet.ndarray import abs, where, maximum, sign, prod
+from mxnet.ndarray import where, maximum, sign, prod
 
 # Order 0 tensor, mxnet....
 from math import sqrt as scalar_sqrt
@@ -101,10 +101,22 @@ def solve(matrix1, matrix2):
     return tensor(numpy.linalg.solve(to_numpy(matrix1), to_numpy(matrix2)), **context(matrix1))
 
 def min(tensor, *args, **kwargs):
-    return nd.min(tensor, *args, **kwargs).asscalar()
+    if isinstance(tensor, nd.NDArray):
+        return nd.min(tensor, *args, **kwargs).asscalar()
+    else:
+        return numpy.min(tensor, *args, **kwargs)
 
 def max(tensor, *args, **kwargs):
-    return nd.min(tensor, *args, **kwargs).asscalar()
+    if isinstance(tensor, nd.NDArray):
+        return nd.max(tensor, *args, **kwargs).asscalar()
+    else:
+        return numpy.max(tensor, *args, **kwargs)
+
+def abs(tensor, **kwargs):
+    if isinstance(tensor, nd.NDArray):
+        return nd.abs(tensor, **kwargs)
+    else:
+        return numpy.abs(tensor, **kwargs)
 
 def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor
@@ -135,6 +147,7 @@ def norm(tensor, order=2, axis=None):
 
     if res.shape == (1,):
         return res.asscalar()
+
     return res
 
 def kr(matrices):

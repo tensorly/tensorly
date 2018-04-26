@@ -15,6 +15,11 @@ except ImportError as error:
                'you must first install PyTorch!')
     raise ImportError(message) from error
 
+from distutils.version import LooseVersion
+
+if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
+    raise ImportError('You are using version="{}" of PyTorch.'
+                      'Please update to "0.4.0" or higher.'.format(torch.__version__))
 
 import numpy
 import scipy.linalg
@@ -22,8 +27,8 @@ import scipy.sparse.linalg
 from numpy import testing
 from . import numpy_backend
 
-from torch import ones, zeros
-from torch import max, min
+from torch import ones, zeros, zeros_like
+from torch import max, min, where
 from torch import sum, mean, abs, sqrt, sign, prod
 from torch import matmul as dot
 from torch import qr
@@ -37,15 +42,15 @@ maximum = max
 def context(tensor):
     """Returns the context of a tensor
     """
-    return {'dtype':tensor.type()}
+    return {'dtype':tensor.dtype, 'device':tensor.device}
 
 
-def tensor(data, dtype=torch.FloatTensor):
+def tensor(data, dtype=torch.float32, device='cpu'):
     """Tensor class
     """
     if isinstance(data, numpy.ndarray):
-        return torch.from_numpy(numpy.copy(data)).type(dtype)
-    return torch.Tensor(data).type(dtype)
+        return torch.tensor(data.copy(), dtype=dtype, device=device)
+    return torch.tensor(data, dtype=dtype, device=device)
 
 def to_numpy(tensor):
     """Convert a tensor to numpy format
@@ -78,7 +83,14 @@ def assert_array_almost_equal(a, b, decimal=3, **kwargs):
     testing.assert_array_almost_equal(to_numpy(a), to_numpy(b), decimal=decimal, **kwargs)
 
 assert_raises = testing.assert_raises
-assert_equal = testing.assert_equal
+
+def assert_equal(actual, desired, err_msg='', verbose=True):
+    if isinstance(actual, torch.Tensor):
+        actual = to_numpy(actual)
+    if isinstance(desired, torch.Tensor):
+        desired = to_numpy(desired)
+    testing.assert_equal(actual, desired, err_msg=err_msg, verbose=verbose)
+
 assert_ = testing.assert_
 
 def shape(tensor):
@@ -109,22 +121,12 @@ def clip(tensor, a_min=None, a_max=None, inplace=False):
     else:
         return torch.clamp(tensor, a_min, a_max)
 
-def where(condition, x, y):
-    assert condition.shape == x.shape == y.shape, 'Dimension mismatch'
-    result = zeros_like(condition, **context(x))
-    result[condition] = x
-    result[~condition] = y
-    return result
-
 def all(tensor):
     return torch.sum(tensor != 0)
 
 def transpose(tensor):
     axes = list(range(ndim(tensor)))[::-1]
     return tensor.permute(*axes)
-
-def zeros_like(tensor, dtype=torch.FloatTensor):
-    return torch.zeros(tensor.size()).type(dtype)
 
 def copy(tensor):
     return tensor.clone()

@@ -21,7 +21,7 @@ def test_partial_tucker():
     T.assert_((norm_rec - norm_tensor)/norm_rec < tol_norm_2)
 
     # Test the max abs difference between the reconstruction and the tensor
-    T.assert_(np.max(np.abs(norm_rec - norm_tensor)) < tol_max_abs)
+    T.assert_(T.max(T.abs(norm_rec - norm_tensor)) < tol_max_abs)
 
     # Test the shape of the core and factors
     ranks = [3, 1]
