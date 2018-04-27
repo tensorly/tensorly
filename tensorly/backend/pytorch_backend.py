@@ -27,7 +27,7 @@ import scipy.sparse.linalg
 from numpy import testing
 from . import numpy_backend
 
-from torch import ones, zeros, zeros_like
+from torch import ones, zeros, zeros_like, reshape
 from torch import max, min, where
 from torch import sum, mean, abs, sqrt, sign, prod, sqrt
 from torch import matmul as dot
@@ -104,12 +104,6 @@ def arange(start, stop=None, step=1.0):
         return torch.arange(start=0., end=float(start), step=float(step))
     else:
         return torch.arange(float(start), float(stop), float(step))
-
-def reshape(tensor, shape):
-    try:
-        return tensor.view(*shape)
-    except RuntimeError:
-        return tensor.contiguous().view(*shape)
 
 def clip(tensor, a_min=None, a_max=None, inplace=False):
     if a_max is None:
