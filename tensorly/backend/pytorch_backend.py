@@ -42,15 +42,15 @@ maximum = max
 def context(tensor):
     """Returns the context of a tensor
     """
-    return {'dtype':tensor.dtype, 'device':tensor.device}
+    return {'dtype':tensor.dtype, 'device':tensor.device, 'requires_grad':tensor.requires_grad}
 
 
-def tensor(data, dtype=torch.float32, device='cpu'):
+def tensor(data, dtype=torch.float32, device='cpu', requires_grad=False):
     """Tensor class
     """
     if isinstance(data, numpy.ndarray):
-        return torch.tensor(data.copy(), dtype=dtype, device=device)
-    return torch.tensor(data, dtype=dtype, device=device)
+        return torch.tensor(data.copy(), dtype=dtype, device=device, requires_grad=requires_grad)
+    return torch.tensor(data, dtype=dtype, device=device, requires_grad=requires_grad)
 
 def to_numpy(tensor):
     """Convert a tensor to numpy format
