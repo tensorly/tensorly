@@ -29,7 +29,7 @@ from . import numpy_backend
 
 from torch import ones, zeros, zeros_like
 from torch import max, min, where
-from torch import sum, mean, abs, sqrt, sign, prod
+from torch import sum, mean, abs, sqrt, sign, prod, sqrt
 from torch import matmul as dot
 from torch import qr
 
@@ -200,6 +200,9 @@ def sum(tensor, axis=None):
     else:
         return torch.sum(tensor, dim=axis)
 
+def concatenate(tensors, axis=0):
+    return torch.cat(tensors, dim=axis)
+
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
 
@@ -310,12 +313,3 @@ def partial_svd(matrix, n_eigenvecs=None):
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
-
-def sqrt(tensor, *args, **kwargs):
-    if torch.is_tensor(tensor):
-        return torch.sqrt(tensor, *args, **kwargs)
-    else:
-        return scalar_sqrt(tensor)
-
-def concatenate(tensors, axis=0):
-    return torch.cat(tensors, dim=axis)
