@@ -2,8 +2,10 @@
 API reference
 =============
 
-:mod:`tensorly`: Setting the backend
-====================================
+:mod:`tensorly`: Manipulating the backend with a unified interface
+==================================================================
+
+In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, etc, each backend provides the following functions:
 
 .. automodule:: tensorly
     :no-members:
@@ -15,6 +17,9 @@ API reference
 
     set_backend
     get_backend
+    context
+    to_numpy
+    partial_svd
 
 :mod:`tensorly.base`: Core tensor functions
 ============================================

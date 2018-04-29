@@ -18,7 +18,6 @@ except ImportError as error:
 import tensorflow.contrib.eager as tfe
 tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
 
-
 import numpy
 import scipy.linalg
 import scipy.sparse.linalg

@@ -27,7 +27,7 @@ TensorLy
 ========
 
 
-TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, MXNet or PyTorch and run methods at scale on CPU or GPU.
+TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, MXNet, PyTorch, TensorFlow or CuPy, and run methods at scale on CPU or GPU.
 
 - **Website:** http://tensorly.org
 - **Source-code:**  https://github.com/tensorly/tensorly
@@ -119,11 +119,11 @@ Applying tensor decomposition is easy:
    # Reconstruct the full tensor from the decomposed form
    tl.tucker_to_tensor(core, factors) 
 
-Changing the backend to perform computation on GPU for instance. Note that using MXNet or PyTorch requires to have installed them first. For instance, after setting the backend to pytorch, all the computation is done by PyTorch, and tensors can be created on GPU:
+Changing the backend to perform computation on GPU for instance. Note that using MXNet, PyTorch, TensorFlow or CuPy requires to have installed them first. For instance, after setting the backend to PyTorch, all the computation is done by PyTorch, and tensors can be created on GPU:
 
 .. code:: python
 
-   tl.set_backend('pytorch') # Or 'mxnet' or 'numpy'
+   tl.set_backend('pytorch') # Or 'mxnet', 'numpy', 'tensorflow' or 'cupy'
    
    import torch
    tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)), dtype=torch.cuda.FloatTensor)

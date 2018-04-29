@@ -15,6 +15,11 @@ except ImportError as error:
                'you must first install PyTorch!')
     raise ImportError(message) from error
 
+from distutils.version import LooseVersion
+
+if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
+    raise ImportError('You are using version="{}" of PyTorch.'
+                      'Please update to "0.4.0" or higher.'.format(torch.__version__))
 
 import numpy
 import scipy.linalg
@@ -22,9 +27,9 @@ import scipy.sparse.linalg
 from numpy import testing
 from . import numpy_backend
 
-from torch import ones, zeros
-from torch import max, min
-from torch import sum, mean, abs, sqrt, sign, prod
+from torch import ones, zeros, zeros_like, reshape
+from torch import max, min, where
+from torch import sum, mean, abs, sqrt, sign, prod, sqrt
 from torch import matmul as dot
 from torch import qr
 
@@ -37,15 +42,15 @@ maximum = max
 def context(tensor):
     """Returns the context of a tensor
     """
-    return {'dtype':tensor.type()}
+    return {'dtype':tensor.dtype, 'device':tensor.device, 'requires_grad':tensor.requires_grad}
 
 
-def tensor(data, dtype=torch.FloatTensor):
+def tensor(data, dtype=torch.float32, device='cpu', requires_grad=False):
     """Tensor class
     """
     if isinstance(data, numpy.ndarray):
-        return torch.from_numpy(numpy.copy(data)).type(dtype)
-    return torch.Tensor(data).type(dtype)
+        return torch.tensor(data.copy(), dtype=dtype, device=device, requires_grad=requires_grad)
+    return torch.tensor(data, dtype=dtype, device=device, requires_grad=requires_grad)
 
 def to_numpy(tensor):
     """Convert a tensor to numpy format
@@ -78,7 +83,14 @@ def assert_array_almost_equal(a, b, decimal=3, **kwargs):
     testing.assert_array_almost_equal(to_numpy(a), to_numpy(b), decimal=decimal, **kwargs)
 
 assert_raises = testing.assert_raises
-assert_equal = testing.assert_equal
+
+def assert_equal(actual, desired, err_msg='', verbose=True):
+    if isinstance(actual, torch.Tensor):
+        actual = to_numpy(actual)
+    if isinstance(desired, torch.Tensor):
+        desired = to_numpy(desired)
+    testing.assert_equal(actual, desired, err_msg=err_msg, verbose=verbose)
+
 assert_ = testing.assert_
 
 def shape(tensor):
@@ -93,12 +105,6 @@ def arange(start, stop=None, step=1.0):
     else:
         return torch.arange(float(start), float(stop), float(step))
 
-def reshape(tensor, shape):
-    try:
-        return tensor.view(*shape)
-    except RuntimeError:
-        return tensor.contiguous().view(*shape)
-
 def clip(tensor, a_min=None, a_max=None, inplace=False):
     if a_max is None:
         a_max = torch.max(tensor)
@@ -109,22 +115,12 @@ def clip(tensor, a_min=None, a_max=None, inplace=False):
     else:
         return torch.clamp(tensor, a_min, a_max)
 
-def where(condition, x, y):
-    assert condition.shape == x.shape == y.shape, 'Dimension mismatch'
-    result = zeros_like(condition, **context(x))
-    result[condition] = x
-    result[~condition] = y
-    return result
-
 def all(tensor):
     return torch.sum(tensor != 0)
 
 def transpose(tensor):
     axes = list(range(ndim(tensor)))[::-1]
     return tensor.permute(*axes)
-
-def zeros_like(tensor, dtype=torch.FloatTensor):
-    return torch.zeros(tensor.size()).type(dtype)
 
 def copy(tensor):
     return tensor.clone()
@@ -197,6 +193,9 @@ def sum(tensor, axis=None):
         return torch.sum(tensor)
     else:
         return torch.sum(tensor, dim=axis)
+
+def concatenate(tensors, axis=0):
+    return torch.cat(tensors, dim=axis)
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
@@ -308,12 +307,3 @@ def partial_svd(matrix, n_eigenvecs=None):
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
-
-def sqrt(tensor, *args, **kwargs):
-    if torch.is_tensor(tensor):
-        return torch.sqrt(tensor, *args, **kwargs)
-    else:
-        return scalar_sqrt(tensor)
-
-def concatenate(tensors, axis=0):
-    return torch.cat(tensors, dim=axis)
