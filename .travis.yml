@@ -42,6 +42,8 @@ install:
         pip install mxnet;
       elif [[ "$BACKEND" == "pytorch" ]]; then
         conda install pytorch torchvision -c pytorch;
+      elif [[ "$BACKEND" == "tensorflow" ]]; then
+        pip install tensorflow;
       fi
     - pip install -e .
 
