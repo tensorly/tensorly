@@ -3,9 +3,10 @@ import pytest
 
 from ..candecomp_parafac import (
     parafac, non_negative_parafac, normalize_factors, initialize_factors,
-    sample_mttkrp)
+    sample_mttkrp, random_als_parafac)
 from ...kruskal_tensor import kruskal_to_tensor
 from ...random import check_random_state
+from ...tenalg import khatri_rao
 from ... import backend as T
 
 
@@ -92,7 +93,8 @@ def test_sample_mttkrp():
     tensor = T.tensor(rng.random_sample(t_shape)+1)
     factors = parafac(tensor, rank=rank, n_iter_max=120)
     num_samples = 4
-    sampled_Z, j_ix = sample_mttkrp(factors, 1, num_samples)
+    skip_matrix = 1
+    sampled_Z, j_ix = sample_mttkrp(factors, skip_matrix, num_samples)
     T.assert_(sampled_Z.shape == (num_samples, rank),
               'Sampled shape of Z is inconsistent')
     T.assert_(T.max(j_ix) < (t_shape[0] * t_shape[2]),
@@ -100,3 +102,24 @@ def test_sample_mttkrp():
               'unfolded matrix')
     T.assert_(T.min(j_ix) >= 0,
               'Calculated j index is smaller than 0')
+    act_kr = khatri_rao(factors, skip_matrix=skip_matrix)
+    for ix, j in enumerate(j_ix):
+        T.assert_(np.all(act_kr[j] == sampled_Z[ix]),
+                  'Sampled khatri_rao product doesnt correspond to product')
+
+
+def test_random_als_parafac():
+    """ Test for random_als_parafac
+    
+    """
+    rng = check_random_state(1234)
+    t_shape = (10, 10, 10)
+    n_samples = 8
+    tensor = T.tensor(rng.random_sample(t_shape))
+    rank = 4
+    factors_svd = random_als_parafac(tensor, rank, n_samples, n_iter_max=1000,
+                                     init='svd', tol=10e-5, verbose=True)
+    for i, f in enumerate(factors_svd):
+        T.assert_(f.shape == (t_shape[i], rank),
+                  'Factors are of incorrect size')
+    T.assert_(False, 'hi')
