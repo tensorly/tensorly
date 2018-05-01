@@ -94,7 +94,7 @@ def assert_equal(actual, desired, err_msg='', verbose=True):
     testing.assert_equal(actual, desired)
 
 def ndim(tensor):
-    return tensor.ndim
+    return len(tensor.get_shape()._dims)
 
 def reshape(tensor, shape):
     return tf.reshape(tensor, shape)
@@ -271,7 +271,7 @@ def norm(tensor, order=2, axis=None):
     return res
 
 def dot(tensor1, tensor2):
-    return tf.tensordot(tensor1, tensor2, axes=([tensor1.ndim - 1], [0]))
+    return tf.tensordot(tensor1, tensor2, axes=([ndim(tensor1) - 1], [0]))
 
 def shape(tensor):
     # return tuple(s.value for s in tensor.shape)
