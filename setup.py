@@ -50,6 +50,7 @@ config = {
     'packages': find_packages(exclude=['doc']),
     'description': 'Tensor learning in Python.',
     'long_description': README,
+    'long_description_content_type' : 'text/x-rst',
     'author': 'Jean Kossaifi',
     'author_email': 'jean.kossaifi@gmail.com',
     'version': VERSION,

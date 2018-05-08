@@ -1,31 +1,23 @@
-.. raw:: html
+.. image:: https://badge.fury.io/py/tensorly.svg
+    :target: https://badge.fury.io/py/tensorly
 
-    <p align="center"><img width="35%" src="http://tensorly.org/stable/_static/TensorLy_logo.png" /></p>
+.. image:: https://anaconda.org/tensorly/tensorly/badges/version.svg   
+    :target: https://anaconda.org/tensorly/tensorly
+
+.. image:: https://travis-ci.org/tensorly/tensorly.svg?branch=master
+    :target: https://travis-ci.org/tensorly/tensorly
+
+.. image:: https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master
+    :target: https://coveralls.io/github/tensorly/tensorly?branch=master
     
-    <p align="center">
-        <a href="https://badge.fury.io/py/tensorly" target=blank>
-            <img src="https://badge.fury.io/py/tensorly.svg"
-        </a>
-        <a href="https://anaconda.org/tensorly/tensorly" target=blank>
-            <img src="https://anaconda.org/tensorly/tensorly/badges/version.svg" 
-        </a>
-        <a href="https://travis-ci.org/tensorly/tensorly" target=blank>
-            <img src="https://travis-ci.org/tensorly/tensorly.svg?branch=master" 
-        </a>
-        <a href="https://coveralls.io/github/tensorly/tensorly?branch=master" target=blank>
-            <img src="https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master" 
-        </a>
-        <a href="https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge" target=blank>
-            <img src="https://badges.gitter.im/tensorly/tensorly.svg"
-        </a>
-    </p>
-    
-\ 
+.. image:: https://badges.gitter.im/tensorly/tensorly.svg
+    :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+
 
 ========
 TensorLy
 ========
-
+   
 
 TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, MXNet, PyTorch, TensorFlow or CuPy, and run methods at scale on CPU or GPU.
 
@@ -134,4 +126,3 @@ the `API <http://tensorly.org/dev/modules/api.html>`_
 
 If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_, or better yet, a `pull-request <https://github.com/tensorly/tensorly/pulls>`_!
 
--------------
