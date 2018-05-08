@@ -134,4 +134,3 @@ the `API <http://tensorly.org/dev/modules/api.html>`_
 
 If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_, or better yet, a `pull-request <https://github.com/tensorly/tensorly/pulls>`_!
 
--------------
