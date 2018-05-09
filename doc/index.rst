@@ -104,10 +104,11 @@ TensorLy: Tensor Learning in Python
 				<div class="content">
 				<code class="language-latex" data-lang="latex">
 				   @article{tensorly, <br/>
-					&nbsp;&nbsp;&nbsp;&nbsp;author = {Jean Kossaifi and Yannis Panagakis and Maja Pantic}, <br/>
+					&nbsp;&nbsp;&nbsp;&nbsp;author = {Jean Kossaifi and Yannis Panagakis and Anima Anandkumar and Maja Pantic}, <br/>
 					&nbsp;&nbsp;&nbsp;&nbsp;title = {TensorLy: Tensor Learning in Python}, <br/>
-					&nbsp;&nbsp;&nbsp;&nbsp;journal = {ArXiv e-print} <br/>
-					&nbsp;&nbsp;&nbsp;&nbsp;year = {2016}, <br/>
+					&nbsp;&nbsp;&nbsp;&nbsp;journal = {CoRR} <br/>
+               &nbsp;&nbsp;&nbsp;&nbsp;volume = {abs/1610.09555},
+					&nbsp;&nbsp;&nbsp;&nbsp;year = {2018}, <br/>
 					} <br/>
 				</code>
 				</div>
@@ -134,7 +135,7 @@ TensorLy: Tensor Learning in Python
 			</header>
 
 			<div class="card-content">
-			Jean Kossaifi, Yannis Panagakis and Maja Pantic, <strong> TensorLy: Tensor Learning in Python</strong>, <br/><a href="https://arxiv.org/abs/1610.09555">https://arxiv.org/abs/1610.09555</a>.
+			Jean Kossaifi, Yannis Panagakis, Anima Anandkumar and Maja Pantic, <strong> TensorLy: Tensor Learning in Python</strong>, <br/><a href="https://arxiv.org/abs/1610.09555">https://arxiv.org/abs/1610.09555</a>.
 			</div>
 
 	  </div>

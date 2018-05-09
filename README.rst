@@ -111,18 +111,30 @@ Applying tensor decomposition is easy:
    # Reconstruct the full tensor from the decomposed form
    tl.tucker_to_tensor(core, factors) 
 
-Changing the backend to perform computation on GPU for instance. Note that using MXNet, PyTorch, TensorFlow or CuPy requires to have installed them first. For instance, after setting the backend to PyTorch, all the computation is done by PyTorch, and tensors can be created on GPU:
+You can change the backend to perform computation with a different framework. Note that using MXNet, PyTorch, TensorFlow or CuPy requires to have installed them first. For instance, after setting the backend to PyTorch, all the computation is done by PyTorch, and tensors can be created on GPU:
 
 .. code:: python
 
    tl.set_backend('pytorch') # Or 'mxnet', 'numpy', 'tensorflow' or 'cupy'
-   
-   import torch
-   tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)), dtype=torch.cuda.FloatTensor)
-   type(tensor) # torch.cuda.FloatTensor
+   tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)), device='cuda:0')
+   type(tensor) # torch.Tensor
 
 For more information on getting started, checkout the `user-guide <http://tensorly.org/dev/user_guide/index.html>`_  and for a detailed reference of the functions and their documentation, refer to
 the `API <http://tensorly.org/dev/modules/api.html>`_   
 
 If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_, or better yet, a `pull-request <https://github.com/tensorly/tensorly/pulls>`_!
+  
+------------------
 
+Citing
+======
+
+If you use TensorLy in an academic paper, please cite::
+
+   @article{tensorly,
+     author    = {Jean Kossaifi and Yannis Panagakis and Anima Anandkumar and Maja Pantic},
+     title     = {TensorLy: Tensor Learning in Python},
+     journal   = {CoRR},
+     volume    = {abs/1610.09555},
+     year      = {2018},
+   }
