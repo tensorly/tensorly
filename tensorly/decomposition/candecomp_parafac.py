@@ -284,7 +284,6 @@ def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=
     norm_tensor = T.norm(tensor, 2)
 
     for iteration in range(n_iter_max):
-        print('it ', iteration)
         for mode in range(T.ndim(tensor)):
             S_Z, j_ixs = sample_mttkrp(factors, mode, n_samples)
             S_Xnt = T.transpose(unfold(tensor, mode))[j_ixs, :]
@@ -294,8 +293,7 @@ def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=
             pseudo_inverse = T.tensor(T.dot(T.transpose(S_Z), S_Z),
                                       **T.context(tensor))
             factor = T.dot(T.transpose(S_Z), S_Xnt)
-            factor = T.transpose(T.solve(pseudo_inverse, factor))            
-            print('mode', mode, 'shape', factor.shape)
+            factor = T.transpose(T.solve(pseudo_inverse, factor))
             factors[mode] = factor
 
         # if verbose or tol:
