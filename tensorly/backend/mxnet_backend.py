@@ -230,8 +230,12 @@ def partial_svd(matrix, n_eigenvecs=None):
         min_dim = dim_2
 
     if n_eigenvecs is None or n_eigenvecs >= min_dim:
+        if n_eigenvecs > min_dim:
+            full_matrices = True
+        else:
+            full_matrices = False
         # Default on standard SVD
-        U, S, V = scipy.linalg.svd(matrix)
+        U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
 

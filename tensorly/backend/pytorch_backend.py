@@ -286,7 +286,11 @@ def partial_svd(matrix, n_eigenvecs=None):
         except RuntimeError: # Probably ran out of memory..
             ctx = context(matrix)
             matrix = to_numpy(matrix)
-            U, S, V = scipy.linalg.svd(matrix)
+            if n_eigenvecs > min_dim:
+                full_matrices = True
+            else:
+                full_matrices = False
+            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
             return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
 

@@ -41,7 +41,7 @@ install:
         sudo apt-get install -y libatlas-base-dev;
         pip install mxnet;
       elif [[ "$BACKEND" == "pytorch" ]]; then
-        conda install pytorch torchvision -c pytorch;
+        conda install pytorch-cpu torchvision-cpu -c pytorch;
       elif [[ "$BACKEND" == "tensorflow" ]]; then
         pip install tensorflow;
       fi

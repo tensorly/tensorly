@@ -94,7 +94,7 @@ def assert_equal(actual, desired, err_msg='', verbose=True):
     testing.assert_equal(actual, desired)
 
 def ndim(tensor):
-    return tensor.ndim
+    return len(tensor.get_shape()._dims)
 
 def reshape(tensor, shape):
     return tf.reshape(tensor, shape)
@@ -223,8 +223,12 @@ def partial_svd(matrix, n_eigenvecs=None):
         min_dim = dim_2
 
     if n_eigenvecs is None or n_eigenvecs >= min_dim:
+        if n_eigenvecs > min_dim:
+            full_matrices = True
+        else:
+            full_matrices = False
 	# Default on standard SVD
-        S, U, V = tf.svd(matrix, full_matrices=True)
+        S, U, V = tf.svd(matrix, full_matrices=full_matrices)
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], transpose(V)[:n_eigenvecs, :]
         return U, S, V
     
@@ -247,31 +251,30 @@ def partial_svd(matrix, n_eigenvecs=None):
         return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
 
 
-def norm(tensor, order=2, axis=None):                                                                                                                                                                       
-    """Computes the l-`order` norm of tensor.                                                         
-                                                                                                      
-    Parameters                                                                                        
-    ----------                                                                                        
-    tensor : ndarray                                                                                  
-    order : int                                                                                       
-    axis : int                                                                                        
-                                                                                                      
-    Returns                                                                                           
-    -------                                                                                           
-    float or tensor                                                                                   
-        If `axis` is provided returns a tensor.                                                       
-    """                                                                                               
-    if order == 'inf':                                                                                
-        order = numpy.inf                                                                             
-                                                                                                      
-    res = tf.norm(tensor, ord=order, axis=axis)                                                       
-                                                                                                      
-    if res.shape == ():                                                                               
-        return res.numpy()                                                                            
+def norm(tensor, order=2, axis=None):
+    """Computes the l-`order` norm of tensor.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    order : int
+    axis : int
+    
+    Returns
+    -------
+    float or tensor
+        If `axis` is provided returns a tensor.
+    """
+    if order == 'inf':
+        order = numpy.inf
+    res = tf.norm(tensor, ord=order, axis=axis)
+
+    if res.shape == ():
+        return res.numpy()
     return res
 
 def dot(tensor1, tensor2):
-    return tf.tensordot(tensor1, tensor2, axes=([tensor1.ndim - 1], [0]))
+    return tf.tensordot(tensor1, tensor2, axes=([ndim(tensor1) - 1], [0]))
 
 def shape(tensor):
     # return tuple(s.value for s in tensor.shape)

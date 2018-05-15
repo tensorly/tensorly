@@ -2,7 +2,7 @@ import sys
 import importlib
 import os
 
-__version__ = '0.4.0'
+__version__ = '0.4.2'
 
 # Set the default backend
 default_backend = 'numpy'
