@@ -87,6 +87,7 @@ def test_non_negative_parafac():
 def test_sample_mttkrp():
     """ Test for sample_mttkrp 
     """
+    
     rng = check_random_state(1234)
     t_shape = (8, 9, 10)
     rank = 3
@@ -95,7 +96,7 @@ def test_sample_mttkrp():
     num_samples = 4
     skip_matrix = 1
     sampled_Z, j_ix = sample_mttkrp(factors, skip_matrix, num_samples)
-    T.assert_(sampled_Z.shape == (num_samples, rank),
+    T.assert_(T.shape(sampled_Z) == (num_samples, rank),
               'Sampled shape of Z is inconsistent')
     T.assert_(T.max(j_ix) < (t_shape[0] * t_shape[2]),
               'Calculated j index is bigger than number of columns of'
@@ -104,7 +105,7 @@ def test_sample_mttkrp():
               'Calculated j index is smaller than 0')
     act_kr = khatri_rao(factors, skip_matrix=skip_matrix)
     for ix, j in enumerate(j_ix):
-        T.assert_(np.all(act_kr[j] == sampled_Z[ix]),
+        T.assert_(np.all(T.to_numpy(act_kr[j]) == T.to_numpy(sampled_Z[ix])),
                   'Sampled khatri_rao product doesnt correspond to product')
 
 
@@ -119,5 +120,5 @@ def test_randomised_parafac():
     factors_svd = randomised_parafac(tensor, rank, n_samples, n_iter_max=1000,
                                      init='svd', tol=10e-5, verbose=True)
     for i, f in enumerate(factors_svd):
-        T.assert_(f.shape == (t_shape[i], rank),
+        T.assert_(T.shape(f) == (t_shape[i], rank),
                   'Factors are of incorrect size')
