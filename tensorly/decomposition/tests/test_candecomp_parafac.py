@@ -98,10 +98,10 @@ def test_sample_mttkrp():
     sampled_Z, j_ix = sample_mttkrp(factors, skip_matrix, num_samples)
     T.assert_(T.shape(sampled_Z) == (num_samples, rank),
               'Sampled shape of Z is inconsistent')
-    T.assert_(T.max(j_ix) < (t_shape[0] * t_shape[2]),
+    T.assert_(np.max(j_ix) < (t_shape[0] * t_shape[2]),
               'Calculated j index is bigger than number of columns of'
               'unfolded matrix')
-    T.assert_(T.min(j_ix) >= 0,
+    T.assert_(np.min(j_ix) >= 0,
               'Calculated j index is smaller than 0')
     act_kr = khatri_rao(factors, skip_matrix=skip_matrix)
     for ix, j in enumerate(j_ix):
