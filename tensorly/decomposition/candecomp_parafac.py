@@ -249,8 +249,9 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     return nn_factors
 
 
-def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=10e-7,
-                       random_state=None, verbose=0):
+def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
+                       tol=10e-7, max_stagnation=20, random_state=None,
+                       verbose=0):
     """Randomised CP decomposition via sampled ALS
 
     Parameters
@@ -258,12 +259,17 @@ def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=
     tensor : ndarray
     rank   : int
             number of components
+    n_samples : int
+                number of samples per ALS step
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
+    max_stagnation: int, optional
+                    the maximum allowed number of iterations with no decrease
+                    in fit
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         level of verbosity
@@ -282,13 +288,13 @@ def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=
     factors = initialize_factors(tensor, rank, init=init, random_state=random_state)
     rec_errors = []
     norm_tensor = T.norm(tensor, 2)
+    min_error = 0
 
     for iteration in range(n_iter_max):
         for mode in range(T.ndim(tensor)):
             S_Z, j_ixs = sample_mttkrp(factors, mode, n_samples)
-            S_Xnt = T.transpose(unfold(tensor, mode))[j_ixs, :]
-            # print('S_Z', S_Z.shape)
-            # print('S_Xn', T.transpose(S_Xnt).shape)
+            Xnt = T.transpose(unfold(tensor, mode))
+            S_Xnt = T.tensor(T.to_numpy(Xnt)[j_ixs, :], **T.context(tensor))
 
             pseudo_inverse = T.tensor(T.dot(T.transpose(S_Z), S_Z),
                                       **T.context(tensor))
@@ -298,6 +304,10 @@ def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=
 
         # if verbose or tol:
         rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+        if not min_error or rec_error < min_error:
+            min_error = rec_error
+            stagnation = -1
+        stagnation += 1
         rec_errors.append(rec_error)
 
         if iteration > 1:
@@ -305,7 +315,8 @@ def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=
                 print('reconstruction error={}, variation={}.'.format(
                     rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
-            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+            if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or \
+               stagnation > max_stagnation:
                 if verbose:
                     print('converged in {} iterations.'.format(iteration))
                 break
@@ -313,32 +324,64 @@ def random_als_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd', tol=
     return factors
 
 
-def sample_mttkrp(factors, mode, n_samples):
-    # NOTE - Uses numpy backend
-    rank = factors[0].shape[1]
+def sample_mttkrp(factors, mode, n_samples, random_state=None):
+    """Calculates the sampled Khatri-Rao product and corresponding sample
+    indices
+
+    Turns ``factors = [|U_1, ... U_n|]`` into the sampled mode `mode` Khatri-
+    Rao product with `n_samples` rows sampled uniformly with replacement from
+    the full Khatri-Rao product. The corresponding sampled row indices are
+    returned in `j_indices`.
+
+    Parameters
+    ----------
+    factors : ndarray list
+        list of matrices, all with the same number of columns
+        i.e.::
+            for u in U:
+                u[i].shape == (s_i, R)
+
+        where `R` is fixed while `s_i` can vary with `i`
+    mode : int
+        skip mode of the khatri-rao product
+    n_samples : int
+        number of samples to be taken from the Khatri-Rao product
+    random_state : {None, int, np.random.RandomState}
+
+
+    Returns
+    -------
+    sampled_Khatri_Rao : ndarray
+        The sampled matricised tensor Khatri-Rao with `n_samples` rows
+    j_indices : int list
+        list of length `n_samples` containing the sampled row indices
+
+    """
+    rank = T.shape(factors[0])[1]
+    rng = check_random_state(random_state)
 
     # Calculate the random_ixs for each factor matrix
     N = len(factors)
-    rand_ixs = np.zeros((n_samples, N), np.int)
+    rand_ixs = np.zeros((n_samples, N), np.int)    
     Ims = np.ones(N, np.int)
     for i, f in enumerate(factors):
         # Generated random indices of size n_samples
         if i != mode:
-            rand_ixs[:, i] = np.random.randint(0, f.shape[0], n_samples)
+            rand_ixs[:, i] = rng.randint(0, T.shape(f)[0], n_samples)
 
             if (i+1) < N:
-                Ims[i+1:N] *= f.shape[0]
+                Ims[i+1:N] *= T.shape(f)[0]
 
     # Find the corresponding jth row of the Khatri-Rao Product
     j_ix = np.zeros(n_samples, np.int)
     for i, col in enumerate(np.transpose(rand_ixs)):
         if i != mode:
-            j_ix = j_ix * factors[i].shape[0] + col
+            j_ix = j_ix * T.shape(factors[i])[0] + col
 
     # Sample the khatri-rao product according to the given ixs
-    sampled_Z = T.ones((n_samples, rank))
+    sampled_Z = np.ones((n_samples, rank))
     for i, f in enumerate(factors):
         if i != mode:
-            sampled_Z *= f[rand_ixs[:, i], :]
+            sampled_Z *= T.to_numpy(f)[rand_ixs[:, i], :]
 
-    return sampled_Z, j_ix
+    return T.tensor(sampled_Z), j_ix

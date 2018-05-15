@@ -3,7 +3,7 @@ import pytest
 
 from ..candecomp_parafac import (
     parafac, non_negative_parafac, normalize_factors, initialize_factors,
-    sample_mttkrp, random_als_parafac)
+    sample_mttkrp, randomised_parafac)
 from ...kruskal_tensor import kruskal_to_tensor
 from ...random import check_random_state
 from ...tenalg import khatri_rao
@@ -108,18 +108,16 @@ def test_sample_mttkrp():
                   'Sampled khatri_rao product doesnt correspond to product')
 
 
-def test_random_als_parafac():
-    """ Test for random_als_parafac
-    
+def test_randomised_parafac():
+    """ Test for randomised_parafac    
     """
     rng = check_random_state(1234)
     t_shape = (10, 10, 10)
     n_samples = 8
     tensor = T.tensor(rng.random_sample(t_shape))
     rank = 4
-    factors_svd = random_als_parafac(tensor, rank, n_samples, n_iter_max=1000,
+    factors_svd = randomised_parafac(tensor, rank, n_samples, n_iter_max=1000,
                                      init='svd', tol=10e-5, verbose=True)
     for i, f in enumerate(factors_svd):
         T.assert_(f.shape == (t_shape[i], rank),
                   'Factors are of incorrect size')
-    T.assert_(False, 'hi')
