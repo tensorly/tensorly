@@ -363,14 +363,10 @@ def sample_mttkrp(factors, mode, n_samples, random_state=None):
     # Calculate the random_ixs for each factor matrix
     N = len(factors)
     rand_ixs = np.zeros((n_samples, N), np.int)    
-    Ims = np.ones(N, np.int)
     for i, f in enumerate(factors):
         # Generated random indices of size n_samples
         if i != mode:
             rand_ixs[:, i] = rng.randint(0, T.shape(f)[0], n_samples)
-
-            if (i+1) < N:
-                Ims[i+1:N] *= T.shape(f)[0]
 
     # Find the corresponding jth row of the Khatri-Rao Product
     j_ix = np.zeros(n_samples, np.int)
