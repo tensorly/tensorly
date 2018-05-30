@@ -3,9 +3,9 @@ import pytest
 
 from ..candecomp_parafac import (
     parafac, non_negative_parafac, normalize_factors, initialize_factors,
-    sample_mttkrp, randomised_parafac)
+    sample_khatri_rao, randomised_parafac)
 from ...kruskal_tensor import kruskal_to_tensor
-from ...random import check_random_state
+from ...random import check_random_state, cp_tensor
 from ...tenalg import khatri_rao
 from ... import backend as T
 
@@ -84,8 +84,8 @@ def test_non_negative_parafac():
             'abs norm of difference between svd and random init too high')
 
 
-def test_sample_mttkrp():
-    """ Test for sample_mttkrp 
+def test_sample_khatri_rao():
+    """ Test for sample_khatri_rao 
     """
     
     rng = check_random_state(1234)
@@ -95,18 +95,18 @@ def test_sample_mttkrp():
     factors = parafac(tensor, rank=rank, n_iter_max=120)
     num_samples = 4
     skip_matrix = 1
-    sampled_Z, j_ix = sample_mttkrp(factors, skip_matrix, num_samples)
-    T.assert_(T.shape(sampled_Z) == (num_samples, rank),
-              'Sampled shape of Z is inconsistent')
-    T.assert_(np.max(j_ix) < (t_shape[0] * t_shape[2]),
-              'Calculated j index is bigger than number of columns of'
+    sampled_kr, sampled_indices, sampled_rows = sample_khatri_rao(factors, num_samples, skip_matrix=skip_matrix,
+                                                                  return_sampled_rows=True)
+    T.assert_(T.shape(sampled_kr) == (num_samples, rank),
+              'Sampled shape of khatri-rao product is inconsistent')
+    T.assert_(np.max(sampled_rows) < (t_shape[0] * t_shape[2]),
+              'Largest sampled row index is bigger than number of columns of'
               'unfolded matrix')
-    T.assert_(np.min(j_ix) >= 0,
-              'Calculated j index is smaller than 0')
-    act_kr = khatri_rao(factors, skip_matrix=skip_matrix)
-    for ix, j in enumerate(j_ix):
-        T.assert_(np.all(T.to_numpy(act_kr)[j] == T.to_numpy(sampled_Z)[ix]),
-                  'Sampled khatri_rao product doesnt correspond to product')
+    T.assert_(np.min(sampled_rows) >= 0,
+              'Smallest sampled row index index is smaller than 0')
+    true_kr = khatri_rao(factors, skip_matrix=skip_matrix)
+    for ix, j in enumerate(sampled_rows):
+        T.assert_array_equal(true_kr[j], sampled_kr[ix], err_msg='Sampled khatri_rao product doesnt correspond to product')
 
 
 def test_randomised_parafac():
@@ -122,3 +122,12 @@ def test_randomised_parafac():
     for i, f in enumerate(factors_svd):
         T.assert_(T.shape(f) == (t_shape[i], rank),
                   'Factors are of incorrect size')
+    
+    # test tensor reconstructed properly
+    tolerance = 0.05
+    tensor = cp_tensor(shape=(10, 10, 10), rank=5, full=True)
+    factors = randomised_parafac(tensor, rank=5, n_samples=100, n_iter_max=100, verbose=0)
+    reconstruction = kruskal_to_tensor(factors)
+    T.assert_(float(T.norm(reconstruction - tensor, 2)/T.norm(tensor, 2)) < tolerance)
+
+
