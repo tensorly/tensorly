@@ -326,7 +326,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
 
 
 def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
-                       tol=10e-7, max_stagnation=20, random_state=None, verbose=1):
+                       tol=10e-7, max_stagnation=0, random_state=None, verbose=1):
     """Randomised CP decomposition via sampled ALS
 
     Parameters
@@ -342,9 +342,9 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
-    max_stagnation: int, optional
-                    the maximum allowed number of iterations with no decrease
-                    in fit
+    max_stagnation: int, optional, default is 0
+                    if not zero, the maximum allowed number
+                    of iterations with no decrease in fit
     random_state : {None, int, np.random.RandomState}, default is None
     verbose : int, optional
         level of verbosity
@@ -385,23 +385,24 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
             factor = T.transpose(T.solve(pseudo_inverse, factor))
             factors[mode] = factor
             
-        rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
-        if not min_error or rec_error < min_error:
-            min_error = rec_error
-            stagnation = -1
-        stagnation += 1
-                
-        rec_errors.append(rec_error)
+        if max_stagnation or tol:
+            rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+            if not min_error or rec_error < min_error:
+                min_error = rec_error
+                stagnation = -1
+            stagnation += 1
+                    
+            rec_errors.append(rec_error)
 
-        if iteration > 1:
-            if verbose:
-                print('reconstruction error={}, variation={}.'.format(
-                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
-
-            if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or \
-               (stagnation > max_stagnation):
+            if iteration > 1:
                 if verbose:
-                    print('converged in {} iterations.'.format(iteration))
-                break
+                    print('reconstruction error={}, variation={}.'.format(
+                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+                if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or \
+                   (stagnation and (stagnation > max_stagnation)):
+                    if verbose:
+                        print('converged in {} iterations.'.format(iteration))
+                    break
 
     return factors
