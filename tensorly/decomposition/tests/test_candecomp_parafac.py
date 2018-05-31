@@ -106,7 +106,7 @@ def test_sample_khatri_rao():
               'Smallest sampled row index index is smaller than 0')
     true_kr = khatri_rao(factors, skip_matrix=skip_matrix)
     for ix, j in enumerate(sampled_rows):
-        T.assert_array_equal(true_kr[j], sampled_kr[ix], err_msg='Sampled khatri_rao product doesnt correspond to product')
+        T.assert_array_equal(true_kr[j], sampled_kr[int(ix)], err_msg='Sampled khatri_rao product doesnt correspond to product')
 
 
 def test_randomised_parafac():

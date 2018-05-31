@@ -43,14 +43,14 @@ def normalize_factors(factors):
     """
     # allocate variables for weights, and normalized factors
     rank = factors[0].shape[1]
-    weights = T.ones(rank)
+    weights = T.ones(rank, **T.context(factors[0]))
     normalized_factors = []
 
     # normalize columns of factor matrices
     for factor in factors:
         scales = T.norm(factor, axis=0)
         weights *= scales
-        scales_non_zero = T.where(scales==0, T.ones(T.shape(scales)), scales)
+        scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factors[0])), scales)
         normalized_factors.append(factor/scales_non_zero)
     return normalized_factors, weights
 
@@ -315,7 +315,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
             indices_kr = indices_kr*size + indices
     
     # Compute the Khatri-Rao product for the chosen indices
-    sampled_kr = T.ones((n_samples, rank))
+    sampled_kr = T.ones((n_samples, rank), **T.context(matrices[0]))
     for indices, matrix in zip(indices_list, matrices):
         sampled_kr = sampled_kr*matrix[indices, :]
         
