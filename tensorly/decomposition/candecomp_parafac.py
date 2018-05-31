@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from .. import backend as T
 from ..random import check_random_state
@@ -8,6 +9,7 @@ from ..tenalg import khatri_rao
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 # Author: Chris Swierczewski <csw@amazon.com>
+# Author: Sam Schneider <samjohnschneider@gmail.com>
 
 # License: BSD 3 clause
 
@@ -159,7 +161,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-7,
 
         if iteration > 1:
             if verbose:
-                print('reconsturction error={}, variation={}.'.format(
+                print('reconstruction error={}, variation={}.'.format(
                     rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
@@ -247,3 +249,159 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
             break
 
     return nn_factors
+
+
+
+def sample_khatri_rao(matrices, n_samples, skip_matrix=None, 
+                      return_sampled_rows=False, random_state=None):
+    """Random subsample of the Khatri-Rao product of the given list of matrices
+
+        If one matrix only is given, that matrix is directly returned.
+
+    Parameters
+    ----------
+    matrices : ndarray list
+        list of matrices with the same number of columns, i.e.::
+
+            for i in len(matrices):
+                matrices[i].shape = (n_i, m)
+                
+    n_samples : int
+        number of samples to be taken from the Khatri-Rao product
+
+    skip_matrix : None or int, optional, default is None
+        if not None, index of a matrix to skip
+        
+    random_state : None, int or numpy.random.RandomState 
+        if int, used to set the seed of the random number generator
+        if numpy.random.RandomState, used to generate random_samples
+    
+    returned_sampled_rows : bool, default is False
+        if True, also returns a list of the rows sampled from the full
+        khatri-rao product
+
+    Returns
+    -------
+    sampled_Khatri_Rao : ndarray
+        The sampled matricised tensor Khatri-Rao with `n_samples` rows
+        
+    indices : tuple list
+        a list of indices sampled for each mode
+    
+    indices_kr : int list
+        list of length `n_samples` containing the sampled row indices
+    """
+    if random_state is None or not isinstance(random_state, np.random.RandomState):
+        rng = check_random_state(random_state)
+        warnings.warn('You are creating a new random number generator at each call.\n'
+                      'If you are calling sample_khatri_rao inside a loop this will be slow:'
+                      ' best to create a rng outside and pass it as argument (random_state=rng).')
+    else:
+        rng = random_state
+
+    if skip_matrix is not None:
+        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+     
+    n_factors = len(matrices)
+    rank = T.shape(matrices[0])[1]
+    sizes = [T.shape(m)[0] for m in matrices]
+
+    # For each matrix, randomly choose n_samples indices for which to compute the khatri-rao product
+    indices_list = [rng.randint(0, T.shape(m)[0], size=n_samples, dtype=int) for m in matrices]
+    if return_sampled_rows:
+        # Compute corresponding rows of the full khatri-rao product
+        indices_kr = np.zeros((n_samples), dtype=int)
+        for size, indices in zip(sizes, indices_list):
+            indices_kr = indices_kr*size + indices
+    
+    # Compute the Khatri-Rao product for the chosen indices
+    sampled_kr = T.ones((n_samples, rank))
+    for indices, matrix in zip(indices_list, matrices):
+        sampled_kr = sampled_kr*matrix[indices, :]
+        
+    if return_sampled_rows:
+        return sampled_kr, indices_list, indices_kr
+    else:
+        return sampled_kr, indices_list
+
+
+def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
+                       tol=10e-7, max_stagnation=20, random_state=None, verbose=1):
+    """Randomised CP decomposition via sampled ALS
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank   : int
+            number of components
+    n_samples : int
+                number of samples per ALS step
+    n_iter_max : int
+                 maximum number of iteration
+    init : {'svd', 'random'}, optional
+    tol : float, optional
+          tolerance: the algorithm stops when the variation in
+          the reconstruction error is less than the tolerance
+    max_stagnation: int, optional
+                    the maximum allowed number of iterations with no decrease
+                    in fit
+    random_state : {None, int, np.random.RandomState}, default is None
+    verbose : int, optional
+        level of verbosity
+
+    Returns
+    -------
+    factors : ndarray list
+            list of positive factors of the CP decomposition
+            element `i` is of shape ``(tensor.shape[i], rank)``
+
+    References
+    ----------
+    .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
+       "A Practical Randomized CP Tensor Decomposition",
+    """
+    rng = check_random_state(random_state)
+    factors = initialize_factors(tensor, rank, init=init, random_state=random_state)
+    rec_errors = []
+    n_dims = T.ndim(tensor)
+    norm_tensor = T.norm(tensor, 2)
+    min_error = 0
+
+    for iteration in range(n_iter_max):
+        for mode in range(n_dims):
+            kr_prod, indices_list = sample_khatri_rao(factors, n_samples, skip_matrix=mode, random_state=rng)
+            indices_list = [i.tolist() for i in indices_list]
+            # Keep all the elements of the currently considered mode
+            indices_list.insert(mode, slice(None, None, None))
+            # MXNet will not be happy if this is a list insteaf of a tuple
+            indices_list = tuple(indices_list)
+            if mode:
+                sampled_unfolding = tensor[indices_list]
+            else:
+                sampled_unfolding = T.transpose(tensor[indices_list]) 
+                
+            pseudo_inverse = T.dot(T.transpose(kr_prod), kr_prod)
+            factor = T.dot(T.transpose(kr_prod), sampled_unfolding)
+            factor = T.transpose(T.solve(pseudo_inverse, factor))
+            factors[mode] = factor
+            
+        rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+        if not min_error or rec_error < min_error:
+            min_error = rec_error
+            stagnation = -1
+        stagnation += 1
+                
+        rec_errors.append(rec_error)
+
+        if iteration > 1:
+            if verbose:
+                print('reconstruction error={}, variation={}.'.format(
+                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+            if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or \
+               (stagnation > max_stagnation):
+                if verbose:
+                    print('converged in {} iterations.'.format(iteration))
+                break
+
+    return factors
