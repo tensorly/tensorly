@@ -117,6 +117,8 @@ In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, e
 
     parafac
     non_negative_parafac
+    sample_khatri_rao
+    randomised_parafac
     tucker
     partial_tucker
     non_negative_tucker
