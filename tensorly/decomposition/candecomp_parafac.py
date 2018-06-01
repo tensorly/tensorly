@@ -99,8 +99,8 @@ def initialize_factors(tensor, rank, init='svd', random_state=None):
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
 
-def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-7,
-            random_state=None, verbose=False):
+def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-8,
+            orthogonalise=False, random_state=None, verbose=False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
@@ -141,11 +141,17 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-7,
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
+    if orthogonalise and not isinstance(orthogonalise, int):
+        orthogonalise = n_iter_max
+
     factors = initialize_factors(tensor, rank, init=init, random_state=random_state)
     rec_errors = []
     norm_tensor = T.norm(tensor, 2)
 
     for iteration in range(n_iter_max):
+        if orthogonalise and iteration <= orthogonalise:
+            factor = [T.qr(factor)[0] for factor in factors]
+
         for mode in range(T.ndim(tensor)):
             pseudo_inverse = T.tensor(np.ones((rank, rank)), **T.context(tensor))
             for i, factor in enumerate(factors):
@@ -155,19 +161,19 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-7,
             factor = T.transpose(T.solve(T.transpose(pseudo_inverse), T.transpose(factor)))
             factors[mode] = factor
 
-        #if verbose or tol:
-        rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
-        rec_errors.append(rec_error)
+        if tol:
+            rec_error = T.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+            rec_errors.append(rec_error)
 
-        if iteration > 1:
-            if verbose:
-                print('reconstruction error={}, variation={}.'.format(
-                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
-
-            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+            if iteration > 1:
                 if verbose:
-                    print('converged in {} iterations.'.format(iteration))
-                break
+                    print('reconstruction error={}, variation={}.'.format(
+                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                    if verbose:
+                        print('converged in {} iterations.'.format(iteration))
+                    break
 
     return factors
 
@@ -326,7 +332,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
 
 
 def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
-                       tol=10e-7, max_stagnation=0, random_state=None, verbose=1):
+                       tol=10e-9, max_stagnation=0, random_state=None, verbose=1):
     """Randomised CP decomposition via sampled ALS
 
     Parameters
