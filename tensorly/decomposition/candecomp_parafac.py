@@ -332,7 +332,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
 
 
 def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
-                       tol=10e-9, max_stagnation=0, random_state=None, verbose=1):
+                       tol=10e-9, max_stagnation=20, random_state=None, verbose=1):
     """Randomised CP decomposition via sampled ALS
 
     Parameters

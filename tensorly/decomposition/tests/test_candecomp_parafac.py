@@ -126,8 +126,9 @@ def test_randomised_parafac():
     # test tensor reconstructed properly
     tolerance = 0.05
     tensor = cp_tensor(shape=(10, 10, 10), rank=4, full=True)
-    factors = randomised_parafac(tensor, rank=5, n_samples=100, n_iter_max=100, tol=0, verbose=0)
+    factors = randomised_parafac(tensor, rank=5, n_samples=100, max_stagnation=20, n_iter_max=100, tol=0, verbose=0)
     reconstruction = kruskal_to_tensor(factors)
-    T.assert_(float(T.norm(reconstruction - tensor, 2)/T.norm(tensor, 2)) < tolerance)
+    error = float(T.norm(reconstruction - tensor, 2)/T.norm(tensor, 2))
+    T.assert_(error < tolerance, msg='reconstruction of {} (higher than tolerance of {})'.format(error, tolerance))
 
 
