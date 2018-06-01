@@ -28,7 +28,7 @@ def check_random_state(seed):
 
     raise ValueError('Seed should be None, int or np.random.RandomState')
 
-def cp_tensor(shape, rank, full=False, orthogonal=False, random_state=None):
+def cp_tensor(shape, rank, full=False, orthogonal=False, random_state=None, **context):
     """Generates a random CP tensor
 
     Parameters
@@ -43,6 +43,8 @@ def cp_tensor(shape, rank, full=False, orthogonal=False, random_state=None):
     orthogonal : bool, optional, default is False
         if True, creates a tensor with orthogonal components
     random_state : `np.random.RandomState`
+    context : dict
+        context in which to create the tensor
 
     Returns
     -------
@@ -55,7 +57,7 @@ def cp_tensor(shape, rank, full=False, orthogonal=False, random_state=None):
                          'min(shape)')
 
     rns = check_random_state(random_state)
-    factors = [T.tensor(rns.random_sample((s, rank))) for s in shape]
+    factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
     if orthogonal:
         factors = [T.qr(factor)[0] for factor in factors]
 
@@ -64,7 +66,7 @@ def cp_tensor(shape, rank, full=False, orthogonal=False, random_state=None):
     else:
         return factors
 
-def tucker_tensor(shape, rank, full=False, random_state=None):
+def tucker_tensor(shape, rank, full=False, orthogonal=False, random_state=None, **context):
     """Generates a random Tucker tensor
 
     Parameters
@@ -78,6 +80,8 @@ def tucker_tensor(shape, rank, full=False, random_state=None):
     full : bool, optional, default is False
         if True, a full tensor is returned
         otherwise, the decomposed tensor is returned
+    orthogonal : bool, optional, default is False
+        if True, creates a tensor with orthogonal components
     random_state : `np.random.RandomState`
 
     Returns
@@ -97,10 +101,14 @@ def tucker_tensor(shape, rank, full=False, random_state=None):
 
     factors = []
     for (s, r) in zip(shape, rank):
-        Q, _= qr(rns.random_sample((s, s)))
-        factors.append(T.tensor(Q[:, :r]))
+        if orthogonal:
+            factor = T.tensor(rns.random_sample((s, s)), **context)
+            Q, _= T.qr(factor)
+            factors.append(T.tensor(Q[:, :r]))
+        else:
+            factors.append(T.tensor(rns.random_sample((s, r)), **context))
 
-    core = T.tensor(rns.random_sample(rank))
+    core = T.tensor(rns.random_sample(rank), **context)
     if full:
         return tucker_to_tensor(core, factors)
     else:

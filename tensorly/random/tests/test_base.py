@@ -79,7 +79,7 @@ def test_tucker_tensor():
     for i in range(T.ndim(tensor)):
         T.assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))),  min(shape[i], rank[i]))
 
-    core, factors = tucker_tensor(shape, rank, full=False)
+    core, factors = tucker_tensor(shape, rank, orthogonal=True, full=False)
     for i, factor in enumerate(factors):
         T.assert_equal(factor.shape, (shape[i], rank[i]),
                 err_msg=('{}-th factor has shape {}, expected {}.'.format(
