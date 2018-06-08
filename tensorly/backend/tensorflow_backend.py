@@ -223,7 +223,7 @@ def partial_svd(matrix, n_eigenvecs=None):
         min_dim = dim_2
 
     if n_eigenvecs is None or n_eigenvecs >= min_dim:
-        if n_eigenvecs > min_dim:
+        if n_eigenvecs is None or n_eigenvecs > min_dim:
             full_matrices = True
         else:
             full_matrices = False

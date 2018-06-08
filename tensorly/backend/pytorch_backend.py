@@ -286,7 +286,7 @@ def partial_svd(matrix, n_eigenvecs=None):
         except RuntimeError: # Probably ran out of memory..
             ctx = context(matrix)
             matrix = to_numpy(matrix)
-            if n_eigenvecs > min_dim:
+            if n_eigenvecs is None or n_eigenvecs > min_dim:
                 full_matrices = True
             else:
                 full_matrices = False
