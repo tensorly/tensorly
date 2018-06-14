@@ -15,6 +15,7 @@ elif _BACKEND == 'cupy':
     from .cupy_backend import *
 else:
     import warnings
-    warnings.warn('_BACKEND should be either "mxnet", "pytorch" or "numpy", {} given.'.format(_BACKEND))
+    warnings.warn('_BACKEND should be either "mxnet", "pytorch", '
+                  '"tensorflow", "cupy" or "numpy". '
+                  '{} was given.'.format(_BACKEND))
     warnings.warn('Using MXNet backend.')
-
