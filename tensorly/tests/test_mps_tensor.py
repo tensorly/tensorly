@@ -1,7 +1,7 @@
 import tensorly as tl
 import numpy as np
 from ..mps_decomposition import matrix_product_state
-from ..mps_tensor import mps_to_tensor, error_between_two_tensors
+from ..mps_tensor import mps_to_tensor
 
 def test_mps_to_tensor():
     """ Test for mps_to_tensor
