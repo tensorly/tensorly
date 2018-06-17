@@ -131,23 +131,3 @@ def mps_get_n_mode_dimensions(factors):
         n_mode_dimensions[k] = n_k
 
     return list(n_mode_dimensions)
-
-
-def error_between_two_tensors(tensor1, tensor2):
-    """Calculates the Frobenius norm of two tensors and returns the
-       difference relative to the first tensor
-
-    Parameters
-    ----------
-    tensor1: ndarray
-    tensor2: ndarray
-
-    Returns
-    -------
-    float
-    Relative difference between 'tensor1' and 'tensor2' given by the Frobenius
-    norm
-    """
-
-
-    return tl.norm(tensor1 - tensor2) / tl.norm(tensor1)
