@@ -28,6 +28,61 @@ def download_file(url, local_path=DATA_DIR):
 
 
 def frostt(descriptor, data_dir=DATA_DIR):
+    """
+    Get a dataset from FROSTT.
+
+    Arguments
+    ---------
+    descriptor : str
+        A descriptor that describes the FROSTT dataset. This is the filename
+        without the extension ``tns.gz`` (e.g., to download the Amazon reviews
+        dataset, specify ``descriptor = 'amazon-reviews'``).
+    data_dir : str
+        The directory to download the files into.
+
+    Returns
+    -------
+    tensor : sparse.COO
+        The sparse tensor. Note that this is a sparse.COO matrix and does not
+        use the Tensorly backend.
+
+    Notes
+    -----
+    Please cite the FROSTT paper if using any of these datasets, and look on
+    frostt.io to see any other dataset-specific papers that should be cited.
+
+    As of 2018-07, available ``descriptor``s are
+
+    * ``amazon-reviews``
+    * ``chicago-crime-comm``
+    * ``chicago-crime-geo``
+    * ``delicious-4d``
+    * ``enron``
+    * ``flickr-4d``
+    * ``flickr-3d``
+    * ``lbnl-network``
+    * ``matmul_{m}-{n}-{p}`` where (m, n, p) in [(2,2,2), (3,3,3), (4,3,2), (4,4,3),
+                                               (4,4,4), (5,5,5), (6,3,3)]
+    * ``nell-1``
+    * ``nell-2``
+    * ``nips``
+    * ``patents``
+    * ``reddit-2015``
+    * ``uber``
+    * ``vast-2015-mc1-5d``
+    * ``vast-2015-mc1-3d``
+
+    References
+    ----------
+    @online{frosttdataset,
+      title = {{FROSTT}: The Formidable Repository of Open Sparse Tensors and
+               Tools},
+      author = {Smith, Shaden and Choi, Jee W. and Li, Jiajia and Vuduc,
+                Richard and Park, Jongsoo and Liu, Xing and Karypis, George},
+      url = {http://frostt.io/},
+      year = {2017},
+    }
+    """
     if data_dir == DATA_DIR:
         try:
             os.makedirs(DATA_DIR)
