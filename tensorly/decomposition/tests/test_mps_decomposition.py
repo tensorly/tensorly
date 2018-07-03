@@ -1,18 +1,23 @@
 import tensorly as tl
 import numpy as np
-import sys
+
 from ..mps_decomposition import matrix_product_state
+from ...mps_tensor import mps_to_tensor
+from ...random import check_random_state
 
 
-def test_matrix_product_state_1():
+def test_matrix_product_state():
     """ Test for matrix_product_state """
+    rng = check_random_state(1234)
+
+    ## Test 1
 
     # Create tensor with random elements
-    tensor = tl.tensor(np.random.rand(3, 4, 5, 6, 2, 10))
+    tensor = tl.tensor(rng.random_sample([3, 4, 5, 6, 2, 10]))
     tensor_shape = tensor.shape
 
     # Find MPS decomposition of the tensor
-    rank = sys.maxsize
+    rank = [1, 3, 3, 4, 2, 2, 1]
     factors = matrix_product_state(tensor, rank)
 
     assert(len(factors) == 6), "Number of factors should be 6, currently has " + str(len(factors))
@@ -26,12 +31,9 @@ def test_matrix_product_state_1():
         assert(r_prev_k == r_prev_iteration), " Incorrect ranks of factors "
         r_prev_iteration = r_k
 
-
-def test_matrix_product_state_2():
-    """ Test for matrix_product_state """
-    
+    ## Test 2
     # Create tensor with random elements
-    tensor = tl.tensor(np.random.rand(3, 4, 5, 6, 2, 10))
+    tensor = tl.tensor(rng.random_sample([3, 4, 5, 6, 2, 10]))
     tensor_shape = tensor.shape
 
     # Find MPS decomposition of the tensor
@@ -48,3 +50,14 @@ def test_matrix_product_state_2():
         first_error_message = "MPS rank " + str(k+1) + " is greater than the maximum allowed "
         first_error_message += str(r_k) + " > " + str(rank[k+1])
         assert(r_k<=rank[k+1]), first_error_message
+
+    ## Test 3
+    tol = 10e-5
+    tensor = tl.tensor(rng.random_sample([3, 3, 3]))
+    factors = matrix_product_state(tensor, (1, 3, 3, 1))
+    reconstructed_tensor = mps_to_tensor(factors)
+    error = tl.norm(reconstructed_tensor - tensor, 2)
+    error /= tl.norm(tensor, 2)
+    tl.assert_(error < tol,
+              'norm 2 of reconstruction higher than tol')
+

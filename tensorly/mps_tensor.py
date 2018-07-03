@@ -1,5 +1,5 @@
 """
-Core operations on tensors in Matrix Product State (MPS) format.
+Core operations on tensors in Matrix Product State (MPS) format, also known as Tensor-Train (TT)
 """
 
 import tensorly as tl
@@ -8,43 +8,33 @@ import tensorly as tl
 def mps_to_tensor(factors):
     """Returns the full tensor whose MPS decomposition is given by 'factors'
 
-        Re-assembles 'factors', which represent a tensor in MPS format
+        Re-assembles 'factors', which represent a tensor in MPS/TT format
         into the corresponding full tensor
 
     Parameters
     ----------
     factors: list of 3D-arrays
-              MPS factors
+              MPS factors (known as core in TT terminology)
 
     Returns
     -------
     output_tensor: ndarray
-                   tensor whose MPS decomposition was given by 'factors'
+                   tensor whose MPS/TT decomposition was given by 'factors'
     """
+    full_shape = [f.shape[1] for f in factors]
+    full_tensor = tl.reshape(factors[0], (full_shape[0], -1))
 
-    n_mode_dimensions = mps_get_n_mode_dimensions(factors)
+    for factor in factors[1:]:
+        rank_prev, _, rank_next = factor.shape
+        factor = tl.reshape(factor, (rank_prev, -1))
+        full_tensor = tl.dot(full_tensor, factor)
+        full_tensor = tl.reshape(full_tensor, (-1, rank_next))
 
-    D = len(n_mode_dimensions)
-
-    (r0, n1, r1) = factors[0].shape
-    output_tensor = factors[0]
-    output_tensor = tl.reshape(output_tensor, (n1, r1))
-
-    for k in range(1, D):
-
-        (r_prev, n_k, r_k) = factors[k].shape
-        G_k = tl.reshape(factors[k], (r_prev, n_k * r_k))
-
-        output_tensor = tl.dot(output_tensor, G_k)
-        output_tensor = tl.reshape(output_tensor, (-1, r_k))
-
-    output_tensor = tl.reshape(output_tensor, n_mode_dimensions)
-
-    return output_tensor
+    return tl.reshape(full_tensor, full_shape)
 
 
 def mps_to_unfolded(factors, mode):
-    """Returns the unfolding matrix of a tensor given in MPS format
+    """Returns the unfolding matrix of a tensor given in MPS (or Tensor-Train) format
 
     Reassembles a full tensor from 'factors' and returns its unfolding matrix
     with mode given by 'mode'
@@ -61,7 +51,6 @@ def mps_to_unfolded(factors, mode):
     2-D array
     unfolding matrix at mode given by 'mode'
     """
-
     return tl.unfold(mps_to_tensor(factors), mode)
 
 
@@ -82,52 +71,3 @@ def mps_to_vec(factors):
 
     return tl.tensor_to_vec(mps_to_tensor(factors))
 
-
-def mps_get_mps_ranks(factors):
-    """Returns the MPS ranks from 'factors'
-
-    Parameters
-    ----------
-    factors: list of 3D-arrays
-              MPS factors
-
-    Returns
-    -------
-    List of ints
-    MPS ranks of 'factors'
-    """
-
-    D = len(factors)
-    mps_ranks = [None] * (D+1)
-
-    for k in range(D):
-        (r_prev, n_k, r_k) = factors[k].shape
-        mps_ranks[k] = r_prev
-        mps_ranks[k+1] = r_k
-
-    return list(mps_ranks)
-
-
-def mps_get_n_mode_dimensions(factors):
-    """Returns the dimensions of the tensor defined by its MPS
-       decomposition
-
-    Parameters
-    ----------
-    factors: list of 3D-arrays
-              MPS factors
-
-    Returns
-    -------
-    List of ints
-    Dimensions of each mode of the underlying tensor defined by 'factors'
-    """
-
-    D = len(factors)
-    n_mode_dimensions = [None] * D
-
-    for k in range(D):
-        (_, n_k, _) = factors[k].shape
-        n_mode_dimensions[k] = n_k
-
-    return list(n_mode_dimensions)
