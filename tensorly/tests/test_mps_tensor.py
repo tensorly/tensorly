@@ -1,6 +1,6 @@
 import tensorly as tl
 import numpy as np
-from ..mps_decomposition import matrix_product_state
+from ..decomposition import matrix_product_state
 from ..mps_tensor import mps_to_tensor
 
 def test_mps_to_tensor():

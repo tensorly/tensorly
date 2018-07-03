@@ -54,5 +54,5 @@ from .base import partial_tensor_to_vec, partial_vec_to_tensor
 
 from .kruskal_tensor import kruskal_to_tensor, kruskal_to_unfolded, kruskal_to_vec
 from .tucker_tensor import tucker_to_tensor, tucker_to_unfolded, tucker_to_vec
-
+from .mps_tensor import mps_to_tensor, mps_to_unfolded, mps_to_vec
 

@@ -1,17 +1,18 @@
 import tensorly as tl
 
-def matrix_product_state(input_tensor, rank = 10, verbose = False):
+def matrix_product_state(input_tensor, rank, verbose=False):
     """MPS decomposition via recursive SVD
+
         Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
+        -- also known as Tensor-Train decomposition [1]_.
 
     Parameters
     ----------
-    input_tensor : ndarray
-    rank : {int, int list}, optional
-                  maximum allowable MPS rank of the factors
-                  if int, then this is the same for all the factors
-                  if int list, then the kth entry in the list is the maximum
-                  allowable MPS rank for the kth factor
+    input_tensor : tensorly.tensor
+    rank : {int, int list}
+            maximum allowable MPS rank of the factors
+            if int, then this is the same for all the factors
+            if int list, then rank[k] is the rank of the kth factor
     verbose : boolean, optional
             level of verbosity
 
@@ -22,63 +23,62 @@ def matrix_product_state(input_tensor, rank = 10, verbose = False):
 
     References
     ----------
-    .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing,
-       33(5):2295–2317, 2011.
+    .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
     """
 
     # Check user input for errors
-    tensor_dimensions = len(input_tensor.shape)
-    if isinstance(rank, int) is True:
-        rank = [rank] * (tensor_dimensions+1)
+    tensor_size = input_tensor.shape
+    n_dim = len(tensor_size)
 
-    else:
-        error_message = "Incorrect size of rank array "
-        error_message += str(tensor_dimensions+1) + " != " + str(len(rank))
-        assert(tensor_dimensions+1 == len(rank)), error_message
+    if isinstance(rank, int):
+        rank = [rank] * (n_dim+1)
+    elif n_dim+1 != len(rank):
+        message = 'Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}'.format(
+            len(rank), n_dim)
+        raise(ValueError(message))
 
-    # Get basic information on of input tensor
-    n_mode_dimensions = input_tensor.shape
-    D = len(n_mode_dimensions)
+    # Make sure it's not a tuple but a list
+    rank = list(rank)
+
     context = tl.context(input_tensor)
 
     # Initialization
-    unfolding_matrix = input_tensor
-    mps_ranks = [None] * (D+1)
-    mps_ranks[0] = 1
-    mps_ranks[D] = 1
-    factors = [None] * D
+    if rank[0] != 1:
+        print('Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.'.format(rank[0]))
+        rank[0] = 1
+    if rank[-1] != 1:
+        print('Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(rank[0]))
 
-    # Getting the MPS factors up to D-1
-    for k in range(D-1):
+    unfolding = input_tensor
+    factors = [None] * n_dim
+
+    # Getting the MPS factors up to n_dim - 1
+    for k in range(n_dim - 1):
 
         # Reshape the unfolding matrix of the remaining factors
-        num_rows = mps_ranks[k] * int(n_mode_dimensions[k])
-        unfolding_matrix = tl.reshape(unfolding_matrix, (num_rows, -1))
+        n_row = int(rank[k]*tensor_size[k])
+        unfolding = tl.reshape(unfolding, (n_row, -1))
 
         # SVD of unfolding matrix
-        (num_rows, num_columns) = unfolding_matrix.shape
-        mps_rank = min(num_rows, num_columns, rank[k+1])
-        U, s, V_t = tl.partial_svd(unfolding_matrix, mps_rank)
-        mps_ranks[k+1] = mps_rank
+        (n_row, n_column) = unfolding.shape
+        current_rank = min(n_row, n_column, rank[k+1])
+        U, S, V = tl.partial_svd(unfolding, current_rank)
+        rank[k+1] = current_rank
 
         # Get kth MPS factor
-        factors[k] = tl.reshape(U, (mps_ranks[k], n_mode_dimensions[k], mps_ranks[k+1]))
+        factors[k] = tl.reshape(U, (rank[k], tensor_size[k], rank[k+1]))
 
         if(verbose is True):
             print("MPS factor " + str(k) + " computed with shape " + str(factors[k].shape))
 
         # Get new unfolding matrix for the remaining factors
-        (rows, cols) = V_t.shape
-        unfolding_matrix = tl.zeros((rows, cols), **context)
-
-        for i in range(rows):
-            unfolding_matrix[i, :] = s[i] * V_t[i, :]
+        unfolding= tl.reshape(S, (-1, 1))*V
 
     # Getting the last factor
-    (r_prev_D, n_D) = unfolding_matrix.shape
-    factors[D-1] = tl.reshape(unfolding_matrix, (r_prev_D, n_D, 1))
+    (prev_rank, last_dim) = unfolding.shape
+    factors[-1] = tl.reshape(unfolding, (prev_rank, last_dim, 1))
 
     if(verbose is True):
-        print("MPS factor " + str(D-1) + " computed with shape " + str(factors[D-1].shape))
+        print("MPS factor " + str(n_dim-1) + " computed with shape " + str(factors[n_dim-1].shape))
 
     return factors
