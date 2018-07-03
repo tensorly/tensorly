@@ -44,8 +44,8 @@ In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, e
     partial_vec_to_tensor
 
 
-:mod:`tensorly.kruskal`: Tensors in the Kruskal format
-======================================================
+:mod:`tensorly.kruskal_tensor`: Tensors in the Kruskal format
+=============================================================
 
 .. automodule:: tensorly.kruskal_tensor
     :no-members:
@@ -61,8 +61,8 @@ In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, e
     kruskal_to_unfolded
     kruskal_to_vec
 
-:mod:`tensorly.tucker`: Tensors in Tucker format
-================================================
+:mod:`tensorly.tucker_tensor`: Tensors in Tucker format
+=======================================================
 
 .. automodule:: tensorly.tucker_tensor
     :no-members:
@@ -78,9 +78,27 @@ In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, e
     tucker_to_unfolded
     tucker_to_vec
 
+:mod:`tensorly.mps_tensor`: Tensors in Matrix-Product-State format
+==================================================================
+
+.. automodule:: tensorly.mps_tensor
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.mps_tensor
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    mps_to_tensor
+    mps_to_unfolded
+    mps_to_vec
+
+
 
 :mod:`tensorly.tenalg`: Tensor algebra
-=============================================
+======================================
 
 .. automodule:: tensorly.tenalg
     :no-members:
@@ -123,6 +141,7 @@ In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, e
     partial_tucker
     non_negative_tucker
     robust_pca
+    matrix_product_state
 
 
 :mod:`tensorly.regression`: Tensor Regression
