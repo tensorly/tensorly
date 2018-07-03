@@ -100,7 +100,7 @@ def initialize_factors(tensor, rank, init='svd', random_state=None):
 
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-8,
-            orthogonalise=False, random_state=None, verbose=False):
+            orthogonalise=False, random_state=None, verbose=False, return_errors=False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
@@ -123,6 +123,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-8,
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         Level of verbosity
+    return_errors : bool, optional
+        Activate return of iteration errors
 
 
     Returns
@@ -130,9 +132,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-8,
     factors : ndarray list
         List of factors of the CP decomposition element `i` is of shape
         (tensor.shape[i], rank)
-    weights : ndarray, optional
-        Array of length `rank` of weights for each factor matrix. See the
-        `with_weights` keyword attribute.
     errors : list
         A list of reconstruction errors at each iteration of the algorithms.
 
@@ -174,8 +173,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-8,
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
                     break
-
-    return factors
+                    
+    if return_errors:
+        return factors, rec_errors
+    else:
+        return factors
 
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
