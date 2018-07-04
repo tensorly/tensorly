@@ -1,7 +1,7 @@
 import torchvision.models as models
 
 
-def get_pytorch_model(model='resnet18'):
+def pytorch_model(model='resnet18'):
     """
     Parameters
     ----------
