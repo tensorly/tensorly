@@ -3,4 +3,4 @@
     Allows to add quickly and test new functions for which the API is not necessarily fixed
 """
 
-from .datasets import frostt
+from ._frostt import frostt
