@@ -6,6 +6,13 @@ except ImportError:
 import re
 from pathlib import Path
 
+
+def requirements():
+    with open('requirements.txt') as f:
+        requirements = f.read().splitlines()
+    return requirements
+
+
 def version(root_path):
     """Returns the version taken from __init__.py
 
@@ -50,13 +57,13 @@ config = {
     'packages': find_packages(exclude=['doc']),
     'description': 'Tensor learning in Python.',
     'long_description': README,
-    'long_description_content_type' : 'text/x-rst',
+    'long_description_content_type': 'text/x-rst',
     'author': 'Jean Kossaifi',
     'author_email': 'jean.kossaifi@gmail.com',
     'version': VERSION,
     'url': 'https://github.com/tensorly/tensorly',
     'download_url': 'https://github.com/tensorly/tensorly/tarball/' + VERSION,
-    'install_requires': ['numpy', 'scipy', 'nose'],
+    'install_requires': requirements(),
     'license': 'Modified BSD',
     'scripts': [],
     'classifiers': [
