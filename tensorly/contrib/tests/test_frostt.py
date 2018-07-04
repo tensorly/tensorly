@@ -1,4 +1,4 @@
-from tensorly.datasets import frostt
+from tensorly.contrib import frostt
 
 
 def test_getting_frostt_dataset():

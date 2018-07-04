@@ -4,4 +4,3 @@ create synthetic data, e.g. for testing purposes.
 """
 
 from .synthetic import gen_image
-from .frostt import frostt
