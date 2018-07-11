@@ -54,8 +54,8 @@ Decompositions are in the :py:mod:`tensorly.decomposition` module.
 
    # decompositions are one-liners:
    factors = parafac(tensor, rank=5)
-   factors, core = tucker(tensor, ranks=[5, 5, 5])
-   factors, core = non_negative_tucker(tensor, ranks=[5, 5, 5])
+   core, factors = tucker(tensor, ranks=[5, 5, 5])
+   core, factors = non_negative_tucker(tensor, ranks=[5, 5, 5])
 
 Tensor regressions
 ------------------
