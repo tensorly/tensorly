@@ -1,4 +1,3 @@
-import torchvision.models as models
 from .. import get_backend
 
 
@@ -21,6 +20,7 @@ def pytorch_model(model='resnet18'):
         raise ValueError("This function is only implemented PyTorch backend. "
                          "Run tensorly.set_backend('pytorch') to prevent "
                          "this error")
-    fn = getattr(models, model)
+    import torchvision
+    fn = getattr(torchvision.models, model)
     net = fn(pretrained=True)
     return list(net.parameters())
