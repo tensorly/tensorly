@@ -1,9 +1,18 @@
-from tensorly.contrib import pytorch_model
 import torch
+import pytest
+from ... import contrib
+from ... import set_backend, get_backend
+
+
+def test_pytorch_model_raises():
+    assert get_backend() == 'numpy'
+    with pytest.raises(ValueError, match="set_backend"):
+        contrib.pytorch_model(model='resnet18')
 
 
 def test_pytorch_model():
-    params = pytorch_model(model='resnet18')
+    set_backend('pytorch')
+    params = contrib.pytorch_model(model='resnet18')
     shapes = [p.shape for p in params]
     set(shapes) == {torch.Size([64, 3, 7, 7]),
                     torch.Size([64]),
