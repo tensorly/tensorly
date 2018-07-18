@@ -3,3 +3,5 @@ scipy
 pytest
 nose
 pytest-cov
+tqdm
+sparse
