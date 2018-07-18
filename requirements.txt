@@ -2,4 +2,5 @@ numpy
 scipy
 pytest
 nose
+sparse
 pytest-cov

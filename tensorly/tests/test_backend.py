@@ -450,3 +450,11 @@ def test_prod():
     v = T.tensor([3, 4, 5])
     x = T.to_numpy(T.prod(v))
     T.assert_equal(x, 60)
+
+
+def test_sparse_tensors():
+    if tl._BACKEND == 'numpy':
+        coords = T.tensor([[1, 2], [3, 1], [5, 6]]).T
+        data = T.tensor([1, 2, 3])
+        x = T.SparseTensor(coords, data, shape=(10, 2), storage='coo')
+        assert isinstance(x, tl.SparseTensor)
