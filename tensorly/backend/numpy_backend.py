@@ -12,17 +12,10 @@ from numpy import arange, ones, zeros, zeros_like
 from numpy import dot, kron, concatenate
 from numpy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from numpy.linalg import solve, qr
-from sparse.coo import COO
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
-
-
-class SparseTensor(COO):
-    def __init__(self, *args, storage='coo', **kwargs):
-        assert storage == 'coo', "Only COO storage supported"
-        super(SparseTensor, self).__init__(*args, **kwargs)
 
 
 def context(tensor):
