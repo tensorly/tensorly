@@ -12,6 +12,7 @@ from numpy import arange, ones, zeros, zeros_like
 from numpy import dot, kron, concatenate
 from numpy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from numpy.linalg import solve, qr
+from sparse import COO
 
 # Author: Jean Kossaifi
 
@@ -45,7 +46,7 @@ def context(tensor):
 
     >>> tl.context(tensor)
     {'dtype': dtype('float32')}
-    
+
     Note that, if you were using, say, PyTorch, the context would also
     include the device (i.e. CPU or GPU) and device ID.
 
@@ -53,13 +54,29 @@ def context(tensor):
 
     >>> new_tensor = tl.tensor([1, 2, 3], **tl.context(tensor))
     """
-    return {'dtype':tensor.dtype}
+    res = {'dtype': tensor.dtype}
+    if isinstance(tensor, COO):
+        res.update({'sparse': True,
+                    'shape': tensor.shape,
+                    'coords': tensor.coords})
+    return res
 
-def tensor(data, dtype=np.float64):
+
+def tensor(data, dtype=np.float64, sparse=False, coords=None, shape=None):
     """Tensor class
-        
+
         Returns a tensor on the specified context, depending on the backend
     """
+    if sparse:
+        if coords is None and shape is None and isinstance(data, np.ndarray):
+                return COO.from_numpy(data)
+        if isinstance(data, COO):
+            data = data.data
+
+        return COO(coords, data=data, shape=shape)
+
+    if isinstance(data, COO):
+        data = data.todense()
     return np.array(data, dtype=dtype)
 
 
@@ -74,26 +91,35 @@ def to_numpy(tensor):
     -------
     numpy_tensor : numpy.ndarray
     """
+    if isinstance(tensor, COO):
+        tensor = tensor.todense()
     return np.copy(tensor)
 
+
 def assert_array_equal(a, b, **kwargs):
-    return testing.assert_array_equal(a, b, **kwargs)
+    return testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
+
 
 def assert_array_almost_equal(a, b, **kwargs):
     testing.assert_array_almost_equal(to_numpy(a), to_numpy(b), **kwargs)
+
 
 assert_raises = testing.assert_raises
 assert_equal = testing.assert_equal
 assert_ = testing.assert_
 
+
 def shape(tensor):
     return tensor.shape
+
 
 def ndim(tensor):
     return tensor.ndim
 
+
 def clip(tensor, a_min=None, a_max=None, inplace=False):
     return np.clip(tensor, a_min, a_max)
+
 
 def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor
@@ -120,7 +146,8 @@ def norm(tensor, order=2, axis=None):
     elif order == 2:
         return np.sqrt(np.sum(tensor**2, axis=axis))
     else:
-        return np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
+        return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
+
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
@@ -171,6 +198,7 @@ def kr(matrices):
     operation = source+'->'+target+common_dim
     return np.einsum(operation, *matrices).reshape((-1, n_columns))
 
+
 def partial_svd(matrix, n_eigenvecs=None):
     """Computes a fast partial SVD on `matrix`
 
@@ -195,6 +223,9 @@ def partial_svd(matrix, n_eigenvecs=None):
         of shape (n_eigenvecs, matrix.shape[1])
         contains the left singular vectors
     """
+    if isinstance(matrix, COO):
+        sparse = True
+
     # Check that matrix is... a matrix!
     if matrix.ndim != 2:
         raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
@@ -207,7 +238,7 @@ def partial_svd(matrix, n_eigenvecs=None):
     else:
         min_dim = dim_2
 
-    if n_eigenvecs is None or n_eigenvecs >= min_dim:
+    if not sparse and (n_eigenvecs is None or n_eigenvecs >= min_dim):
         if n_eigenvecs is None or n_eigenvecs > min_dim:
             full_matrices = True
         else:
@@ -218,6 +249,12 @@ def partial_svd(matrix, n_eigenvecs=None):
         return U, S, V
 
     else:
+        if n_eigenvecs is None:
+            raise ValueError('n_eigenvecs cannot be none')
+        if n_eigenvecs > min_dim:
+            msg = ('n_eigenvecs={} if greater than the minimum matrix '
+                   'dimension ({})')
+            raise ValueError(msg.format(n_eigenvecs, min(matrix.shape)))
         # We can perform a partial SVD
         # First choose whether to use X * X.T or X.T *X
         if dim_1 < dim_2:
