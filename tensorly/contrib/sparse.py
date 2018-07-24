@@ -9,6 +9,14 @@ backend.
 """
 
 
+def approximate(dense_tensor):
+    """
+    Perform some lossy compression on a dense tensor to approximate it as a
+    sparse tensor.
+    """
+    pass
+
+
 def robust_pca(sparse_tensor):
     """ example """
     raise NotImplementedError

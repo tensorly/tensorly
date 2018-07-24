@@ -56,6 +56,8 @@ def context(tensor):
     """
     res = {'dtype': tensor.dtype}
     if isinstance(tensor, COO):
+        # Either coords or data needs to be speficied here; this covers the use
+        # case when T.tensor(x, **T.context(x)).
         res.update({'sparse': True,
                     'shape': tensor.shape,
                     'coords': tensor.coords})
@@ -70,8 +72,6 @@ def tensor(data, dtype=np.float64, sparse=False, coords=None, shape=None):
     if sparse:
         if coords is None and shape is None and isinstance(data, np.ndarray):
                 return COO.from_numpy(data)
-        if isinstance(data, COO):
-            data = data.data
 
         return COO(coords, data=data, shape=shape)
 
@@ -223,6 +223,7 @@ def partial_svd(matrix, n_eigenvecs=None):
         of shape (n_eigenvecs, matrix.shape[1])
         contains the left singular vectors
     """
+    sparse = False
     if isinstance(matrix, COO):
         sparse = True
 
