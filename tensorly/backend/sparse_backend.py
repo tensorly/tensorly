@@ -46,6 +46,10 @@ def context(tensor):
 
 
 def tensor(data, dtype=None, coords=None):
+    if isinstance(data, sparse.SparseArray):
+        if dtype is not None:
+            data = data.astype(dtype)
+        return data
     data = np.asanyarray(data)
     if dtype is not None:
         data = data.astype(dtype)
@@ -59,8 +63,6 @@ def tensor(data, dtype=None, coords=None):
 
 
 def to_numpy(coo_tensor):
-    if coo_tensor.ndim == 2:
-        return coo_tensor.to_scipy_sparse()
     return coo_tensor.todense()
 
 
@@ -73,15 +75,8 @@ def partial_svd(matrix, n_eigenvecs=None):
         n_eigenvecs = min(6, *matrix.shape)  # 6 is the default for eigsh
         if min(matrix.shape) == n_eigenvecs:
             n_eigenvecs -= 1
-    if min(matrix.shape) == n_eigenvecs:
-        raise ValueError('Cannot compute all eigenvectors of matrix')
-    if min(matrix.shape) < n_eigenvecs:
-        msg = 'n_eigenvecs={} is larger than the minimum dimension ({})'
-        raise ValueError(msg.format(n_eigenvecs, min(matrix.shape)))
 
-    U, S, V = numpy_backend.partial_svd(matrix, n_eigenvecs=n_eigenvecs)
+    U, S, V = numpy_backend.partial_svd(matrix, n_eigenvecs=n_eigenvecs,
+                                        sparse=True)
 
-    U = sparse.COO.from_numpy(U)
-    S = sparse.COO.from_numpy(S)
-    V = sparse.COO.from_numpy(V)
     return U, S, V
