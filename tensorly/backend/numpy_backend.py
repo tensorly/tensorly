@@ -8,7 +8,7 @@ import scipy.linalg
 import scipy.sparse.linalg
 
 from numpy import reshape, moveaxis, where, copy, transpose
-from numpy import arange, ones, zeros, zeros_like
+from numpy import arange, ones, zeros
 from numpy import dot, kron, concatenate
 from numpy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from numpy.linalg import solve, qr
@@ -17,6 +17,14 @@ from sparse import COO
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
+
+
+def zeros_like(x, sparse=False, **kwargs):
+    if sparse:
+        data = np.array([0], dtype=x.dtype)
+        coords = np.zeros(x.ndim).reshape(-1, 1)
+        return COO(coords, data=data, shape=x.shape)
+    return np.zeros_like(x)
 
 
 def context(tensor):
