@@ -48,3 +48,21 @@ def test_array_eq():
     T.assert_array_almost_equal(x, y)
     z = y + 1e-10 * sparse.random((10, 20, 20))
     T.assert_array_almost_equal(x, z)
+
+
+def test_partial_tucker():
+    shape = (10, 10, 10)
+    x = sparse.random(shape)
+
+    core, factors = decomp.partial_tucker(x, (0, 2))
+    assert isinstance(core, np.ndarray)
+    assert all(isinstance(f, np.ndarray) for f in factors)
+
+
+def test_conversion():
+    shape = (10, 10, 10)
+    x = sparse.random(shape)
+
+    y = T.to_dense(x)
+    y *= 2
+    assert not np.allclose(x, y)

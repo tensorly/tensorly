@@ -70,14 +70,40 @@ def tensor(data, dtype=np.float64, sparse=False, coords=None, shape=None):
         Returns a tensor on the specified context, depending on the backend
     """
     if sparse:
-        if coords is None and shape is None and isinstance(data, np.ndarray):
-                return COO.from_numpy(data)
+        if isinstance(data, np.ndarray):
+            return COO.from_numpy(data)
+        if isinstance(data, COO):
+            coords = data.coords
+            data = data.data
 
         return COO(coords, data=data, shape=shape)
 
     if isinstance(data, COO):
         data = data.todense()
     return np.array(data, dtype=dtype)
+
+
+def to_dense(x):
+    """
+    Converts a sparse tensor to a dense tensor
+
+    Parameters
+    ----------
+    x : sparse tensor
+
+    Returns
+    -------
+    dense : tensor
+        The sparse tensor converted to a sparse tensor
+
+    Raises
+    ------
+    ValueError
+        if input is not a sparse tensor
+    """
+    if isinstance(x, COO):
+        return x.todense()
+    raise ValueError('this function expects a sparse tensor')
 
 
 def to_numpy(tensor):
