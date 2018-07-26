@@ -122,6 +122,9 @@ def norm(tensor, order=2, axis=None):
     else:
         return np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
 
+def int(tensor):
+    return np.int_(tensor)
+
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
 

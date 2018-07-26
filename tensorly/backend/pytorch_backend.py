@@ -118,9 +118,11 @@ def clip(tensor, a_min=None, a_max=None, inplace=False):
 def all(tensor):
     return torch.sum(tensor != 0)
 
-def transpose(tensor):
-    axes = list(range(ndim(tensor)))[::-1]
+def transpose(tensor, axes=None):
+    if axes == None:
+        axes = list(range(ndim(tensor)))[::-1]
     return tensor.permute(*axes)
+
 
 def copy(tensor):
     return tensor.clone()
@@ -196,6 +198,9 @@ def sum(tensor, axis=None):
 
 def concatenate(tensors, axis=0):
     return torch.cat(tensors, dim=axis)
+
+def int(tensor):
+    return tensor.long()
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
