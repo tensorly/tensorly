@@ -27,10 +27,10 @@ from . import numpy_backend
 from tensorflow import reshape, where, transpose
 from tensorflow import ones, zeros, zeros_like
 from tensorflow import sign, abs, sqrt
-from tensorflow import qr
 from tensorflow import concat as concatenate
-from tensorflow import maximum
-from tensorflow import minimum as min
+from tensorflow import maximum, minimum
+from tensorflow import argmin, argmax
+from tensorflow import reduce_min as min
 from tensorflow import reduce_max as max
 from tensorflow import reduce_mean as mean
 from tensorflow import reduce_sum as sum
@@ -279,3 +279,6 @@ def dot(tensor1, tensor2):
 def shape(tensor):
     # return tuple(s.value for s in tensor.shape)
     return tuple(tensor.shape.as_list())
+
+def qr(A):
+    return tf.qr(A, full_matrices = False)

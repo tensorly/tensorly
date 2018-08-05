@@ -150,6 +150,9 @@ def norm(tensor, order=2, axis=None):
 
     return res
 
+def int(tensor):
+    return tensor.astype('int32')
+
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
 

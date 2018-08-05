@@ -10,7 +10,7 @@ import scipy.sparse.linalg
 from numpy import reshape, moveaxis, where, copy, transpose
 from numpy import arange, ones, zeros, zeros_like
 from numpy import dot, kron, concatenate
-from numpy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
+from numpy import argmin, argmax, max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from numpy.linalg import solve, qr
 
 # Author: Jean Kossaifi
@@ -124,6 +124,7 @@ def norm(tensor, order=2, axis=None):
 
 def int(tensor):
     return np.int_(tensor)
+    # return tensor.astype('int32')
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices

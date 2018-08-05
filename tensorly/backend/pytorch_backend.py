@@ -202,6 +202,13 @@ def concatenate(tensors, axis=0):
 def int(tensor):
     return tensor.long()
 
+def argmin(input, axis=None):
+        return torch.argmin(input, dim=axis)
+
+def argmax(input, axis=None):
+        return torch.argmax(input, dim=axis)
+
+
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
 
