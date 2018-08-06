@@ -4,3 +4,5 @@ pytest
 nose
 sparse
 pytest-cov
+tqdm
+sparse
