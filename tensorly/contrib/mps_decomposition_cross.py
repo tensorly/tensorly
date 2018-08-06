@@ -53,9 +53,9 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
     """
 
     # unfortunately we are not able to work on tensorflow yet
-    if tl.get_backend()=='tensorflow':
-        tl.set_backend('numpy')
-        input_tensor = tl.to_numpy(input_tensor)
+    # if tl.get_backend()=='tensorflow':
+    #     tl.set_backend('numpy')
+    #     input_tensor = tl.to_numpy(input_tensor)
 
     # Check user input for errors
     n = tl.shape(input_tensor)
