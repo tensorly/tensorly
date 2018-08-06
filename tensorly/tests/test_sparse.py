@@ -75,3 +75,12 @@ def test_robust_pca_raises():
 
     with pytest.raises(TypeError, match='NotImplemented from __array_ufunc__'):
         decomp.robust_pca(x)
+
+
+def test_robust_pca_raises():
+    # This fails because addition of sparse arrays and dense arrays is not
+    # supported
+    x = sparse.random((10, 10, 10))
+
+    with pytest.raises(TypeError, match='NotImplemented from __array_ufunc__'):
+        decomp.robust_pca(x)

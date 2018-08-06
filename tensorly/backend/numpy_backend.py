@@ -7,9 +7,9 @@ import numpy as np
 import scipy.linalg
 import scipy.sparse.linalg
 
-from numpy import reshape, moveaxis, where, copy, transpose
+from numpy import moveaxis, where, copy, transpose
 from numpy import arange, ones, zeros
-from numpy import dot, kron, concatenate
+from numpy import kron, concatenate
 from numpy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from numpy.linalg import solve, qr
 from sparse import COO
@@ -17,6 +17,22 @@ from sparse import COO
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
+
+
+def dot(x, y):
+    # np.dot broadcasts to np.ndarray, which doesn't work for sparse arrays
+    # This does, because pydata/sparse implements this
+    if isinstance(x, COO) and isinstance(y, np.ndarray):
+        y = COO.from_numpy(y)
+    if isinstance(y, COO) and isinstance(x, np.ndarray):
+        x = COO.from_numpy(x)
+    return x.dot(y)
+
+
+def reshape(x, shape):
+    # np.reshape broadcasts to np.ndarray, which doesn't work with sparse arrays
+    # This does, because pydata/sparse implements this
+    return x.reshape(shape)
 
 
 def zeros_like(x, sparse=False, **kwargs):
@@ -293,13 +309,23 @@ def partial_svd(matrix, n_eigenvecs=None):
         # We can perform a partial SVD
         # First choose whether to use X * X.T or X.T *X
         if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
+            if matrix.dtype == np.dtype('float64'):
+                conj = matrix.T
+            else:
+                conj = matrix.T.conj()
+            MTM = matrix.dot(conj)
+            if isinstance(MTM, COO):
+                MTM = MTM.to_scipy_sparse()
+            S, U = scipy.sparse.linalg.eigsh(MTM, k=n_eigenvecs, which='LM')
             S = np.sqrt(S)
-            V = np.dot(matrix.T.conj(), U * 1/S[None, :])
+            V = conj.dot(U * 1 / S[None, :])
         else:
-            S, V = scipy.sparse.linalg.eigsh(np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
+            MTM = conj.dot(matrix)
+            if isinstance(MTM, COO):
+                MTM = MTM.to_scipy_sparse()
+            S, V = scipy.sparse.linalg.eigsh(MTM, k=n_eigenvecs, which='LM')
             S = np.sqrt(S)
-            U = np.dot(matrix, V) * 1/S[None, :]
+            U = matrix.dot(V) * 1 / S[None, :]
 
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]

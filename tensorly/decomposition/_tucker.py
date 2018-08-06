@@ -36,7 +36,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     Returns
     -------
-    core : ndarray 
+    core : ndarray
             core tensor of the Tucker decomposition
     factors : ndarray list
             list of factors of the Tucker decomposition.
@@ -82,8 +82,9 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
         if iteration > 1:
             if verbose:
-                print('reconsturction error={}, variation={}.'.format(
-                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+                msg = ('reconsturction error={:0.5f}, '
+                       'difference from last step={}.')
+                print(msg.format(rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
