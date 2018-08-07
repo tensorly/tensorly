@@ -7,13 +7,53 @@ from scipy import linalg as scla
 
 # npr.seed(1)
 
-def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_eps=1e-5, mv_maxit=100):
+def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_eps=1e-5, mv_max_iter=100):
     """MPS (tensor-train) decomposition via cross-approximation [1]
 
-    Acknowledgement: the main body of the code is modified based on TensorToolbox by Daniele Bigoni
-    ----------------------------------------------------------------------
+        Decomposes `input_tensor` into a sequence of order-3 tensors of given rank. (factors)
+            -- also known as Tensor-Train decomposition.
+
+    Parameters
+    ----------
+    input_tensor : tensorly.tensor
+            The tensor to decompose.
+    rank : {int, int list}
+            maximum allowable MPS rank of the factors
+            if int, then this is the same for all the factors
+            if int list, then rank[k] is the rank of the kth factor
+    delta : float
+            accuracy threshold for outer while-loop
+    max_iter : int
+            maximum iterations of outer while-loop
+    mv_eps: float
+            accuracy threshold for max-volumn algorithm
+    mv_max_iter: int
+            maximum iterations of  max-volumn algorithm
+
+    Returns
+    -------
+    factors : MPS factors
+              order-3 tensors of the MPS decomposition
+
+    Examples
+    --------
+
+    Generate a 5^3 tensor, and decompose it into tensor-train of 3 factors, with rank = [1,3,3,1]
+    >>> tensor = tl.tensor(np.arange(5**3).reshape(5,5,5))
+    >>> rank = [1, 3, 3, 1]
+    >>> factors = matrix_product_state_cross(tensor, rank)
+    print the first core:
+    >>> print(factors[0])
+    .[[[ 24.   0.   4.]
+      [ 49.  25.  29.]
+      [ 74.  50.  54.]
+      [ 99.  75.  79.]
+      [124. 100. 104.]]]
+
+    Notes
+    -----
     Pseudo-code [2]:
-    1. Intialization d cores and column indices
+    1. Initialization d cores and column indices
     2. while (error > delta)
     3.    update the tensor-train from left to right:
                 for Core 1 to Core d
@@ -23,22 +63,7 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
                     approximate the skeleton-decomposition by QR and maxvol
     5. end while
 
-    Parameters
-    ----------
-    input_tensor : tensorly.tensor
-    rank : {int, int list}
-            maximum allowable MPS rank of the factors
-            if int, then this is the same for all the factors
-            if int list, then rank[k] is the rank of the kth factor
-    delta : accuracy threshold for outer while-loop
-    max_iter : maximum iterations of outer while-loop
-    mv_eps: accuracy threshold for max-volumn algorithm
-    mv_maxit: maximum iterations of  max-volumn algorithm
-
-    Returns
-    -------
-    factors : MPS factors
-              order-3 tensors of the MPS decomposition
+    Acknowledgement: the main body of the code is modified based on TensorToolbox by Daniele Bigoni
 
     References
     ----------
@@ -92,9 +117,10 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
 
     error = tl.norm(mps_to_tensor(factor_old)-mps_to_tensor(factor_new), 2)
     threshold = delta * tl.norm(mps_to_tensor(factor_new), 2)
-    while iter < max_iter and  error > threshold:
+    for iter in range(max_iter):
+        if error < threshold:
+            break
 
-        iter += 1
         factor_old = factor_new
         factor_new = [None for i in range(d)]
 
@@ -104,10 +130,10 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
         # list row_idx: list (d-1) of lists of left indices
         row_idx = [[()]]
         for k in range(d-1):
-            (IT, fibers_list, Q, QsqInv) = left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx,  mv_eps, mv_maxit)
+            (next_row_idx, fibers_list, Q, Q_inv) = left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx, mv_eps, mv_max_iter)
             # update row indices
             LeftToRight_fiberlist.extend( fibers_list )
-            row_idx.append(IT)
+            row_idx.append(next_row_idx)
 
         # end left-to-right step
         ###############################################
@@ -119,14 +145,14 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
         col_idx = [None] * d
         col_idx[-1] = [()]
         for k in range(d,1,-1):
-            (JT, fibers_list, Q, QsqInv) = right_left_ttcross_step(input_tensor, k,rank, row_idx, col_idx, mv_eps, mv_maxit)
+            (next_col_idx, fibers_list, Q, Q_inv) = right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx, mv_eps, mv_max_iter)
             # update col indices
             RightToLeft_fiberlist.extend( fibers_list )
-            col_idx[k-2] = JT
+            col_idx[k-2] = next_col_idx
 
             # Compute cores
             try:
-                factor_new[k-1] = tl.transpose(tl.dot(Q,QsqInv))
+                factor_new[k-1] = tl.transpose(tl.dot(Q,Q_inv))
                 factor_new[k-1] = tl.reshape(factor_new[k-1] ,(rank[k-1], n[k-1], rank[k]) )
             except:
                 # The rank should not be larger than the input tensor's size
@@ -156,23 +182,38 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
 
     return factor_new
 
-def left_right_ttcross_step(input_tensor, k, ranks, row_idx, col_idx, mv_eps, mv_maxit):
-    """ Compute one step of left-right sweep of ttcross.
-    For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
-    and compute the next core's row indices by QR and max volumn algorithm
+def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx, mv_eps, mv_max_iter):
+    """ Compute the next (right) core's row indices by QR decomposition.
+    
+            For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
+            and compute the next core's row indices by QR and max volume algorithm.
 
-    :param int k: the actual sweep iteration
-    :param list ranks: list of upper ranks (d)
-    :param list row_idx: list (d-1) of lists of left indices
-    :param list col_idx: list (d-1) of lists of right indices
-    :param float mv_eps: MaxVol accuracy
-    :param int mv_maxit: maximum number of iterations for MaxVol
+    Parameters
+    ----------
 
-    :returns: tuple containing: ``(IT,fibers_list,Q,QsqInv)``,
-    IT : the list of new row indices,
-    fibers_list : the used fibers,
-    Q : the Q matrix
-    QsqInv : the inverse of the maxvol submatrix
+    k: int
+            the actual sweep iteration
+    rank: list of int
+            list of upper ranks (d)
+    row_idx: list of list of int
+            list (d-1) of lists of left indices
+    col_idx: list of list of int
+            list (d-1) of lists of right indices
+    mv_eps: float
+            MaxVol accuracy
+    mv_max_iter: int
+            maximum number of iterations for MaxVol
+
+    Returns
+    -------
+    next_row_idx : list of int
+            the list of new row indices,
+    fibers_list : list of slice
+            the used fibers,
+    Q : matrix
+            the Q matrix from QR decomposition
+    Q_inv : matrix
+        the inverse of the maxvol submatrix
     """
 
     n = tl.shape(input_tensor)
@@ -180,8 +221,8 @@ def left_right_ttcross_step(input_tensor, k, ranks, row_idx, col_idx, mv_eps, mv
     fibers_list = []
 
     # Extract fibers according to the row and col indices
-    for i in range(ranks[k]):
-        for j in range(ranks[k + 1]):
+    for i in range(rank[k]):
+        for j in range(rank[k + 1]):
             fiber = row_idx[k][i] + (slice(None, None, None),) + col_idx[k][j]
             fibers_list.append(fiber)
     if k == 0:      # Is[k] will be empty
@@ -199,37 +240,60 @@ def left_right_ttcross_step(input_tensor, k, ranks, row_idx, col_idx, mv_eps, mv
     C = input_tensor[ idx]
     # shape the core as a 3-d cube
     if k == 0:
-        C = tl.reshape(C, (n[k], ranks[k], ranks[k + 1]))
+        C = tl.reshape(C, (n[k], rank[k], rank[k + 1]))
         C = tl.transpose(C, (1,0,2) )
     else:
-        C = tl.reshape(C, (ranks[k], ranks[k + 1], n[k]))
+        C = tl.reshape(C, (rank[k], rank[k + 1], n[k]))
         C = tl.transpose(C, (0,2,1) )
 
     # merge r_k and n_k, get a matrix
-    C = tl.reshape(C, (ranks[k] * n[k], ranks[k + 1]))
+    C = tl.reshape(C, (rank[k] * n[k], rank[k + 1]))
 
     # Compute QR decomposition
     (Q,R) = tl.qr(C)
 
     # Maxvol
-    (I,QsqInv) = maxvol(Q,mv_eps,mv_maxit)
-    QsqInv = tl.tensor(QsqInv)
+    (I, Q_inv) = maxvol(Q, mv_eps, mv_max_iter)
+    Q_inv = tl.tensor(Q_inv)
 
     # Retrive indices in folded tensor
-    IC = [idxfold([ranks[k], n[k]], idx) for idx in I] # First retrive idx in folded C
-    IT = [row_idx[k][ic[0]] + (ic[1],) for ic in IC] # Then reconstruct the idx in the tensor
+    new_idx = [idxfold([rank[k], n[k]], idx) for idx in I] # First retrive idx in folded C
+    next_row_idx = [row_idx[k][ic[0]] + (ic[1],) for ic in new_idx] # Then reconstruct the idx in the tensor
 
-    return (IT, fibers_list, Q, QsqInv)
+    return (next_row_idx, fibers_list, Q, Q_inv)
 
-def right_left_ttcross_step(input_tensor, k, ranks, row_idx, col_idx, mv_eps, mv_maxit):
-    """ Compute one step of right-left sweep of ttcross.
-    Similar with left_right sweep. Given the row indices and col indices, we compute the next core's col indices.
+def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx, mv_eps, mv_max_iter):
+    """ Compute the next (left) core's col indices by QR decomposition.
 
-    :returns: tuple containing: ``(JT,fibers_list,Q,QsqInv)``,
-    IJ : the list of new column indices,
-    fibers_list : the used fibers,
-    Q : the Q matrix
-    QsqInv : the inverse of the maxvol submatrix
+            For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
+            and compute the next core's col indices by QR and max volume algorithm.
+
+    Parameters
+    ----------
+
+    k: int
+            the actual sweep iteration
+    rank: list of int
+            list of upper rank (d)
+    row_idx: list of list of int
+            list (d-1) of lists of left indices
+    col_idx: list of list of int
+            list (d-1) of lists of right indices
+    mv_eps: float
+            MaxVol accuracy
+    mv_max_iter: int
+            maximum number of iterations for MaxVol
+
+    Returns
+    -------
+    next_col_idx : list of int
+            the list of new col indices,
+    fibers_list : list of slice
+            the used fibers,
+    Q : matrix
+            the Q matrix from QR decomposition
+    Q_inv : matrix
+        the inverse of the maxvol submatrix
     """
 
     n = tl.shape(input_tensor)
@@ -237,8 +301,8 @@ def right_left_ttcross_step(input_tensor, k, ranks, row_idx, col_idx, mv_eps, mv
     fibers_list = []
 
     # Extract fibers
-    for i in range(ranks[k - 1]):
-        for j in range(ranks[k]):
+    for i in range(rank[k - 1]):
+        for j in range(rank[k]):
             fiber = row_idx[k - 1][i] + (slice(None, None, None),) + col_idx[k - 1][j]
             fibers_list.append(fiber)
 
@@ -255,31 +319,38 @@ def right_left_ttcross_step(input_tensor, k, ranks, row_idx, col_idx, mv_eps, mv
 
     C = input_tensor[ idx]
     # shape the core as a 3-d cube
-    C = tl.reshape(C, (ranks[k - 1], ranks[k], n[k - 1]))
+    C = tl.reshape(C, (rank[k - 1], rank[k], n[k - 1]))
     C = tl.transpose(C, (0,2,1) )
     # merge n_{k-1} and r_k, get a matrix
-    C = tl.reshape(C, (ranks[k - 1], n[k - 1] * ranks[k]))
+    C = tl.reshape(C, (rank[k - 1], n[k - 1] * rank[k]))
     C = tl.transpose(C)
 
     # Compute QR decomposition
     (Q,R) = tl.qr(C)
     # Maxvol
-    (J,QsqInv) = maxvol(Q,mv_eps,mv_maxit)
-    QsqInv = tl.tensor(QsqInv)
+    (J,Q_inv) = maxvol(Q, mv_eps, mv_max_iter)
+    Q_inv = tl.tensor(Q_inv)
 
     # Retrive indices in folded tensor
-    JC = [idxfold([n[k-1], ranks[k]], idx) for idx in J] # First retrive idx in folded C
-    JT = [(jc[0],) + col_idx[k - 1][jc[1]] for jc in JC] # Then reconstruct the idx in the tensor
+    new_idx = [idxfold([n[k-1], rank[k]], idx) for idx in J] # First retrive idx in folded C
+    next_col_idx = [(jc[0],) + col_idx[k - 1][jc[1]] for jc in new_idx] # Then reconstruct the idx in the tensor
 
-    return (JT, fibers_list, Q, QsqInv)
+    return (next_col_idx, fibers_list, Q, Q_inv)
 
 def idxfold(dlist,idx):
     """ Find the index corresponding to the folded version of a tensor from the flatten version
 
-    :param list,int dlist: list of integers containing the dimensions of the tensor
-    :param int idx: tensor flatten index
+    Parameters
+    ----------
+    dlist: list of int
+            list of integers containing the dimensions of the tensor
+    idx: int
+            tensor flatten index
 
-    :returns: list of int -- the index for the folded version
+    Returns
+    -------
+    idx_folded: list of int -- the index for the folded version
+
     """
     n = len(dlist)
 
@@ -288,26 +359,34 @@ def idxfold(dlist,idx):
         cc.append( cc[-1] * val )
     if idx >= cc[-1]: raise ValueError("Index out of bounds")
 
-    ii = []
+    idx_folded = []
     tmp = idx
 
     for i in range(n):
-        ii.append( tmp//cc[n-i-1] )
+        idx_folded.append( tmp//cc[n-i-1] )
         tmp = tmp % cc[n-i-1]
 
-    return tuple(ii)
+    return tuple(idx_folded)
 
-def maxvol(A,delta=1e-2,maxit=100):
+def maxvol(A, delta=1e-2, max_iter=100):
     """ Find the rxr submatrix of maximal volume in A(nxr), n>=r
 
-    :param ndarray A: two dimensional array with (n,r)=shape(A) where r<=n
-    :param float delta: stopping criterion [default=1e-2]
-    :param int maxit: maximum number of iterations [default=100]
+    Parameters
+    ----------
 
-    :returns: ``(I,A_sq_inv,it)``
-    ``I`` is the list or rows of A forming the matrix with maximal volume,
-    ``A_sq_inv`` is the inverse of the matrix with maximal volume and
-    ``it`` is the number of iterations to convergence
+    A: matrix
+            The matrix to find maximal volume
+    delta: delta
+            stopping criterion
+    max_iter: int
+            maximum number of iterations
+
+    Returns
+    -------
+    row_idx: list of int
+            is the list or rows of A forming the matrix with maximal volume,
+    A_inv: matrix
+            is the inverse of the matrix with maximal volume.
     """
 
     (n,r) = tl.shape(A)
@@ -323,26 +402,25 @@ def maxvol(A,delta=1e-2,maxit=100):
     # Check singularity
     if tl.min(tl.abs(tl.tensor(np.diag(U)))) < np.spacing(1):
         raise ValueError("maxvol: Matrix A is singular")
-    # P = tl.tensor(P); L = tl.tensor(L); U = tl.tensor(U)
     # Reorder A so that the non-singular matrix is on top
 
-    I = tl.arange(n) # set of swapping indices
-    I = tl.dot(tl.tensor(P.T),I)
-    I = tl.int(I)
+    row_idx = tl.arange(n) # set of swapping indices
+    row_idx = tl.dot(tl.tensor(P.T),row_idx)
+    row_idx = tl.int(row_idx)
     if tl.get_backend() =='mxnet':
-        I = tl.to_numpy(I)
+        row_idx = tl.to_numpy(row_idx)
         A = tl.tensor(A)
 
     # Compute inverse of Asq: Asq^-1 = (PLU)^-1
     LU = L[:r,:r] - np.eye(r) + U
-    A_sq_inv = scla.lu_solve((LU,np.arange(r)), np.eye(r))
-    A_sq_inv = tl.tensor(A_sq_inv)
+    A_inv = scla.lu_solve((LU,np.arange(r)), np.eye(r))
+    A_inv = tl.tensor(A_inv)
     # Compute B
-    B = tl.dot(A[I,:], A_sq_inv)
+    B = tl.dot(A[row_idx,:], A_inv)
     B = tl.tensor(B)
     if tl.get_backend() =='mxnet':
-        A_sq_inv = tl.tensor(A_sq_inv)
-        I = tl.tensor(I); I = tl.int(I)
+        A_inv = tl.tensor(A_inv)
+        row_idx = tl.tensor(row_idx); row_idx = tl.int(row_idx)
 
     maxrow = tl.argmax(tl.abs(B),axis=0)[0]
     maxcol = tl.argmax(tl.abs(B),axis=1)[0]
@@ -350,18 +428,19 @@ def maxvol(A,delta=1e-2,maxit=100):
 
     it = 0
     eps = 1.+ delta
-    while it < maxit and maxB > eps:
-        it += 1
+    for iter in range(max_iter):
+        if maxB < eps:
+            break
 
-        # Update A_sq_inv
+        # Update A_inv
         q_tensor = tl.zeros((r,1))
 
-        vT = A[I[maxrow],:] - A[I[maxcol],:]
+        vT = A[row_idx[maxrow],:] - A[row_idx[maxcol],:]
         if len(vT.shape) == 1:
             vT = tl.reshape(vT,(1, vT.shape[0]))
 
         # Eq (8) in "How to find a good submatrix"
-        A_sq_inv -= tl.dot(tl.dot(A_sq_inv,q_tensor), tl.dot(vT,A_sq_inv)) / (1. + tl.dot(vT,tl.dot(A_sq_inv,q_tensor)))
+        A_inv -= tl.dot(tl.dot(A_inv,q_tensor), tl.dot(vT,A_inv)) / (1. + tl.dot(vT,tl.dot(A_inv,q_tensor)))
 
         # Update B using Sherman-Woodbury-Morrison formula
         Bj = B[:,maxcol]
@@ -373,10 +452,10 @@ def maxvol(A,delta=1e-2,maxit=100):
         Bi[0,maxcol] -= 1.
         B[r:,:] -= tl.dot(Bj[r:],Bi)/B[maxrow,maxcol]
 
-        # Update index of maxvol matrix I
-        tmp = I[maxcol]
-        I[maxcol] = I[maxrow]
-        I[maxrow] = tmp
+        # Update index of maxvol matrix row_idx
+        tmp = row_idx[maxcol]
+        row_idx[maxcol] = row_idx[maxrow]
+        row_idx[maxrow] = tmp
 
         # Find new maximum in B
         maxrow = tl.argmax(tl.abs(B),axis=0)[0]
@@ -387,5 +466,5 @@ def maxvol(A,delta=1e-2,maxit=100):
         raise ValueError('Maxvol algorithm did not converge.')
 
     # Return max-vol submatrix Asq
-    I = tl.to_numpy(I)
-    return list(I[:r]), A_sq_inv
+    row_idx = tl.to_numpy(row_idx)
+    return list(row_idx[:r]), A_inv

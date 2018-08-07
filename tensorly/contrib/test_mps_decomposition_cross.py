@@ -24,9 +24,8 @@ if 1 in test:
 
         # Create tensor with random elements
         d = 3
-        n = 4
-        tensor = rng.random_sample([4,4,4,4])
-        tensor = (np.arange(n**d).reshape(4,4,4))
+        n = 5
+        tensor = (np.arange(n**d).reshape(5,5,5))
         tensor = tl.tensor(tensor)
 
 
@@ -34,7 +33,8 @@ if 1 in test:
 
         # Find MPS decomposition of the tensor
         rank = [1, 3,3, 1]
-        factors = matrix_product_state_cross(tensor, rank, delta=1e-5, max_iter=10, mv_eps=1e-5, mv_maxit=10)
+        factors = matrix_product_state_cross(tensor, rank, delta=1e-5, max_iter=10, mv_eps=1e-5, mv_max_iter=10)
+        print(factors[0])
 
         assert(len(factors) == d), "Number of factors should be 6, currently has " + str(len(factors))
 
