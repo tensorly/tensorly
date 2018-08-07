@@ -1,10 +1,8 @@
 import tensorly as tl
 # tl.set_backend('pytorch')
 # tl.set_backend('mxnet')
-# tl.set_backend('tensorflow')
-import numpy as np
-# import tensorflow as tf
 
+import numpy as np
 import time
 import itertools
 import numpy.random as npr
