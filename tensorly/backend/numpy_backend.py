@@ -55,7 +55,7 @@ def context(tensor):
     """
     return {'dtype':tensor.dtype}
 
-def tensor(data, dtype=np.float64):
+def tensor(data, dtype=None):
     """Tensor class
         
         Returns a tensor on the specified context, depending on the backend
