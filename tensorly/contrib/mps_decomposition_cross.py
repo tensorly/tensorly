@@ -11,7 +11,12 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
     """MPS (tensor-train) decomposition via cross-approximation [1]
 
         Decomposes `input_tensor` into a sequence of order-3 tensors of given rank. (factors)
-            -- also known as Tensor-Train decomposition.
+        Advantage: faster
+            The main advantage of TTcross is that it doesn't need to evaluate all the entries of the tensor.
+            For a n^d tensor, SVD needs O(n^d) runtime, but TTcross' runtime is linear in n and d, which makes it feasible in high dimension.
+        Disadvantage: less accurate
+            TTcross may underestimate the error, since it only evaluates partial entries of the tensor.
+            Besides, in contrast to its practical fast performance, there is no theoretical guarantee of it convergence.
 
     Parameters
     ----------
@@ -24,7 +29,7 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
     delta : float
             accuracy threshold for outer while-loop
     max_iter : int
-            maximum iterations of outer while-loop
+            maximum iterations of outer while-loop (the 'crosses' or 'sweeps' sampled)
     mv_eps: float
             accuracy threshold for max-volumn algorithm
     mv_max_iter: int
@@ -387,6 +392,12 @@ def maxvol(A, delta=1e-2, max_iter=100):
             is the list or rows of A forming the matrix with maximal volume,
     A_inv: matrix
             is the inverse of the matrix with maximal volume.
+
+    References
+    ----------
+    S. A. Goreinov, I. V. Oseledets, D. V. Savostyanov, E. E. Tyrtyshnikov, N. L. Zamarashkin.
+    How to find a good submatrix.Goreinov, S. A., et al.
+    Matrix Methods: Theory, Algorithms and Applications: Dedicated to the Memory of Gene Golub. 2010. 247-256.
     """
 
     (n,r) = tl.shape(A)
