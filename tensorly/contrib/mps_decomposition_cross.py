@@ -8,7 +8,7 @@ from scipy import linalg as scla
 # npr.seed(1)
 
 def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_eps=1e-5, mv_max_iter=100):
-    """MPS (tensor-train) decomposition via cross-approximation [1]
+    """MPS (tensor-train) decomposition via cross-approximation (TTcross) [1]
 
         Decomposes `input_tensor` into a sequence of order-3 tensors of given rank. (factors)
         Advantage: faster
