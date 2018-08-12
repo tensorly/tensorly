@@ -1,11 +1,10 @@
 import tensorly as tl
 from ..mps_tensor import mps_to_tensor
-
+from ..random import check_random_state
 import numpy as np
-import numpy.random as npr
 from scipy import linalg as scla
 
-# npr.seed(1)
+rng = check_random_state(1)
 
 def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_eps=1e-5, mv_max_iter=100):
     """MPS (tensor-train) decomposition via cross-approximation (TTcross) [1]
@@ -108,15 +107,15 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
     for k_col_idx in range(d-1):
         col_idx[k_col_idx] = []
         for i in range(rank[k_col_idx+1]):
-            newidx = tuple( [ npr.choice(range(n[j])) for j in range(k_col_idx+1,d) ] )
+            newidx = tuple( [ rng.randint(n[j]) for j in range(k_col_idx+1,d) ] )
             while newidx in col_idx[k_col_idx]:
-                newidx = tuple( [ npr.choice(range(n[j])) for j in range(k_col_idx+1,d) ] )
+                newidx = tuple( [ rng.randint(n[j]) for j in range(k_col_idx+1,d) ] )
 
             col_idx[k_col_idx].append(newidx)
 
     # Initialize the cores of tensor-train
     factor_old = [ tl.zeros((rank[k],n[k],rank[k+1])) for k in range(d) ]
-    factor_new = [ tl.tensor(npr.random((rank[k],n[k],rank[k+1]))) for k in range(d) ]
+    factor_new = [ tl.tensor(rng.random_sample((rank[k],n[k],rank[k+1]))) for k in range(d) ]
 
     iter = 0
 
@@ -131,13 +130,13 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
 
         ######################################
         # left-to-right step
-        LeftToRight_fiberlist = []
+        left_to_right_fiberlist = []
         # list row_idx: list (d-1) of lists of left indices
         row_idx = [[()]]
         for k in range(d-1):
             (next_row_idx, fibers_list, Q, Q_inv) = left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx, mv_eps, mv_max_iter)
             # update row indices
-            LeftToRight_fiberlist.extend( fibers_list )
+            left_to_right_fiberlist.extend( fibers_list )
             row_idx.append(next_row_idx)
 
         # end left-to-right step
@@ -145,14 +144,14 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
 
         ###############################################
         # right-to-left step
-        RightToLeft_fiberlist = []
+        right_to_left_fiberlist = []
         # list col_idx: list (d-1) of lists of right indices
         col_idx = [None] * d
         col_idx[-1] = [()]
         for k in range(d,1,-1):
             (next_col_idx, fibers_list, Q, Q_inv) = right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx, mv_eps, mv_max_iter)
             # update col indices
-            RightToLeft_fiberlist.extend( fibers_list )
+            right_to_left_fiberlist.extend( fibers_list )
             col_idx[k-2] = next_col_idx
 
             # Compute cores
@@ -166,11 +165,11 @@ def matrix_product_state_cross(input_tensor, rank, delta=1e-5, max_iter=100, mv_
         # Add the last core
         idx = (slice(None,None,None),) + tuple(zip(*col_idx[0]))
 
-        C = input_tensor[ idx]
-        C = tl.reshape(C,(n[0], 1, rank[1]))
-        C = tl.transpose(C, (1,0,2) )
+        core = input_tensor[ idx]
+        core = tl.reshape(core,(n[0], 1, rank[1]))
+        core = tl.transpose(core, (1,0,2) )
 
-        factor_new[0] = C
+        factor_new[0] = core
 
         # end right-to-left step
         ################################################
@@ -242,27 +241,27 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx, mv_eps, mv_
         idx = tuple(idx)
 
     # Extract the core
-    C = input_tensor[ idx]
+    core = input_tensor[ idx]
     # shape the core as a 3-d cube
     if k == 0:
-        C = tl.reshape(C, (n[k], rank[k], rank[k + 1]))
-        C = tl.transpose(C, (1,0,2) )
+        core = tl.reshape(core, (n[k], rank[k], rank[k + 1]))
+        core = tl.transpose(core, (1,0,2) )
     else:
-        C = tl.reshape(C, (rank[k], rank[k + 1], n[k]))
-        C = tl.transpose(C, (0,2,1) )
+        core = tl.reshape(core, (rank[k], rank[k + 1], n[k]))
+        core = tl.transpose(core, (0,2,1) )
 
     # merge r_k and n_k, get a matrix
-    C = tl.reshape(C, (rank[k] * n[k], rank[k + 1]))
+    core = tl.reshape(core, (rank[k] * n[k], rank[k + 1]))
 
     # Compute QR decomposition
-    (Q,R) = tl.qr(C)
+    (Q,R) = tl.qr(core)
 
     # Maxvol
     (I, Q_inv) = maxvol(Q, mv_eps, mv_max_iter)
     Q_inv = tl.tensor(Q_inv)
 
     # Retrive indices in folded tensor
-    new_idx = [idxfold([rank[k], n[k]], idx) for idx in I] # First retrive idx in folded C
+    new_idx = [idxfold([rank[k], n[k]], idx) for idx in I] # First retrive idx in folded core
     next_row_idx = [row_idx[k][ic[0]] + (ic[1],) for ic in new_idx] # Then reconstruct the idx in the tensor
 
     return (next_row_idx, fibers_list, Q, Q_inv)
@@ -322,22 +321,22 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx, mv_eps, mv_
         idx[k-1] = slice(None,None,None)
         idx = tuple(idx)
 
-    C = input_tensor[ idx]
+    core = input_tensor[ idx]
     # shape the core as a 3-d cube
-    C = tl.reshape(C, (rank[k - 1], rank[k], n[k - 1]))
-    C = tl.transpose(C, (0,2,1) )
+    core = tl.reshape(core, (rank[k - 1], rank[k], n[k - 1]))
+    core = tl.transpose(core, (0,2,1) )
     # merge n_{k-1} and r_k, get a matrix
-    C = tl.reshape(C, (rank[k - 1], n[k - 1] * rank[k]))
-    C = tl.transpose(C)
+    core = tl.reshape(core, (rank[k - 1], n[k - 1] * rank[k]))
+    core = tl.transpose(core)
 
     # Compute QR decomposition
-    (Q,R) = tl.qr(C)
+    (Q,R) = tl.qr(core)
     # Maxvol
     (J,Q_inv) = maxvol(Q, mv_eps, mv_max_iter)
     Q_inv = tl.tensor(Q_inv)
 
     # Retrive indices in folded tensor
-    new_idx = [idxfold([n[k-1], rank[k]], idx) for idx in J] # First retrive idx in folded C
+    new_idx = [idxfold([n[k-1], rank[k]], idx) for idx in J] # First retrive idx in folded core
     next_col_idx = [(jc[0],) + col_idx[k - 1][jc[1]] for jc in new_idx] # Then reconstruct the idx in the tensor
 
     return (next_col_idx, fibers_list, Q, Q_inv)
@@ -375,6 +374,10 @@ def idxfold(dlist,idx):
 
 def maxvol(A, delta=1e-2, max_iter=100):
     """ Find the rxr submatrix of maximal volume in A(nxr), n>=r
+
+            We want to decompose matrix A as
+                    A = A[:,J] * (A[I,J])^-1 * A[I,:]
+            This algorithm helps us find this submatrix A[I,J] from A, which has the largest determinant.
 
     Parameters
     ----------

@@ -34,8 +34,6 @@ if 1 in test:
         # Find MPS decomposition of the tensor
         rank = [1, 3,3, 1]
         factors = matrix_product_state_cross(tensor, rank, delta=1e-5, max_iter=10, mv_eps=1e-5, mv_max_iter=10)
-        print(factors[0])
-
         assert(len(factors) == d), "Number of factors should be 6, currently has " + str(len(factors))
 
         # Check that the ranks are correct and that the second mode of each factor
