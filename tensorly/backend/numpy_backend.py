@@ -55,7 +55,7 @@ def context(tensor):
     """
     return {'dtype':tensor.dtype}
 
-def tensor(data, dtype=np.float64):
+def tensor(data, dtype=None):
     """Tensor class
         
         Returns a tensor on the specified context, depending on the backend
@@ -125,6 +125,9 @@ def norm(tensor, order=2, axis=None):
 def int(tensor):
     return np.int_(tensor)
     # return tensor.astype('int32')
+
+def inverse(tensor):
+    return np.linalg.inv(tensor)
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices

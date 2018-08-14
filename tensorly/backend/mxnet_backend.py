@@ -24,7 +24,7 @@ from numpy import testing
 from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones
 from mxnet.ndarray import moveaxis, dot, transpose, reshape
-from mxnet.ndarray import where, maximum, sign, prod
+from mxnet.ndarray import where, maximum, argmax, argmin, sign, prod
 
 # Order 0 tensor, mxnet....
 from math import sqrt as scalar_sqrt
@@ -152,6 +152,9 @@ def norm(tensor, order=2, axis=None):
 
 def int(tensor):
     return tensor.astype('int32')
+
+def inverse(tensor):
+    return nd.linalg.potri(tensor)
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
