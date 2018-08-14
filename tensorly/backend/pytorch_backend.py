@@ -63,18 +63,20 @@ def to_numpy(tensor):
     -------
     ndarray
     """
-    if torch.is_tensor(tensor) and tensor.cuda:
-        return tensor.cpu().numpy()
-    elif torch.is_tensor(tensor):
+    if torch.is_tensor(tensor):
+        if tensor.requires_grad:
+            tensor = tensor.detach()
+        if tensor.cuda:
+            tensor = tensor.cpu()
         return tensor.numpy()
-    if isinstance(tensor, numpy.ndarray):
+    elif isinstance(tensor, numpy.ndarray):
         return tensor
 
     try:
-        return numpy.array(tensor)
+        return numpy.asarray(tensor)
     except ValueError:
         raise ValueError('Could not convert object of type {} into a Numpy '
-                         'NDArray'.format(type(tensor)))
+                         'ndarray'.format(type(tensor)))
 
 def assert_array_equal(a, b, **kwargs):
     testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
