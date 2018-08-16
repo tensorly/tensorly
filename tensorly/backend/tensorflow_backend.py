@@ -25,7 +25,7 @@ from numpy import testing
 from . import numpy_backend
 
 from tensorflow import reshape, where, transpose
-from tensorflow import ones, zeros, zeros_like
+from tensorflow import ones, zeros, zeros_like, eye
 from tensorflow import sign, abs, sqrt
 from tensorflow import qr
 from tensorflow import concat as concatenate
@@ -185,72 +185,6 @@ def kr(matrices):
                       (-1, n_col))
     return res
 
-
-def partial_svd(matrix, n_eigenvecs=None):
-    """Computes a fast partial SVD on `matrix`
-
-        if `n_eigenvecs` is specified, sparse eigendecomposition
-        is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
-
-    Parameters
-    ----------
-    matrix : 2D-array
-    n_eigenvecs : int, optional, default is None
-        if specified, number of eigen[vectors-values] to return
-
-    Returns
-    -------
-    U : 2D-array
-        of shape (matrix.shape[0], n_eigenvecs)
-        contains the right singular vectors
-    S : 1D-array
-        of shape (n_eigenvecs, )
-        contains the singular values of `matrix`
-    V : 2D-array
-        of shape (n_eigenvecs, matrix.shape[1])
-        contains the left singular vectors
-    """
-    # Check that matrix is... a matrix!
-    if ndim(matrix) != 2:
-        raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
-            ndim(matrix)))
-
-    # Choose what to do depending on the params
-    dim_1, dim_2 = matrix.shape
-    if dim_1 <= dim_2:
-        min_dim = dim_1
-    else:
-        min_dim = dim_2
-
-    if n_eigenvecs is None or n_eigenvecs >= min_dim:
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-	# Default on standard SVD
-        S, U, V = tf.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], transpose(V)[:n_eigenvecs, :]
-        return U, S, V
-    
-    else:
-        ctx = context(matrix)
-        matrix = to_numpy(matrix)
-        # We can perform a partial SVD
-        # First choose whether to use X * X.T or X.T *X
-        if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(numpy.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            V = numpy.dot(matrix.T.conj(), U * 1/S.reshape((1, -1)))
-        else:
-            S, V = scipy.sparse.linalg.eigsh(numpy.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            U = numpy.dot(matrix, V) * 1/S.reshape((1, -1))
-
-        # WARNING: here, V is still the transpose of what it should be
-        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
-
-
 def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor.
 
@@ -279,3 +213,75 @@ def dot(tensor1, tensor2):
 def shape(tensor):
     # return tuple(s.value for s in tensor.shape)
     return tuple(tensor.shape.as_list())
+
+
+def truncated_svd(matrix, n_eigenvecs=None):
+    """Computes an SVD on `matrix`
+
+    Parameters
+    ----------
+    matrix : 2D-array
+    n_eigenvecs : int, optional, default is None
+        if specified, number of eigen[vectors-values] to return
+
+    Returns
+    -------
+    U : 2D-array
+        of shape (matrix.shape[0], n_eigenvecs)
+        contains the right singular vectors
+    S : 1D-array
+        of shape (n_eigenvecs, )
+        contains the singular values of `matrix`
+    V : 2D-array
+        of shape (n_eigenvecs, matrix.shape[1])
+        contains the left singular vectors
+    """
+    dim_1, dim_2 = matrix.shape
+    if dim_1 <= dim_2:
+        min_dim = dim_1
+    else:
+        min_dim = dim_2
+
+    if n_eigenvecs is None or n_eigenvecs > min_dim:
+        full_matrices = True
+    else:
+        full_matrices = False
+
+    S, U, V = tf.svd(matrix, full_matrices=full_matrices)
+    U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], transpose(V)[:n_eigenvecs, :]
+    return U, S, V
+    
+
+def partial_svd(matrix, n_eigenvecs=None):
+    """Computes a fast partial SVD on `matrix` using NumPy
+
+        if `n_eigenvecs` is specified, sparse eigendecomposition
+        is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
+
+        Faster for very sparse svd (n_eigenvecs small) but uses numpy/scipy
+
+    Parameters
+    ----------
+    matrix : 2D-array
+    n_eigenvecs : int, optional, default is None
+        if specified, number of eigen[vectors-values] to return
+
+    Returns
+    -------
+    U : 2D-array
+        of shape (matrix.shape[0], n_eigenvecs)
+        contains the right singular vectors
+    S : 1D-array
+        of shape (n_eigenvecs, )
+        contains the singular values of `matrix`
+    V : 2D-array
+        of shape (n_eigenvecs, matrix.shape[1])
+        contains the left singular vectors
+    """
+    ctx = context(matrix)
+    matrix = to_numpy(matrix)
+    U, S, V = numpy_backend.partial_svd(matrix, n_eigenvecs)
+    return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
+
+
+SVD_FUNS = {'numpy_svd':partial_svd, 'truncated_svd':truncated_svd}

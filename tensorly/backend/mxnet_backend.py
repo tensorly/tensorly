@@ -22,7 +22,7 @@ import scipy.sparse.linalg
 
 from numpy import testing
 from mxnet import nd as nd
-from mxnet.ndarray import arange, zeros, zeros_like, ones
+from mxnet.ndarray import arange, zeros, zeros_like, ones, eye
 from mxnet.ndarray import moveaxis, dot, transpose, reshape
 from mxnet.ndarray import where, maximum, sign, prod
 
@@ -191,70 +191,6 @@ def kr(matrices):
         res = reshape(reshape(res, (s1, 1, s2))*reshape(e, (1, s3, s4)),
                       (-1, n_col))
     return res
-
-def partial_svd(matrix, n_eigenvecs=None):
-    """Computes a fast partial SVD on `matrix`
-
-        if `n_eigenvecs` is specified, sparse eigendecomposition
-        is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
-
-    Parameters
-    ----------
-    matrix : 2D-array
-    n_eigenvecs : int, optional, default is None
-        if specified, number of eigen[vectors-values] to return
-
-    Returns
-    -------
-    U : 2D-array
-        of shape (matrix.shape[0], n_eigenvecs)
-        contains the right singular vectors
-    S : 1D-array
-        of shape (n_eigenvecs, )
-        contains the singular values of `matrix`
-    V : 2D-array
-        contains the left singular vectors
-    """
-    # Check that matrix is... a matrix!
-    if matrix.ndim != 2:
-        raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
-            matrix.ndim))
-
-    # Choose what to do depending on the params
-    ctx = context(matrix)
-    matrix = to_numpy(matrix)
-    dim_1, dim_2 = matrix.shape
-    if dim_1 <= dim_2:
-        min_dim = dim_1
-    else:
-        min_dim = dim_2
-
-    if n_eigenvecs is None or n_eigenvecs >= min_dim:
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-        # Default on standard SVD
-        U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
-
-    else:
-        # We can perform a partial SVD
-        # First choose whether to use X * X.T or X.T *X
-        if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(numpy.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            V = numpy.dot(matrix.T.conj(), U * 1/S.reshape((1, -1)))
-        else:
-            S, V = scipy.sparse.linalg.eigsh(numpy.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            U = numpy.dot(matrix, V) * 1/S.reshape((1, -1))
-
-        # WARNING: here, V is still the transpose of what it should be
-        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
-
 def qr(matrix):
     try:
         # NOTE - should be replaced with geqrf when available
@@ -316,3 +252,97 @@ def copy(tensor):
 
 def concatenate(tensors, axis):
     return nd.concat(*tensors, dim=axis)
+
+
+def partial_svd(matrix, n_eigenvecs=None):
+    """Computes a fast partial SVD on `matrix` using NumPy
+
+        if `n_eigenvecs` is specified, sparse eigendecomposition
+        is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
+
+        Faster for very sparse svd (n_eigenvecs small) but uses numpy/scipy
+
+    Parameters
+    ----------
+    matrix : 2D-array
+    n_eigenvecs : int, optional, default is None
+        if specified, number of eigen[vectors-values] to return
+
+    Returns
+    -------
+    U : 2D-array
+        of shape (matrix.shape[0], n_eigenvecs)
+        contains the right singular vectors
+    S : 1D-array
+        of shape (n_eigenvecs, )
+        contains the singular values of `matrix`
+    V : 2D-array
+        contains the left singular vectors
+    """
+    ctx = context(matrix)
+    matrix = to_numpy(matrix)
+    U, S, V = numpy_backend.partial_svd(matrix, n_eigenvecs)
+    return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
+
+
+def symeig_svd(matrix, n_eigenvecs=None):
+    """Computes a truncated SVD on `matrix` using symeig
+
+        Uses symeig on matrix.T.dot(matrix) or its transpose
+
+    Parameters
+    ----------
+    matrix : 2D-array
+    n_eigenvecs : int, optional, default is None
+        if specified, number of eigen[vectors-values] to return
+
+    Returns
+    -------
+    U : 2D-array
+        of shape (matrix.shape[0], n_eigenvecs)
+        contains the right singular vectors
+    S : 1D-array
+        of shape (n_eigenvecs, )
+        contains the singular values of `matrix`
+    V : 2D-array
+        of shape (n_eigenvecs, matrix.shape[1])
+        contains the left singular vectors
+    """
+    # Check that matrix is... a matrix!
+    if ndim(matrix) != 2:
+        raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(ndim(matrix)))
+
+    dim_1, dim_2 = shape(matrix)
+    if dim_1 <= dim_2:
+        min_dim = dim_1
+        max_dim = dim_2
+    else:
+        min_dim = dim_2
+        max_dim = dim_1
+
+    if n_eigenvecs is None:
+        n_eigenvecs = max_dim
+
+    if min_dim <= n_eigenvecs:
+        if n_eigenvecs > max_dim:
+            message = ('trying to compute SVD with n_eigenvecs={}, which is larger than'
+                       'max(matrix.shape)={1}. Setting n_eigenvecs to {1}'.format(
+                           n_eigenvecs, max_dim))
+            n_eigenvecs = max_dim
+        # we compute decomposition on the largest of the two to keep more eigenvecs
+        dim_1, dim_2 = dim_2, dim_1
+
+    if dim_1 < dim_2:
+        U, S = nd.linalg.syevd(dot(matrix, transpose(matrix)))                                                                                              
+        S = sqrt(S)
+        V = dot(transpose(matrix), U * 1/reshape(S, (1, -1)))
+    else:
+        V, S = nd.linalg.syevd(dot(transpose(matrix), matrix))
+        S = sqrt(S)
+        U = dot(matrix, V) * 1/reshape(S, (1, -1))
+
+    U, S, V = U[:, ::-1], S[::-1], transpose(V)[::-1, :]
+    return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+
+
+SVD_FUNS = {'numpy_svd':partial_svd, 'symeig_svd':symeig_svd}

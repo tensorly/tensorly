@@ -285,38 +285,50 @@ def test_partial_vec_to_tensor():
         T.assert_array_equal(X, ten)
 
 
-def test_partial_svd():
-    """Test for partial_svd"""
-    sizes = [(100, 100), (100, 5), (10, 10), (5, 100)]
-    n_eigenvecs = [10, 4, 5, 4]
+def test_svd():
+    """Test for the SVD functions"""
+    tol = 0.1
+    tol_orthogonality = 0.01
 
-    # Compare with sparse SVD
-    for s, n in zip(sizes, n_eigenvecs):
-        matrix = np.random.random(s)
-        fU, fS, fV = T.partial_svd(T.tensor(matrix), n_eigenvecs=n)
-        U, S, V = svds(matrix, k=n, which='LM')
-        U, S, V = U[:, ::-1], S[::-1], V[::-1, :]
-        T.assert_array_almost_equal(np.abs(S), T.abs(fS))
-        T.assert_array_almost_equal(np.abs(U), T.abs(fU))
-        T.assert_array_almost_equal(np.abs(V), T.abs(fV))
+    for name, svd_fun in T.SVD_FUNS.items():
+        sizes = [(100, 100), (100, 5), (10, 10), (10, 4), (5, 100)]
+        n_eigenvecs = [90, 4, 5, 4, 5]
 
-    # Compare with standard SVD
-    sizes = [(100, 100), (100, 5), (10, 10), (10, 4), (5, 100)]
-    n_eigenvecs = [10, 4, 5, 4, 4]
-    for s, n in zip(sizes, n_eigenvecs):
-        matrix = np.random.random(s)
-        fU, fS, fV = T.partial_svd(T.tensor(matrix), n_eigenvecs=n)
+        for s, n in zip(sizes, n_eigenvecs):
+            matrix = np.random.random(s)
+            matrix_backend = T.tensor(matrix)
+            fU, fS, fV = svd_fun(matrix_backend, n_eigenvecs=n)
+            U, S, V = svd(matrix)
+            U, S, V = U[:, :n], S[:n], V[:n, :]
 
-        U, S, V = svd(matrix)
-        U, S, V = U[:, :n], S[:n], V[:n, :]
-        # Test for SVD
-        T.assert_array_almost_equal(np.abs(S), T.abs(fS))
-        T.assert_array_almost_equal(np.abs(U), T.abs(fU))
-        T.assert_array_almost_equal(np.abs(V), T.abs(fV))
+            T.assert_array_almost_equal(np.abs(S), T.abs(fS), decimal=3,
+                err_msg='eigenvals not correct for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
+                        name, tl.get_backend(), n, s))
 
-    with T.assert_raises(ValueError):
-        tensor = T.tensor(np.random.random((3, 3, 3)))
-        T.partial_svd(tensor)
+            # True reconstruction error (based on numpy SVD)
+            true_rec_error = np.sum((matrix - np.dot(U, S.reshape((-1, 1))*V))**2)
+            # Reconstruction error with the backend's SVD
+            rec_error = T.sum((matrix_backend - T.dot(fU, fS.reshape((-1, 1))*fV))**2)
+            # Check that the two are similar 
+            T.assert_(true_rec_error - rec_error <= tol, 
+                msg='Reconstruction not correct for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
+                        name, tl.get_backend(), n, s))
+            
+            # Check for orthogonality when relevant
+            if name != 'symeig_svd':
+                left_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+                T.assert_(left_orthogonality_error <= tol_orthogonality,
+                    msg='Left eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
+                            name, tl.get_backend(), n, s))
+                right_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+                T.assert_(right_orthogonality_error <= tol_orthogonality,
+                    msg='Right eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
+                        name, tl.get_backend(), n, s))
+
+        # Should fail on non-matrices
+        with T.assert_raises(ValueError):
+            tensor = T.tensor(np.random.random((3, 3, 3)))
+            svd_fun(tensor)
 
 
 def test_shape():
