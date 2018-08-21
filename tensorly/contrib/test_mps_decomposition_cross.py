@@ -7,13 +7,14 @@ import time
 import itertools
 import numpy.random as npr
 
-from .mps_decomposition_cross import matrix_product_state_cross
+# from .mps_decomposition_cross import matrix_product_state_cross
+from .old import matrix_product_state_cross
 from ..mps_tensor import mps_to_tensor
 from ..random import check_random_state
 
 npr.seed(1)
 
-test = [1,2,3,4]
+test = [1]
 
 if 1 in test:
     def test_matrix_product_state_cross_1():
@@ -33,7 +34,7 @@ if 1 in test:
 
         # Find MPS decomposition of the tensor
         rank = [1, 3,3, 1]
-        factors = matrix_product_state_cross(tensor, rank, delta=1e-5, max_iter=10, mv_eps=1e-5, mv_max_iter=10)
+        factors = matrix_product_state_cross(tensor, rank, tol=1e-5, n_iter_max=10)
         assert(len(factors) == d), "Number of factors should be 6, currently has " + str(len(factors))
 
         # Check that the ranks are correct and that the second mode of each factor
@@ -127,7 +128,7 @@ if 4 in test:
             return sum(X)**3
 
         maxvoleps = 1e-4
-        delta = 1e-4
+        tol = 1e-4
         n = 10
         d = 4
         rng = 1
@@ -137,7 +138,7 @@ if 4 in test:
 
         # Find MPS decomposition of the tensor
         rank = [1, 4, 4, 4, 1]
-        factors = matrix_product_state_cross(value, rank, delta=delta,mv_eps=maxvoleps)
+        factors = matrix_product_state_cross(value, rank, tol=tol, maxvol_tol=maxvoleps)
 
         approx = mps_to_tensor(factors)
         error = tl.norm(approx-value,2)

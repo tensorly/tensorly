@@ -120,6 +120,58 @@ As before, we can reconstruct a full tensor from our Tucker decomposition:
 
 Note that some coefficients are almost zero (10e-16) but not exactly due to numerical approximations.
 
+
+
+
+Tensor Train Decomposition
+-----------------------
+
+The tensor train decomposition, also known as matrix product state in physics community, is a linear way to decomposition the high dimensional tensor. For a order d tensor A[i1,...,id], it splits each dimension into a order 3 sub-tensor, which we called factors or cores. One of the dimension of the sub-tensor is the real physical dimension, while the other two are edges connecting the cores before and after it.
+
+.. math::
+
+    A[i_1, \ldots, i_d] \approx \sum_{\alpha_1}\cdots\sum_{\alpha_{d-1}}G_1(i_1, \alpha_1)G_2(\alpha_1, i_2, \alpha_2)G_3(\alpha_2, i_3, \alpha_3)\cdots G_d(\alpha_{d-1},i_d)
+
+The advantage of tensor-train decomposition is that both of its number of entries (storage) and computational time is linear in dimensions, making high dimensional problem feasible.
+
+Tucker decomposition
++++++++++++++++++++++
+
+
+Two tensor train decompositions are available in TensorLy: Standard Singular value decomposition method (:func:`tensorly.decomposition.mps_decomposition` and cross approximation method :func:`tensorly.decomposition.mps_decomposition_cross`).
+
+Using the same tensor as previously, we will perform a rank [1,2,1]-decomposition of the shape (12,12) `tensor` meaning the first core has shape (1,12,2) and the second has (2,12,1).:
+
+.. code::
+
+   >>> from tensorly.decomposition import matrix_product_state
+   >>> factors = matrix_product_state(tensor, rank=[1,2,1])
+   >>> len(factors)
+   2
+   >>> [f.shape for f in factors]
+   [(1, 12, 2), (2, 12, 1)]
+
+As before, we can reconstruct a full tensor from our Tensor-train  decomposition:
+
+.. code:: python
+
+   >>> from tensorly import mps_to_tensor
+   >>> print(np.round(mps_to_tensor(factors), decimals=10))
+ [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
+ [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
+ [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
+ [-0.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1. -0.]
+ [-0.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1. -0.]
+ [-0.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1. -0.]
+ [-0.  1.  1.  1.  1.  1.  1.  1.  1.  1.  1. -0.]
+ [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
+ [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
+ [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
+ [ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]]
+
+Note that for matrix, tensor-train decomposition is just singular value decomposition. This matrix is rank 2, so it can be fully recovered
+
+
 References
 ----------
 .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
