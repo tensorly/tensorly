@@ -81,10 +81,10 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     """
     rng = check_random_state(random_state)
 
-    if init is 'random':
+    if init == 'random':
         factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
         return factors
-    elif init is 'svd':
+    elif init == 'svd':
         try:
             svd_fun = tl.SVD_FUNS[svd]
         except KeyError:
