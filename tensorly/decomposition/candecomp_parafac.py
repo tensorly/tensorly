@@ -163,7 +163,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
-    factors = initialize_factors(tensor, rank, init=init, random_state=random_state)
+    factors = initialize_factors(tensor, rank, init=init, svd=svd, random_state=random_state)
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
 
@@ -238,7 +238,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     """
     epsilon = 10e-12
 
-    nn_factors = initialize_factors(tensor, rank, init=init, random_state=random_state, non_negative=True)
+    nn_factors = initialize_factors(tensor, rank, init=init, svd=svd, random_state=random_state, non_negative=True)
 
     n_factors = len(nn_factors)
     norm_tensor = tl.norm(tensor, 2)
@@ -349,7 +349,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
         return sampled_kr, indices_list
 
 
-def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
+def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', svd='numpy_svd',
                        tol=10e-9, max_stagnation=20, random_state=None, verbose=1):
     """Randomised CP decomposition via sampled ALS
 
@@ -363,6 +363,8 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -385,7 +387,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='svd',
        "A Practical Randomized CP Tensor Decomposition",
     """
     rng = check_random_state(random_state)
-    factors = initialize_factors(tensor, rank, init=init, random_state=random_state)
+    factors = initialize_factors(tensor, rank, init=init, svd=svd, random_state=random_state)
     rec_errors = []
     n_dims = tl.ndim(tensor)
     norm_tensor = tl.norm(tensor, 2)
