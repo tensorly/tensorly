@@ -2,7 +2,6 @@ import tensorly as tl
 from ..mps_tensor import mps_to_tensor
 from ..random import check_random_state
 import numpy as np
-from scipy import linalg as scla
 
 rng = check_random_state(1)
 
