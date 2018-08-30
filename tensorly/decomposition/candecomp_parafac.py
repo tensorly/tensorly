@@ -55,7 +55,7 @@ def normalize_factors(factors):
     return normalized_factors, weights
 
 
-def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=None):
+def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=None, non_negative=False):
     r"""Initialize factors used in `parafac`.
 
     The type of initialization is set using `init`. If `init == 'random'` then
@@ -69,8 +69,9 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     rank : int
     init : {'svd', 'random'}, optional
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD,
-        acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    non_negative : bool, default is False
+        if True, non-negative factors are returned
 
     Returns
     -------
@@ -83,7 +84,11 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
     if init == 'random':
         factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
-        return factors
+        if non_negative:
+            return [tl.abs(f) for f in factors]
+        else:
+            return factors
+
     elif init == 'svd':
         try:
             svd_fun = tl.SVD_FUNS[svd]
@@ -103,13 +108,16 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
                 # factor[:, :tensor.shape[mode]] = U
                 random_part = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])), **tl.context(tensor))
                 U = tl.concatenate([U, random_part], axis=1)
-            factors.append(U[:, :rank])
+            if non_negative:
+                factors.append(tl.abs(U[:, :rank]))
+            else:
+                factors.append(U[:, :rank])
         return factors
 
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
 
-def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-8,
+def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             orthogonalise=False, random_state=None, verbose=False, return_errors=False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
@@ -126,6 +134,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-8,
         Maximum number of iteration
     init : {'svd', 'random'}, optional
         Type of factor matrix initialization. See `initialize_factors`.
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
         algorithm is considered to have found the global minimum when the
@@ -190,8 +200,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', tol=1e-8,
         return factors
 
 
-def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
-                         random_state=None, verbose=0):
+def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
+                         tol=10e-7, random_state=None, verbose=0):
     """Non-negative CP decomposition
 
         Uses multiplicative updates, see [2]_
@@ -204,6 +214,8 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -226,13 +238,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', tol=10e-7,
     """
     epsilon = 10e-12
 
-    # Initialisation
-    if init == 'svd':
-        factors = parafac(tensor, rank)
-        nn_factors = [tl.abs(f) for f in factors]
-    else:
-        rng = check_random_state(random_state)
-        nn_factors = [tl.tensor(np.abs(rng.random_sample((s, rank))), **tl.context(tensor)) for s in tensor.shape]
+    nn_factors = initialize_factors(tensor, rank, init=init, random_state=random_state, non_negative=True)
 
     n_factors = len(nn_factors)
     norm_tensor = tl.norm(tensor, 2)
