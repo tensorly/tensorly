@@ -23,7 +23,7 @@ import numpy
 import warnings
 
 from cupy import reshape, moveaxis, where, copy, transpose
-from cupy import arange, ones, zeros, zeros_like
+from cupy import arange, ones, zeros, zeros_like, eye
 from cupy import dot, kron, concatenate
 from cupy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from cupy.linalg import qr
@@ -161,8 +161,54 @@ def kron(matrix1, matrix2):
                 (s1*s3, s2*s4))
      
 
+def solve(matrix1, matrix2):
+    try:
+        cp.linalg.solve(matrix1, matrix2)
+    except cp.cuda.cusolver.CUSOLVERError:
+        warnings.warn('CuPy solver failed, using numpy.linalg.solve instead.')
+        return tensor(numpy.linalg.solve(to_numpy(matrix1), to_numpy(matrix2)),
+                      **context(matrix1))
+
+
+def truncated_svd(matrix, n_eigenvecs=None):
+    """Computes a truncated SVD on `matrix` 
+
+    Parameters
+    ----------
+    matrix : 2D-array
+    n_eigenvecs : int, optional, default is None
+        if specified, number of eigen[vectors-values] to return
+
+    Returns
+    -------
+    U : 2D-array
+        of shape (matrix.shape[0], n_eigenvecs)
+        contains the right singular vectors
+    S : 1D-array
+        of shape (n_eigenvecs, )
+        contains the singular values of `matrix`
+    V : 2D-array
+        of shape (n_eigenvecs, matrix.shape[1])
+        contains the left singular vectors
+    """
+    dim_1, dim_2 = matrix.shape
+    if dim_1 <= dim_2:
+        min_dim = dim_1
+    else:
+        min_dim = dim_2
+
+    if n_eigenvecs is None or n_eigenvecs > min_dim:
+        full_matrices = True
+    else:
+        full_matrices = False
+
+    U, S, V = cupy.linalg.svd(tensor, full_matrices=full_matrices)
+    U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+    return U, S, V
+
+
 def partial_svd(matrix, n_eigenvecs=None):
-    """Computes a fast partial SVD on `matrix`
+    """Computes a fast partial SVD on `matrix` using NumPy/Scipy
 
         if `n_eigenvecs` is specified, sparse eigendecomposition
         is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
@@ -184,50 +230,10 @@ def partial_svd(matrix, n_eigenvecs=None):
     V : 2D-array
         contains the left singular vectors
     """
-    # Check that matrix is... a matrix!
-    if matrix.ndim != 2:
-        raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
-            matrix.ndim))
-
-    # Choose what to do depending on the params
     ctx = context(matrix)
     matrix = to_numpy(matrix)
-    dim_1, dim_2 = matrix.shape
-    if dim_1 <= dim_2:
-        min_dim = dim_1
-    else:
-        min_dim = dim_2
+    U, S, V = numpy_backend.partial_svd(matrix, n_eigenvecs)
+    return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
 
-    if n_eigenvecs is None or n_eigenvecs >= min_dim:
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-        # Default on standard SVD
-        U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
+SVD_FUNS = {'numpy_svd':partial_svd, 'truncated_svd':truncated_svd}
 
-    else:
-        # We can perform a partial SVD
-        # First choose whether to use X * X.T or X.T *X
-        if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(numpy.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            V = numpy.dot(matrix.T.conj(), U * 1/S.reshape((1, -1)))
-        else:
-            S, V = scipy.sparse.linalg.eigsh(numpy.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            U = numpy.dot(matrix, V) * 1/S.reshape((1, -1))
-
-        # WARNING: here, V is still the transpose of what it should be
-        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
-
-def solve(matrix1, matrix2):
-    try:
-        cp.linalg.solve(matrix1, matrix2)
-    except cp.cuda.cusolver.CUSOLVERError:
-        warnings.warn('CuPy solver failed, using numpy.linalg.solve instead.')
-        return tensor(numpy.linalg.solve(to_numpy(matrix1), to_numpy(matrix2)),
-                      **context(matrix1))

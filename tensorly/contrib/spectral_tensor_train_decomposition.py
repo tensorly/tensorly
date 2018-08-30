@@ -7,8 +7,7 @@ import random
 import numpy as np
 
 
-from TensorToolbox.core import TensorWrapper, TTvec
-from SpectralToolbox import Spectral1D as S1D
+from TensorToolbox.core import TensorWrapper, TTvec, TTmat
 
 LINEAR_INTERPOLATION = 'LinearInterpolation'
 LAGRANGE_INTERPOLATION = 'LagrangeInterpolation'
@@ -38,8 +37,8 @@ class STT():
 
     def __init__(self, f, grids, params, range_dim=0,
                 surrogate_type=None,
-                 eps=1e-4, method="ttcross",
-                 rs=None, Jinit=None, delta=1e-4, maxit=100,
+                 eps=1e-4, method="svd",
+                 rs=None, delta=1e-4, maxit=100,
                  mv_eps=1e-5, mv_maxit=100,
                  ):
 
@@ -53,15 +52,13 @@ class STT():
         self.space_shape = None  # Shape of the space dimension
         self.Xs_params = None  # np.array of List of points (defining the parameter grid)
 
-        self.surr_type = None  # Can be Projection or Interpolation
+        self.interpolation_type = None  # Can be Projection or Interpolation
         self.barycentric_weights = None  # np.array of List of barycentric weights for Lagrange Interp
 
         self.range_dim = None  # Number of dimensions of the spatial space
         self.param_dim = None  # Number of dimensions of the parameter space
         self.TW = None  # Tensor wrapper containing caching the function evaluations
         self.params = None  # Parameters to be passed to f
-
-        self.init = False  # Flags whether the construction of the approximation/surrogate is done.
 
         # Parameters to be reset on restarting
         self.f = None  # Function to be approximated
@@ -72,13 +69,12 @@ class STT():
 
         self.f = f
         self.params = params
-        self.surr_type = surrogate_type
+        self.interpolation_type = surrogate_type
 
         # Store all the tt approximation parameters
         self.method = method
         self.eps = eps
         self.rs = rs
-        self.Jinit = Jinit
         self.delta = delta
         self.maxit = maxit
         self.mv_eps = mv_eps
@@ -88,87 +84,8 @@ class STT():
         self.param_dim = len(grids) - self.range_dim
         if self.param_dim < 0: raise AttributeError("The grids argument must respect len(grids) >= range_dim")
 
-        self.set_grids(grids)
-
-        # Definition of the Tensor Wrapper (works for homogeneous grid on param space)
-        self.TW = TensorWrapper(self.f,
-                                self.Xs_params[tuple([0] * max(self.range_dim, 1))],
-                                params=self.params
-                                )
-
-    def __call__(self, x_in, verbose=False):
-        """ Evaluate the surrogate on points ``x_in``
-
-        :param np.ndarray x_in: 1 or 2 dimensional array of points in the parameter space where to evaluate the function. In 2 dimensions, each row is an entry, i.e. ``x_in.shape[1] == self.param_dim``
-
-        :return: an array with dimension equal to the space dimension (``range_dim``) plus one. If ``A`` is the returned vector and ``range_dim=2``, then ``A[i,:,:]`` is the value of the surrogate for ``x_in[i,:]``
-
-        """
-        if not self.init:
-            raise RuntimeError(
-                "The SpectralTensorTrain approximation is not initialized or is not set to construct a surrogate")
-        else:
-            if not isinstance(x_in, np.ndarray) or x_in.ndim not in [1, 2]: raise AttributeError(
-                "The input variable must be a 1 or 2 dimensional numpy.ndarray")
-            orig_ndim = x_in.ndim
-            x = x_in.copy()
-            if x.ndim == 1:
-                x = np.array([x])
-
-            if x.shape[1] != self.param_dim: raise AttributeError(
-                "The input variable has dimension x.shape[1]==%d, while self.param_dim==%d" % (
-                x.shape[1], self.param_dim))
-
-            Np = x.shape[0]
-
-            output = np.empty((Np,) + self.space_shape)
-
-            mat_cache = [{} for i in range(self.param_dim)]
-            MsI = [None] * self.param_dim
-
-            if self.surr_type == LINEAR_INTERPOLATION:  # Linear Interpolation
-                for ((point, TTapp), (_, Xs)) in \
-                        zip(np.ndenumerate(self.TTapprox), np.ndenumerate(self.Xs_params)):
-                    for i in range(self.param_dim):
-                        try:
-                            MsI[i] = mat_cache[i][tuple(Xs[i])]
-                        except KeyError:
-                            mat_cache[i][tuple(Xs[i])] = S1D.SparseLinearInterpolationMatrix(Xs[i], x[:, i]).tocsr()
-                            MsI[i] = mat_cache[i][tuple(Xs[i])]
-                    is_sparse = [True] * self.param_dim
-                    TTval = TTapp.interpolate(MsI, is_sparse=is_sparse)
-                    output[(slice(None, None, None),) + point] = np.asarray(
-                        [TTval[tuple([i] * self.param_dim)] for i in range(Np)])
-            elif self.surr_type == LAGRANGE_INTERPOLATION:  # Lagrange Interpolation
-                for ((point, TTapp), (_, Xs), (_, bw)) in \
-                        zip(np.ndenumerate(self.TTapprox), np.ndenumerate(self.Xs_params),
-                            np.ndenumerate(self.barycentric_weights)):
-                    for i in range(self.param_dim):
-                        try:
-                            MsI[i] = mat_cache[i][tuple(Xs[i])]
-                        except KeyError:
-                            mat_cache[i][tuple(Xs[i])] = S1D.LagrangeInterpolationMatrix(Xs[i], bw[i], x[:, i])
-                            MsI[i] = mat_cache[i][tuple(Xs[i])]
-                    is_sparse = [False] * self.param_dim
-                    TTval = TTapp.interpolate(MsI, is_sparse=is_sparse)
-                    output[(slice(None, None, None),) + point] = np.asarray(
-                        [TTval[tuple([i] * self.param_dim)] for i in range(Np)])
-            else:
-                raise AttributeError("Type of interpolation not defined")
-
-            if orig_ndim == 1:
-                if self.range_dim == 0:
-                    return output[(0,) + tuple([slice(None, None, None)] * self.range_dim)][0]
-                else:
-                    return output[(0,) + tuple([slice(None, None, None)] * self.range_dim)]
-            else:
-                if self.range_dim == 0:
-                    return output[:, 0]
-                else:
-                    return output
-
-    def set_grids(self, grids):
         # Store grid for spatial space
+        #########################################################
         self.Xs_space = []
         for i in range(self.range_dim):
             if isinstance(grids[i], np.ndarray):
@@ -194,47 +111,24 @@ class STT():
                 else:
                     raise AttributeError("The %d argument of grid is none of the types accepted." % i)
 
-    def build(self):
-        self.start_build_time = time.clock()
+        # Definition of the Tensor Wrapper (works for homogeneous grid on param space)
+        #########################################################
+        self.TW = TensorWrapper(self.f,
+                                self.Xs_params[tuple([0] * max(self.range_dim, 1))],
+                                params=self.params
+                                )
 
-        if self.generic_approx is None:
-            self.generic_approx = np.empty(self.space_shape, dtype=TTvec)
+        # Build
+        #########################################################
 
-        for point, val in np.ndenumerate(self.generic_approx):
-            if val is None or not val.init:
-                # try:
-                multidim_point = point if self.range_dim > 0 else None
-                # Build generic_approx for the selected point
-                if val is None or self.generic_approx[point].Jinit is None:
-                    # Find all the back neighbors and select the first found to start from
-                    neigh = None
-                    for i in range(self.range_dim - 1, -1, -1):
-                        if point[i] - 1 >= 0:
-                            pp = list(point)
-                            pp[i] -= 1
-                            neigh = self.generic_approx[tuple(pp)]
-                            break
-                    # If a neighbor is found, select the rank and the fibers to be used
-                    if neigh != None:
-                        if self.method == 'ttcross':
-                            rs = neigh.ranks()
-                            for i in range(1, len(rs) - 1):
-                                rs[i] += 1
-                            Js = neigh.Js_last[-2]
-                            # Trim the fibers according to rs (This allow the rank to decrease as well)
-                            for r, (j, J) in zip(rs[1:-1], enumerate(Js)):
-                                Js[j] = random.sample(J, r)
-                            self.rs = rs
-                            self.Jinit = Js
-
-                    self.generic_approx[point] = TTvec(self.TW, multidim_point=multidim_point)
-                    self.generic_approx[point].build(eps=self.eps, method=self.method,
-                                                     rs=self.rs,
-                                                     Jinit=self.Jinit,
-                                                     delta=self.delta, maxit=self.maxit,
-                                                     mv_eps=self.mv_eps,
-                                                     mv_maxit=self.mv_maxit
-                                                     )
+        self.generic_approx = np.empty(self.space_shape, dtype=TTvec)
+        self.generic_approx[(0,)] = TTvec(self.TW)
+        self.generic_approx[(0,)].build(eps=self.eps, method=self.method,
+                                         rs=self.rs,
+                                         delta=self.delta, maxit=self.maxit,
+                                         mv_eps=self.mv_eps,
+                                         mv_maxit=self.mv_maxit
+                                         )
 
         # Prepares the TTapprox from the generic_approx
         if self.TTapprox is None:
@@ -244,16 +138,221 @@ class STT():
             self.TTapprox[point] = gen_app
 
         # Prepares the surrogate
-        if self.surr_type == LAGRANGE_INTERPOLATION:
+        if self.interpolation_type == LAGRANGE_INTERPOLATION:
             if self.barycentric_weights is None:
                 self.barycentric_weights = np.empty(self.space_shape, dtype=list)
 
             for (point, _), (_, X) in \
                     zip(np.ndenumerate(self.barycentric_weights), np.ndenumerate(self.Xs_params)):
-                self.barycentric_weights[point] = [S1D.BarycentricWeights(X[i]) for i in range(self.param_dim)]
-
-        self.init = True
+                self.barycentric_weights[point] = [BarycentricWeights(X[i]) for i in range(self.param_dim)]
 
 
+    def __call__(self, x_in, verbose=False):
+        """ Evaluate the surrogate on points ``x_in``
+
+        :param np.ndarray x_in: 1 or 2 dimensional array of points in the parameter space where to evaluate the function. In 2 dimensions, each row is an entry, i.e. ``x_in.shape[1] == self.param_dim``
+
+        :return: an array with dimension equal to the space dimension (``range_dim``) plus one. If ``A`` is the returned vector and ``range_dim=2``, then ``A[i,:,:]`` is the value of the surrogate for ``x_in[i,:]``
+
+        """
+
+        if not isinstance(x_in, np.ndarray) or x_in.ndim not in [1, 2]: raise AttributeError(
+            "The input variable must be a 1 or 2 dimensional numpy.ndarray")
+
+        orig_ndim = x_in.ndim
+        x = x_in.copy()
+        if x.ndim == 1:
+            x = np.array([x])
+
+        if x.shape[1] != self.param_dim: raise AttributeError(
+            "The input variable has dimension x.shape[1]==%d, while self.param_dim==%d" % (
+            x.shape[1], self.param_dim))
+
+        num_of_points = x.shape[0]
+
+        output = np.empty( (num_of_points, ) + self.space_shape )
+
+        mat_cache = [{} for i in range(self.param_dim)]
+        interpolation_matices = [None] * self.param_dim
+
+        # Linear Interpolation
+        if self.interpolation_type == LINEAR_INTERPOLATION:
+            for ((point, TTapp), (_, Xs)) in \
+                    zip(np.ndenumerate(self.TTapprox), np.ndenumerate(self.Xs_params)):
+                for i in range(self.param_dim):
+                    try:
+                        interpolation_matices[i] = mat_cache[i][tuple(Xs[i])]
+                    except KeyError:
+                        mat_cache[i][tuple(Xs[i])] = LinearInterpolationMatrix(Xs[i], x[:, i])
+                        interpolation_matices[i] = mat_cache[i][tuple(Xs[i])]
+                # TTval = TTapp.interpolate(interpolation_matices, is_sparse=is_sparse)
+                TTval = interpolate(TTapp, interpolation_matices)
+                output[(slice(None, None, None),) + point] = np.asarray(
+                    [TTval[tuple([i] * self.param_dim)] for i in range(num_of_points)])
+        elif self.interpolation_type == LAGRANGE_INTERPOLATION:  # Lagrange Interpolation
+            for ((point, TTapp), (_, Xs), (_, bw)) in \
+                    zip(np.ndenumerate(self.TTapprox), np.ndenumerate(self.Xs_params),
+                        np.ndenumerate(self.barycentric_weights)):
+                for i in range(self.param_dim):
+                    try:
+                        interpolation_matices[i] = mat_cache[i][tuple(Xs[i])]
+                    except KeyError:
+                        mat_cache[i][tuple(Xs[i])] = LagrangeInterpolationMatrix(Xs[i], bw[i], x[:, i])
+                        interpolation_matices[i] = mat_cache[i][tuple(Xs[i])]
+                TTval = interpolate(TTapp, interpolation_matices)
+                output[(slice(None, None, None),) + point] = np.asarray(
+                    [TTval[tuple([i] * self.param_dim)] for i in range(num_of_points)])
+        else:
+            raise AttributeError("Type of interpolation not defined")
+
+        if orig_ndim == 1:
+            if self.range_dim == 0:
+                return output[(0,) + tuple([slice(None, None, None)] * self.range_dim)][0]
+            else:
+                return output[(0,) + tuple([slice(None, None, None)] * self.range_dim)]
+        else:
+            if self.range_dim == 0:
+                return output[:, 0]
+            else:
+                return output
 
 
+def LinearShapeFunction(x, xm, xp, xi):
+    """ Hat function used for linear interpolation
+
+    :param array x: 1d original points
+    :param float xm,xp: bounding points of the support of the shape function
+    :param array xi: 1d interpolation points
+
+    :returns array N: evaluation of the shape function on xi
+    """
+    N = np.zeros(len(xi))
+    if x != xm: N += (xi - xm) / (x - xm) * ((xi >= xm) * (xi <= x)).astype(float)
+    if x != xp: N += ((x - xi) / (xp - x) + 1.) * ((xi >= x) * (xi <= xp)).astype(float)
+    return N
+
+
+def LinearInterpolationMatrix(x, xi):
+    """
+    LinearInterpolationMatrix(): constructs the Linear Interpolation Matrix from points ``x`` to points ``xi``
+
+    Syntax:
+        ``T = LagrangeInterpolationMatrix(x, xi)``
+
+    Input:
+        * ``x`` = (1d-array,float) set of ``N`` original points
+        * ``xi`` = (1d-array,float) set of ``M`` interpolating points
+
+    Output:
+        * ``T`` = (2d-array(``MxN``),float) Linear Interpolation Matrix
+
+    """
+
+    M = np.zeros((len(xi), len(x)))
+
+    M[:, 0] = LinearShapeFunction(x[0], x[0], x[1], xi)
+    M[:, -1] = LinearShapeFunction(x[-1], x[-2], x[-1], xi)
+    for i in range(1, len(x) - 1):
+        M[:, i] = LinearShapeFunction(x[i], x[i - 1], x[i + 1], xi)
+
+    return M
+
+
+def BarycentricWeights(x):
+    """
+    BarycentricWeights(): Returns a 1-d array of weights for Lagrange Interpolation
+
+    Syntax:
+        ``w = BarycentricWeights(x)``
+
+    Input:
+        * ``x`` = (1d-array,float) set of points
+
+    Output:
+        * ``w`` = (1d-array,float) set of barycentric weights
+
+    Notes:
+        Algorithm (30) from :cite:`Kopriva2009`
+    """
+    N = x.shape[0]
+    w = np.zeros((N))
+    for j in range(0,N):
+        w[j] = 1.
+    for j in range(1,N):
+        for k in range(0,j):
+            w[k] = w[k] * (x[k] - x[j])
+            w[j] = w[j] * (x[j] - x[k])
+    for j in range(0,N):
+        w[j] = 1. / w[j]
+    return w
+
+def LagrangeInterpolationMatrix(x, w, xi):
+    """
+    LagrangeInterpolationMatrix(): constructs the Lagrange Interpolation Matrix from points ``x`` to points ``xi``
+
+    Syntax:
+        ``T = LagrangeInterpolationMatrix(x, w, xi)``
+
+    Input:
+        * ``x`` = (1d-array,float) set of ``N`` original points
+        * ``w`` = (1d-array,float) set of ``N`` barycentric weights
+        * ``xi`` = (1d-array,float) set of ``M`` interpolating points
+
+    Output:
+        * ``T`` = (2d-array(``MxN``),float) Lagrange Interpolation Matrix
+
+    Notes:
+        Algorithm (32) from :cite:`Kopriva2009`
+    """
+    N = x.shape[0]
+    M = xi.shape[0]
+    T = np.zeros((M,N))
+    for k in range(0,M):
+        rowHasMatch = False
+        for j in range(0,N):
+            T[k,j] = 0.
+            if np.isclose(xi[k],x[j]):
+                rowHasMatch = True
+                T[k,j] = 1.
+        if (rowHasMatch == False):
+            s = 0.
+            for j in range(0,N):
+                t = w[j] / (xi[k] - x[j])
+                T[k,j] = t
+                s = s + t
+            for j in range(0,N):
+                T[k,j] = T[k,j] / s
+    return T
+
+
+def interpolate(tensor, Ms=None, eps=1e-8, is_sparse=None):
+    """ Interpolates the values of the TTvec at arbitrary points, using the interpolation matrices ``Ms``.
+
+    :param list Ms: list of interpolation matrices for each dimension. Ms[i].shape[1] == tensor.shape()[i]
+    :param float eps: tolerance with which to perform the rounding after interpolation
+    :param list is_sparse: is_sparse[i] is a bool indicating whether Ms[i] is sparse or not. If 'None' all matrices are non sparse
+
+    :returns: TTvec interpolation
+    :rtype: TTvec
+
+
+    """
+
+    if len(Ms) != tensor.ndim():
+        raise AttributeError("The length of Ms and the dimension of the TTvec must be the same!")
+
+    d = len(Ms)
+    for i in range(d):
+        if Ms[i].shape[1] != tensor.shape()[i]:
+            raise AttributeError("The condition  Ms[i].shape[1] == tensor.shape()[i] must hold.")
+
+
+    if is_sparse == None: is_sparse = [False] * len(Ms)
+
+    # Construct the interpolating TTmat
+    TT_MND = TTmat(Ms[0].flatten(), nrows=Ms[0].shape[0], ncols=Ms[0].shape[1], is_sparse=[is_sparse[0]]).build()
+    for M, s in zip(Ms[1:], is_sparse[1:]):
+        TT_MND.kron(TTmat(M.flatten(), nrows=M.shape[0], ncols=M.shape[1], is_sparse=[s]).build())
+
+    # Perform interpolation
+    return TT_MND.dot(tensor).rounding(eps)

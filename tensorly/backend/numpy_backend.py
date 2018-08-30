@@ -8,7 +8,7 @@ import scipy.linalg
 import scipy.sparse.linalg
 
 from numpy import reshape, moveaxis, where, copy, transpose
-from numpy import arange, ones, zeros, zeros_like
+from numpy import arange, ones, zeros, zeros_like, eye
 from numpy import dot, kron, concatenate
 from numpy import argmin, argmax, max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from numpy.linalg import solve, qr
@@ -211,14 +211,24 @@ def partial_svd(matrix, n_eigenvecs=None):
     dim_1, dim_2 = matrix.shape
     if dim_1 <= dim_2:
         min_dim = dim_1
+        max_dim = dim_2
     else:
         min_dim = dim_2
+        max_dim = dim_1
 
-    if n_eigenvecs is None or n_eigenvecs >= min_dim:
+
+    if n_eigenvecs >= min_dim:
+        if n_eigenvecs > max_dim:
+            message = ('trying to compute SVD with n_eigenvecs={}, which is larger than'
+                       'max(matrix.shape)={1}. Setting n_eigenvecs to {1}'.format(
+                           n_eigenvecs, max_dim))
+            n_eigenvecs = max_dim
+
         if n_eigenvecs is None or n_eigenvecs > min_dim:
             full_matrices = True
         else:
             full_matrices = False
+
         # Default on standard SVD
         U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
@@ -239,3 +249,5 @@ def partial_svd(matrix, n_eigenvecs=None):
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T.conj()
+
+SVD_FUNS = {'numpy_svd':partial_svd, 'truncated_svd':partial_svd}

@@ -27,7 +27,7 @@ import scipy.sparse.linalg
 from numpy import testing
 from . import numpy_backend
 
-from torch import ones, zeros, zeros_like, reshape
+from torch import ones, zeros, zeros_like, reshape, eye
 from torch import max, min, where
 from torch import sum, mean, abs, sqrt, sign, prod, sqrt
 from torch import matmul as dot
@@ -63,18 +63,20 @@ def to_numpy(tensor):
     -------
     ndarray
     """
-    if torch.is_tensor(tensor) and tensor.cuda:
-        return tensor.cpu().numpy()
-    elif torch.is_tensor(tensor):
+    if torch.is_tensor(tensor):
+        if tensor.requires_grad:
+            tensor = tensor.detach()
+        if tensor.cuda:
+            tensor = tensor.cpu()
         return tensor.numpy()
-    if isinstance(tensor, numpy.ndarray):
+    elif isinstance(tensor, numpy.ndarray):
         return tensor
 
     try:
-        return numpy.array(tensor)
+        return numpy.asarray(tensor)
     except ValueError:
         raise ValueError('Could not convert object of type {} into a Numpy '
-                         'NDArray'.format(type(tensor)))
+                         'ndarray'.format(type(tensor)))
 
 def assert_array_equal(a, b, **kwargs):
     testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
@@ -254,12 +256,63 @@ def kr(matrices):
                       (-1, n_col))
     return res
 
+def _reverse(tensor, axis=0):
+    """Reverses the elements along the specified dimension
 
-def partial_svd(matrix, n_eigenvecs=None):
-    """Computes a fast partial SVD on `matrix`
+    Parameters
+    ----------
+    tensor : tl.tensor
+    axis : int, default is 0
+        axis along which to reverse the ordering of the elements
 
-        if `n_eigenvecs` is specified, sparse eigendecomposition
-        is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
+    Returns
+    -------
+    reversed_tensor : for a 1-D tensor, returns the equivalent of
+                      tensor[::-1] in NumPy
+    """
+    indices = torch.arange(tensor.shape[axis]-1, -1, -1, dtype=torch.int64)
+    return tensor.index_select(axis, indices)
+
+def truncated_svd(matrix, n_eigenvecs=None):
+    """Computes a truncated SVD on `matrix` using pytorch's SVD
+
+    Parameters
+    ----------
+    matrix : 2D-array
+    n_eigenvecs : int, optional, default is None
+        if specified, number of eigen[vectors-values] to return
+
+    Returns
+    -------
+    U : 2D-array
+        of shape (matrix.shape[0], n_eigenvecs)
+        contains the right singular vectors
+    S : 1D-array
+        of shape (n_eigenvecs, )
+        contains the singular values of `matrix`
+    V : 2D-array
+        of shape (n_eigenvecs, matrix.shape[1])
+        contains the left singular vectors
+    """
+    dim_1, dim_2 = matrix.shape
+    if dim_1 <= dim_2:
+        min_dim = dim_1
+    else:
+        min_dim = dim_2
+
+    if n_eigenvecs is None or n_eigenvecs > min_dim:
+        full_matrices = True
+    else:
+        full_matrices = False
+
+    U, S, V = torch.svd(matrix, some=full_matrices)
+    U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+    return U, S, V
+
+def symeig_svd(matrix, n_eigenvecs=None):
+    """Computes a truncated SVD on `matrix` using symeig
+
+        Uses symeig on matrix.T.dot(matrix) or its transpose
 
     Parameters
     ----------
@@ -281,48 +334,68 @@ def partial_svd(matrix, n_eigenvecs=None):
     """
     # Check that matrix is... a matrix!
     if ndim(matrix) != 2:
-        raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
-            ndim(matrix)))
-
-    # Choose what to do depending on the params
-    dim_1, dim_2 = matrix.shape
+        raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(ndim(matrix)))
+    dim_1, dim_2 = shape(matrix)
     if dim_1 <= dim_2:
         min_dim = dim_1
+        max_dim = dim_2
     else:
         min_dim = dim_2
+        max_dim = dim_1
 
-    if n_eigenvecs is None or n_eigenvecs >= min_dim:
-	# Default on standard SVD
-        try:
-            U, S, V = torch.svd(matrix, some=False)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V.t()[:n_eigenvecs, :]
-            return U, S, V
+    if n_eigenvecs is None:
+        n_eigenvecs = max_dim
 
-        except RuntimeError: # Probably ran out of memory..
-            ctx = context(matrix)
-            matrix = to_numpy(matrix)
-            if n_eigenvecs is None or n_eigenvecs > min_dim:
-                full_matrices = True
-            else:
-                full_matrices = False
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-            return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
+    if min_dim <= n_eigenvecs:
+        if n_eigenvecs > max_dim:
+            message = ('trying to compute SVD with n_eigenvecs={}, which is larger than'
+                       'max(matrix.shape)={1}. Setting n_eigenvecs to {1}'.format(
+                           n_eigenvecs, max_dim))
+            n_eigenvecs = max_dim
+        # we compute decomposition on the largest of the two to keep more eigenvecs
+        dim_1, dim_2 = dim_2, dim_1
 
+    if dim_1 < dim_2:
+        S, U = torch.symeig(dot(matrix, transpose(matrix)))
+        S = sqrt(S)
+        V = dot(transpose(matrix), U * 1/reshape(S, (1, -1)))
     else:
-        ctx = context(matrix)
-        matrix = to_numpy(matrix)
-        # We can perform a partial SVD
-        # First choose whether to use X * X.T or X.T *X
-        if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(numpy.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            V = numpy.dot(matrix.T.conj(), U * 1/S.reshape((1, -1)))
-        else:
-            S, V = scipy.sparse.linalg.eigsh(numpy.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
-            S = numpy.sqrt(S)
-            U = numpy.dot(matrix, V) * 1/S.reshape((1, -1))
+        S, V = torch.symeig(dot(transpose(matrix), matrix))
+        S = sqrt(S)
+        U = dot(matrix, V) * 1/reshape(S, (1, -1))
 
-        # WARNING: here, V is still the transpose of what it should be
-        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return tensor(U, **ctx), tensor(S, **ctx), tensor(V.T.conj(), **ctx)
+    U, S, V = _reverse(U, 1), _reverse(S), _reverse(transpose(V), 0)
+    return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+
+def partial_svd(matrix, n_eigenvecs=None):
+    """Computes a fast partial SVD on `matrix` using NumnPy
+
+        if `n_eigenvecs` is specified, sparse eigendecomposition
+        is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
+
+        Faster for very sparse svd (n_eigenvecs small) but uses numpy/scipy
+
+    Parameters
+    ----------
+    matrix : 2D-array
+    n_eigenvecs : int, optional, default is None
+        if specified, number of eigen[vectors-values] to return
+
+    Returns
+    -------
+    U : 2D-array
+        of shape (matrix.shape[0], n_eigenvecs)
+        contains the right singular vectors
+    S : 1D-array
+        of shape (n_eigenvecs, )
+        contains the singular values of `matrix`
+    V : 2D-array
+        of shape (n_eigenvecs, matrix.shape[1])
+        contains the left singular vectors
+    """
+    ctx = context(matrix)
+    matrix = to_numpy(matrix)
+    U, S, V = numpy_backend.partial_svd(matrix, n_eigenvecs)
+    return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
+
+SVD_FUNS = {'numpy_svd':partial_svd, 'truncated_svd':truncated_svd, 'symeig_svd':symeig_svd}
