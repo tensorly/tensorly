@@ -181,6 +181,7 @@ def kr(matrices):
 
 def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor.
+
     Parameters
     ----------
     tensor : ndarray
@@ -206,7 +207,6 @@ def dot(tensor1, tensor2):
 def shape(tensor):
     # return tuple(s.value for s in tensor.shape)
     return tuple(tensor.shape.as_list())
-
 
 def truncated_svd(matrix, n_eigenvecs=None):
     """Computes an SVD on `matrix`
@@ -241,18 +241,22 @@ def truncated_svd(matrix, n_eigenvecs=None):
     S, U, V = tf.svd(matrix, full_matrices=full_matrices)
     U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], transpose(V)[:n_eigenvecs, :]
     return U, S, V
-
+    
 
 def partial_svd(matrix, n_eigenvecs=None):
     """Computes a fast partial SVD on `matrix` using NumPy
+
         if `n_eigenvecs` is specified, sparse eigendecomposition
         is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
+
         Faster for very sparse svd (n_eigenvecs small) but uses numpy/scipy
+
     Parameters
     ----------
     matrix : 2D-array
     n_eigenvecs : int, optional, default is None
         if specified, number of eigen[vectors-values] to return
+
     Returns
     -------
     U : 2D-array
