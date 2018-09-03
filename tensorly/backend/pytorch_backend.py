@@ -319,6 +319,7 @@ def symeig_svd(matrix, n_eigenvecs=None):
     if ndim(matrix) != 2:
         raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(ndim(matrix)))
     dim_1, dim_2 = shape(matrix)
+
     if dim_1 <= dim_2:
         min_dim = dim_1
         max_dim = dim_2
@@ -360,6 +361,7 @@ def partial_svd(matrix, n_eigenvecs=None):
     matrix : 2D-array
     n_eigenvecs : int, optional, default is None
         if specified, number of eigen[vectors-values] to return
+
     Returns
     -------
     U : 2D-array
