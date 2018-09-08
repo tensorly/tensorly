@@ -24,7 +24,7 @@ from numpy import testing
 from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones, eye
 from mxnet.ndarray import moveaxis, dot, transpose, reshape
-from mxnet.ndarray import where, maximum, argmax, argmin, sign, prod
+from mxnet.ndarray import where, maximum, argmax, argmin, sign, prod, cast
 
 # Order 0 tensor, mxnet....
 from math import sqrt as scalar_sqrt
@@ -112,6 +112,12 @@ def max(tensor, *args, **kwargs):
     else:
         return numpy.max(tensor, *args, **kwargs)
 
+def argmax(data=None, axis=None):
+    return nd.argmax(data, axis).astype('int32').asscalar()
+
+def argmin(data=None, axis=None):
+    return nd.argmin(data, axis).astype('int32').asscalar()
+
 def abs(tensor, **kwargs):
     if isinstance(tensor, nd.NDArray):
         return nd.abs(tensor, **kwargs)
@@ -153,8 +159,24 @@ def norm(tensor, order=2, axis=None):
 def int(tensor):
     return tensor.astype('int32')
 
-def inverse(tensor):
-    return nd.linalg.potri(tensor)
+def inverse(matrix):
+    """Computes matrix inverse by numpy.linalg.inv()
+
+    Parameters
+    ----------
+    matrix : 2D-array, should be square, non-singular
+
+    Returns
+    -------
+    inv : 2D-array, square matrix
+        inverse of input matrix, i.e. (dot(inv, matrix) == dot(matrix, inv) == ),
+        of shape (matrix.shape)
+    """
+
+    ctx = context(matrix)
+    matrix = to_numpy(matrix)
+    inv = numpy_backend.inverse(matrix)
+    return tensor(inv, **ctx)
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
@@ -197,6 +219,7 @@ def kr(matrices):
         res = reshape(reshape(res, (s1, 1, s2))*reshape(e, (1, s3, s4)),
                       (-1, n_col))
     return res
+
 def qr(matrix):
     try:
         # NOTE - should be replaced with geqrf when available

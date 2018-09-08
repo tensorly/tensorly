@@ -21,8 +21,8 @@ def test_matrix_product_state_cross_1():
 
     # Create tensor with random elements
     d = 3
-    n = 5
-    tensor = (np.arange(n**d).reshape(5,5,5))
+    n = 4
+    tensor = (np.arange(n**d).reshape((n,)*d))
     tensor = tl.tensor(tensor)
 
 
@@ -31,7 +31,7 @@ def test_matrix_product_state_cross_1():
     # Find MPS decomposition of the tensor
     rank = [1, 3,3, 1]
     factors = matrix_product_state_cross(tensor, rank, tol=1e-5, n_iter_max=10)
-    assert(len(factors) == d), "Number of factors should be 6, currently has " + str(len(factors))
+    assert(len(factors) == d), "Number of factors should be 4, currently has " + str(len(factors))
 
     # Check that the ranks are correct and that the second mode of each factor
     # has the correct number of elements
@@ -48,11 +48,11 @@ def test_matrix_product_state_cross_2():
 
     ## Test 2
     # Create tensor with random elements
-    tensor = tl.tensor(rng.random_sample([3, 6, 5, 4, 4, 10]))
+    tensor = tl.tensor(rng.random_sample([3, 4, 5, 6, 2, 10]))
     tensor_shape = tensor.shape
 
     # Find MPS decomposition of the tensor
-    rank = [1, 3, 3, 5, 2, 4, 1]  #[1, 5, 4, 3, 8, 5, 1]
+    rank = [1, 3, 3, 4, 2, 2, 1]
     factors = matrix_product_state_cross(tensor, rank)
 
     for k in range(6):
@@ -138,6 +138,6 @@ def test_matrix_product_state_cross_4():
     error /= tl.norm(value, 2)
 
     print(error)
-    tl.assert_(error < 1e-3, 'norm 2 of reconstruction higher than tol')
+    tl.assert_(error < 1e-5, 'norm 2 of reconstruction higher than tol')
 
 
