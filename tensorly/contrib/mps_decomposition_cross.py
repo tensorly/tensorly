@@ -5,7 +5,6 @@ import numpy as np
 
 rng = check_random_state(1)
 
-
 def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
     """MPS (tensor-train) decomposition via cross-approximation (TTcross) [1]
 
@@ -371,21 +370,30 @@ def maxvol(A):
 
     # The index of row of the submatrix
     row_idx = tl.zeros(r)
-    i = 0
-    A_new = A
+
     # Rest of rows / unselected rows
     rest_of_rows = tl.tensor(list(range(n)))
     rest_of_rows = tl.int(rest_of_rows)
 
     # Find r rows iteratively
+    i = 0
+    A_new = A
     while i < r:
+        mask = list(range(A_new.shape[0]))
         # Compute the square of norm of each row
         rows_norms = tl.sum(A_new ** 2, axis=1)
 
+        # If there is only one row of A left, let just return it. MxNet is not robust about it.
+        if rows_norms.shape == ():
+            row_idx[i] = rest_of_rows
+            break
+
         # If a row is 0, we delete it.
         if any(rows_norms == 0):
-            rest_of_rows = rest_of_rows[rows_norms != 0]
-            A_new = A_new[rows_norms != 0]
+            zero_idx = tl.argmin(rows_norms,axis=0)
+            mask.pop(zero_idx)
+            rest_of_rows = rest_of_rows[mask]
+            A_new = A_new[mask,:]
             continue
 
         # Find the row of max norm
@@ -394,24 +402,29 @@ def maxvol(A):
 
         # Compute the projection of max_row to other rows
         max_row = tl.transpose(max_row)
-        projection = tl.dot(A_new, max_row) / tl.sqrt(rows_norms * rows_norms[max_row_idx])
+        # projection a to b is computed as: <a,b> / sqrt(|a|*|b|)
+        projection = tl.dot(A_new, max_row)
+        normalization = tl.sqrt(rows_norms[max_row_idx] * rows_norms)
+        # make sure normalization vector is of the same shape of projection (causing bugs for MxNet)
+        normalization = tl.reshape(normalization, projection.shape)
+        projection = projection/normalization
 
-        # Subtract the projection from A_new
+        # Subtract the projection from A_new:  b <- b - a * projection
         A_new = A_new - A_new * projection.reshape(A_new.shape[0], 1)
 
         # Delete the selected row
-        mask = tl.int(tl.ones(A_new.shape[0]))
-        mask[max_row_idx] = 0
+        mask.pop(max_row_idx)
+        A_new = A_new[mask,:]
 
-        A_new = A_new[mask==1,:]
         # update the row_idx and rest_of_rows
         row_idx[i] = rest_of_rows[max_row_idx]
+        rest_of_rows = rest_of_rows[mask]
         i = i + 1
-        rest_of_rows = rest_of_rows[mask==1]
 
     row_idx = tl.int(row_idx)
     inverse = tl.inverse(A[row_idx,:])
     row_idx = tl.to_numpy(row_idx)
 
     return row_idx, inverse
+
 
