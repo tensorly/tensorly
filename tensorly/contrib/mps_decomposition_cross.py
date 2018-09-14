@@ -383,7 +383,7 @@ def maxvol(A):
         # Compute the square of norm of each row
         rows_norms = tl.sum(A_new ** 2, axis=1)
 
-        # If there is only one row of A left, let just return it. MxNet is not robust about it.
+        # If there is only one row of A left, let's just return it. MxNet is not robust about the case.
         if rows_norms.shape == ():
             row_idx[i] = rest_of_rows
             break
@@ -422,7 +422,7 @@ def maxvol(A):
         i = i + 1
 
     row_idx = tl.int(row_idx)
-    inverse = tl.inverse(A[row_idx,:])
+    inverse = tl.solve(A[row_idx,:], tl.eye(A[row_idx,:].shape[0]))
     row_idx = tl.to_numpy(row_idx)
 
     return row_idx, inverse

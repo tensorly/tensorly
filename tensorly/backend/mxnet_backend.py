@@ -113,10 +113,18 @@ def max(tensor, *args, **kwargs):
         return numpy.max(tensor, *args, **kwargs)
 
 def argmax(data=None, axis=None):
-    return nd.argmax(data, axis).astype('int32').asscalar()
+    res = nd.argmax(data, axis)
+    if res.shape == (1,):
+        return res.astype('int32').asscalar()
+    else:
+        return res
 
 def argmin(data=None, axis=None):
-    return nd.argmin(data, axis).astype('int32').asscalar()
+    res = nd.argmin(data, axis)
+    if res.shape == (1,):
+        return res.astype('int32').asscalar()
+    else:
+        return res
 
 def abs(tensor, **kwargs):
     if isinstance(tensor, nd.NDArray):
@@ -158,25 +166,6 @@ def norm(tensor, order=2, axis=None):
 
 def int(tensor):
     return tensor.astype('int32')
-
-def inverse(matrix):
-    """Computes matrix inverse by numpy.linalg.inv()
-
-    Parameters
-    ----------
-    matrix : 2D-array, should be square, non-singular
-
-    Returns
-    -------
-    inv : 2D-array, square matrix
-        inverse of input matrix, i.e. (dot(inv, matrix) == dot(matrix, inv) == ),
-        of shape (matrix.shape)
-    """
-
-    ctx = context(matrix)
-    matrix = to_numpy(matrix)
-    inv = numpy_backend.inverse(matrix)
-    return tensor(inv, **ctx)
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices

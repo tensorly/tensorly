@@ -200,9 +200,6 @@ def concatenate(tensors, axis=0):
 def int(tensor):
     return tensor.long()
 
-def inverse(tensor):
-    return torch.inverse(tensor)
-
 def argmin(input, axis=None):
         return torch.argmin(input, dim=axis)
 

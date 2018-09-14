@@ -10,8 +10,7 @@ from .mps_decomposition_cross import matrix_product_state_cross
 from ..mps_tensor import mps_to_tensor
 from ..random import check_random_state
 
-npr.seed(1)
-
+# npr.seed(1)
 
 def test_matrix_product_state_cross_1():
     """ Test for matrix_product_state """
