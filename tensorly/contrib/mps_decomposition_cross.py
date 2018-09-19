@@ -15,7 +15,7 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
 
         Advantage: faster
             The main advantage of TTcross is that it doesn't need to evaluate all the entries of the tensor.
-            For a n^d tensor, SVD needs O(n^d) runtime, but TTcross' runtime is linear in n and d, which makes it feasible in high dimension.
+            For a tensor_shape^tensor_order tensor, SVD needs O(tensor_shape^tensor_order) runtime, but TTcross' runtime is linear in tensor_shape and tensor_order, which makes it feasible in high dimension.
         Disadvantage: less accurate
             TTcross may underestimate the error, since it only evaluates partial entries of the tensor.
             Besides, in contrast to its practical fast performance, there is no theoretical guarantee of it convergence.
@@ -56,13 +56,13 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
     Notes
     -----
     Pseudo-code [2]:
-    1. Initialization d cores and column indices
+    1. Initialization tensor_order cores and column indices
     2. while (error > tol)
     3.    update the tensor-train from left to right:
-                for Core 1 to Core d
+                for Core 1 to Core tensor_order
                     approximate the skeleton-decomposition by QR and maxvol
     4.    update the tensor-train from right to left:
-                for Core d to Core 1
+                for Core tensor_order to Core 1
                     approximate the skeleton-decomposition by QR and maxvol
     5. end while
 
@@ -77,14 +77,14 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
     """
 
     # Check user input for errors
-    n = tl.shape(input_tensor)
-    d = tl.ndim(input_tensor)
+    tensor_shape = tl.shape(input_tensor)
+    tensor_order = tl.ndim(input_tensor)
 
     if isinstance(rank, int):
-        rank = [rank] * (d + 1)
-    elif d + 1 != len(rank):
+        rank = [rank] * (tensor_order + 1)
+    elif tensor_order + 1 != len(rank):
         message = 'Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}'.format(
-            len(rank), d)
+            len(rank), tensor_order)
         raise (ValueError(message))
 
     # Make sure iter's not a tuple but a list
@@ -105,19 +105,19 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
     # list row_idx: row indices    (left indices)  for skeleton-decomposition: indicate which rows used in each core.
 
     # Initialize indice: random selection of column indices
-    col_idx = [None] * d
-    for k_col_idx in range(d - 1):
+    col_idx = [None] * tensor_order
+    for k_col_idx in range(tensor_order - 1):
         col_idx[k_col_idx] = []
         for i in range(rank[k_col_idx + 1]):
-            newidx = tuple([rng.randint(n[j]) for j in range(k_col_idx + 1, d)])
+            newidx = tuple([rng.randint(tensor_shape[j]) for j in range(k_col_idx + 1, tensor_order)])
             while newidx in col_idx[k_col_idx]:
-                newidx = tuple([rng.randint(n[j]) for j in range(k_col_idx + 1, d)])
+                newidx = tuple([rng.randint(tensor_shape[j]) for j in range(k_col_idx + 1, tensor_order)])
 
             col_idx[k_col_idx].append(newidx)
 
     # Initialize the cores of tensor-train
-    factor_old = [tl.zeros((rank[k], n[k], rank[k + 1])) for k in range(d)]
-    factor_new = [tl.tensor(rng.random_sample((rank[k], n[k], rank[k + 1]))) for k in range(d)]
+    factor_old = [tl.zeros((rank[k], tensor_shape[k], rank[k + 1])) for k in range(tensor_order)]
+    factor_new = [tl.tensor(rng.random_sample((rank[k], tensor_shape[k], rank[k + 1]))) for k in range(tensor_order)]
 
     iter = 0
 
@@ -128,14 +128,14 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
             break
 
         factor_old = factor_new
-        factor_new = [None for i in range(d)]
+        factor_new = [None for i in range(tensor_order)]
 
         ######################################
         # left-to-right step
         left_to_right_fiberlist = []
-        # list row_idx: list of (d-1) of lists of left indices
+        # list row_idx: list of (tensor_order-1) of lists of left indices
         row_idx = [[()]]
-        for k in range(d - 1):
+        for k in range(tensor_order - 1):
             (next_row_idx, fibers_list) = left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx)
             # update row indices
             left_to_right_fiberlist.extend(fibers_list)
@@ -147,10 +147,10 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
         ###############################################
         # right-to-left step
         right_to_left_fiberlist = []
-        # list col_idx: list (d-1) of lists of right indices
-        col_idx = [None] * d
+        # list col_idx: list (tensor_order-1) of lists of right indices
+        col_idx = [None] * tensor_order
         col_idx[-1] = [()]
-        for k in range(d, 1, -1):
+        for k in range(tensor_order, 1, -1):
             (next_col_idx, fibers_list, Q_skeleton) = right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx)
             # update col indices
             right_to_left_fiberlist.extend(fibers_list)
@@ -159,7 +159,7 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
             # Compute cores
             try:
                 factor_new[k - 1] = tl.transpose(Q_skeleton)
-                factor_new[k - 1] = tl.reshape(factor_new[k - 1], (rank[k - 1], n[k - 1], rank[k]))
+                factor_new[k - 1] = tl.reshape(factor_new[k - 1], (rank[k - 1], tensor_shape[k - 1], rank[k]))
             except:
                 # The rank should not be larger than the input tensor's size
                 raise (ValueError("The rank is too large compared to the size of the tensor. Try with small rank."))
@@ -168,7 +168,7 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
         idx = (slice(None, None, None),) + tuple(zip(*col_idx[0]))
 
         core = input_tensor[idx]
-        core = tl.reshape(core, (n[0], 1, rank[1]))
+        core = tl.reshape(core, (tensor_shape[0], 1, rank[1]))
         core = tl.transpose(core, (1, 0, 2))
 
         factor_new[0] = core
@@ -201,11 +201,11 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     k: int
             the actual sweep iteration
     rank: list of int
-            list of upper ranks (d)
+            list of upper ranks (tensor_order)
     row_idx: list of list of int
-            list of (d-1) of lists of left indices
+            list of (tensor_order-1) of lists of left indices
     col_idx: list of list of int
-            list of (d-1) of lists of right indices
+            list of (tensor_order-1) of lists of right indices
 
     Returns
     -------
@@ -217,8 +217,8 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
             approximation of Q as product of Q and inverse of its maximum volume submatrix
     """
 
-    n = tl.shape(input_tensor)
-    d = tl.ndim(input_tensor)
+    tensor_shape = tl.shape(input_tensor)
+    tensor_order = tl.ndim(input_tensor)
     fibers_list = []
 
     # Extract fibers according to the row and col indices
@@ -229,7 +229,7 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     if k == 0:  # Is[k] will be empty
         idx = (slice(None, None, None),) + tuple(zip(*col_idx[k]))
     else:
-        idx = [[] for i in range(d)]
+        idx = [[] for i in range(tensor_order)]
         for lidx in row_idx[k]:
             for ridx in col_idx[k]:
                 for j, jj in enumerate(lidx): idx[j].append(jj)
@@ -239,16 +239,16 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
 
     # Extract the core
     core = input_tensor[idx]
-    # shape the core as a 3-d cube
+    # shape the core as a 3-tensor_order cube
     if k == 0:
-        core = tl.reshape(core, (n[k], rank[k], rank[k + 1]))
+        core = tl.reshape(core, (tensor_shape[k], rank[k], rank[k + 1]))
         core = tl.transpose(core, (1, 0, 2))
     else:
-        core = tl.reshape(core, (rank[k], rank[k + 1], n[k]))
+        core = tl.reshape(core, (rank[k], rank[k + 1], tensor_shape[k]))
         core = tl.transpose(core, (0, 2, 1))
 
     # merge r_k and n_k, get a matrix
-    core = tl.reshape(core, (rank[k] * n[k], rank[k + 1]))
+    core = tl.reshape(core, (rank[k] * tensor_shape[k], rank[k + 1]))
 
     # Compute QR decomposition
     (Q, R) = tl.qr(core)
@@ -257,7 +257,7 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     (I, _) = maxvol(Q)
 
     # Retrive indices in folded tensor
-    new_idx = [np.unravel_index(idx, [rank[k], n[k]]) for idx in I]  # First retrive idx in folded core
+    new_idx = [np.unravel_index(idx, [rank[k], tensor_shape[k]]) for idx in I]  # First retrive idx in folded core
     next_row_idx = [row_idx[k][ic[0]] + (ic[1],) for ic in new_idx]  # Then reconstruct the idx in the tensor
 
     return (next_row_idx, fibers_list)
@@ -275,11 +275,11 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     k: int
             the actual sweep iteration
     rank: list of int
-            list of upper rank (d)
+            list of upper rank (tensor_order)
     row_idx: list of list of int
-            list of (d-1) of lists of left indices
+            list of (tensor_order-1) of lists of left indices
     col_idx: list of list of int
-            list of (d-1) of lists of right indices
+            list of (tensor_order-1) of lists of right indices
 
     Returns
     -------
@@ -291,8 +291,8 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
             approximation of Q as product of Q and inverse of its maximum volume submatrix
     """
 
-    n = tl.shape(input_tensor)
-    d = tl.ndim(input_tensor)
+    tensor_shape = tl.shape(input_tensor)
+    tensor_order = tl.ndim(input_tensor)
     fibers_list = []
 
     # Extract fibers
@@ -301,10 +301,10 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
             fiber = row_idx[k - 1][i] + (slice(None, None, None),) + col_idx[k - 1][j]
             fibers_list.append(fiber)
 
-    if k == d:  # Is[k] will be empty
+    if k == tensor_order:  # Is[k] will be empty
         idx = tuple(zip(*row_idx[k - 1])) + (slice(None, None, None),)
     else:
-        idx = [[] for i in range(d)]
+        idx = [[] for i in range(tensor_order)]
         for lidx in row_idx[k - 1]:
             for ridx in col_idx[k - 1]:
                 for j, jj in enumerate(lidx): idx[j].append(jj)
@@ -313,11 +313,11 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
         idx = tuple(idx)
 
     core = input_tensor[idx]
-    # shape the core as a 3-d cube
-    core = tl.reshape(core, (rank[k - 1], rank[k], n[k - 1]))
+    # shape the core as a 3-tensor_order cube
+    core = tl.reshape(core, (rank[k - 1], rank[k], tensor_shape[k - 1]))
     core = tl.transpose(core, (0, 2, 1))
     # merge n_{k-1} and r_k, get a matrix
-    core = tl.reshape(core, (rank[k - 1], n[k - 1] * rank[k]))
+    core = tl.reshape(core, (rank[k - 1], tensor_shape[k - 1] * rank[k]))
     core = tl.transpose(core)
 
     # Compute QR decomposition
@@ -328,7 +328,7 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     Q_skeleton = tl.dot(Q, Q_inv)
 
     # Retrive indices in folded tensor
-    new_idx = [np.unravel_index(idx, [n[k - 1], rank[k]]) for idx in J]  # First retrive idx in folded core
+    new_idx = [np.unravel_index(idx, [tensor_shape[k - 1], rank[k]]) for idx in J]  # First retrive idx in folded core
     next_col_idx = [(jc[0],) + col_idx[k - 1][jc[1]] for jc in new_idx]  # Then reconstruct the idx in the tensor
 
     return (next_col_idx, fibers_list, Q_skeleton)
@@ -373,18 +373,19 @@ def maxvol(A):
 
     # Rest of rows / unselected rows
     rest_of_rows = tl.tensor(list(range(n)))
-    rest_of_rows = tl.int(rest_of_rows)
+    rest_of_rows = tl.tensor_as_indices(rest_of_rows)
+    # rest_of_rows = tl.tensor(np.arange(n, dtype=np.int64))
 
     # Find r rows iteratively
     i = 0
     A_new = A
     while i < r:
-        mask = list(range(A_new.shape[0]))
+        mask = list(range(tl.shape(A_new)[0]))
         # Compute the square of norm of each row
         rows_norms = tl.sum(A_new ** 2, axis=1)
 
-        # If there is only one row of A left, let's just return it. MxNet is not robust about the case.
-        if rows_norms.shape == ():
+        # If there is only one row of A left, let's just return it. MxNet is not robust about this case.
+        if tl.shape(rows_norms) == ():
             row_idx[i] = rest_of_rows
             break
 
@@ -401,16 +402,15 @@ def maxvol(A):
         max_row = A[rest_of_rows[max_row_idx], :]
 
         # Compute the projection of max_row to other rows
-        max_row = tl.transpose(max_row)
         # projection a to b is computed as: <a,b> / sqrt(|a|*|b|)
-        projection = tl.dot(A_new, max_row)
+        projection = tl.dot(A_new, tl.transpose(max_row))
         normalization = tl.sqrt(rows_norms[max_row_idx] * rows_norms)
         # make sure normalization vector is of the same shape of projection (causing bugs for MxNet)
-        normalization = tl.reshape(normalization, projection.shape)
+        normalization = tl.reshape(normalization, tl.shape(projection))
         projection = projection/normalization
 
         # Subtract the projection from A_new:  b <- b - a * projection
-        A_new = A_new - A_new * projection.reshape(A_new.shape[0], 1)
+        A_new = A_new - A_new * tl.reshape(projection, (tl.shape(A_new)[0], 1))
 
         # Delete the selected row
         mask.pop(max_row_idx)
@@ -421,8 +421,8 @@ def maxvol(A):
         rest_of_rows = rest_of_rows[mask]
         i = i + 1
 
-    row_idx = tl.int(row_idx)
-    inverse = tl.solve(A[row_idx,:], tl.eye(A[row_idx,:].shape[0]))
+    row_idx = tl.tensor_as_indices(row_idx)
+    inverse = tl.solve(A[row_idx,:], tl.eye(tl.shape(A[row_idx,:])[0]))
     row_idx = tl.to_numpy(row_idx)
 
     return row_idx, inverse

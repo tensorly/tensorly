@@ -197,7 +197,9 @@ def sum(tensor, axis=None):
 def concatenate(tensors, axis=0):
     return torch.cat(tensors, dim=axis)
 
-def int(tensor):
+def tensor_as_indices(tensor):
+    """return the tensor in the appropriate dtype for indexing.
+    """
     return tensor.long()
 
 def argmin(input, axis=None):
