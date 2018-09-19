@@ -52,28 +52,6 @@ def context(tensor):
 def tensor(data, dtype=float32, device='cpu', requires_grad=False):
     """Tensor class
     """
-
-    # if the dtype is given as string or numpy.dtype class, we convert it to torch.dtype
-    if dtype.__class__ == str or dtype.__class__ == numpy.dtype:
-        if dtype == numpy.float16 or dtype == "float16":
-            dtype = torch.half
-        elif dtype == numpy.float32 or dtype == "float32":
-            dtype = torch.float
-        elif dtype == numpy.float64 or dtype == "float64" or dtype == numpy.float_ or dtype == "float_":
-            dtype = torch.double
-        elif dtype == numpy.uint8 or dtype == "uint8":
-            dtype = torch.uint8
-        elif dtype == numpy.int8 or dtype == "int8":
-            dtype = torch.int8
-        elif dtype == numpy.int16 or dtype == "int16":
-            dtype = torch.short
-        elif dtype == numpy.int32 or dtype == "int32":
-            dtype = torch.int
-        elif dtype == numpy.int64 or dtype == "int64" or dtype == numpy.int_ or dtype == "int_":
-            dtype = torch.long
-        else:
-            raise ValueError('pytorch tensor dose not support dtype {} .'.format(dtype))
-
     if isinstance(data, numpy.ndarray):
         return torch.tensor(data.copy(), dtype=dtype, device=device, requires_grad=requires_grad)
     return torch.tensor(data, dtype=dtype, device=device, requires_grad=requires_grad)
