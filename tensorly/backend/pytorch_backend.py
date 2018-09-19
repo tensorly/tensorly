@@ -45,7 +45,7 @@ def context(tensor):
     return {'dtype':tensor.dtype, 'device':tensor.device, 'requires_grad':tensor.requires_grad}
 
 
-def tensor(data, dtype=torch.float32, device='cpu', requires_grad=False):
+def tensor(data, dtype=None, device='cpu', requires_grad=False):
     """Tensor class
     """
     if isinstance(data, numpy.ndarray):
