@@ -372,9 +372,7 @@ def maxvol(A):
     row_idx = tl.zeros(r)
 
     # Rest of rows / unselected rows
-    rest_of_rows = tl.tensor(list(range(n)))
-    rest_of_rows = tl.tensor_as_indices(rest_of_rows)
-    # rest_of_rows = tl.tensor(np.arange(n, dtype=np.int64))
+    rest_of_rows = tl.tensor(list(range(n)),dtype= 'int_')
 
     # Find r rows iteratively
     i = 0
@@ -421,7 +419,7 @@ def maxvol(A):
         rest_of_rows = rest_of_rows[mask]
         i = i + 1
 
-    row_idx = tl.tensor_as_indices(row_idx)
+    row_idx = tl.tensor(row_idx, dtype='int_')
     inverse = tl.solve(A[row_idx,:], tl.eye(tl.shape(A[row_idx,:])[0]))
     row_idx = tl.to_numpy(row_idx)
 

@@ -122,10 +122,6 @@ def norm(tensor, order=2, axis=None):
     else:
         return np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
 
-def tensor_as_indices(tensor):
-    """return the tensor in the appropriate dtype for indexing.
-    """
-    return np.int_(tensor)
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
