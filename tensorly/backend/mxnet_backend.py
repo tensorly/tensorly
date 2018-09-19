@@ -31,12 +31,16 @@ from math import sqrt as scalar_sqrt
 
 from . import numpy_backend
 
+dtypes = ['int64', 'int32', 'float32', 'float64']
+for dtype in dtypes:
+    vars()[dtype] = getattr(numpy, dtype)
+
 def context(tensor):
     """Returns the context of a tensor
     """
     return {'ctx':tensor.context, 'dtype':tensor.dtype}
 
-def tensor(data, ctx=mx.cpu(), dtype='float32'):
+def tensor(data, ctx=mx.cpu(), dtype=float32):
     """Tensor class
     """
     if dtype is None and isinstance(data, numpy.ndarray):

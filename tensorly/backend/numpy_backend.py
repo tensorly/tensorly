@@ -18,6 +18,11 @@ from numpy.linalg import solve, qr
 # License: BSD 3 clause
 
 
+dtypes = ['int64', 'int32', 'float32', 'float64']
+for dtype in dtypes:
+    vars()[dtype] = getattr(np, dtype)
+
+
 def context(tensor):
     """Returns the context of a tensor
 

@@ -33,6 +33,10 @@ from torch import sum, mean, abs, sqrt, sign, prod, sqrt
 from torch import matmul as dot
 from torch import qr
 
+dtypes = ['int64', 'int32', 'float32', 'float64']
+for dtype in dtypes:
+    vars()[dtype] = getattr(torch, dtype)
+
 # Order 0 tensor, mxnet....
 from math import sqrt as scalar_sqrt
 
@@ -45,7 +49,7 @@ def context(tensor):
     return {'dtype':tensor.dtype, 'device':tensor.device, 'requires_grad':tensor.requires_grad}
 
 
-def tensor(data, dtype=None, device='cpu', requires_grad=False):
+def tensor(data, dtype=float32, device='cpu', requires_grad=False):
     """Tensor class
     """
     if isinstance(data, numpy.ndarray):
