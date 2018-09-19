@@ -28,13 +28,17 @@ from cupy import dot, kron, concatenate
 from cupy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
 from cupy.linalg import qr
 
+dtypes = ['int64', 'int32', 'float32', 'float64']
+for dtype in dtypes:
+    vars()[dtype] = getattr(cupy, dtype)
+
 
 def context(tensor):
     """Returns the context of a tensor
     """
     return {'dtype':tensor.dtype}
 
-def tensor(data, dtype=numpy.float64):
+def tensor(data, dtype=float32):
     """Tensor class
     """
     return cp.array(data, dtype=dtype)
