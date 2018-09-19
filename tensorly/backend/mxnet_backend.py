@@ -164,7 +164,9 @@ def norm(tensor, order=2, axis=None):
 
     return res
 
-def int(tensor):
+def tensor_as_indices(tensor):
+    """return the tensor in the appropriate dtype for indexing.
+    """
     return tensor.astype('int32')
 
 def kr(matrices):
