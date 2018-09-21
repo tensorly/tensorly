@@ -3,8 +3,6 @@ from ..mps_tensor import mps_to_tensor
 from ..random import check_random_state
 import numpy as np
 
-rng = check_random_state(1)
-
 def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
     """MPS (tensor-train) decomposition via cross-approximation (TTcross) [1]
 
@@ -105,6 +103,9 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
     # list row_idx: row indices    (left indices)  for skeleton-decomposition: indicate which rows used in each core.
 
     # Initialize indice: random selection of column indices
+    random_seed = None
+    rng = check_random_state(random_seed)
+
     col_idx = [None] * tensor_order
     for k_col_idx in range(tensor_order - 1):
         col_idx[k_col_idx] = []
