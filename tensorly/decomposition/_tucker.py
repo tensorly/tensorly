@@ -106,8 +106,8 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     return core, factors
 
 
-def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
-           random_state=None, verbose=False):
+def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd',
+           svd='numpy_svd', tol=10e-5, random_state=None, verbose=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition:
@@ -121,6 +121,9 @@ def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD,
+        acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -143,7 +146,7 @@ def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd', tol=10e-5,
     """
     modes = list(range(tl.ndim(tensor)))
     return partial_tucker(tensor, modes, rank=rank, ranks=ranks, n_iter_max=n_iter_max, init=init,
-                          tol=tol, random_state=random_state, verbose=verbose)
+                          svd=svd, tol=tol, random_state=random_state, verbose=verbose)
 
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
