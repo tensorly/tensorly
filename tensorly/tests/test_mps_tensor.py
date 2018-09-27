@@ -1,7 +1,9 @@
-import tensorly as tl
 import numpy as np
-from ..decomposition import matrix_product_state
-from ..mps_tensor import mps_to_tensor
+
+import tensorly as tl
+import tensorly.backend as T
+from tensorly.decomposition import matrix_product_state
+
 
 def test_mps_to_tensor():
     """ Test for mps_to_tensor
@@ -48,7 +50,7 @@ def test_mps_to_tensor():
                 factors[2][1][k][0] = k+1
 
     # Check that MPS factors re-assemble to the original tensor
-    tl.assert_array_almost_equal(tensor, mps_to_tensor(factors))
+    T.assert_array_almost_equal(tensor, tl.mps_to_tensor(factors))
 
 
 def test_mps_to_tensor_random():
@@ -66,7 +68,7 @@ def test_mps_to_tensor_random():
     factors = matrix_product_state(tensor, rank)
 
     # Reconstruct the original tensor
-    reconstructed_tensor = mps_to_tensor(factors)
+    reconstructed_tensor = tl.mps_to_tensor(factors)
 
     # Check that the rank is 10
     D = len(factors)

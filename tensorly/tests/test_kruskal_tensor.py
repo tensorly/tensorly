@@ -1,9 +1,11 @@
 import numpy as np
-import tensorly as tl
 
-from ..tenalg import khatri_rao
-from ..kruskal_tensor import kruskal_to_tensor, kruskal_to_unfolded, kruskal_to_vec
-from ..base import unfold, tensor_to_vec
+import tensorly as tl
+import tensorly.backend as T
+from tensorly.tenalg import khatri_rao
+from tensorly.kruskal_tensor import (kruskal_to_tensor, kruskal_to_unfolded,
+                                     kruskal_to_vec)
+from tensorly.base import unfold, tensor_to_vec
 
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -54,7 +56,7 @@ def test_kruskal_to_tensor():
                            [[ 324728.,  358154.],
                             [ 366830.,  404594.]]]])
     res = kruskal_to_tensor(U)
-    tl.assert_array_equal(res, true_res, err_msg='Khatri-rao incorrectly transformed into full tensor.')
+    T.assert_array_equal(res, true_res, err_msg='Khatri-rao incorrectly transformed into full tensor.')
 
     columns = 4
     rows = [3, 4, 2]
@@ -64,7 +66,7 @@ def test_kruskal_to_tensor():
         unfolded = unfold(tensor, mode=i)
         U_i = matrices.pop(i)
         reconstructed = tl.dot(U_i, tl.transpose(khatri_rao(matrices)))
-        tl.assert_array_almost_equal(reconstructed, unfolded)
+        T.assert_array_almost_equal(reconstructed, unfolded)
         matrices.insert(i, U_i)
 
 def test_kruskal_to_tensor_with_weights():
@@ -74,7 +76,7 @@ def test_kruskal_to_tensor_with_weights():
 
     out = kruskal_to_tensor([A,B], weights=weights)
     expected = tl.tensor([[-2,-2], [6, 10]])  # computed by hand
-    tl.assert_array_equal(out, expected)
+    T.assert_array_equal(out, expected)
 
 
 def test_kruskal_to_unfolded():
@@ -90,7 +92,7 @@ def test_kruskal_to_unfolded():
     for mode in range(4):
         true_res = unfold(full_tensor, mode)
         res = kruskal_to_unfolded(U, mode)
-        tl.assert_array_equal(true_res, res, err_msg='khatri_rao product unfolded incorrectly for mode {}.'.format(mode))
+        T.assert_array_equal(true_res, res, err_msg='khatri_rao product unfolded incorrectly for mode {}.'.format(mode))
 
 
 def test_kruskal_to_vec():
@@ -103,4 +105,4 @@ def test_kruskal_to_vec():
     full_tensor = kruskal_to_tensor(U)
     true_res = tensor_to_vec(full_tensor)
     res = kruskal_to_vec(U)
-    tl.assert_array_equal(true_res, res, err_msg='khatri_rao product converted incorrectly to vec.')
+    T.assert_array_equal(true_res, res, err_msg='khatri_rao product converted incorrectly to vec.')

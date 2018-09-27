@@ -70,6 +70,18 @@ def is_tensor(obj):
 
 
 @_generics.add_method
+def shape(tensor):
+    """Return the shape of a tensor"""
+    pass
+
+
+@_generics.add_method
+def ndim(tensor):
+    """Return the number of dimensions of a tensor"""
+    pass
+
+
+@_generics.add_method
 def to_numpy(tensor):
     """Returns a copy of the tensor as a NumPy array.
 
@@ -85,57 +97,26 @@ def to_numpy(tensor):
 
 
 @_generics.add_method
-def shape(tensor):
-    """Return the shape of a tensor"""
+def copy(tensor):
+    """Return a copy of the given tensor"""
     pass
 
 
 @_generics.add_method
-def ndim(tensor):
-    """Return the number of dimensions of a tensor"""
-    pass
-
-
-@_generics.add_method
-def clip(tensor, a_min=None, a_max=None):
-    """Clip the values of a tensor to within an interval.
-
-    Given an interval, values outside the interval are clipped to the interval
-    edges.  For example, if an interval of ``[0, 1]`` is specified, values
-    smaller than 0 become 0, and values larger than 1 become 1.
-
-    Not more than one of `a_min` and `a_max` may be `None`.
+def concatenate(tensors, axis=0):
+    """Concatenate tensors along an axis.
 
     Parameters
     ----------
-    tensor : tl.tensor
-        The tensor.
-    a_min : scalar, optional
-        Minimum value. If `None`, clipping is not performed on lower bound.
-    a_max : scalar, optional
-        Maximum value. If `None`, clipping is not performed on upper bound.
+    tensors : list of tensor
+        The tensors to concatenate. Non-empty tensors provided must have the
+        same shape, except along the specified axis.
+    axis : int, optional
+        The axis to concatenate on. Default is 0.
 
     Returns
     -------
     tensor
-    """
-    pass
-
-
-@_generics.add_method
-def norm(tensor, order=2, axis=None):
-    """Computes the l-`order` norm of a tensor.
-
-    Parameters
-    ----------
-    tensor : tl.tensor
-    order : int
-    axis : int or tuple
-
-    Returns
-    -------
-    float or tensor
-        If `axis` is provided returns a tensor.
     """
     pass
 
@@ -159,6 +140,17 @@ def reshape(tensor, newshape):
 
 
 @_generics.add_method
+def transpose(tensor):
+    """Permute the dimensions of a tensor.
+
+    Parameters
+    ----------
+    tensor : tensor
+    """
+    pass
+
+
+@_generics.add_method
 def moveaxis(tensor, source, destination):
     """Move axes of a tensor to new positions.
 
@@ -174,41 +166,6 @@ def moveaxis(tensor, source, destination):
     Returns
     -------
     tensor
-    """
-    pass
-
-
-@_generics.add_method
-def where(condition, x, y):
-    """Return elements, either from `x` or `y`, depending on `condition`.
-
-    Parameters
-    ----------
-    condition : tensor
-        When True, yield element from `x`, otherwise from `y`.
-    x, y : tensor
-        Values from which to choose.
-
-    Returns
-    -------
-    tensor
-    """
-    pass
-
-
-@_generics.add_method
-def copy(tensor):
-    """Return a copy of the given tensor"""
-    pass
-
-
-@_generics.add_method
-def transpose(tensor):
-    """Permute the dimensions of a tensor.
-
-    Parameters
-    ----------
-    tensor : tensor
     """
     pass
 
@@ -285,13 +242,15 @@ def eye(N):
 
 
 @_generics.add_method
-def dot(a, b):
-    """Dot product of two tensors.
+def where(condition, x, y):
+    """Return elements, either from `x` or `y`, depending on `condition`.
 
     Parameters
     ----------
-    a, b : tensor
-        The tensors to compute the dot product of.
+    condition : tensor
+        When True, yield element from `x`, otherwise from `y`.
+    x, y : tensor
+        Values from which to choose.
 
     Returns
     -------
@@ -301,32 +260,23 @@ def dot(a, b):
 
 
 @_generics.add_method
-def kron(a, b):
-    """Kronecker product of two tensors.
+def clip(tensor, a_min=None, a_max=None):
+    """Clip the values of a tensor to within an interval.
+
+    Given an interval, values outside the interval are clipped to the interval
+    edges.  For example, if an interval of ``[0, 1]`` is specified, values
+    smaller than 0 become 0, and values larger than 1 become 1.
+
+    Not more than one of `a_min` and `a_max` may be `None`.
 
     Parameters
     ----------
-    a, b : tensor
-        The tensors to compute the kronecker product of.
-
-    Returns
-    -------
-    tensor
-    """
-    pass
-
-
-@_generics.add_method
-def concatenate(tensors, axis=0):
-    """Concatenate tensors along an axis.
-
-    Parameters
-    ----------
-    tensors : list of tensor
-        The tensors to concatenate. Non-empty tensors provided must have the
-        same shape, except along the specified axis.
-    axis : int, optional
-        The axis to concatenate on. Default is 0.
+    tensor : tl.tensor
+        The tensor.
+    a_min : scalar, optional
+        Minimum value. If `None`, clipping is not performed on lower bound.
+    a_max : scalar, optional
+        Maximum value. If `None`, clipping is not performed on upper bound.
 
     Returns
     -------
@@ -472,6 +422,56 @@ def sqrt(tensor):
     Returns
     -------
     out : tensor
+    """
+    pass
+
+
+@_generics.add_method
+def norm(tensor, order=2, axis=None):
+    """Computes the l-`order` norm of a tensor.
+
+    Parameters
+    ----------
+    tensor : tl.tensor
+    order : int
+    axis : int or tuple
+
+    Returns
+    -------
+    float or tensor
+        If `axis` is provided returns a tensor.
+    """
+    pass
+
+
+@_generics.add_method
+def dot(a, b):
+    """Dot product of two tensors.
+
+    Parameters
+    ----------
+    a, b : tensor
+        The tensors to compute the dot product of.
+
+    Returns
+    -------
+    tensor
+    """
+    pass
+
+
+@_generics.add_method
+def kron(a, b):
+    """Kronecker product of two tensors.
+
+    Parameters
+    ----------
+    a, b : tensor
+        The tensors to compute the kronecker product of.
+
+    Returns
+    -------
+    tensor
     """
     pass
 
