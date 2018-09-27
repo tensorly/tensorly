@@ -44,6 +44,10 @@ def tensor(data, dtype=float32):
     return cp.array(data, dtype=dtype)
 
 
+def is_tensor(tensor):
+    return isinstance(tensor, cp.ndarray)
+
+
 def to_numpy(tensor):
     """Returns a copy of the tensor as a NumPy array"""
     if isinstance(tensor, cp.ndarray):

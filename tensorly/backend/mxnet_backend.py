@@ -47,6 +47,11 @@ def tensor(data, ctx=mx.cpu(), dtype=float32):
         dtype = data.dtype
     return nd.array(data, ctx=ctx, dtype=dtype)
 
+
+def is_tensor(tensor):
+    return isinstance(tensor, nd.NDArray)
+
+
 def to_numpy(tensor):
     """Convert a tensor to numpy format
 

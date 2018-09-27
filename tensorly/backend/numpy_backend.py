@@ -1,119 +1,83 @@
-"""
-Core tensor operations.
-"""
+import warnings
 
-from numpy import testing
 import numpy as np
 import scipy.linalg
 import scipy.sparse.linalg
 
-from numpy import reshape, moveaxis, where, copy, transpose
-from numpy import arange, ones, zeros, zeros_like, eye
-from numpy import dot, kron, concatenate
-from numpy import max, min, maximum, all, mean, sum, sign, abs, prod, sqrt
-from numpy.linalg import solve, qr
+from . import _generics
+
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
 
 
-dtypes = ['int64', 'int32', 'float32', 'float64']
-for dtype in dtypes:
-    vars()[dtype] = getattr(np, dtype)
+backend = _generics.new_backend('numpy')
 
 
+for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
+             'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
+             'zeros_like', 'eye', 'dot', 'kron', 'concatenate', 'max', 'min',
+             'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt']:
+    backend.register(getattr(np, name), name)
+
+
+backend.register(np.linalg.solve, name='solve')
+backend.register(np.linalg.qr, name='qr')
+
+
+@backend.register
 def context(tensor):
-    """Returns the context of a tensor
+    return {'dtype': tensor.dtype}
 
-        Creates a dictionary of the parameters characterising the tensor
 
-    Parameters
-    ----------
-    tensor : tensorly.tensor
-
-    Returns
-    -------
-    context : dict
-
-    Examples
-    --------
-    >>> import tensorly as tl
-    Using numpy backend.
-
-    Imagine you have an existing tensor `tensor`:
-
-    >>> import numpy as np
-    >>> tensor = tl.tensor([0, 1, 2], dtype=np.float32)
-
-    The context, here, will simply be the dtype:
-
-    >>> tl.context(tensor)
-    {'dtype': dtype('float32')}
-    
-    Note that, if you were using, say, PyTorch, the context would also
-    include the device (i.e. CPU or GPU) and device ID.
-
-    If you want to create a new tensor in the same context, use this context:
-
-    >>> new_tensor = tl.tensor([1, 2, 3], **tl.context(tensor))
-    """
-    return {'dtype':tensor.dtype}
-
+@backend.register
 def tensor(data, dtype=None):
-    """Tensor class
-        
-        Returns a tensor on the specified context, depending on the backend
-    """
     return np.array(data, dtype=dtype)
 
 
+@backend.register
+def is_tensor(tensor):
+    return isinstance(tensor, np.ndarray)
+
+
+@backend.register
 def to_numpy(tensor):
-    """Returns a copy of the tensor as a NumPy array
-
-    Parameters
-    ----------
-    tensor : tl.tensor
-
-    Returns
-    -------
-    numpy_tensor : numpy.ndarray
-    """
     return np.copy(tensor)
 
+
+@backend.register
 def assert_array_equal(a, b, **kwargs):
-    return testing.assert_array_equal(a, b, **kwargs)
+    return np.testing.assert_array_equal(a, b, **kwargs)
 
+
+@backend.register
 def assert_array_almost_equal(a, b, **kwargs):
-    testing.assert_array_almost_equal(to_numpy(a), to_numpy(b), **kwargs)
+    np.testing.assert_array_almost_equal(to_numpy(a), to_numpy(b), **kwargs)
 
-assert_raises = testing.assert_raises
-assert_equal = testing.assert_equal
-assert_ = testing.assert_
 
+backend.register(np.testing.assert_raises)
+backend.register(np.testing.assert_equal)
+backend.register(np.testing.assert_)
+
+
+@backend.register
 def shape(tensor):
     return tensor.shape
 
+
+@backend.register
 def ndim(tensor):
     return tensor.ndim
 
+
+@backend.register
 def clip(tensor, a_min=None, a_max=None, inplace=False):
     return np.clip(tensor, a_min, a_max)
 
+
+@backend.register
 def norm(tensor, order=2, axis=None):
-    """Computes the l-`order` norm of tensor
-
-    Parameters
-    ----------
-    tensor : ndarray
-    order : int
-    axis : int or tuple
-
-    Returns
-    -------
-    float or tensor
-        If `axis` is provided returns a tensor.
-    """
     # handle difference in default axis notation
     if axis == ():
         axis = None
@@ -127,45 +91,9 @@ def norm(tensor, order=2, axis=None):
     else:
         return np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
 
+
+@backend.register
 def kr(matrices):
-    """Khatri-Rao product of a list of matrices
-
-        This can be seen as a column-wise kronecker product.
-
-    Parameters
-    ----------
-    matrices : ndarray list
-        list of matrices with the same number of columns, i.e.::
-
-            for i in len(matrices):
-                matrices[i].shape = (n_i, m)
-
-    Returns
-    -------
-    khatri_rao_product: matrix of shape ``(prod(n_i), m)``
-        where ``prod(n_i) = prod([m.shape[0] for m in matrices])``
-        i.e. the product of the number of rows of all the matrices in the product.
-
-    Notes
-    -----
-    Mathematically:
-
-    .. math::
-         \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
-         \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\text{ is of size } (\\prod_{k=1}^n I_k \\times R)
-
-    A more intuitive but slower implementation is::
-
-        kr_product = np.zeros((n_rows, n_columns))
-        for i in range(n_columns):
-            cum_prod = matrices[0][:, i]  # Acuumulates the khatri-rao product of the i-th columns
-            for matrix in matrices[1:]:
-                cum_prod = np.einsum('i,j->ij', cum_prod, matrix[:, i]).ravel()
-            # the i-th column corresponds to the kronecker product of all the i-th columns of all matrices:
-            kr_product[:, i] = cum_prod
-
-        return kr_product
-    """
     n_columns = matrices[0].shape[1]
     n_factors = len(matrices)
 
@@ -176,30 +104,9 @@ def kr(matrices):
     operation = source+'->'+target+common_dim
     return np.einsum(operation, *matrices).reshape((-1, n_columns))
 
+
+@backend.register
 def partial_svd(matrix, n_eigenvecs=None):
-    """Computes a fast partial SVD on `matrix`
-
-        if `n_eigenvecs` is specified, sparse eigendecomposition
-        is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
-
-    Parameters
-    ----------
-    matrix : 2D-array
-    n_eigenvecs : int, optional, default is None
-        if specified, number of eigen[vectors-values] to return
-
-    Returns
-    -------
-    U : 2D-array
-        of shape (matrix.shape[0], n_eigenvecs)
-        contains the right singular vectors
-    S : 1D-array
-        of shape (n_eigenvecs, )
-        contains the singular values of `matrix`
-    V : 2D-array
-        of shape (n_eigenvecs, matrix.shape[1])
-        contains the left singular vectors
-    """
     # Check that matrix is... a matrix!
     if matrix.ndim != 2:
         raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
@@ -214,12 +121,11 @@ def partial_svd(matrix, n_eigenvecs=None):
         min_dim = dim_2
         max_dim = dim_1
 
-
     if n_eigenvecs >= min_dim:
         if n_eigenvecs > max_dim:
-            message = ('trying to compute SVD with n_eigenvecs={}, which is larger than'
-                       'max(matrix.shape)={1}. Setting n_eigenvecs to {1}'.format(
-                           n_eigenvecs, max_dim))
+            warnings.warn(('Trying to compute SVD with n_eigenvecs={1}, which '
+                           'is larger than max(matrix.shape)={1}. Setting '
+                           'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
             n_eigenvecs = max_dim
 
         if n_eigenvecs is None or n_eigenvecs > min_dim:
@@ -236,11 +142,15 @@ def partial_svd(matrix, n_eigenvecs=None):
         # We can perform a partial SVD
         # First choose whether to use X * X.T or X.T *X
         if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM')
+            S, U = scipy.sparse.linalg.eigsh(
+                np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM'
+            )
             S = np.sqrt(S)
             V = np.dot(matrix.T.conj(), U * 1/S[None, :])
         else:
-            S, V = scipy.sparse.linalg.eigsh(np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM')
+            S, V = scipy.sparse.linalg.eigsh(
+                np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM'
+            )
             S = np.sqrt(S)
             U = np.dot(matrix, V) * 1/S[None, :]
 
@@ -248,4 +158,7 @@ def partial_svd(matrix, n_eigenvecs=None):
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T.conj()
 
-SVD_FUNS = {'numpy_svd':partial_svd, 'truncated_svd':partial_svd}
+
+SVD_FUNS = {'numpy_svd': partial_svd,
+            'truncated_svd': partial_svd}
+backend.register(SVD_FUNS, name='SVD_FUNS')

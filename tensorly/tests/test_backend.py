@@ -1,10 +1,8 @@
 import numpy as np
 import tensorly as tl
 
-from scipy.sparse.linalg import svds
 from scipy.linalg import svd
 
-from ..backend import numpy_backend
 from .. import backend as T
 from ..base import fold, unfold
 from ..base import partial_fold, partial_unfold
@@ -15,33 +13,18 @@ from ..base import partial_tensor_to_vec, partial_vec_to_tensor
 
 
 def test_set_backend():
-    print('Testing set_backend for backend = {}'.format(tl._BACKEND))
     tensor = T.tensor(np.arange(12).reshape((4, 3)))
     tensor2 = tl.tensor(np.arange(12).reshape((4, 3)))
-    if tl._BACKEND == 'pytorch':
-        import torch
-        assert torch.is_tensor(tensor) and torch.is_tensor(tensor2)
-        # assert type(tensor) == type(tensor2) == torch.FloatTensor
-    elif tl._BACKEND == 'numpy':
-        assert type(tensor) == type(tensor2) == np.ndarray
-    elif tl._BACKEND == 'mxnet':
-        import mxnet as mx
-        assert type(tensor) == type(tensor2) == mx.nd.NDArray
-    elif tl._BACKEND == 'tensorflow':
-        import tensorflow as tf
-        assert isinstance(tensor, tf.Tensor) and isinstance(tensor2, tf.Tensor)
-    elif tl._BACKEND == 'cupy':
-        import cupy as cp
-        assert isinstance(tensor, cp.ndarray) and isinstance(tensor2, cp.ndarray)
-    else:
-        raise ValueError('_BACKEND not recognised (got {})'.format(tl._BACKEND))
+
+    assert T.is_tensor(tensor)
+    assert T.is_tensor(tensor2)
 
 
 def test_unfold():
     """Test for unfold
 
     1. We do an exact test.
-    
+
     2. Second,  a test inspired by the example in Kolda's paper:
        Even though we use a different definition of the unfolding,
        it should only differ by the ordering of the columns
@@ -85,15 +68,15 @@ def test_fold():
     unfoldings = [T.tensor([[0, 1, 2, 3, 4, 5, 6, 7],
                             [8, 9, 10, 11, 12, 13, 14, 15],
                             [16, 17, 18, 19, 20, 21, 22, 23]]),
-    		  T.tensor([[0, 1, 8, 9, 16, 17],
+              T.tensor([[0, 1, 8, 9, 16, 17],
                             [2, 3, 10, 11, 18, 19],
                             [4, 5, 12, 13, 20, 21],
                             [6, 7, 14, 15, 22, 23]]),
-    		  T.tensor([[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
+              T.tensor([[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22],
                             [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]])]
     # hard coded example
     for mode in range(T.ndim(X)):
-    	T.assert_array_equal(fold(unfoldings[mode], mode, X.shape), X)
+        T.assert_array_equal(fold(unfoldings[mode], mode, X.shape), X)
 
     # check dims
     for i in range(T.ndim(X)):
@@ -104,7 +87,7 @@ def test_fold():
     for i in range(T.ndim(X)):
         T.assert_array_equal(X, fold(unfold(X, i), i, X.shape))
 
- 
+
 def test_tensor_to_vec():
     """Test for tensor_to_vec"""
     X = T.tensor([[[ 0,  1],
@@ -180,7 +163,7 @@ def test_partial_unfold():
         unfolded_X = T.reshape(unfold(t, i), (-1, ))
         for j in range(n_samples):  # test for each sample
             T.assert_array_equal(unfolded[j], unfolded_X + j)
-    
+
     ##################################
     # Samples are the last dimension #
     ##################################
@@ -191,7 +174,7 @@ def test_partial_unfold():
         unfolded_X = unfold(t, i)
         for j in range(n_samples):  # test for each sample
             T.assert_array_equal(T.transpose(T.transpose(unfolded)[j]), unfolded_X+j)
-    
+
     # Test for raveled tensor
     for i in range(T.ndim(X)):  # test for each mode
         unfolded = partial_unfold(tensor, mode=i, skip_end=1, skip_begin=0, ravel_tensors=True)
@@ -309,11 +292,11 @@ def test_svd():
             true_rec_error = np.sum((matrix - np.dot(U, S.reshape((-1, 1))*V))**2)
             # Reconstruction error with the backend's SVD
             rec_error = T.sum((matrix_backend - T.dot(fU, fS.reshape((-1, 1))*fV))**2)
-            # Check that the two are similar 
-            T.assert_(true_rec_error - rec_error <= tol, 
+            # Check that the two are similar
+            T.assert_(true_rec_error - rec_error <= tol,
                 msg='Reconstruction not correct for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                         name, tl.get_backend(), n, s))
-            
+
             # Check for orthogonality when relevant
             if name != 'symeig_svd':
                 left_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))

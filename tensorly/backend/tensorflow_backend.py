@@ -64,6 +64,11 @@ def tensor(data, dtype=numpy.float32, device=None, device_id=None):
         else:
             return tf.constant(data, dtype=dtype)
 
+
+def is_tensor(tensor):
+    isinstance(tensor, tf.Tensor)
+
+
 def to_numpy(tensor):
     """Returns a copy of the tensor as a NumPy array"""
     if isinstance(tensor, numpy.ndarray):

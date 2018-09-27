@@ -32,6 +32,7 @@ from torch import max, min, where
 from torch import sum, mean, abs, sqrt, sign, prod, sqrt
 from torch import matmul as dot
 from torch import qr
+from torch import is_tensor
 
 dtypes = ['int64', 'int32', 'float32', 'float64']
 for dtype in dtypes:
