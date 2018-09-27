@@ -26,6 +26,7 @@ from torch import reshape, matmul as dot
 
 
 from . import _generics, numpy_backend
+from .generic import kron, kr, partial_svd
 
 
 backend = _generics.new_backend('pytorch')
@@ -36,6 +37,9 @@ for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
     backend.register(getattr(torch, name), name=name)
 
 backend.register(torch.matmul, name='dot')
+backend.register(kron)
+backend.register(kr)
+backend.register(partial_svd)
 
 
 @backend.register
@@ -130,15 +134,6 @@ def moveaxis(tensor, source, target):
 
 
 @backend.register
-def kron(matrix1, matrix2):
-    s1, s2 = shape(matrix1)
-    s3, s4 = shape(matrix2)
-    a = reshape(matrix1, (s1, 1, s2, 1))
-    b = reshape(matrix2, (1, s3, 1, s4))
-    return reshape(a * b, (s1 * s3, s2 * s4))
-
-
-@backend.register
 def solve(matrix1, matrix2):
     solution, _ = torch.gesv(matrix2, matrix1)
     return solution
@@ -181,26 +176,6 @@ def sum(tensor, axis=None):
 @backend.register
 def concatenate(tensors, axis=0):
     return torch.cat(tensors, dim=axis)
-
-
-@backend.register
-def kr(matrices):
-    if len(matrices) < 2:
-        raise ValueError('kr requires a list of at least 2 matrices, but {} '
-                         'given.'.format(len(matrices)))
-
-    n_col = shape(matrices[0])[1]
-    for i, e in enumerate(matrices[1:]):
-        if not i:
-            res = matrices[0]
-        s1, s2 = shape(res)
-        s3, s4 = shape(e)
-        if not s2 == s4 == n_col:
-            raise ValueError('All matrices should have the same number of columns.')
-        a = reshape(res, (s1, 1, s2))
-        b = reshape(e, (1, s3, s4))
-        res = reshape(a * b, (-1, n_col))
-    return res
 
 
 def _reverse(tensor, axis=0):
@@ -316,14 +291,6 @@ def symeig_svd(matrix, n_eigenvecs=None):
 
     U, S, V = _reverse(U, 1), _reverse(S), _reverse(transpose(V), 0)
     return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-
-
-@backend.register
-def partial_svd(matrix, n_eigenvecs=None):
-    ctx = context(matrix)
-    matrix = to_numpy(matrix)
-    U, S, V = numpy_backend.partial_svd(matrix, n_eigenvecs)
-    return tensor(U, **ctx), tensor(S, **ctx), tensor(V, **ctx)
 
 
 SVD_FUNS = {'numpy_svd': partial_svd,
