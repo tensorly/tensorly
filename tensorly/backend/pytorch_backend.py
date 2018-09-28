@@ -25,7 +25,7 @@ import numpy as np
 from torch import reshape, matmul as dot
 
 
-from . import _generics, numpy_backend
+from . import _generics
 from .generic import kron, kr, partial_svd
 
 
