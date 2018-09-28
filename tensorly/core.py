@@ -53,7 +53,7 @@ class set_backend(object):
         self._new_backend = _STATE.backend = backend
 
     def __repr__(self):
-        return 'tl.set_backend(%r)' % self._new_backend
+        return 'tensorly.set_backend(%r)' % self._new_backend
 
     def __enter__(self):
         return None
@@ -159,10 +159,7 @@ class Backend(object):
             inferred from the object's name.
         """
         if name is None:
-            try:
-                name = obj.__name__
-            except AttributeError:
-                raise ValueError("Failed to infer name of %r" % obj)
+            name = obj.__name__
         if name in self.dispatch:
             raise ValueError("%r is already registered with "
                              "backend %r" % (name, self.name))

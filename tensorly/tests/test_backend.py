@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from scipy.linalg import svd
 
@@ -13,6 +14,59 @@ from tensorly.testing import (assert_array_equal, assert_equal, assert_,
 
 
 def test_set_backend():
+    torch = pytest.importorskip('torch')
+
+    toplevel_backend = tl.get_backend()
+
+    # Set in context manager
+    with tl.set_backend('numpy'):
+        assert tl.get_backend() == 'numpy'
+        assert isinstance(tl.tensor([1, 2, 3]), np.ndarray)
+        assert isinstance(T.tensor([1, 2, 3]), np.ndarray)
+        assert tl.float32 is T.float32 is np.float32
+
+        with tl.set_backend('pytorch'):
+            assert tl.get_backend() == 'pytorch'
+            assert torch.is_tensor(tl.tensor([1, 2, 3]))
+            assert torch.is_tensor(T.tensor([1, 2, 3]))
+            assert tl.float32 is T.float32 is torch.float32
+
+        # Sets back to numpy
+        assert tl.get_backend() == 'numpy'
+        assert isinstance(tl.tensor([1, 2, 3]), np.ndarray)
+        assert isinstance(T.tensor([1, 2, 3]), np.ndarray)
+        assert tl.float32 is T.float32 is np.float32
+
+    # Reset back to initial backend
+    assert tl.get_backend() == toplevel_backend
+
+    # Set not in context manager
+    try:
+        obj = tl.set_backend('pytorch')
+        assert tl.get_backend() == 'pytorch'
+        assert repr(obj) == "tensorly.set_backend('pytorch')"
+    finally:
+        tl.set_backend(toplevel_backend)
+
+    assert tl.get_backend() == toplevel_backend
+
+    # Improper name doesn't reset backend
+    with assert_raises(ValueError):
+        tl.set_backend('not-a-real-backend')
+    assert tl.get_backend() == toplevel_backend
+
+
+def test_backend_and_tensorly_module_attributes():
+    for dtype in ['int32', 'int64', 'float32', 'float64']:
+        assert dtype in dir(tl)
+        assert dtype in dir(T)
+        assert getattr(T, dtype) is getattr(tl, dtype)
+
+    with assert_raises(AttributeError):
+        tl.not_a_real_attribute
+
+
+def test_tensor_creation():
     tensor = T.tensor(np.arange(12).reshape((4, 3)))
     tensor2 = tl.tensor(np.arange(12).reshape((4, 3)))
 
