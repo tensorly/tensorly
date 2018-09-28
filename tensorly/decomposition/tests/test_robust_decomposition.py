@@ -1,8 +1,9 @@
 import numpy as np
 
-from ...random import cp_tensor, check_random_state
-from ..robust_decomposition import robust_pca
-from ... import backend as T
+import tensorly.backend as T
+from tensorly.decomposition.robust_decomposition import robust_pca
+from tensorly.random import check_random_state
+from tensorly.testing import assert_array_equal, assert_, assert_array_almost_equal
 
 def test_RPCA():
     """Test for RPCA"""
@@ -20,18 +21,18 @@ def test_RPCA():
     corrupted_noise = np.copy(noise)
     clean = T.tensor(clean)
     noise = T.tensor(noise)
-    clean_pred, noise_pred = robust_pca(tensor, mask=None, reg_E=0.4, mu_max=10e12, 
+    clean_pred, noise_pred = robust_pca(tensor, mask=None, reg_E=0.4, mu_max=10e12,
                                         learning_rate=1.2,
                                         n_iter_max=200, tol=tol, verbose=True)
-    # check recovery 
-    T.assert_array_almost_equal(tensor, clean_pred+noise_pred, decimal=tol)
+    # check recovery
+    assert_array_almost_equal(tensor, clean_pred+noise_pred, decimal=tol)
     # check low rank recovery
-    T.assert_array_almost_equal(clean, clean_pred, decimal=1)
+    assert_array_almost_equal(clean, clean_pred, decimal=1)
     # Check for sparsity of the gross error
     # assert T.sum(noise_pred > 0.01) == T.sum(noise > 0.01)
-    T.assert_array_equal((noise_pred > 0.01), (noise > 0.01))
+    assert_array_equal((noise_pred > 0.01), (noise > 0.01))
     # check sparse gross error recovery
-    T.assert_array_almost_equal(noise, noise_pred, decimal=1)
+    assert_array_almost_equal(noise, noise_pred, decimal=1)
 
     ############################
     # Test with missing values #
@@ -44,17 +45,17 @@ def test_RPCA():
     corrupted_clean = T.tensor(corrupted_clean)
     mask = T.tensor(mask)
     # Decompose the tensor
-    clean_pred, noise_pred = robust_pca(tensor, mask=mask, reg_E=0.4, mu_max=10e12, 
+    clean_pred, noise_pred = robust_pca(tensor, mask=mask, reg_E=0.4, mu_max=10e12,
                                         learning_rate=1.2,
                                         n_iter_max=200, tol=tol, verbose=True)
-    # check recovery 
-    T.assert_array_almost_equal(tensor, clean_pred+noise_pred, decimal=tol)
+    # check recovery
+    assert_array_almost_equal(tensor, clean_pred+noise_pred, decimal=tol)
     # check low rank recovery
-    T.assert_array_almost_equal(corrupted_clean*mask, clean_pred*mask, decimal=1)
+    assert_array_almost_equal(corrupted_clean*mask, clean_pred*mask, decimal=1)
     # check sparse gross error recovery
-    T.assert_array_almost_equal(noise*mask, noise_pred*mask, decimal=1)
+    assert_array_almost_equal(noise*mask, noise_pred*mask, decimal=1)
 
     # Check for recovery of the corrupted/missing part
     mask = 1 - mask
     error = T.norm((clean*mask - clean_pred*mask), 2)/T.norm(clean*mask, 2)
-    T.assert_(error <= 10e-3)
+    assert_(error <= 10e-3)

@@ -1,7 +1,8 @@
-from ... import backend as T
 import numpy as np
 
-from .._khatri_rao import khatri_rao
+import tensorly.backend as T
+from tensorly.tenalg._khatri_rao import khatri_rao
+from tensorly.testing import assert_array_equal, assert_raises
 
 
 # Author: Jean Kossaifi
@@ -23,12 +24,12 @@ def test_khatri_rao():
     # fail case: all matrices must have same number of columns
     shapes = [[3, 4], [3, 4], [3, 2]]
     matrices = [T.tensor(np.arange(i * j).reshape((i, j))) for (i, j) in shapes]
-    with T.assert_raises(ValueError):
+    with assert_raises(ValueError):
         khatri_rao(matrices)
 
     # all matrices should be of dim 2...
     matrices = [T.tensor(np.eye(3)), T.tensor(np.arange(3 * 2 * 2).reshape((3, 2, 2)))]
-    with T.assert_raises(ValueError):
+    with assert_raises(ValueError):
         khatri_rao(matrices)
 
     # Classic example/test
@@ -57,9 +58,9 @@ def test_khatri_rao():
                                   [12., 30., 54.],
                                   [21., 48., 81.]])
     res = khatri_rao([t1, t2])
-    T.assert_array_equal(res, true_res)
+    assert_array_equal(res, true_res)
     reversed_res = khatri_rao([t1, t2], reverse=True)
-    T.assert_array_equal(reversed_res, reversed_true_res)
+    assert_array_equal(reversed_res, reversed_true_res)
 
     # A = np.hstack((np.eye(3), np.arange(3)[:, None]))
     A = T.tensor([[ 1.,  0.,  0.,  0.],
@@ -77,7 +78,7 @@ def test_khatri_rao():
                          [  0.,   0.,   0.,   6.],
                          [  0.,   0.,   0.,   8.],
                          [  0.,   0.,   1.,  10.]])
-    T.assert_array_equal(khatri_rao([A, B]), true_res)
+    assert_array_equal(khatri_rao([A, B]), true_res)
 
     U1 = np.reshape(np.arange(1, 10), (3, 3))
     U2 = np.reshape(np.arange(10, 22), (4, 3))
@@ -133,15 +134,15 @@ def test_khatri_rao():
                          [ 93100,       120640,       153090],
                          [103075,       133120,       168399]])
     res = khatri_rao(U)
-    T.assert_array_equal(res, true_res)
+    assert_array_equal(res, true_res)
 
     res_1 = khatri_rao(U, skip_matrix=1)
     res_2 = khatri_rao([U[0]] + U[2:])
-    T.assert_array_equal(res_1, res_2)
+    assert_array_equal(res_1, res_2)
 
     res_1 = khatri_rao(U, skip_matrix=0)
     res_2 = khatri_rao(U[1:])
-    T.assert_array_equal(res_1, res_2)
+    assert_array_equal(res_1, res_2)
 
     # Test with one matrix only: khatri-rao of one matrix = that matrix
-    T.assert_array_equal(khatri_rao([U[0]]), U[0])
+    assert_array_equal(khatri_rao([U[0]]), U[0])

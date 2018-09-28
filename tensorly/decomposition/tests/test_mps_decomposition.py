@@ -1,7 +1,7 @@
 import tensorly as tl
-import tensorly.backend as T
 from tensorly.decomposition import matrix_product_state
 from tensorly.random import check_random_state
+from tensorly.testing import assert_
 
 
 def test_matrix_product_state():
@@ -56,6 +56,5 @@ def test_matrix_product_state():
     reconstructed_tensor = tl.mps_to_tensor(factors)
     error = tl.norm(reconstructed_tensor - tensor, 2)
     error /= tl.norm(tensor, 2)
-    T.assert_(error < tol,
+    assert_(error < tol,
               'norm 2 of reconstruction higher than tol')
-

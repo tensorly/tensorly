@@ -1,8 +1,10 @@
 import numpy as np
-from ..tucker_regression import TuckerRegressor
-from ...base import tensor_to_vec, partial_tensor_to_vec
-from ...metrics.regression import RMSE
-from ... import backend as T
+
+import tensorly.backend as T
+from tensorly.regression.tucker_regression import TuckerRegressor
+from tensorly.base import tensor_to_vec, partial_tensor_to_vec
+from tensorly.metrics.regression import RMSE
+from tensorly.testing import assert_
 
 
 def test_TuckerRegressor():
@@ -33,10 +35,10 @@ def test_TuckerRegressor():
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
     error = RMSE(y_test, y_pred)
-    T.assert_(error <= tol, msg='Tucker Regression : RMSE={} > {}'.format(error, tol))
+    assert_(error <= tol, msg='Tucker Regression : RMSE={} > {}'.format(error, tol))
 
     params = estimator.get_params()
-    T.assert_(params['weight_ranks'] == [5, 5, 2], msg='get_params did not return the correct parameters')
+    assert_(params['weight_ranks'] == [5, 5, 2], msg='get_params did not return the correct parameters')
     params['weight_ranks'] = [5, 5, 5]
     estimator.set_params(**params)
-    T.assert_(estimator.weight_ranks == [5, 5, 5], msg='set_params did not correctly set the given parameters')
+    assert_(estimator.weight_ranks == [5, 5, 5], msg='set_params did not correctly set the given parameters')

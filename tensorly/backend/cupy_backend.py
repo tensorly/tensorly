@@ -141,31 +141,3 @@ def truncated_svd(matrix, n_eigenvecs=None):
 SVD_FUNS = {'numpy_svd': partial_svd,
             'truncated_svd': truncated_svd}
 backend.register(SVD_FUNS, 'SVD_FUNS')
-
-
-backend.register(np.testing.assert_raises)
-backend.register(np.testing.assert_)
-
-
-@backend.register
-def assert_array_equal(a, b, **kwargs):
-    np.testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
-
-
-@backend.register
-def assert_array_almost_equal(a, b, decimal=4, **kwargs):
-    np.testing.assert_array_almost_equal(to_numpy(a), to_numpy(b),
-                                         decimal=decimal, **kwargs)
-
-
-@backend.register
-def assert_equal(actual, desired, err_msg='', verbose=True):
-    if isinstance(actual, cp.ndarray):
-        actual = to_numpy(actual)
-        if actual.shape == (1, ):
-            actual = actual[0]
-    if isinstance(desired, cp.ndarray):
-        desired = to_numpy(desired)
-        if desired.shape == (1, ):
-            desired = desired[0]
-    np.testing.assert_equal(actual, desired)

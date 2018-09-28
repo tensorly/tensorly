@@ -271,31 +271,3 @@ def symeig_svd(matrix, n_eigenvecs=None):
 SVD_FUNS = {'numpy_svd': partial_svd,
             'symeig_svd': symeig_svd}
 backend.register(SVD_FUNS, name='SVD_FUNS')
-
-
-backend.register(numpy.testing.assert_raises)
-backend.register(numpy.testing.assert_)
-
-
-@backend.register
-def assert_array_equal(a, b, **kwargs):
-    numpy.testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
-
-
-@backend.register
-def assert_array_almost_equal(a, b, decimal=4, **kwargs):
-    numpy.testing.assert_array_almost_equal(to_numpy(a), to_numpy(b),
-                                            decimal=decimal, **kwargs)
-
-
-@backend.register
-def assert_equal(actual, desired, err_msg='', verbose=True):
-    if isinstance(actual, nd.NDArray):
-        actual = actual.asnumpy()
-        if actual.shape == (1, ):
-            actual = actual[0]
-    if isinstance(desired, nd.NDArray):
-        desired = desired.asnumpy()
-        if desired.shape == (1, ):
-            desired = desired[0]
-    numpy.testing.assert_equal(actual, desired)

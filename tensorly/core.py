@@ -130,7 +130,8 @@ class Registry(object):
                     backend = registry._backends[_STATE.backend]
                     if key in backend.dispatch:
                         return backend.dispatch[key]
-                super(RegistryModuleDispatch, self).__getattr__(self, key)
+                raise AttributeError("module %r has no attribute %r"
+                                     % (self.__name__, key))
 
             def __dir__(self):
                 out = set(super(RegistryModuleDispatch, self).__dir__())

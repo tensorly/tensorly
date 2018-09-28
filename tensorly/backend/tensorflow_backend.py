@@ -54,15 +54,13 @@ def tensor(data, dtype=np.float32, device=None, device_id=None):
     if isinstance(data, tf.Tensor):
         return data
 
-    if device is not None and device == 'GPU':
-        return tf.constant(data, dtype=dtype).gpu(device_id)
-    else:
-        return tf.constant(data, dtype=dtype)
+    out = tf.constant(data, dtype=dtype)
+    return out.gpu(device_id) if device == 'GPU' else out
 
 
 @backend.register
 def is_tensor(tensor):
-    isinstance(tensor, tf.Tensor)
+    return isinstance(tensor, tf.Tensor)
 
 
 @backend.register
@@ -190,31 +188,3 @@ def truncated_svd(matrix, n_eigenvecs=None):
 
 SVD_FUNS = {'numpy_svd':partial_svd, 'truncated_svd':truncated_svd}
 backend.register(SVD_FUNS, name='SVD_FUNS')
-
-
-backend.register(np.testing.assert_raises)
-backend.register(np.testing.assert_)
-
-
-@backend.register
-def assert_array_equal(a, b, **kwargs):
-    np.testing.assert_array_equal(to_numpy(a), to_numpy(b), **kwargs)
-
-
-@backend.register
-def assert_array_almost_equal(a, b, decimal=3, **kwargs):
-    np.testing.assert_array_almost_equal(to_numpy(a), to_numpy(b),
-                                         decimal=decimal, **kwargs)
-
-
-@backend.register
-def assert_equal(actual, desired, err_msg='', verbose=True):
-    if isinstance(actual, tf.Tensor):
-        actual = actual.numpy()
-        if actual.shape == (1, ):
-            actual = actual[0]
-    if isinstance(desired, tf.Tensor):
-        desired = desired.numpy()
-        if desired.shape == (1, ):
-            desired = desired[0]
-    np.testing.assert_equal(actual, desired)

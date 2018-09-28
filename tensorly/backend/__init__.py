@@ -573,28 +573,3 @@ def partial_svd(matrix, n_eigenvecs=None):
         Contains the left singular vectors
     """
     pass
-
-
-@_generics.add_method
-def assert_array_equal(a, b, **kwargs):
-    pass
-
-
-@_generics.add_method
-def assert_array_almost_equal(a, b, **kwargs):
-    pass
-
-
-@_generics.add_method
-def assert_raises(*args, **kwargs):
-    pass
-
-
-@_generics.add_method
-def assert_equal(*args, **kwargs):
-    pass
-
-
-@_generics.add_method
-def assert_(*args, **kwargs):
-    pass

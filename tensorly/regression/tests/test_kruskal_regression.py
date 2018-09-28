@@ -1,9 +1,11 @@
 import numpy as np
-from ..kruskal_regression import KruskalRegressor
-from ...base import tensor_to_vec, partial_tensor_to_vec
-from ...metrics.regression import RMSE
-from ...random import check_random_state
-from ... import backend as T
+
+import tensorly.backend as T
+from tensorly.regression.kruskal_regression import KruskalRegressor
+from tensorly.base import tensor_to_vec, partial_tensor_to_vec
+from tensorly.metrics.regression import RMSE
+from tensorly.random import check_random_state
+from tensorly.testing import assert_
 
 
 def test_KruskalRegressor():
@@ -34,10 +36,10 @@ def test_KruskalRegressor():
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
     error = RMSE(y_test, y_pred)
-    T.assert_(error <= tol, msg='Kruskal Regressor : RMSE is too large, {} > {}'.format(error, tol))
+    assert_(error <= tol, msg='Kruskal Regressor : RMSE is too large, {} > {}'.format(error, tol))
 
     params = estimator.get_params()
-    T.assert_(params['weight_rank'] == 4, msg='get_params did not return the correct parameters')
+    assert_(params['weight_rank'] == 4, msg='get_params did not return the correct parameters')
     params['weight_rank'] = 5
     estimator.set_params(**params)
-    T.assert_(estimator.weight_rank == 5, msg='set_params did not correctly set the given parameters')
+    assert_(estimator.weight_rank == 5, msg='set_params did not correctly set the given parameters')

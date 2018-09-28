@@ -47,21 +47,6 @@ def to_numpy(tensor):
 
 
 @backend.register
-def assert_array_equal(a, b, **kwargs):
-    return np.testing.assert_array_equal(a, b, **kwargs)
-
-
-@backend.register
-def assert_array_almost_equal(a, b, **kwargs):
-    np.testing.assert_array_almost_equal(to_numpy(a), to_numpy(b), **kwargs)
-
-
-backend.register(np.testing.assert_raises)
-backend.register(np.testing.assert_equal)
-backend.register(np.testing.assert_)
-
-
-@backend.register
 def shape(tensor):
     return tensor.shape
 

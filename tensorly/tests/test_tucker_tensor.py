@@ -1,8 +1,9 @@
 import numpy as np
-from .. import backend as T
-from ..base import unfold, tensor_to_vec
-from ..tucker_tensor import tucker_to_tensor, tucker_to_unfolded, tucker_to_vec
-from ..tenalg import kronecker
+from tensorly import backend as T
+from tensorly.base import unfold, tensor_to_vec
+from tensorly.tucker_tensor import tucker_to_tensor, tucker_to_unfolded, tucker_to_vec
+from tensorly.tenalg import kronecker
+from tensorly.testing import assert_array_equal, assert_array_almost_equal
 
 
 def test_tucker_to_tensor():
@@ -30,7 +31,7 @@ def test_tucker_to_tensor():
                          [5108, 19204, 33300, 47396],
                          [8692, 32516, 56340, 80164]]])
     res = tucker_to_tensor(X, U)
-    T.assert_array_equal(true_res, res)
+    assert_array_equal(true_res, res)
 
 
 def test_tucker_to_unfolded():
@@ -45,8 +46,8 @@ def test_tucker_to_unfolded():
     U = [T.tensor(np.random.random((ranks[i], G.shape[i]))) for i in range(T.ndim(G))]
     full_tensor = tucker_to_tensor(G, U)
     for mode in range(T.ndim(G)):
-        T.assert_array_almost_equal(tucker_to_unfolded(G, U, mode), unfold(full_tensor, mode))
-        T.assert_array_almost_equal(tucker_to_unfolded(G, U, mode),
+        assert_array_almost_equal(tucker_to_unfolded(G, U, mode), unfold(full_tensor, mode))
+        assert_array_almost_equal(tucker_to_unfolded(G, U, mode),
                                     T.dot(T.dot(U[mode], unfold(G, mode)), T.transpose(kronecker(U, skip_matrix=mode))),
                                     decimal=5)
 
@@ -62,5 +63,5 @@ def test_tucker_to_vec():
     ranks = [2, 2, 3, 4]
     U = [T.tensor(np.random.random((ranks[i], G.shape[i]))) for i in range(T.ndim(G))]
     vec = tensor_to_vec(tucker_to_tensor(G, U))
-    T.assert_array_almost_equal(tucker_to_vec(G, U), vec)
-    T.assert_array_almost_equal(tucker_to_vec(G, U), T.dot(kronecker(U), tensor_to_vec(G)), decimal=5)
+    assert_array_almost_equal(tucker_to_vec(G, U), vec)
+    assert_array_almost_equal(tucker_to_vec(G, U), T.dot(kronecker(U), tensor_to_vec(G)), decimal=5)
