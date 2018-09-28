@@ -89,7 +89,7 @@ def norm(tensor, order=2, axis=None):
     elif order == 2:
         return np.sqrt(np.sum(tensor**2, axis=axis))
     else:
-        return np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
+        return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
 
 
 @backend.register
@@ -100,8 +100,8 @@ def kr(matrices):
     start = ord('a')
     common_dim = 'z'
     target = ''.join(chr(start + i) for i in range(n_factors))
-    source = ','.join(i+common_dim for i in target)
-    operation = source+'->'+target+common_dim
+    source = ','.join(i + common_dim for i in target)
+    operation = source + '->' + target + common_dim
     return np.einsum(operation, *matrices).reshape((-1, n_columns))
 
 
@@ -146,13 +146,13 @@ def partial_svd(matrix, n_eigenvecs=None):
                 np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM'
             )
             S = np.sqrt(S)
-            V = np.dot(matrix.T.conj(), U * 1/S[None, :])
+            V = np.dot(matrix.T.conj(), U * 1 / S[None, :])
         else:
             S, V = scipy.sparse.linalg.eigsh(
                 np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM'
             )
             S = np.sqrt(S)
-            U = np.dot(matrix, V) * 1/S[None, :]
+            U = np.dot(matrix, V) * 1 / S[None, :]
 
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
