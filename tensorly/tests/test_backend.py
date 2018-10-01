@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 import numpy as np
 from scipy.linalg import svd
@@ -56,6 +58,42 @@ def test_set_backend():
     assert tl.get_backend() == toplevel_backend
 
 
+def test_set_backend_make_default():
+    pytest.importorskip('torch')
+
+    global_default = tl.get_backend()
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+
+        with tl.set_backend('numpy'):
+            assert tl.get_backend() == 'numpy'
+            # Changes only happen locally in this thread
+            assert executor.submit(tl.get_backend).result() == global_default
+
+        # Set the global default backend
+        try:
+            tl.set_backend('pytorch', make_default=True)
+
+            # Changed toplevel default in all threads
+            assert executor.submit(tl.get_backend).result() == 'pytorch'
+
+            with tl.set_backend('numpy'):
+                assert tl.get_backend() == 'numpy'
+
+                def check():
+                    assert tl.get_backend() == 'pytorch'
+                    with tl.set_backend('numpy') as ctx:
+                        assert tl.get_backend() == 'numpy'
+                    assert tl.get_backend() == 'pytorch'
+
+                executor.submit(check).result()
+        finally:
+            tl.set_backend(global_default, make_default=True)
+
+        assert tl.get_backend() == global_default
+        assert executor.submit(tl.get_backend).result() == global_default
+
+
 def test_backend_and_tensorly_module_attributes():
     for dtype in ['int32', 'int64', 'float32', 'float64']:
         assert dtype in dir(tl)
@@ -112,7 +150,7 @@ def test_unfold():
         unfolding = unfold(X, mode=mode)
         assert_array_equal(unfolding, unfoldings[mode])
         assert_array_equal(T.reshape(unfolding, (-1, )),
-                             T.reshape(unfoldings[mode], (-1,)))
+                           T.reshape(unfoldings[mode], (-1,)))
 
 
 def test_fold():
