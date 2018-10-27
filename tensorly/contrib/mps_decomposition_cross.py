@@ -91,12 +91,12 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
     # Initialize rank
     if rank[0] != 1:
         print(
-            'Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.'.format(
+            'Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1: setting rank[0] to 1.'.format(
                 rank[0]))
         rank[0] = 1
     if rank[-1] != 1:
         print(
-            'Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(
+            'Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(
                 rank[0]))
 
     # list col_idx: column indices (right indices) for skeleton-decomposition: indicate which columns used in each core.
