@@ -123,22 +123,21 @@ Note that some coefficients are almost zero (10e-16) but not exactly due to nume
 
 
 
-Tensor Train Decomposition
------------------------
+Matrix-Product-State / Tensor-Train Decomposition
+--------------------------------------------------
 
-The tensor train decomposition, also known as matrix product state in physics community, is a linear way to decomposition the high dimensional tensor. For a order d tensor A[i1,...,id], it splits each dimension into a order 3 sub-tensor, which we called factors or cores. One of the dimension of the sub-tensor is the real physical dimension, while the other two are edges connecting the cores before and after it.
+The tensor-train decomposition, also known as matrix product state in physics community, is a way of decompositing high order tensors into third order ones. For a order d tensor A[i1,...,id], it splits each dimension into a order 3 sub-tensor, which we called factors or cores. One of the dimension of the sub-tensor is the real physical dimension, while the other two are edges connecting the cores before and after it.
 
 .. math::
 
     A[i_1, \ldots, i_d] \approx \sum_{\alpha_1}\cdots\sum_{\alpha_{d-1}}G_1(i_1, \alpha_1)G_2(\alpha_1, i_2, \alpha_2)G_3(\alpha_2, i_3, \alpha_3)\cdots G_d(\alpha_{d-1},i_d)
 
-The advantage of tensor-train decomposition is that both of its number of entries (storage) and computational time is linear in dimensions, making high dimensional problem feasible.
+The advantage of the MPS/tensor-train decomposition is that both of its number of entries (storage) and computational time is linear in the number of dimensions, making high dimensional problem more easily addressable.
 
-Tucker decomposition
-+++++++++++++++++++++
+Implementations
++++++++++++++++
 
-
-Two tensor train decompositions are available in TensorLy: Standard Singular value decomposition method (:func:`tensorly.decomposition.mps_decomposition` and cross approximation method :func:`tensorly.decomposition.mps_decomposition_cross`).
+Two versions tensor train decompositions are available in TensorLy: and SVD-based decomposition method (:func:`tensorly.decomposition.mps_decomposition` and a cross approximation-based method :func:`tensorly.contrib.mps_decomposition_cross`).
 
 Using the same tensor as previously, we will perform a rank [1,2,1]-decomposition of the shape (12,12) `tensor` meaning the first core has shape (1,12,2) and the second has (2,12,1).:
 
@@ -169,7 +168,7 @@ As before, we can reconstruct a full tensor from our Tensor-train  decomposition
  [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
  [ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]]
 
-Note that for matrix, tensor-train decomposition is just singular value decomposition. This matrix is rank 2, so it can be fully recovered
+Note that for the matrix case, MPS/tensor-train decomposition is equivalent to a the singular value decomposition. This matrix is rank 2, so it can be fully recovered with a rank-2 decomposition.
 
 
 References
