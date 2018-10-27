@@ -24,7 +24,7 @@ from numpy import testing
 from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones, eye
 from mxnet.ndarray import moveaxis, dot, transpose, reshape
-from mxnet.ndarray import where, maximum, argmax, argmin, sign, prod, cast
+from mxnet.ndarray import where, maximum, argmax, argmin, sign, prod
 
 # Order 0 tensor, mxnet....
 from math import sqrt as scalar_sqrt
