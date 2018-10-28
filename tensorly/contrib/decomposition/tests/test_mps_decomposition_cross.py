@@ -1,6 +1,4 @@
 import tensorly as tl
-# tl.set_backend('pytorch')
-# tl.set_backend('mxnet')
 
 import numpy as np
 import itertools
@@ -10,7 +8,6 @@ from ..mps_decomposition_cross import matrix_product_state_cross
 from ....mps_tensor import mps_to_tensor
 from ....random import check_random_state
 
-# npr.seed(1)
 
 def test_matrix_product_state_cross_1():
     """ Test for matrix_product_state """
@@ -85,10 +82,6 @@ def test_matrix_product_state_cross_4():
     # TEST 4
     # Random tensor is not really compress-able. Test on a tensor as values of a function
 
-    # Create tensor with random elements
-    import numpy.random as npr
-    npr.seed(1)
-
     def getEquispaceGrid(n_dim, rng, subdivisions):
         '''
         Returns a grid of equally-spaced points in the specified number of dimensions
@@ -115,7 +108,6 @@ def test_matrix_product_state_cross_4():
 
         return values.reshape((n,)*d)
 
-
     def func (X):
         return sum(X)**3
 
@@ -138,5 +130,4 @@ def test_matrix_product_state_cross_4():
 
     print(error)
     tl.assert_(error < 1e-5, 'norm 2 of reconstruction higher than tol')
-
 
