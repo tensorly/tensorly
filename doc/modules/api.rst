@@ -212,3 +212,20 @@ In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, e
 
     synthetic.gen_image
 
+
+:mod:`tensorly.contrib`: Experimental features
+==============================================
+
+.. automodule:: tensorly.contrib
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.contrib
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    decomposition.matrix_product_state_cross
+
+
