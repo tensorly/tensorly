@@ -1,6 +1,8 @@
 from .. import backend as T
 from ..base import unfold, fold
 
+from tensorly import unfold, fold, vec_to_tensor
+
 def mode_dot(tensor, matrix_or_vector, mode):
         """n-mode product of a tensor and a matrix or vector at the specified mode
 
@@ -39,6 +41,7 @@ def mode_dot(tensor, matrix_or_vector, mode):
                         tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[1]
                     ))
             new_shape[mode] = matrix_or_vector.shape[0]
+            vec = False
 
         elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
             if matrix_or_vector.shape[0] != tensor.shape[mode]:
@@ -48,9 +51,9 @@ def mode_dot(tensor, matrix_or_vector, mode):
                     ))
             if len(new_shape) > 1:
                 new_shape.pop(mode)
-                fold_mode -= 1
             else:
                 new_shape = [1]
+            vec = True
 
         else:
             raise ValueError('Can only take n_mode_product with a vector or a matrix.'
@@ -58,7 +61,11 @@ def mode_dot(tensor, matrix_or_vector, mode):
 
         res = T.dot(matrix_or_vector, unfold(tensor, mode))
 
-        return fold(res, fold_mode, new_shape)
+        if vec: # We contracted with a vector, leading to a vector
+            return vec_to_tensor(res, shape=new_shape)
+        else: # tensor times vec: refold the unfolding
+            return fold(res, fold_mode, new_shape)
+
 
 def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False):
     """n-mode product of a tensor and several matrices or vectors over several modes
@@ -100,7 +107,10 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
     res = tensor
 
-    for i, (matrix_or_vec, mode) in enumerate(zip(matrix_or_vec_list, modes)):
+    # Order of mode dots doesn't matter for different modes
+    # Sorting by mode shouldn't change order for equal modes
+    factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
+    for i, (matrix_or_vec, mode) in enumerate(factors_modes):
         if (skip is not None) and (i == skip):
             continue
 
@@ -110,6 +120,6 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             res = mode_dot(res, matrix_or_vec, mode - decrement)
 
         if T.ndim(matrix_or_vec) == 1:
-            decrement = 1
+            decrement += 1
 
     return res
