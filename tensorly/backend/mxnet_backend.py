@@ -24,7 +24,7 @@ from numpy import testing
 from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones, eye
 from mxnet.ndarray import moveaxis, dot, transpose, reshape
-from mxnet.ndarray import where, maximum, sign, prod
+from mxnet.ndarray import where, maximum, argmax, argmin, sign, prod
 
 # Order 0 tensor, mxnet....
 from math import sqrt as scalar_sqrt
@@ -116,6 +116,20 @@ def max(tensor, *args, **kwargs):
     else:
         return numpy.max(tensor, *args, **kwargs)
 
+def argmax(data=None, axis=None):
+    res = nd.argmax(data, axis)
+    if res.shape == (1,):
+        return res.astype('int32').asscalar()
+    else:
+        return res
+
+def argmin(data=None, axis=None):
+    res = nd.argmin(data, axis)
+    if res.shape == (1,):
+        return res.astype('int32').asscalar()
+    else:
+        return res
+
 def abs(tensor, **kwargs):
     if isinstance(tensor, nd.NDArray):
         return nd.abs(tensor, **kwargs)
@@ -195,6 +209,7 @@ def kr(matrices):
         res = reshape(reshape(res, (s1, 1, s2))*reshape(e, (1, s3, s4)),
                       (-1, n_col))
     return res
+
 def qr(matrix):
     try:
         # NOTE - should be replaced with geqrf when available

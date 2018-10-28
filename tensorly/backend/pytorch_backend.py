@@ -58,11 +58,9 @@ def tensor(data, dtype=float32, device='cpu', requires_grad=False):
 
 def to_numpy(tensor):
     """Convert a tensor to numpy format
-
     Parameters
     ----------
     tensor : Tensor
-
     Returns
     -------
     ndarray
@@ -124,9 +122,11 @@ def clip(tensor, a_min=None, a_max=None, inplace=False):
 def all(tensor):
     return torch.sum(tensor != 0)
 
-def transpose(tensor):
-    axes = list(range(ndim(tensor)))[::-1]
+def transpose(tensor, axes=None):
+    if axes == None:
+        axes = list(range(ndim(tensor)))[::-1]
     return tensor.permute(*axes)
+
 
 def copy(tensor):
     return tensor.clone()
@@ -161,13 +161,11 @@ def solve(matrix1, matrix2):
 
 def norm(tensor, order=2, axis=None):
     """Computes the l-`order` norm of tensor.
-
     Parameters
     ----------
     tensor : ndarray
     order : int
     axis : int
-
     Returns
     -------
     float or tensor
@@ -203,29 +201,30 @@ def sum(tensor, axis=None):
 def concatenate(tensors, axis=0):
     return torch.cat(tensors, dim=axis)
 
+def argmin(input, axis=None):
+        return torch.argmin(input, dim=axis)
+
+def argmax(input, axis=None):
+        return torch.argmax(input, dim=axis)
+
+
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
-
         This can be seen as a column-wise kronecker product.
-
     Parameters
     ----------
     matrices : ndarray list
         list of matrices with the same number of columns, i.e.::
-
             for i in len(matrices):
                 matrices[i].shape = (n_i, m)
-
     Returns
     -------
     khatri_rao_product: matrix of shape ``(prod(n_i), m)``
         where ``prod(n_i) = prod([m.shape[0] for m in matrices])``
         i.e. the product of the number of rows of all the matrices in the product.
-
     Notes
     -----
     Mathematically:
-
     .. math::
          \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
          \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\text{ is of size } (\\prod_{k=1}^n I_k \\times R)
@@ -247,13 +246,11 @@ def kr(matrices):
 
 def _reverse(tensor, axis=0):
     """Reverses the elements along the specified dimension
-
     Parameters
     ----------
     tensor : tl.tensor
     axis : int, default is 0
         axis along which to reverse the ordering of the elements
-
     Returns
     -------
     reversed_tensor : for a 1-D tensor, returns the equivalent of
@@ -264,13 +261,11 @@ def _reverse(tensor, axis=0):
 
 def truncated_svd(matrix, n_eigenvecs=None):
     """Computes a truncated SVD on `matrix` using pytorch's SVD
-
     Parameters
     ----------
     matrix : 2D-array
     n_eigenvecs : int, optional, default is None
         if specified, number of eigen[vectors-values] to return
-
     Returns
     -------
     U : 2D-array
@@ -300,15 +295,12 @@ def truncated_svd(matrix, n_eigenvecs=None):
 
 def symeig_svd(matrix, n_eigenvecs=None):
     """Computes a truncated SVD on `matrix` using symeig
-
         Uses symeig on matrix.T.dot(matrix) or its transpose
-
     Parameters
     ----------
     matrix : 2D-array
     n_eigenvecs : int, optional, default is None
         if specified, number of eigen[vectors-values] to return
-
     Returns
     -------
     U : 2D-array
@@ -325,6 +317,7 @@ def symeig_svd(matrix, n_eigenvecs=None):
     if ndim(matrix) != 2:
         raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(ndim(matrix)))
     dim_1, dim_2 = shape(matrix)
+
     if dim_1 <= dim_2:
         min_dim = dim_1
         max_dim = dim_2
@@ -358,12 +351,9 @@ def symeig_svd(matrix, n_eigenvecs=None):
 
 def partial_svd(matrix, n_eigenvecs=None):
     """Computes a fast partial SVD on `matrix` using NumnPy
-
         if `n_eigenvecs` is specified, sparse eigendecomposition
         is used on either matrix.dot(matrix.T) or matrix.T.dot(matrix)
-
         Faster for very sparse svd (n_eigenvecs small) but uses numpy/scipy
-
     Parameters
     ----------
     matrix : 2D-array

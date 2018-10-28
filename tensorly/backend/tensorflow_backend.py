@@ -60,7 +60,7 @@ def tensor(data, dtype=numpy.float32, device=None, device_id=None):
         return data
     else:
         if device is not None and device == 'GPU':
-            return tf.constant(data, dtype=dtype).gpu(device_id)                                                                                                                                            
+            return tf.constant(data, dtype=dtype).gpu(device_id)
         else:
             return tf.constant(data, dtype=dtype)
 
@@ -145,27 +145,21 @@ def kron(matrix1, matrix2):
 
 def kr(matrices):
     """Khatri-Rao product of a list of matrices
-
         This can be seen as a column-wise kronecker product.
-
     Parameters
     ----------
     matrices : ndarray list
         list of matrices with the same number of columns, i.e.::
-
             for i in len(matrices):
                 matrices[i].shape = (n_i, m)
-
     Returns
     -------
     khatri_rao_product: matrix of shape ``(prod(n_i), m)``
         where ``prod(n_i) = prod([m.shape[0] for m in matrices])``
         i.e. the product of the number of rows of all the matrices in the product.
-
     Notes
     -----
     Mathematically:
-
     .. math::
          \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
          \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\text{ is of size } (\\prod_{k=1}^n I_k \\times R)
@@ -193,7 +187,7 @@ def norm(tensor, order=2, axis=None):
     tensor : ndarray
     order : int
     axis : int
-    
+
     Returns
     -------
     float or tensor
@@ -214,16 +208,13 @@ def shape(tensor):
     # return tuple(s.value for s in tensor.shape)
     return tuple(tensor.shape.as_list())
 
-
 def truncated_svd(matrix, n_eigenvecs=None):
     """Computes an SVD on `matrix`
-
     Parameters
     ----------
     matrix : 2D-array
     n_eigenvecs : int, optional, default is None
         if specified, number of eigen[vectors-values] to return
-
     Returns
     -------
     U : 2D-array
