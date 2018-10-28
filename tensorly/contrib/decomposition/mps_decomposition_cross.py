@@ -1,6 +1,6 @@
 import tensorly as tl
-from ..mps_tensor import mps_to_tensor
-from ..random import check_random_state
+from ...mps_tensor import mps_to_tensor
+from ...random import check_random_state
 import numpy as np
 
 def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):

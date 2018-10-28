@@ -6,9 +6,9 @@ import numpy as np
 import itertools
 import numpy.random as npr
 
-from .mps_decomposition_cross import matrix_product_state_cross
-from ..mps_tensor import mps_to_tensor
-from ..random import check_random_state
+from ..mps_decomposition_cross import matrix_product_state_cross
+from ....mps_tensor import mps_to_tensor
+from ....random import check_random_state
 
 # npr.seed(1)
 
