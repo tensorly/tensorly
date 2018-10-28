@@ -134,8 +134,8 @@ def test_multi_mode_dot():
 
     # Test contracting with a vector
     shape = (3, 5, 4, 2)
-    X = np.ones(shape)
-    vecs = [np.ones(s) for s in shape]
+    X = T.ones(shape)
+    vecs = [T.ones(s) for s in shape]
     res = multi_mode_dot(X, vecs)
     # result should be a scalar
     T.assert_equal(res.shape, (1,))
