@@ -4,7 +4,17 @@ from ..kruskal_tensor import kruskal_to_tensor
 from ..tucker_tensor import tucker_to_tensor
 from ..mps_tensor import mps_to_tensor
 from .. import backend as T
+import warnings
 
+def cp_tensor(*args, **kwargs):
+    message = "'cp_tensor' is depreciated, please use 'random_kruskal' instead"
+    warnings.warn(message, DeprecationWarning)
+    return random_kruskal(*args, **kwargs)
+
+def tucker_tensor(*args, **kwargs):
+    message = "'tucker_tensor' is depreciated, please use 'tucker_tensor' instead"
+    warnings.warn(message, DeprecationWarning)
+    return random_tucker(*args, **kwargs)
 
 def check_random_state(seed):
     """Returns a valid RandomState
