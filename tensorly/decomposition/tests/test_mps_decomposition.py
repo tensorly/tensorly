@@ -37,7 +37,7 @@ def test_matrix_product_state():
     tensor_shape = tensor.shape
 
     # Find MPS decomposition of the tensor
-    rank = [10, 5, 4, 3, 8, 10, 11]
+    rank = [1, 5, 4, 3, 8, 10, 1]
     factors = matrix_product_state(tensor, rank)
 
     for k in range(6):
