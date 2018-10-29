@@ -191,8 +191,9 @@ In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, e
    :toctree: generated/
    :template: function.rst
 
-   cp_tensor
-   tucker_tensor
+   random_kruskal
+   random_tucker
+   random_mps 
    check_random_state
 
 
