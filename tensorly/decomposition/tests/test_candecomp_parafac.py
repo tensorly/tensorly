@@ -5,7 +5,7 @@ from ..candecomp_parafac import (
     parafac, non_negative_parafac, normalize_factors, initialize_factors,
     sample_khatri_rao, randomised_parafac)
 from ...kruskal_tensor import kruskal_to_tensor
-from ...random import check_random_state, cp_tensor
+from ...random import check_random_state, random_kruskal
 from ...tenalg import khatri_rao
 from ... import backend as T
 
@@ -125,7 +125,7 @@ def test_randomised_parafac():
     
     # test tensor reconstructed properly
     tolerance = 0.05
-    tensor = cp_tensor(shape=(10, 10, 10), rank=4, full=True)
+    tensor = random_kruskal(shape=(10, 10, 10), rank=4, full=True)
     factors = randomised_parafac(tensor, rank=5, n_samples=100, max_stagnation=20, n_iter_max=100, tol=0, verbose=0)
     reconstruction = kruskal_to_tensor(factors)
     error = float(T.norm(reconstruction - tensor, 2)/T.norm(tensor, 2))

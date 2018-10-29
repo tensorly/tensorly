@@ -1,6 +1,6 @@
 import numpy as np
 
-from ...random import cp_tensor, check_random_state
+from ...random import random_kruskal, check_random_state
 from ..robust_decomposition import robust_pca
 from ... import backend as T
 
