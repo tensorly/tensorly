@@ -23,7 +23,7 @@ def least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
     input_factors : current estimates for the PARAFAC decomposition of
     input_tensor. The value of input_factor[update_mode] will be updated using
     a least squares update.
-    update_mode : the mode to be updated.
+    rank : rank of the decomposition.
     norm_tensor : the Frobenius norm of the input tensor
 
     Returns -------
@@ -33,7 +33,7 @@ def least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
 
     for mode in range(tl.ndim(input_tensor)):
 
-        # Unfolding (TODO: move inline vs precomputation?)
+        # Unfolding
         unfoldY = unfold(input_tensor,mode)
 
         # Computing Hadamard of cross-products
@@ -76,18 +76,18 @@ def nn_least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
     input_tensor : tensor of arbitrary order. 
     input_factors : current estimates for the PARAFAC decomposition of
     input_tensor. The value of input_factor[update_mode] will be updated using
-    a least squares update.
-    update_mode : the mode to be updated.
+    a projected least squares update.
+    rank : rank of the decomposition.
     norm_tensor : the Frobenius norm of the input tensor
 
     Returns -------
     out_factors : updated inputs factors
-    rec_error : residual error after the ALS steps.
+    rec_error : residual error after the projected ALS steps.
     """
 
     for mode in range(tl.ndim(input_tensor)):
 
-        # Unfolding (TODO: move inline vs precomputation?)
+        # Unfolding
         unfoldY = unfold(input_tensor,mode)
 
         # Computing Hadamard of cross-products
@@ -105,7 +105,7 @@ def nn_least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
                 tl.solve(tl.transpose(cross),tl.transpose(rhs)))
         
         # Projection on the nonnegative orthant
-        zero_factor = np.zeros(tl.shape(input_factors[mode])) #use tl.tensor
+        zero_factor = np.zeros(tl.shape(input_factors[mode])) #TODO: use tl.tensor
         input_factors[mode] = tl.maximum(input_factors[mode],zero_factor)
 
     # error computation (improved using precomputed quantities)
