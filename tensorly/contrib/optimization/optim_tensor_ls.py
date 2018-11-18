@@ -1,42 +1,118 @@
 import tensorly as tl
 import numpy as np
+from tensorly.base import unfold
+from tensorly.tenalg import khatri_rao
 
 # Author : Jeremy Cohen
 
 
-def least_squares_nway(input_tensor, input_factors, update_mode):
-    """ Least squares update along fixed mode update_mode
+def least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
+    """ One pass of Alternating Least squares update along all modes
 
-    Update the mode update_mode by solving a least squares problem. This is a
+    Update the factors by solving a least squares problem per mode. This is a
     first naive implementation to demonstrate the syntax of an optimization
     submodule.
 
     This function is strictly superior to a least squares solver ran on the
-    matricized problem min_X ||Y - AX||_F^2 since A is structured as a
+    matricized problems min_X ||Y - AX||_F^2 since A is structured as a
     Kronecker product of other factors.
 
     Parameters
     ----------
-    input_tensor : tensor of arbitrary order. If provided tensor is second
-    order, then it is supposed to be already unfolded. Otherwise, it is
-    unfolded along mode update_mode.
+    input_tensor : tensor of arbitrary order. 
     input_factors : current estimates for the PARAFAC decomposition of
     input_tensor. The value of input_factor[update_mode] will be updated using
     a least squares update.
     update_mode : the mode to be updated.
+    norm_tensor : the Frobenius norm of the input tensor
 
     Returns -------
-    out_factors : same as input_factors, except on mode
-    update_mode where a least squares rule is used to compute a new estimated
-    factor.
-    out_cross_products : A^t*Y and A^t*A. Useful for instance for
-    error computation, since evaluating the cost function requires such
-    products.
-
+    out_factors : updated inputs factors
+    rec_error : residual error after the ALS steps.
     """
 
-    # Compute Unfolding if required.
+    for mode in range(tl.ndim(input_tensor)):
 
-    # Computing cross-products
+        # Unfolding (TODO: move inline vs precomputation?)
+        unfoldY = unfold(input_tensor,mode)
 
-    # Update using backend linear system solver
+        # Computing Hadamard of cross-products
+        cross = tl.tensor(np.ones((rank, rank)), **tl.context(input_tensor))
+        for i, factor in enumerate(input_factors):
+            if i != mode:
+                cross = cross*tl.dot(tl.transpose(factor),factor)
+
+        # Computing the Khatri Rao product
+        krao = khatri_rao(input_factors,skip_matrix=mode)
+        rhs = tl.dot(unfoldY,krao)
+
+        # Update using backend linear system solver
+        input_factors[mode] = tl.transpose(
+                tl.solve(tl.transpose(cross),tl.transpose(rhs)))
+
+    # error computation (improved using precomputed quantities)
+    rec_error = norm_tensor ** 2 - 2*tl.dot(
+            tl.tensor_to_vec(factor),tl.tensor_to_vec(
+                rhs)) + tl.norm(tl.dot(factor,tl.transpose(krao)),2)**2
+    rec_error = rec_error ** (1/2) / norm_tensor
+
+    # outputs
+    return input_factors, rec_error
+
+def nn_least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
+    """ One pass of Nonnegative Alternating Least squares update along all modes
+    Implements a projected ALS which is often BAD, this is just for demo
+
+    Update the factors by solving a least squares problem per mode. This is a
+    first naive implementation to demonstrate the syntax of an optimization
+    submodule.
+
+    This function is strictly superior to a least squares solver ran on the
+    matricized problems min_X ||Y - AX||_F^2 since A is structured as a
+    Kronecker product of other factors.
+
+    Parameters
+    ----------
+    input_tensor : tensor of arbitrary order. 
+    input_factors : current estimates for the PARAFAC decomposition of
+    input_tensor. The value of input_factor[update_mode] will be updated using
+    a least squares update.
+    update_mode : the mode to be updated.
+    norm_tensor : the Frobenius norm of the input tensor
+
+    Returns -------
+    out_factors : updated inputs factors
+    rec_error : residual error after the ALS steps.
+    """
+
+    for mode in range(tl.ndim(input_tensor)):
+
+        # Unfolding (TODO: move inline vs precomputation?)
+        unfoldY = unfold(input_tensor,mode)
+
+        # Computing Hadamard of cross-products
+        cross = tl.tensor(np.ones((rank, rank)), **tl.context(input_tensor))
+        for i, factor in enumerate(input_factors):
+            if i != mode:
+                cross = cross*tl.dot(tl.transpose(factor),factor)
+
+        # Computing the Khatri Rao product
+        krao = khatri_rao(input_factors,skip_matrix=mode)
+        rhs = tl.dot(unfoldY,krao)
+
+        # Update using backend linear system solver
+        input_factors[mode] = tl.transpose(
+                tl.solve(tl.transpose(cross),tl.transpose(rhs)))
+        
+        # Projection on the nonnegative orthant
+        zero_factor = np.zeros(tl.shape(input_factors[mode])) #use tl.tensor
+        input_factors[mode] = tl.maximum(input_factors[mode],zero_factor)
+
+    # error computation (improved using precomputed quantities)
+    rec_error = norm_tensor ** 2 - 2*tl.dot(
+            tl.tensor_to_vec(factor),tl.tensor_to_vec(
+                rhs)) + tl.norm(tl.dot(factor,tl.transpose(krao)),2)**2
+    rec_error = rec_error ** (1/2) / norm_tensor
+
+    # outputs
+    return input_factors, rec_error
