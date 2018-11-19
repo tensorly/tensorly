@@ -31,23 +31,22 @@ def matrix_product_state(input_tensor, rank, verbose=False):
     n_dim = len(tensor_size)
 
     if isinstance(rank, int):
-        rank = [rank] * (n_dim+1)
+        rank = [1] + [rank] * (n_dim-1) + [1]
     elif n_dim+1 != len(rank):
         message = 'Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}'.format(
-            len(rank), n_dim)
+            len(rank), n_dim + 1)
         raise(ValueError(message))
 
     # Make sure it's not a tuple but a list
     rank = list(rank)
 
-    context = tl.context(input_tensor)
-
     # Initialization
     if rank[0] != 1:
-        print('Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.'.format(rank[0]))
-        rank[0] = 1
+        message = 'Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.'.format(rank[0])
+        raise ValueError(message)
     if rank[-1] != 1:
-        print('Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(rank[0]))
+        message = 'Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(rank[0])
+        raise ValueError(message)
 
     unfolding = input_tensor
     factors = [None] * n_dim

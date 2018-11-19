@@ -6,6 +6,7 @@ from tensorly.tenalg import kronecker, mode_dot, multi_mode_dot
 from tensorly.testing import (assert_array_equal, assert_equal,
                               assert_array_almost_equal, assert_raises)
 
+import itertools
 
 def test_mode_dot():
     """Test for mode_dot (n_mode_product)"""
@@ -40,11 +41,20 @@ def test_mode_dot():
     #######################
     # tensor times vector #
     #######################
+    # Test with a matrix
     U = T.tensor([1, 2, 3, 4])
     true_res = T.tensor([[70, 190],
                          [80, 200],
                          [90, 210]])
     res = mode_dot(X, U, 1)
+    assert_array_equal(true_res, res)
+    # Test with a third order tensor
+    X = T.tensor(np.arange(24).reshape((3, 4, 2)))
+    v = T.tensor(np.arange(4))
+    true_res = ([[ 28,  34],
+                 [ 76,  82],
+                 [124, 130]])
+    res = mode_dot(X, v, 1)
     assert_array_equal(true_res, res)
 
     # Using equivalence with unfolded expression
@@ -124,3 +134,20 @@ def test_multi_mode_dot():
     res_1 = multi_mode_dot(X, factors, skip=1)
     res_2 = multi_mode_dot(X, [factors[0]] + factors[2:], modes=[0, 2, 3])
     assert_array_equal(res_1, res_2)
+
+    # Test contracting with a vector
+    shape = (3, 5, 4, 2)
+    X = T.ones(shape)
+    vecs = [T.ones(s) for s in shape]
+    res = multi_mode_dot(X, vecs)
+    # result should be a scalar
+    assert_equal(res.shape, (1,))
+    assert_equal(res[0], np.prod(shape))
+    # Average pooling each mode
+    # Order should not matter
+    vecs = [vecs[i]/s for i, s in enumerate(shape)]
+    for modes in itertools.permutations(range(len(shape))):
+        res = multi_mode_dot(X, [vecs[i] for i in modes], modes=modes)
+        assert_equal(res.shape, (1,))
+        assert_equal(res[0], 1)
+

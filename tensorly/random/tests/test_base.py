@@ -2,7 +2,7 @@ import numpy as np
 from numpy.linalg import matrix_rank
 
 import tensorly.backend as T
-from tensorly.random.base import cp_tensor, tucker_tensor, check_random_state
+from tensorly.random.base import random_kruskal, random_tucker, random_mps, check_random_state
 from tensorly.tucker_tensor import tucker_to_tensor
 from tensorly.tenalg import multi_mode_dot
 from tensorly.base import unfold
@@ -27,24 +27,23 @@ def test_check_random_state():
     # only takes as seed a random state, an int or None
     assert_raises(ValueError, check_random_state, seed='bs')
 
-
-def test_cp_tensor():
-    """test for random.cp_tensor"""
+def test_random_kruskal():
+    """test for random.random_kruskal"""
     shape = (10, 11, 12)
     rank = 4
 
-    tensor = cp_tensor(shape, rank, full=True)
+    tensor = random_kruskal(shape, rank, full=True)
     for i in range(T.ndim(tensor)):
         assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
 
-    factors = cp_tensor(shape, rank, full=False)
+    factors = random_kruskal(shape, rank, full=False)
     for i, factor in enumerate(factors):
         assert_equal(factor.shape, (shape[i], rank),
                 err_msg=('{}-th factor has shape {}, expected {}'.format(
                      i, factor.shape, (shape[i], rank))))
 
     # tests that the columns of each factor matrix are indeed orthogonal
-    factors = cp_tensor(shape, rank, full=False, orthogonal=True)
+    factors = random_kruskal(shape, rank, full=False, orthogonal=True)
     for i, factor in enumerate(factors):
         for j in range(rank):
             for k in range(j):
@@ -59,19 +58,18 @@ def test_cp_tensor():
     with np.testing.assert_raises(ValueError):
         shape = (10, 11, 12)
         rank = 11
-        _ = cp_tensor(shape, rank, orthogonal=True)
+        _ = random_kruskal(shape, rank, orthogonal=True)
 
-
-def test_tucker_tensor():
-    """test for random.tucker_tensor"""
+def test_random_tucker():
+    """test for random.random_tucker"""
     shape = (10, 11, 12)
     rank = 4
 
-    tensor = tucker_tensor(shape, rank, full=True)
+    tensor = random_tucker(shape, rank, full=True)
     for i in range(T.ndim(tensor)):
         assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
 
-    core, factors = tucker_tensor(shape, rank, full=False)
+    core, factors = random_tucker(shape, rank, full=False)
     for i, factor in enumerate(factors):
         assert_equal(factor.shape, (shape[i], rank),
                 err_msg=('{}-th factor has shape {}, expected {}'.format(
@@ -79,11 +77,11 @@ def test_tucker_tensor():
 
     shape = (10, 11, 12)
     rank = (6, 4, 5)
-    tensor = tucker_tensor(shape, rank, full=True)
+    tensor = random_tucker(shape, rank, full=True)
     for i in range(T.ndim(tensor)):
         assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))),  min(shape[i], rank[i]))
 
-    core, factors = tucker_tensor(shape, rank, orthogonal=True, full=False)
+    core, factors = random_tucker(shape, rank, orthogonal=True, full=False)
     for i, factor in enumerate(factors):
         assert_equal(factor.shape, (shape[i], rank[i]),
                 err_msg=('{}-th factor has shape {}, expected {}.'.format(
@@ -97,4 +95,29 @@ def test_tucker_tensor():
     assert_array_almost_equal(core, reconstructed)
 
     with assert_raises(ValueError):
-        tucker_tensor((3, 4, 5), (3, 6, 3))
+        random_tucker((3, 4, 5), (3, 6, 3))
+
+
+def test_random_mps():
+    """test for random.random_mps"""
+    shape = (10, 11, 12)
+    rank = (1, 4, 3, 1)
+    true_shapes = [(1, 10, 4), (4, 11, 3), (3, 12, 1)]
+
+    factors = random_mps(shape, rank, full=False)
+    for i, (true_shape, factor) in enumerate(zip(true_shapes, factors)):
+        assert_equal(factor.shape, true_shape,
+                err_msg=('{}-th factor has shape {}, expected {}'.format(
+                     i, factor.shape, true_shape)))
+
+    # Missing a rank
+    with np.testing.assert_raises(ValueError):
+        shape = (10, 11, 12)
+        rank = (1, 3, 1)
+        _ = random_mps(shape, rank)
+
+    # Not respecting the boundary rank conditions
+    with np.testing.assert_raises(ValueError):
+        shape = (10, 11, 12)
+        rank = (1, 3, 3, 3)
+        _ = random_mps(shape, rank)

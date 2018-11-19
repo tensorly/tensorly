@@ -6,7 +6,7 @@ from tensorly.decomposition.candecomp_parafac import (
     parafac, non_negative_parafac, initialize_factors,
     sample_khatri_rao, randomised_parafac)
 from tensorly.kruskal_tensor import kruskal_to_tensor
-from tensorly.random import check_random_state, cp_tensor
+from tensorly.random import check_random_state, random_kruskal
 from tensorly.tenalg import khatri_rao
 from tensorly import backend as T
 from tensorly.testing import assert_array_equal, assert_
@@ -129,7 +129,7 @@ def test_randomised_parafac():
 
     # test tensor reconstructed properly
     tolerance = 0.05
-    tensor = cp_tensor(shape=(10, 10, 10), rank=4, full=True)
+    tensor = random_kruskal(shape=(10, 10, 10), rank=4, full=True)
     factors = randomised_parafac(tensor, rank=5, n_samples=100, max_stagnation=20, n_iter_max=100, tol=0, verbose=0)
     reconstruction = kruskal_to_tensor(factors)
     error = float(T.norm(reconstruction - tensor, 2)/T.norm(tensor, 2))

@@ -223,8 +223,9 @@ For each backend, tensorly provides the following uniform functions:
    :toctree: generated/
    :template: function.rst
 
-   cp_tensor
-   tucker_tensor
+   random_kruskal
+   random_tucker
+   random_mps 
    check_random_state
 
 
@@ -243,4 +244,21 @@ For each backend, tensorly provides the following uniform functions:
     :template: function.rst
 
     synthetic.gen_image
+
+
+:mod:`tensorly.contrib`: Experimental features
+==============================================
+
+.. automodule:: tensorly.contrib
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.contrib
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    decomposition.matrix_product_state_cross
+
 

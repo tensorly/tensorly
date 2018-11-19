@@ -78,8 +78,8 @@ class PyTorchBackend(Backend):
     def all(tensor):
         return torch.sum(tensor != 0)
 
-    def transpose(self, tensor):
-        axes = list(range(self.ndim(tensor)))[::-1]
+    def transpose(self, tensor, axes=None):
+        axes = axes or list(range(self.ndim(tensor)))[::-1]
         return tensor.permute(*axes)
 
     @staticmethod
@@ -140,6 +140,14 @@ class PyTorchBackend(Backend):
     @staticmethod
     def concatenate(tensors, axis=0):
         return torch.cat(tensors, dim=axis)
+
+    @staticmethod
+    def argmin(input, axis=None):
+            return torch.argmin(input, dim=axis)
+
+    @staticmethod
+    def argmax(input, axis=None):
+            return torch.argmax(input, dim=axis)
 
     @staticmethod
     def _reverse(tensor, axis=0):
@@ -265,7 +273,7 @@ class PyTorchBackend(Backend):
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
              'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
-             'abs', 'sqrt', 'sign', 'where', 'qr']:
+             'abs', 'sqrt', 'sign', 'where', 'qr', 'argmin', 'argmax']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)

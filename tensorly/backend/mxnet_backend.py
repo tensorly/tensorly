@@ -72,6 +72,22 @@ class MxnetBackend(Backend):
             return numpy.max(tensor, *args, **kwargs)
 
     @staticmethod
+    def argmax(data=None, axis=None):
+        res = nd.argmax(data, axis)
+        if res.shape == (1,):
+            return res.astype('int32').asscalar()
+        else:
+            return res
+
+    @staticmethod
+    def argmin(data=None, axis=None):
+        res = nd.argmin(data, axis)
+        if res.shape == (1,):
+            return res.astype('int32').asscalar()
+        else:
+            return res
+
+    @staticmethod
     def abs(tensor, **kwargs):
         if isinstance(tensor, nd.NDArray):
             return nd.abs(tensor, **kwargs)
@@ -239,7 +255,7 @@ for name in ['float64', 'float32', 'int64', 'int32']:
 
 for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
              'moveaxis', 'dot', 'transpose', 'reshape',
-             'where', 'sign', 'prod']:
+             'where', 'sign', 'prod', 'argmax', 'argmin']:
     MxnetBackend.register_method(name, getattr(nd, name))
 
 

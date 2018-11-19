@@ -70,7 +70,7 @@ class NumpyBackend(Backend):
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
              'zeros_like', 'eye', 'dot', 'kron', 'concatenate', 'max', 'min',
-             'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt']:
+             'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin', 'argmax']:
     NumpyBackend.register_method(name, getattr(np, name))
 
 
