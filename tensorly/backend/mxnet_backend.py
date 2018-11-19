@@ -255,7 +255,7 @@ for name in ['float64', 'float32', 'int64', 'int32']:
 
 for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
              'moveaxis', 'dot', 'transpose', 'reshape',
-             'where', 'sign', 'prod', 'argmax', 'argmin']:
+             'where', 'sign', 'prod']:
     MxnetBackend.register_method(name, getattr(nd, name))
 
 
