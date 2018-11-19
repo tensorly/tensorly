@@ -7,7 +7,7 @@ from .backend import (set_backend, get_backend,
                       concatenate, reshape, moveaxis, transpose,
                       arange, ones, zeros, zeros_like, eye,
                       clip, where,
-                      max, min, all, mean, sum, prod,
+                      max, min, argmax, argmin, all, mean, sum, prod,
                       sign, abs, sqrt,
                       norm, dot, kron, kr, solve, qr, partial_svd)
 

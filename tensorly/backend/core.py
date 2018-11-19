@@ -465,6 +465,35 @@ class Backend(object):
         """
         raise NotImplementedError
 
+
+    @staticmethod
+    def argmax(tensor):
+        """The argument of the max value in a tensor.
+
+        Parameters
+        ----------
+        tensor : tensor
+
+        Returns
+        -------
+        scalar
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def argmin(tensor):
+        """The argument of the min value in a tensor.
+
+        Parameters
+        ----------
+        tensor : tensor
+
+        Returns
+        -------
+        scalar
+        """
+        raise NotImplementedError
+
     @staticmethod
     def all(tensor):
         """Returns if all array elements in a tensor are True.
@@ -835,6 +864,8 @@ where = dispatch(Backend.where)
 clip = dispatch(Backend.clip)
 max = dispatch(Backend.max)
 min = dispatch(Backend.min)
+argmax = dispatch(Backend.argmax)
+argmin = dispatch(Backend.argmin)
 all = dispatch(Backend.all)
 mean = dispatch(Backend.mean)
 sum = dispatch(Backend.sum)
