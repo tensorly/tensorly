@@ -7,7 +7,7 @@ import numpy.random as npr
 from ..mps_decomposition_cross import matrix_product_state_cross
 from ....mps_tensor import mps_to_tensor
 from ....random import check_random_state
-
+from tensorly.testing import assert_
 
 def test_matrix_product_state_cross_1():
     """ Test for matrix_product_state """
@@ -73,7 +73,7 @@ def test_matrix_product_state_cross_3():
     reconstructed_tensor = mps_to_tensor(factors)
     error = tl.norm(reconstructed_tensor - tensor, 2)
     error /= tl.norm(tensor, 2)
-    tl.assert_(error < tol,
+    assert_(error < tol,
               'norm 2 of reconstruction higher than tol')
 
 def test_matrix_product_state_cross_4():
@@ -129,5 +129,4 @@ def test_matrix_product_state_cross_4():
     error /= tl.norm(value, 2)
 
     print(error)
-    tl.assert_(error < 1e-5, 'norm 2 of reconstruction higher than tol')
-
+    assert_(error < 1e-5, 'norm 2 of reconstruction higher than tol')
