@@ -154,7 +154,7 @@ for name in ['float64', 'float32', 'int64', 'int32']:
     TensorflowBackend.register_method(name, getattr(np, name))
 
 for name in ['ones', 'zeros', 'zeros_like', 'eye', 'reshape', 'transpose',
-             'where', 'sign', 'abs', 'sqrt', 'qr']:
+             'where', 'sign', 'abs', 'sqrt', 'qr', 'argmin', 'argmax']:
     TensorflowBackend.register_method(name, getattr(tf, name))
 
 for name in ['min', 'max', 'mean', 'sum', 'prod', 'all']:
