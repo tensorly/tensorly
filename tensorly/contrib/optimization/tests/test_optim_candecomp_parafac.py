@@ -1,6 +1,7 @@
 # root ipython in tensorly folder
-# cd Online/tensorly/ 
+# cd ~/.../tensorly/ 
 
+import time
 import matplotlib.pyplot as plt
 import tensorly as tl
 import numpy as np
@@ -32,22 +33,34 @@ cp_rank = 25
 tucker_rank = [100, 100, 2]
 
 # Perform the CP decomposition
+t = time.time()
 factors, errors = cpdfuns.parafac(image, rank=cp_rank, init='random', tol=10e-6,
         return_errors=True, n_iter_max=1000 )
+elapsed = time.time() - t
+t = time.time()
 factors_tl, errors_tl = parafac(image, rank=cp_rank, init='random', tol=10e-6,
         return_errors=True, n_iter_max=1000)
+elapsed_tl = time.time() - t
 
 # Perform Nonnegative CP decomposition
+t = time.time()
 factors_nn, errors_nn = cpdfuns.parafac(image, rank=cp_rank, init='random', tol=10e-6,
         return_errors=True, method='NALS', n_iter_max=1000)
+elapsed_nn = time.time() - t
+t = time.time()
 factors_nn_tl = non_negative_parafac(image, rank=cp_rank, init='random',
         tol=10e-6, n_iter_max=1000)
+elapsed_tl_nn = time.time() - t
 
 # Reconstruct the image from the factors
 cp_reconstruction = tl.kruskal_to_tensor(factors)
 cp_reconstruction_tl = tl.kruskal_to_tensor(factors_tl)
 cp_reconstruction_nn = tl.kruskal_to_tensor(factors_nn)
 cp_reconstruction_nn_tl = tl.kruskal_to_tensor(factors_nn_tl)
+
+# Printing computation times
+print('Tensorly current parafac: ', elapsed_tl)
+print('Tensorly proposed parafac with optimization tbx: ', elapsed)
 
 # plotting original and reconstructions
 # Plotting the original and reconstruction from the decompositions

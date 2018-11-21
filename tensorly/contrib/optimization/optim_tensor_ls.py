@@ -105,8 +105,7 @@ def nn_least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
                 tl.solve(tl.transpose(cross),tl.transpose(rhs)))
         
         # Projection on the nonnegative orthant
-        zero_factor = np.zeros(tl.shape(input_factors[mode])) #TODO: use tl.tensor
-        input_factors[mode] = tl.maximum(input_factors[mode],zero_factor)
+        input_factors[mode][input_factors[mode]<0] = 0
 
     # error computation (improved using precomputed quantities)
     rec_error = norm_tensor ** 2 - 2*tl.dot(
