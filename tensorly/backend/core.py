@@ -28,7 +28,7 @@ def _initialize_default_backend():
         warnings.warn(msg, UserWarning)
         backend = default
 
-    set_backend(backend, make_default=True)
+    set_backend(backend, make_session_default=True)
 
 
 class set_backend(object):
@@ -40,7 +40,7 @@ class set_backend(object):
     ----------
     backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
         The name of the backend to use. Default is 'numpy'.
-    make_default : bool, optional
+    make_session_default : bool, optional
         If True, the backend will become the default backend for all threads.
         Note that this only affects threads where the backend hasn't already
         been explicitly set. If False (default) the backend is only set
@@ -55,22 +55,22 @@ class set_backend(object):
 
     Set the backend to numpy globally for all threads:
 
-    >>> tl.set_backend('numpy', make_default=True)
+    >>> tl.set_backend('numpy', make_session_default=True)
 
     Set the backend to use pytorch inside a context:
 
     >>> with tl.set_backend('pytorch'):  # doctest: +SKIP
     ...     pass
     """
-    def __init__(self, backend, make_default=False):
+    def __init__(self, backend, make_session_default=False):
         if not isinstance(backend, Backend):
             if backend not in _LOADED_BACKENDS:
                 # load the backend
                 if backend in _KNOWN_BACKENDS:
-                    importlib.import_module('tensorly.backend.%s_backend' % backend)
+                    importlib.import_module('tensorly.backend.{0}_backend'.format(backend))
                 else:
-                    msg = ("Unknown backend %r, known backends are {%s}"
-                           % (backend, ', '.join(map(repr, _KNOWN_BACKENDS))))
+                    msg = "Unknown backend {0!r}, known backends are {{{1}}}".format(
+                            backend, ', '.join(map(repr, _KNOWN_BACKENDS)))
                     raise ValueError(msg)
             backend = _LOADED_BACKENDS[backend]
 
@@ -78,12 +78,12 @@ class set_backend(object):
         self._old_backend = getattr(_STATE, 'backend', None)
         self._new_backend = _STATE.backend = backend
 
-        if make_default:
+        if make_session_default:
             global _DEFAULT_BACKEND
             _DEFAULT_BACKEND = backend
 
     def __repr__(self):
-        return 'tensorly.set_backend(%r)' % self._new_backend.backend_name
+        return 'tensorly.set_backend({0!r})'.format(self._new_backend.backend_name)
 
     def __enter__(self):
         return None
@@ -125,11 +125,11 @@ class BackendAttributeModuleType(types.ModuleType):
 
 
 def wrap_module(module_name):
-    """Wrap a module to dynamically dispatch attributes to the registry.
+    """Wrap a module to dynamically dispatch attributes to the backend.
 
     Intended use is
 
-    >>> registry.wrap_module(__name__)
+    >>> tl.wrap_module(__name__)
     """
     sys.modules[module_name].__class__ = BackendAttributeModuleType
 

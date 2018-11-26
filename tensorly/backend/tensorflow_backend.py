@@ -149,19 +149,36 @@ class TensorflowBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.truncated_svd}
 
-
-for name in ['float64', 'float32', 'int64', 'int32']:
-    TensorflowBackend.register_method(name, getattr(np, name))
-
-for name in ['ones', 'zeros', 'zeros_like', 'eye', 'reshape', 'transpose',
-             'where', 'sign', 'abs', 'sqrt', 'qr', 'argmin', 'argmax']:
-    TensorflowBackend.register_method(name, getattr(tf, name))
-
-for name in ['min', 'max', 'mean', 'sum', 'prod', 'all']:
-    TensorflowBackend.register_method(name, getattr(tf, 'reduce_' + name))
-
-TensorflowBackend.register_method('copy', tf.identity)
-TensorflowBackend.register_method('concatenate', tf.concat)
-
+_FUN_NAMES = [
+    # source_fun, target_fun
+    (np.int32, 'int32'),
+    (np.int64, 'int64'),
+    (np.float32, 'float32'),
+    (np.float64, 'float64'),
+    (tf.ones, 'ones'),
+    (tf.zeros, 'zeros'),
+    (tf.zeros_like, 'zeros_like'),
+    (tf.eye, 'eye'),
+    (tf.reshape, 'reshape'),
+    (tf.transpose, 'transpose'),
+    (tf.where, 'where'),
+    (tf.sign, 'sign'),
+    (tf.abs, 'abs'),
+    (tf.sqrt, 'sqrt'),
+    (tf.qr, 'qr'),
+    (tf.argmin, 'argmin'),
+    (tf.argmax, 'argmax'),
+    (tf.identity, 'copy'),
+    (tf.concat, 'concatenate'),
+    (tf.reduce_min, 'min'),
+    (tf.reduce_max, 'max'),
+    (tf.reduce_mean, 'mean'),
+    (tf.reduce_sum, 'sum'),
+    (tf.reduce_prod, 'prod'),
+    (tf.reduce_all, 'all'),
+    ]
+for source_fun, target_fun_name in _FUN_NAMES:
+    TensorflowBackend.register_method(target_fun_name, source_fun)
+del _FUN_NAMES
 
 register_backend(TensorflowBackend())
