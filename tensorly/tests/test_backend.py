@@ -58,7 +58,7 @@ def test_set_backend():
     assert tl.get_backend() == toplevel_backend
 
 
-def test_set_backend_make_default():
+def test_set_backend_make_session_default():
     pytest.importorskip('torch')
 
     global_default = tl.get_backend()
@@ -72,7 +72,7 @@ def test_set_backend_make_default():
 
         # Set the global default backend
         try:
-            tl.set_backend('pytorch', make_default=True)
+            tl.set_backend('pytorch', make_session_default=True)
 
             # Changed toplevel default in all threads
             assert executor.submit(tl.get_backend).result() == 'pytorch'
@@ -88,7 +88,7 @@ def test_set_backend_make_default():
 
                 executor.submit(check).result()
         finally:
-            tl.set_backend(global_default, make_default=True)
+            tl.set_backend(global_default, make_session_default=True)
 
         assert tl.get_backend() == global_default
         assert executor.submit(tl.get_backend).result() == global_default
