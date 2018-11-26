@@ -209,7 +209,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
                     break
-                    
+
     if return_errors:
         return factors, rec_errors
     else:
@@ -292,7 +292,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
 
 
-def sample_khatri_rao(matrices, n_samples, skip_matrix=None, 
+def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
                       return_sampled_rows=False, random_state=None):
     """Random subsample of the Khatri-Rao product of the given list of matrices
 
@@ -305,17 +305,17 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
 
             for i in len(matrices):
                 matrices[i].shape = (n_i, m)
-                
+
     n_samples : int
         number of samples to be taken from the Khatri-Rao product
 
     skip_matrix : None or int, optional, default is None
         if not None, index of a matrix to skip
-        
-    random_state : None, int or numpy.random.RandomState 
+
+    random_state : None, int or numpy.random.RandomState
         if int, used to set the seed of the random number generator
         if numpy.random.RandomState, used to generate random_samples
-    
+
     returned_sampled_rows : bool, default is False
         if True, also returns a list of the rows sampled from the full
         khatri-rao product
@@ -324,10 +324,10 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
     -------
     sampled_Khatri_Rao : ndarray
         The sampled matricised tensor Khatri-Rao with `n_samples` rows
-        
+
     indices : tuple list
         a list of indices sampled for each mode
-    
+
     indices_kr : int list
         list of length `n_samples` containing the sampled row indices
     """
@@ -341,7 +341,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
 
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
-     
+
     n_factors = len(matrices)
     rank = tl.shape(matrices[0])[1]
     sizes = [tl.shape(m)[0] for m in matrices]
@@ -353,12 +353,12 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
         indices_kr = np.zeros((n_samples), dtype=int)
         for size, indices in zip(sizes, indices_list):
             indices_kr = indices_kr*size + indices
-    
+
     # Compute the Khatri-Rao product for the chosen indices
     sampled_kr = tl.ones((n_samples, rank), **tl.context(matrices[0]))
     for indices, matrix in zip(indices_list, matrices):
         sampled_kr = sampled_kr*matrix[indices, :]
-        
+
     if return_sampled_rows:
         return sampled_kr, indices_list, indices_kr
     else:
@@ -420,20 +420,20 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
             if mode:
                 sampled_unfolding = tensor[indices_list]
             else:
-                sampled_unfolding = tl.transpose(tensor[indices_list]) 
-                
+                sampled_unfolding = tl.transpose(tensor[indices_list])
+
             pseudo_inverse = tl.dot(tl.transpose(kr_prod), kr_prod)
             factor = tl.dot(tl.transpose(kr_prod), sampled_unfolding)
             factor = tl.transpose(tl.solve(pseudo_inverse, factor))
             factors[mode] = factor
-            
+
         if max_stagnation or tol:
             rec_error = tl.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
             if not min_error or rec_error < min_error:
                 min_error = rec_error
                 stagnation = -1
             stagnation += 1
-                    
+
             rec_errors.append(rec_error)
 
             if iteration > 1:
