@@ -190,7 +190,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             for i, factor in enumerate(factors):
                 if i != mode:
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
-            factor = tl.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode))
+            unfolded = unfold(tensor, mode)
+            kr_factors = khatri_rao(factors, skip_matrix=mode)
+            factor = tl.dot(unfolded, kr_factors)
             factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(factor)))
             factors[mode] = factor
 
