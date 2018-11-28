@@ -6,5 +6,6 @@ Development guide
 
    contributing.rst
    documentation.rst
+   sparse_backend.rst
 
 
