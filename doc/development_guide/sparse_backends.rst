@@ -9,8 +9,11 @@ contains a mirror of the interfaces in the usual, dense ``tensorly`` package.
 For example, unfolding a sparse tensor would use::
 
     >>> import numpy as np
+    >>> import sparse
     >>> from tensorly.contrib.sparse import tensor, unfold
-    >>> X = tl.tensor(np.arange(24).reshape((3, 4, 2)))
+    >>> X = sparse.COO(np.arange(24).reshape((3, 4, 2)))
+    >>> X = sparse.COO(X.coords, X.data, shape=(100, 100, 100))
+    >>> X = tl.tensor(X)
     >>> unfold(X, 0) # mode-1 unfolding
     array([[ 0,  1,  2,  3,  4,  5,  6,  7],
            [ 8,  9, 10, 11, 12, 13, 14, 15],
@@ -26,7 +29,7 @@ be applied to the sparse implementations. This is because many backends
 naively support both dense and sparse tensors as distinct objects. For example,
 TensorFlow and PyTorch both support separate interfaces for dense and sparse
 representations. Using TensorLy's dense or sparse interfaces will give you
-appropriate objects of for the selected backend.
+appropriate objects for the selected backend.
 
 However, not all backends have a native sparse representation. For instance,
 NumPy lacks a sparse object. In these cases, TensorLy makes opinionated decisions
