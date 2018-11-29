@@ -14,7 +14,7 @@ def wrap(func):
     return inner
 
 
-tensor = wrap(backend.tensor)
+sparse_tensor = tensor = wrap(backend.tensor)
 is_tensor = wrap(backend.is_tensor)
 context = wrap(backend.context)
 shape = wrap(backend.shape)
