@@ -1,9 +1,10 @@
 import numpy as np
 
 import tensorly.backend as T
-from tensorly.decomposition.robust_decomposition import robust_pca
-from tensorly.random import check_random_state
-from tensorly.testing import assert_array_equal, assert_, assert_array_almost_equal
+from ...random import random_kruskal, check_random_state
+from ..robust_decomposition import robust_pca
+from ... import backend as T
+from ...testing import assert_array_equal, assert_, assert_array_almost_equal
 
 def test_RPCA():
     """Test for RPCA"""

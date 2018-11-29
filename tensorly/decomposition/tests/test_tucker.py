@@ -1,9 +1,10 @@
 import tensorly.backend as T
-from tensorly.decomposition._tucker import tucker, partial_tucker, non_negative_tucker
-from tensorly.tucker_tensor import tucker_to_tensor
-from tensorly.tenalg import multi_mode_dot
-from tensorly.random import check_random_state
-from tensorly.testing import assert_equal, assert_
+from ... import backend as T
+from .._tucker import tucker, partial_tucker, non_negative_tucker
+from ...tucker_tensor import tucker_to_tensor
+from ...tenalg import multi_mode_dot
+from ...random import check_random_state
+from ...testing import assert_equal, assert_
 
 
 def test_partial_tucker():

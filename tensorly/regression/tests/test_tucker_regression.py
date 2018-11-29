@@ -1,10 +1,10 @@
 import numpy as np
 
-import tensorly.backend as T
-from tensorly.regression.tucker_regression import TuckerRegressor
-from tensorly.base import tensor_to_vec, partial_tensor_to_vec
-from tensorly.metrics.regression import RMSE
-from tensorly.testing import assert_
+from ..tucker_regression import TuckerRegressor
+from ...base import tensor_to_vec, partial_tensor_to_vec
+from ...metrics.regression import RMSE
+from ... import backend as T
+from ...testing import assert_
 
 
 def test_TuckerRegressor():

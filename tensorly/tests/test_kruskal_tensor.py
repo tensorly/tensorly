@@ -1,12 +1,10 @@
 import numpy as np
 
 import tensorly as tl
-import tensorly.backend as T
-from tensorly.tenalg import khatri_rao
-from tensorly.kruskal_tensor import (kruskal_to_tensor, kruskal_to_unfolded,
-                                     kruskal_to_vec)
-from tensorly.base import unfold, tensor_to_vec
-from tensorly.testing import assert_array_equal, assert_array_almost_equal
+from ..tenalg import khatri_rao
+from ..kruskal_tensor import kruskal_to_tensor, kruskal_to_unfolded, kruskal_to_vec
+from ..base import unfold, tensor_to_vec
+from ..testing import assert_array_equal, assert_array_almost_equal
 
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>

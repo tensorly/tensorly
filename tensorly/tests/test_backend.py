@@ -5,11 +5,13 @@ import numpy as np
 from scipy.linalg import svd
 
 import tensorly as tl
-from tensorly import backend as T
-from tensorly.base import (fold, unfold, partial_fold, partial_unfold,
-                           tensor_to_vec, vec_to_tensor, partial_tensor_to_vec,
-                           partial_vec_to_tensor)
-from tensorly.testing import (assert_array_equal, assert_equal, assert_,
+from ..backend import numpy_backend
+from .. import backend as T
+from ..base import fold, unfold
+from ..base import partial_fold, partial_unfold
+from ..base import tensor_to_vec, vec_to_tensor
+from ..base import partial_tensor_to_vec, partial_vec_to_tensor
+from ..testing import (assert_array_equal, assert_equal, assert_,
                               assert_array_almost_equal, assert_raises)
 
 # Author: Jean Kossaifi

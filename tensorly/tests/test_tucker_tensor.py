@@ -1,9 +1,10 @@
 import numpy as np
-from tensorly import backend as T
-from tensorly.base import unfold, tensor_to_vec
-from tensorly.tucker_tensor import tucker_to_tensor, tucker_to_unfolded, tucker_to_vec
-from tensorly.tenalg import kronecker
-from tensorly.testing import assert_array_equal, assert_array_almost_equal
+
+from .. import backend as T
+from ..base import unfold, tensor_to_vec
+from ..tucker_tensor import tucker_to_tensor, tucker_to_unfolded, tucker_to_vec
+from ..tenalg import kronecker
+from ..testing import assert_array_equal, assert_array_almost_equal
 
 
 def test_tucker_to_tensor():

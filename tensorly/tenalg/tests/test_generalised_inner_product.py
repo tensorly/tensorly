@@ -1,8 +1,8 @@
 import numpy as np
 
-import tensorly.backend as T
-from tensorly.tenalg.generalised_inner_product import inner
-from tensorly.testing import assert_equal, assert_array_almost_equal, assert_raises
+from ... import backend as T
+from ..generalised_inner_product import inner
+from ...testing import assert_equal, assert_array_almost_equal, assert_raises
 
 # Author: Jean Kossaifi
 # License: BSD 3 clause

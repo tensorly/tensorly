@@ -1,9 +1,9 @@
 import numpy as np
 
 import tensorly as tl
-import tensorly.backend as T
-from tensorly.decomposition import matrix_product_state
-from tensorly.testing import assert_array_almost_equal
+from ..decomposition import matrix_product_state
+from ..mps_tensor import mps_to_tensor
+from ..testing import assert_array_almost_equal
 
 
 def test_mps_to_tensor():

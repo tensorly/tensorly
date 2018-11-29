@@ -1,8 +1,8 @@
 import numpy as np
 
-import tensorly.backend as T
-from tensorly.testing import assert_array_equal
-from tensorly.datasets.synthetic import gen_image
+from ... import backend as T
+from ..synthetic import gen_image
+from ...testing import assert_array_equal
 
 
 def test_gen_image():

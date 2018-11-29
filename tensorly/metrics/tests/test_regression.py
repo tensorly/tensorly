@@ -1,9 +1,9 @@
 import numpy as np
 
 import tensorly.backend as T
-from tensorly.metrics.regression import MSE, RMSE, correlation
-from tensorly.testing import assert_array_almost_equal
-
+from ... import backend as T
+from ..regression import MSE, RMSE, correlation
+from ...testing import assert_array_almost_equal
 
 def test_MSE():
     """Test for MSE"""
