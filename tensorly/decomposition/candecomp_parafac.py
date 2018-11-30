@@ -185,7 +185,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
         if orthogonalise and iteration <= orthogonalise:
             factor = [tl.qr(factor)[0] for factor in factors]
 
+        if verbose:
+            print("Starting iteration", iteration)
         for mode in range(tl.ndim(tensor)):
+            if verbose:
+                print("Mode", mode)
             pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
@@ -196,6 +200,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             import sparse
             mttkrp_parts = []
             for r in range(rank):
+                if verbose:
+                    print("Rank", r, "of", rank)
                 partial_factor = np.moveaxis(tensor, mode, -1).T
                 for i, f in enumerate(factors):
                     if i == mode:
@@ -210,11 +216,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             rec_error = tl.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
             rec_errors.append(rec_error)
 
-            if iteration > 1:
-                if verbose:
-                    print('reconstruction error={}, variation={}.'.format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+            if verbose:
+                print('reconstruction error={}, variation={}.'.format(
+                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
+            if iteration > 1:
                 if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
