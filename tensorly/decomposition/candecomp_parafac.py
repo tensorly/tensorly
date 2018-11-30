@@ -194,17 +194,16 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             # kr_factors = khatri_rao(factors, skip_matrix=mode)
             # factor = tl.dot(unfolded, kr_factors)
             import sparse
-            factor = []
+            mttkrp_parts = []
             for r in range(rank):
                 partial_factor = np.moveaxis(tensor, mode, -1).T
                 for i, f in enumerate(factors):
                     if i == mode:
                         continue
                     partial_factor = partial_factor.dot(f[:,r])
-                factor.append(partial_factor)
-            factor = sparse.stack(factor, axis=1)
-
-            factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(factor)))
+                mttkrp_parts.append(partial_factor)
+            mttkrp = sparse.stack(mttkrp_parts, axis=1)
+            factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp)))
             factors[mode] = factor
 
         if tol:
