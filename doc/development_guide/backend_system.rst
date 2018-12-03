@@ -33,3 +33,31 @@ third-party libraries that wish to ensure a particular backend is used,
 no matter what the global backend is set to at the time the library code
 is executed.
 
+How the Backend System Works
+----------------------------
+When a backend is set, the backend specific module (called
+``tensorly.backend.{name}_backend``) is dynamically imported (via ``importlib``)
+if the backend has not already been loaded. Once the backend is loaded, it is
+grabbed from an internal cache (called ``tensorly.backend.core._LOADED_BACKENDS``)
+and set as the current backend (called ``tensorly.backend.core._STATE.backend``).
+
+The backends themselves are instances of the ``tensorly.backend.core.Backend`` class
+or subclasses, which implement ``staticmethods`` of the common TensorLy API
+(e.g. ``tensor``, ``fold``, ``norm``, etc.). These backend classes are added to the
+``_LOADED_BACKENDS`` cache on import of the backend module
+(``tensorly.backend.{name}_backend``) via the ``register_backend`` functions.
+
+The TensorLy API functions are then dynamically farmed out to the backend
+staticmethods via the dispatching mechanism provided by
+``tensorly.backend.core.dispatch``. This ensure that the API function is
+wrapped such that it has the correct docstring, name, function signature, and
+other required minutia.
+
+Additionally, the modules themselves are also wrapped such that certain
+global (module-level) variables ar dynamically dispatched as well, like
+``property`` or other class descriptors. This is to ensure that variables
+such as ``int32`` or ``float64`` point to the correct, backend-specific
+object.  For example, numpy's ``np.int32`` and tensorflow's ``tf.int32``
+are not compatible. The dynamic dispatch of these module-level varaibles
+is implemented in the ``tensorly.backend.core.BackendAttributeModuleType``
+class.
