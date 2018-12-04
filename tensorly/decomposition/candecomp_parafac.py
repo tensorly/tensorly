@@ -88,21 +88,6 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
             return [tl.abs(f) for f in factors]
         else:
             return factors
-
-    elif init == 'random-sparse':
-        import sparse
-        vals = 2
-        # We need to pick the factors so that they are sparse, but still have
-        # nonzero entries somewhere that the KR product will produce a nonzero
-        # matrix in the ALS algorithm. To do this, we put a nonzero entry
-        # corresponding to the first nonzero entry in tensor.
-        factors = [tl.tensor(sparse.COO(data=rng.random_sample((vals*rank,)),
-            coords=[[tensor.coords.T[j][i] for j in range(vals) for k in range(rank)], list(range(rank))*vals],
-            shape=(tensor.shape[i], rank)),  **tl.context(tensor)) for i in range(tl.ndim(tensor))]
-        if non_negative:
-            return [tl.abs(f) for f in factors]
-        else:
-            return factors
     elif init == 'svd':
         try:
             svd_fun = tl.SVD_FUNS[svd]
