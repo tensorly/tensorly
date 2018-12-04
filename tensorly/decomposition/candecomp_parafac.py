@@ -213,7 +213,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             factors[mode] = factor
 
         if tol:
-            rec_error = tl.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+            factors_norm = tl.sum(tl.prod(sparse.stack([f.T.dot(f) for f in factors], 0), axis=0))
+            # mttkrp and factor for the last mode. This is equivalent to the
+            # inner product <tensor, factorization>
+            iprod = tl.sum(mttkrp*factor)
+            # Subtract iprod from each term to avoid loss of significance
+            rec_error = tl.sqrt(tl.abs((norm_tensor - iprod) + (factors_norm - iprod))) / norm_tensor
             rec_errors.append(rec_error)
 
             if verbose:
