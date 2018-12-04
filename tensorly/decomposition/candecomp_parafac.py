@@ -200,7 +200,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             # unfolded = unfold(tensor, mode)
             # kr_factors = khatri_rao(factors, skip_matrix=mode)
             # factor = tl.dot(unfolded, kr_factors)
-            import sparse
+
             mttkrp_parts = []
             for r in range(rank):
                 if verbose:
@@ -211,12 +211,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                         continue
                     partial_factor = partial_factor.dot(f[:,r])
                 mttkrp_parts.append(partial_factor)
-            mttkrp = sparse.stack(mttkrp_parts, axis=1)
+            mttkrp = tl.stack(mttkrp_parts, axis=1)
             factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp)))
             factors[mode] = factor
 
         if tol:
-            factors_norm = tl.sum(tl.prod(sparse.stack([f.T.dot(f) for f in factors], 0), axis=0))
+            factors_norm = tl.sum(tl.prod(tl.stack([f.T.dot(f) for f in factors], 0), axis=0))
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
             iprod = tl.sum(mttkrp*factor)
