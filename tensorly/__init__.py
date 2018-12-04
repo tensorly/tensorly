@@ -9,7 +9,7 @@ from .backend import (set_backend, get_backend,
                       clip, where,
                       max, min, argmax, argmin, all, mean, sum, prod,
                       sign, abs, sqrt,
-                      norm, dot, kron, kr, solve, qr, partial_svd)
+                      norm, dot, kron, kr, solve, qr, partial_svd, stack)
 
 from .base import unfold, fold
 from .base import tensor_to_vec, vec_to_tensor

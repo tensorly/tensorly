@@ -815,6 +815,12 @@ class Backend(object):
             V = self.tensor(V, **ctx)
         return U, S, V
 
+    @staticmethod
+    def stack(arrays, axis=0):
+        """
+        Join a sequence of arrays along a new axis.
+        """
+        raise NotImplementedError
 
 def dispatch(method):
     """Create a dispatched function from a generic backend method."""
@@ -880,6 +886,6 @@ solve = dispatch(Backend.solve)
 qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
-
+stack = dispatch(Backend.stack)
 
 _initialize_default_backend()
