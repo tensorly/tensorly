@@ -221,15 +221,20 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             rec_error = tl.sqrt(tl.abs((norm_tensor - iprod) + (factors_norm - iprod))) / norm_tensor
             rec_errors.append(rec_error)
 
-            if verbose:
-                print('reconstruction error={}, variation={}.'.format(
-                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
             if iteration > 1:
+                if verbose:
+                    print('reconstruction error={}, variation={}.'.format(
+                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
                 if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
                     break
+            else:
+                if verbose:
+                    print('reconstruction error={}'.format(rec_errors[-1]))
+
 
     if return_errors:
         return factors, rec_errors
