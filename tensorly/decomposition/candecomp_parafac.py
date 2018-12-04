@@ -189,7 +189,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             print("Starting iteration", iteration)
         for mode in range(tl.ndim(tensor)):
             if verbose:
-                print("Mode", mode)
+                print("Mode", mode, "of", tl.ndim(tensor))
             pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
