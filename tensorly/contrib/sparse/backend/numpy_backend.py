@@ -101,10 +101,10 @@ class NumpySparseBackend(Backend):
         elif n_eigenvecs is None:
             raise ValueError('n_eigenvecs cannot be none')
         elif is_sparse(matrix) and matrix.nnz == 0:
-            # empty matrix, so we should do a quick return.
+            # all-zeros matrix, so we should do a quick return.
             U = sparse.eye(dim_1, n_eigenvecs, dtype=matrix.dtype)
             S = np.zeros(n_eigenvecs, dtype=matrix.dtype)
-            V = sparse.eye(n_eigenvecs, dim_2, dtype=matrix.dtype)
+            V = sparse.eye(dim_2, n_eigenvecs, dtype=matrix.dtype)
         else:
             if n_eigenvecs > min_dim:
                 msg = ('n_eigenvecs={} if greater than the minimum matrix '
