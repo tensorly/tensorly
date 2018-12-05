@@ -210,7 +210,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             rec_errors.append(rec_error)
 
 
-            if iteration > 1:
+            if iteration >= 1:
                 if verbose:
                     print('reconstruction error={}, variation={}.'.format(
                         rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
