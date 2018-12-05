@@ -189,7 +189,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             mttkrp_parts = []
             for r in range(rank):
                 if verbose:
-                    print("Rank", r, "of", rank)
+                    print(" Rank", r, "of", rank)
                 partial_factor = np.moveaxis(tensor, mode, -1).T
                 for i, f in enumerate(factors):
                     if i == mode:
