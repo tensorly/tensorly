@@ -52,6 +52,10 @@ class NumpySparseBackend(Backend):
         return _py_copy(tensor)
 
     @staticmethod
+    def clip(tensor, a_min=None, a_max=None, inplace=False):
+        return np.clip(tensor, a_min, a_max)
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         # handle difference in default axis notation
         if axis == ():
@@ -94,10 +98,14 @@ class NumpySparseBackend(Backend):
             U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
             return U, S, V
-
+        elif n_eigenvecs is None:
+            raise ValueError('n_eigenvecs cannot be none')
+        elif is_sparse(matrix) and matrix.nnz == 0:
+            # empty matrix, so we should do a quick return.
+            U = sparse.eye(dim_1, n_eigenvecs, dtype=matrix.dtype)
+            S = np.zeros(n_eigenvecs, dtype=matrix.dtype)
+            V = sparse.eye(n_eigenvecs, dim_2, dtype=matrix.dtype)
         else:
-            if n_eigenvecs is None:
-                raise ValueError('n_eigenvecs cannot be none')
             if n_eigenvecs > min_dim:
                 msg = ('n_eigenvecs={} if greater than the minimum matrix '
                        'dimension ({})')
@@ -134,7 +142,7 @@ class NumpySparseBackend(Backend):
 
 for name in ['int64', 'int32', 'float64', 'float32', 'moveaxis', 'transpose',
              'reshape', 'ndim', 'shape', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange']:
+             'prod', 'sqrt', 'abs', 'sign', 'arange']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
 for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye', 'ones']:
