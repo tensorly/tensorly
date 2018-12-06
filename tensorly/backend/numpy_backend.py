@@ -35,6 +35,10 @@ class NumpyBackend(Backend):
         return np.clip(tensor, a_min, a_max)
 
     @staticmethod
+    def dot(a, b):
+        return a.dot(b)
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         # handle difference in default axis notation
         if axis == ():
@@ -69,7 +73,7 @@ class NumpyBackend(Backend):
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
-             'zeros_like', 'eye', 'dot', 'kron', 'concatenate', 'max', 'min',
+             'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack']:
     NumpyBackend.register_method(name, getattr(np, name))
