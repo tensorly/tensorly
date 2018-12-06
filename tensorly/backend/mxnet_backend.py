@@ -149,6 +149,23 @@ class MxnetBackend(Backend):
     def all(tensor):
         return nd.sum(tensor != 0).asscalar()
 
+
+    def moveaxis(self, tensor, source, target):
+        axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
+        try:
+            axes.pop(source)
+        except IndexError:
+            raise ValueError('Source should verify 0 <= source < tensor.ndim'
+                             'Got %d' % source)
+        try:
+            axes.insert(target, source)
+        except IndexError:
+            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
+                             'Got %d' % target)
+        return tf.transpose(tensor, axes)
+
     @staticmethod
     def mean(tensor, axis=None, **kwargs):
         if axis is None:
@@ -256,9 +273,8 @@ class MxnetBackend(Backend):
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
-for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
-             'moveaxis', 'dot', 'transpose', 'reshape',
-             'where', 'sign', 'prod']:
+for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye', 'dot',
+             'transpose', 'reshape', 'where', 'sign', 'prod']:
     MxnetBackend.register_method(name, getattr(nd, name))
 
 
