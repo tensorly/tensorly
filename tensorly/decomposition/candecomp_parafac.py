@@ -194,7 +194,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                 for i, f in enumerate(factors):
                     if i == mode:
                         continue
-                    partial_factor = tl.dot(partial_factor, f[:,r])
+                    partial_factor = tl.dot(partial_factor, tl.reshape(f[:,r], (f[:,r].shape[0], 1)))
+                    partial_factor = tl.reshape(partial_factor, partial_factor.shape[:-1])
                 mttkrp_parts.append(partial_factor)
             mttkrp = tl.stack(mttkrp_parts, axis=1)
             factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp)))
