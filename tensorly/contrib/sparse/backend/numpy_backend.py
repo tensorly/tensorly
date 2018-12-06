@@ -119,14 +119,22 @@ class NumpySparseBackend(Backend):
                 xxT = matrix.dot(conj)
                 if is_sparse(xxT):
                     xxT = xxT.to_scipy_sparse()
-                S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM')
+                if n_eigenvecs >= xxT.shape[0]:
+                    # use dense form when sparse form will fail
+                    S, U = scipy.linalg.eigh(xxT.toarray())
+                else:
+                    S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM')
                 S = np.sqrt(S)
                 V = conj.dot(U / S[None, :])
             else:
                 xTx = matrix.T.dot(matrix)
                 if is_sparse(xTx):
                     xTx = xTx.to_scipy_sparse()
-                S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM')
+                if n_eigenvecs >= xTx.shape[0]:
+                    # use dense form when sparse form will fail
+                    S, U = scipy.linalg.eigh(xTx.toarray())
+                else:
+                    S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM')
                 S = np.sqrt(S)
                 U = matrix.dot(V / S[None, :])
 
