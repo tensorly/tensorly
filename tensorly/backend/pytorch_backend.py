@@ -89,6 +89,8 @@ class PyTorchBackend(Backend):
     @staticmethod
     def moveaxis(tensor, source, target):
         axes = list(range(tensor.dim()))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
         try:
             axes.pop(source)
         except IndexError:
