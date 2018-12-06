@@ -1,5 +1,6 @@
 import tensorly as tl
 
+import pytest
 import numpy as np
 import itertools
 import numpy.random as npr
@@ -9,6 +10,10 @@ from ....mps_tensor import mps_to_tensor
 from ....random import check_random_state
 from tensorly.testing import assert_
 
+skip_if_tensorflow = pytest.mark.skipif(tl.get_backend() == "tensorflow",
+                                        reason="Operation not supported in TensorFlow")
+
+@skip_if_tensorflow
 def test_matrix_product_state_cross_1():
     """ Test for matrix_product_state """
     rng = check_random_state(1234)
@@ -38,6 +43,7 @@ def test_matrix_product_state_cross_1():
         assert(r_prev_k == r_prev_iteration), " Incorrect ranks of factors "
         r_prev_iteration = r_k
 
+@skip_if_tensorflow
 def test_matrix_product_state_cross_2():
     """ Test for matrix_product_state """
     rng = check_random_state(1234)
@@ -62,6 +68,7 @@ def test_matrix_product_state_cross_2():
         first_error_message += str(r_k) + " > " + str(rank[k+1])
         assert(r_k<=rank[k+1]), first_error_message
 
+@skip_if_tensorflow
 def test_matrix_product_state_cross_3():
     """ Test for matrix_product_state """
     rng = check_random_state(1234)
@@ -76,6 +83,7 @@ def test_matrix_product_state_cross_3():
     assert_(error < tol,
               'norm 2 of reconstruction higher than tol')
 
+@skip_if_tensorflow
 def test_matrix_product_state_cross_4():
     """ Test for matrix_product_state """
 

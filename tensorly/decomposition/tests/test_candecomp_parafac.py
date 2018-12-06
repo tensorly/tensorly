@@ -2,14 +2,14 @@ import numpy as np
 import pytest
 
 import tensorly as tl
-from tensorly.decomposition.candecomp_parafac import (
-    parafac, non_negative_parafac, initialize_factors,
+from ..candecomp_parafac import (
+    parafac, non_negative_parafac, normalize_factors, initialize_factors,
     sample_khatri_rao, randomised_parafac)
-from tensorly.kruskal_tensor import kruskal_to_tensor
-from tensorly.random import check_random_state, random_kruskal
-from tensorly.tenalg import khatri_rao
-from tensorly import backend as T
-from tensorly.testing import assert_array_equal, assert_
+from ...kruskal_tensor import kruskal_to_tensor
+from ...random import check_random_state, random_kruskal
+from ...tenalg import khatri_rao
+from ... import backend as T
+from ...testing import assert_array_equal, assert_
 
 
 def test_parafac():

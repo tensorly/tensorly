@@ -1,12 +1,14 @@
+import itertools
+
 import numpy as np
 
-import tensorly.backend as T
-from tensorly.base import fold, unfold
-from tensorly.tenalg import kronecker, mode_dot, multi_mode_dot
-from tensorly.testing import (assert_array_equal, assert_equal,
-                              assert_array_almost_equal, assert_raises)
+from ... import backend as T
+from ...base import fold, unfold
+from .._kronecker import kronecker
+from ..n_mode_product import mode_dot, multi_mode_dot
+from ...testing import (assert_array_equal, assert_equal,
+                        assert_array_almost_equal, assert_raises)
 
-import itertools
 
 def test_mode_dot():
     """Test for mode_dot (n_mode_product)"""

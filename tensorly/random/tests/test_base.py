@@ -1,12 +1,13 @@
 import numpy as np
 from numpy.linalg import matrix_rank
 
-import tensorly.backend as T
-from tensorly.random.base import random_kruskal, random_tucker, random_mps, check_random_state
-from tensorly.tucker_tensor import tucker_to_tensor
-from tensorly.tenalg import multi_mode_dot
-from tensorly.base import unfold
-from tensorly.testing import assert_equal, assert_array_almost_equal, assert_raises
+from ... import backend as T
+from ..base import (random_kruskal, random_tucker,
+                    random_mps, check_random_state)
+from ...tucker_tensor import tucker_to_tensor
+from ...tenalg import multi_mode_dot
+from ...base import unfold
+from ...testing import assert_equal, assert_array_almost_equal, assert_raises
 
 
 def test_check_random_state():

@@ -1,8 +1,9 @@
 import numpy as np
 
-import tensorly.backend as T
-from tensorly.tenalg.proximal import svd_thresholding, soft_thresholding, procrustes
-from tensorly.testing import assert_array_equal, assert_array_almost_equal
+from ... import backend as T
+from ..proximal import svd_thresholding, soft_thresholding
+from ..proximal import procrustes
+from ...testing import assert_array_equal, assert_array_almost_equal
 
 # Author: Jean Kossaifi
 

@@ -1,9 +1,9 @@
 import numpy as np
 
-import tensorly.backend as T
-from tensorly.decomposition.robust_decomposition import robust_pca
-from tensorly.random import check_random_state
-from tensorly.testing import assert_array_equal, assert_, assert_array_almost_equal
+import tensorly as tl
+from ...random import random_kruskal, check_random_state
+from ..robust_decomposition import robust_pca
+from ...testing import assert_array_equal, assert_, assert_array_almost_equal
 
 def test_RPCA():
     """Test for RPCA"""
@@ -16,11 +16,11 @@ def test_RPCA():
     rng = check_random_state(12345)
     noise = rng.choice([0., 100., -100.], size=clean.shape, replace=True,
                       p=[1 - noise_probability, noise_probability/2, noise_probability/2])
-    tensor = T.tensor(clean + noise)
+    tensor = tl.tensor(clean + noise)
     corrupted_clean = np.copy(clean)
     corrupted_noise = np.copy(noise)
-    clean = T.tensor(clean)
-    noise = T.tensor(noise)
+    clean = tl.tensor(clean)
+    noise = tl.tensor(noise)
     clean_pred, noise_pred = robust_pca(tensor, mask=None, reg_E=0.4, mu_max=10e12,
                                         learning_rate=1.2,
                                         n_iter_max=200, tol=tol, verbose=True)
@@ -29,7 +29,7 @@ def test_RPCA():
     # check low rank recovery
     assert_array_almost_equal(clean, clean_pred, decimal=1)
     # Check for sparsity of the gross error
-    # assert T.sum(noise_pred > 0.01) == T.sum(noise > 0.01)
+    # assert tl.sum(noise_pred > 0.01) == tl.sum(noise > 0.01)
     assert_array_equal((noise_pred > 0.01), (noise > 0.01))
     # check sparse gross error recovery
     assert_array_almost_equal(noise, noise_pred, decimal=1)
@@ -40,10 +40,10 @@ def test_RPCA():
     # Add some corruption (missing values, replaced by ones)
     mask = rng.choice([0, 1], clean.shape, replace=True, p=[0.05, 0.95])
     corrupted_clean[mask == 0] = 1
-    tensor = T.tensor(corrupted_clean + corrupted_noise)
-    corrupted_noise = T.tensor(corrupted_noise)
-    corrupted_clean = T.tensor(corrupted_clean)
-    mask = T.tensor(mask)
+    tensor = tl.tensor(corrupted_clean + corrupted_noise)
+    corrupted_noise = tl.tensor(corrupted_noise)
+    corrupted_clean = tl.tensor(corrupted_clean)
+    mask = tl.tensor(mask)
     # Decompose the tensor
     clean_pred, noise_pred = robust_pca(tensor, mask=mask, reg_E=0.4, mu_max=10e12,
                                         learning_rate=1.2,
@@ -57,5 +57,5 @@ def test_RPCA():
 
     # Check for recovery of the corrupted/missing part
     mask = 1 - mask
-    error = T.norm((clean*mask - clean_pred*mask), 2)/T.norm(clean*mask, 2)
+    error = tl.norm((clean*mask - clean_pred*mask), 2)/tl.norm(clean*mask, 2)
     assert_(error <= 10e-3)

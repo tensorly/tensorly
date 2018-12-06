@@ -1,9 +1,9 @@
 import numpy as np
 
-import tensorly.backend as T
-from tensorly.tenalg._kronecker import kronecker
-from tensorly.tenalg._khatri_rao import khatri_rao
-from tensorly.testing import assert_array_equal, assert_array_almost_equal
+from ... import backend as T
+from .._kronecker import kronecker
+from .._khatri_rao import khatri_rao
+from ...testing import assert_array_equal, assert_array_almost_equal
 
 # Author: Jean Kossaifi
 

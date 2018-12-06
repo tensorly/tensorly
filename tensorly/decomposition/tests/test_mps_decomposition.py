@@ -1,7 +1,8 @@
 import tensorly as tl
-from tensorly.decomposition import matrix_product_state
-from tensorly.random import check_random_state
-from tensorly.testing import assert_
+from ..mps_decomposition import matrix_product_state
+from ...mps_tensor import mps_to_tensor
+from ...random import check_random_state
+from ...testing import assert_
 
 
 def test_matrix_product_state():
