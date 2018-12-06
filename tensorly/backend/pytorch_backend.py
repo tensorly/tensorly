@@ -272,10 +272,13 @@ class PyTorchBackend(Backend):
                 'truncated_svd': self.truncated_svd,
                 'symeig_svd': self.symeig_svd}
 
+    @staticmethod
+    def stack(arrays, axis=0):
+        return torch.stack(arrays, dim=axis)
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
              'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
-             'abs', 'sqrt', 'sign', 'where', 'qr', 'stack']:
+             'abs', 'sqrt', 'sign', 'where', 'qr']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
