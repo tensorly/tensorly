@@ -72,6 +72,8 @@ class TensorflowBackend(Backend):
 
     def moveaxis(self, tensor, source, target):
         axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
         try:
             axes.pop(source)
         except IndexError:
