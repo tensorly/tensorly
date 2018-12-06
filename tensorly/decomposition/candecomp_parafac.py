@@ -4,7 +4,7 @@ import warnings
 import tensorly as tl
 from ..random import check_random_state
 from ..base import unfold
-from ..kruskal_tensor import kruskal_to_tensor
+from ..kruskal_tensor import kruskal_to_tensor, KruskalTensor
 from ..tenalg import khatri_rao
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -12,48 +12,6 @@ from ..tenalg import khatri_rao
 # Author: Sam Schneider <samjohnschneider@gmail.com>
 
 # License: BSD 3 clause
-
-
-def normalize_factors(factors):
-    """Normalizes factors to unit length and returns factor magnitudes
-
-    Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
-    where the columns of each `V_k` are normalized to unit Euclidean length
-    from the columns of `U_k` with the normalizing constants absorbed into
-    `weights`. In the special case of a symmetric tensor, `weights` holds the
-    eigenvalues of the tensor.
-
-    Parameters
-    ----------
-    factors : ndarray list
-        list of matrices, all with the same number of columns
-        i.e.::
-            for u in U:
-                u[i].shape == (s_i, R)
-
-        where `R` is fixed while `s_i` can vary with `i`
-
-    Returns
-    -------
-    normalized_factors : list of ndarrays
-        list of matrices with the same shape as `factors`
-    weights : ndarray
-        vector of length `R` holding normalizing constants
-
-    """
-    # allocate variables for weights, and normalized factors
-    rank = factors[0].shape[1]
-    weights = tl.ones(rank, **tl.context(factors[0]))
-    normalized_factors = []
-
-    # normalize columns of factor matrices
-    for factor in factors:
-        scales = tl.norm(factor, axis=0)
-        weights *= scales
-        scales_non_zero = tl.where(scales==0, tl.ones(tl.shape(scales), **tl.context(factors[0])), scales)
-        normalized_factors.append(factor/scales_non_zero)
-    return normalized_factors, weights
-
 
 def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=None, non_negative=False):
     r"""Initialize factors used in `parafac`.
@@ -117,13 +75,13 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
 
-def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
-            orthogonalise=False, random_state=None, verbose=False, return_errors=False):
+def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize_factors=False,
+            tol=1e-8, orthogonalise=False, random_state=None, verbose=False, return_errors=False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
-        ``tensor = [| factors[0], ..., factors[-1] |]``.
+        ``tensor = [|weights; factors[0], ..., factors[-1] |]``.
 
     Parameters
     ----------
@@ -136,6 +94,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+        of shape (rank, ), which will contain the norms of the factors
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
         algorithm is considered to have found the global minimum when the
@@ -149,9 +109,13 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
 
     Returns
     -------
-    factors : ndarray list
-        List of factors of the CP decomposition element `i` is of shape
-        (tensor.shape[i], rank)
+    KruskalTensor : (weight, factors)
+        * weights : 1D array of shape (rank, )
+            all ones if normalize_factors is False (default), 
+            weights of the (normalized) factors otherwise
+        * factors : List of factors of the CP decomposition element `i` is of shape
+            (tensor.shape[i], rank)
+
     errors : list
         A list of reconstruction errors at each iteration of the algorithms.
 
@@ -166,6 +130,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
     factors = initialize_factors(tensor, rank, init=init, svd=svd, random_state=random_state)
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
+    weights = tl.ones(rank, **tl.context(tensor))
 
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
@@ -177,11 +142,20 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                 if i != mode:
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
             factor = tl.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode))
-            factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(factor)))
+            factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(factor*weights)))
+
+            if normalize_factors:
+                factor_norm = tl.norm(factor, axis=0)
+                weights *= factor_norm
+                positive_factor_norms = tl.where(factor_norm==0, 
+                                                 tl.ones(tl.shape(factor_norm), **tl.context(factors[0])),
+                                                 factor_norm)
+                factor = factor/positive_factor_norms
+
             factors[mode] = factor
 
         if tol:
-            rec_error = tl.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+            rec_error = tl.norm(tensor - kruskal_to_tensor((weights, factors)), 2) / norm_tensor
             rec_errors.append(rec_error)
 
             if iteration > 1:
@@ -194,10 +168,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                         print('converged in {} iterations.'.format(iteration))
                     break
                     
+    kruskal_tensor = KruskalTensor((weights, factors))
+    
     if return_errors:
-        return factors, rec_errors
+        return kruskal_tensor, rec_errors
     else:
-        return factors
+        return kruskal_tensor
 
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
@@ -243,11 +219,12 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     n_factors = len(nn_factors)
     norm_tensor = tl.norm(tensor, 2)
     rec_errors = []
+    weights = tl.ones(rank, **tl.context(tensor))
 
     for iteration in range(n_iter_max):
         for mode in range(tl.ndim(tensor)):
-            # khatri_rao(factors).tl.dot(khatri_rao(factors))
-            # simplifies to multiplications
+            # tl.dot(khatri_rao(factors), khatri_rao(factors))
+            # simplifies to element-wise multiplications
             sub_indices = [i for i in range(n_factors) if i != mode]
             for i, e in enumerate(sub_indices):
                 if i:
@@ -261,7 +238,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
             nn_factors[mode] = nn_factors[mode]* numerator / denominator
 
-        rec_error = tl.norm(tensor - kruskal_to_tensor(nn_factors), 2) / norm_tensor
+        rec_error = tl.norm(tensor - kruskal_to_tensor((weights, nn_factors)), 2) / norm_tensor
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
             print('reconstruction error={}, variation={}.'.format(
@@ -272,8 +249,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                 print('converged in {} iterations.'.format(iteration))
             break
 
-    return nn_factors
-
+    return KruskalTensor((weights, nn_factors))
 
 
 def sample_khatri_rao(matrices, n_samples, skip_matrix=None, 
@@ -326,7 +302,6 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
      
-    n_factors = len(matrices)
     rank = tl.shape(matrices[0])[1]
     sizes = [tl.shape(m)[0] for m in matrices]
 
@@ -393,6 +368,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
     norm_tensor = tl.norm(tensor, 2)
     min_error = 0
 
+    weights = tl.ones(rank, **tl.context(tensor))
     for iteration in range(n_iter_max):
         for mode in range(n_dims):
             kr_prod, indices_list = sample_khatri_rao(factors, n_samples, skip_matrix=mode, random_state=rng)
@@ -412,7 +388,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
             factors[mode] = factor
             
         if max_stagnation or tol:
-            rec_error = tl.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+            rec_error = tl.norm(tensor - kruskal_to_tensor((weights, factors)), 2) / norm_tensor
             if not min_error or rec_error < min_error:
                 min_error = rec_error
                 stagnation = -1
@@ -431,4 +407,4 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
                         print('converged in {} iterations.'.format(iteration))
                     break
 
-    return factors
+    return KruskalTensor((weights, factors))

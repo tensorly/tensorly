@@ -37,7 +37,7 @@ dtypes = ['int64', 'int32', 'float32', 'float64']
 for dtype in dtypes:
     vars()[dtype] = getattr(torch, dtype)
 
-# Order 0 tensor, mxnet....
+# Order 0 tensor....
 from math import sqrt as scalar_sqrt
 
 # Equivalent functions in pytorch 

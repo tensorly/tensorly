@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import qr
-from ..kruskal_tensor import kruskal_to_tensor
+from ..kruskal_tensor import kruskal_to_tensor, KruskalTensor
 from ..tucker_tensor import tucker_to_tensor
 from ..mps_tensor import mps_to_tensor
 from .. import backend as T
@@ -69,13 +69,14 @@ def random_kruskal(shape, rank, full=False, orthogonal=False, random_state=None,
 
     rns = check_random_state(random_state)
     factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
+    weights = T.ones(rank, **context)
     if orthogonal:
         factors = [T.qr(factor)[0] for factor in factors]
 
     if full:
-        return kruskal_to_tensor(factors)
+        return kruskal_to_tensor((weights, factors))
     else:
-        return factors
+        return KruskalTensor((weights, factors))
 
 def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, **context):
     """Generates a random Tucker tensor
