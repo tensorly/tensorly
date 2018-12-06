@@ -164,7 +164,7 @@ class MxnetBackend(Backend):
         except IndexError:
             raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
                              'Got %d' % target)
-        return tf.transpose(tensor, axes)
+        return transpose(tensor, axes)
 
     @staticmethod
     def mean(tensor, axis=None, **kwargs):
