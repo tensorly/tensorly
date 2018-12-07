@@ -76,7 +76,7 @@ class NumpySparseBackend(Backend):
         Compute x s.t. Ax = b
         """
         if is_sparse(A) or is_sparse(b):
-            A, b = A.to_scipy_sparse(), b.to_scipy_sparse()
+            A, b = A.tocsc(), b.tocsc()
             x = sparse.COO(scipy.sparse.linalg.spsolve(A, b))
         else:
             x = np.linalg.solve(A, b)
