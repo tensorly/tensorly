@@ -22,7 +22,7 @@ as the sparse representation.
 Algorithms
 ~~~~~~~~~~
 
-- ``parafac`` (with ``
+- ``parafac``
 - ``tucker``
 - ``robust_pca``
 
