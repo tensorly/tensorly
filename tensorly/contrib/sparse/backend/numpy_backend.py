@@ -132,7 +132,7 @@ class NumpySparseBackend(Backend):
                     xTx = xTx.to_scipy_sparse()
                 if n_eigenvecs >= xTx.shape[0]:
                     # use dense form when sparse form will fail
-                    S, U = scipy.linalg.eigh(xTx.toarray())
+                    S, V = scipy.linalg.eigh(xTx.toarray())
                 else:
                     S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM')
                 S = np.sqrt(S)
