@@ -23,6 +23,7 @@ Algorithms
 ~~~~~~~~~~
 
 - ``parafac``
+- ``non_negative_parafac``
 - ``partial_tucker``
 - ``robust_pca``
 
