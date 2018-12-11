@@ -118,7 +118,7 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             orthogonalise=False, random_state=None, verbose=False,
-            return_errors=False, non_negative=False):
+            return_errors=False, non_negative=False, mask=1):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
@@ -147,6 +147,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
         Activate return of iteration errors
     non_negative : bool, optional
         Perform non_negative PARAFAC. See :func:`non_negative_parafac`.
+    mask : ndarray
+        array of booleans with the same shape as ``tensor``
+        should be zero where the values are missing and 1 everywhere else
 
     Returns
     -------
@@ -202,6 +205,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             # unfolded = unfold(tensor, mode)
             # kr_factors = khatri_rao(factors, skip_matrix=mode)
             # mttkrp = tl.dot(unfolded, kr_factors)
+
+            tensor = tensor*mask + kruskal_to_tensor(factors)*(1 - mask)
 
             mttkrp_parts = []
             for r in range(rank):
