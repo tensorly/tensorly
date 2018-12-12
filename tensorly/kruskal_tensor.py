@@ -45,7 +45,8 @@ def kruskal_to_tensor(factors, weights=None, mask=None):
     """
     shape = [T.shape(factor)[0] for factor in factors]
     if weights is not None:
-        full_tensor = T.dot(factors[0]*weights, T.transpose(khatri_rao(factors[1:], mask=mask)))
+        factors[0] = factors[0]*weights
+        full_tensor = T.sum(khatri_rao(factors, mask=mask), axis=1)
     else:
         full_tensor = T.sum(khatri_rao(factors, mask=mask), axis=1)
     return fold(full_tensor, 0, shape)
