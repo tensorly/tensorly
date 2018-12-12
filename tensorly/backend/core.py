@@ -822,6 +822,20 @@ class Backend(object):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def broadcast_to(array, shape):
+        """
+        Broadcast an array to a new shape.
+
+        Parameters
+        ----------
+        array : array_like
+            The array to broadcast.
+        shape : tuple
+            The shape of the desired array.
+        """
+        raise NotImplementedError
+
 def dispatch(method):
     """Create a dispatched function from a generic backend method."""
     name = method.__name__
@@ -887,5 +901,6 @@ qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
 stack = dispatch(Backend.stack)
+broadcast_to = dispatch(Backend.broadcast_to)
 
 _initialize_default_backend()
