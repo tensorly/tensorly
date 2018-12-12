@@ -274,7 +274,7 @@ for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
 for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye', 'dot',
-             'transpose', 'reshape', 'where', 'sign', 'prod', 'broadcast_to']:
+             'transpose', 'reshape', 'where', 'sign', 'prod']:
     MxnetBackend.register_method(name, getattr(nd, name))
 
 
