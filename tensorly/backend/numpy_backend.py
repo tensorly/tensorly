@@ -54,7 +54,8 @@ class NumpyBackend(Backend):
             return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
 
     @staticmethod
-    def kr(matrices):
+    def kr(matrices, mask=None):
+        if mask is None: mask = 1
         n_columns = matrices[0].shape[1]
         n_factors = len(matrices)
 
@@ -63,7 +64,7 @@ class NumpyBackend(Backend):
         target = ''.join(chr(start + i) for i in range(n_factors))
         source = ','.join(i + common_dim for i in target)
         operation = source + '->' + target + common_dim
-        return np.einsum(operation, *matrices).reshape((-1, n_columns))
+        return np.einsum(operation, *matrices).reshape((-1, n_columns))*mask
 
     @property
     def SVD_FUNS(self):

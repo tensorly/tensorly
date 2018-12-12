@@ -118,8 +118,9 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             orthogonalise=False, random_state=None, verbose=False,
-            return_errors=False, non_negative=False, mask=1):
-    """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
+            return_errors=False, non_negative=False, mask=None):
+    """
+    CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -148,8 +149,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
     non_negative : bool, optional
         Perform non_negative PARAFAC. See :func:`non_negative_parafac`.
     mask : ndarray
-        array of booleans with the same shape as ``tensor``
-        should be zero where the values are missing and 1 everywhere else
+        array of booleans with the same shape as ``tensor`` should be 0 where
+        the values are missing and 1 everywhere else. Note:  if tensor is
+        sparse, then mask should also be sparse with a fill value of 1 (or
+        True).
 
     Returns
     -------
@@ -163,6 +166,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
     ----------
     .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+
     """
     epsilon = 10e-12
 
@@ -200,13 +204,14 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                 if i != mode:
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
 
+            if mask is not None:
+                tensor = tensor*mask + kruskal_to_tensor(factors, mask=1-mask)
+
             # The below is equivalent to (but more efficient than)
 
             # unfolded = unfold(tensor, mode)
             # kr_factors = khatri_rao(factors, skip_matrix=mode)
             # mttkrp = tl.dot(unfolded, kr_factors)
-
-            tensor = tensor*mask + kruskal_to_tensor(factors)*(1 - mask)
 
             mttkrp_parts = []
             for r in range(rank):

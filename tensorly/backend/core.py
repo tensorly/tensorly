@@ -687,7 +687,7 @@ class Backend(object):
         b = self.reshape(b, (1, s3, 1, s4))
         return self.reshape(a * b, (s1 * s3, s2 * s4))
 
-    def kr(self, matrices):
+    def kr(self, matrices, mask=None):
         """Khatri-Rao product of a list of matrices
 
         This can be seen as a column-wise kronecker product.
@@ -720,17 +720,17 @@ class Backend(object):
                              'given.'.format(len(matrices)))
 
         n_col = self.shape(matrices[0])[1]
-        for i, e in enumerate(matrices[1:]):
-            if not i:
-                res = matrices[0]
-            s1, s2 = self.shape(res)
-            s3, s4 = self.shape(e)
-            if not s2 == s4 == n_col:
+        if any(i.shape[1] != n_col for i in matrices):
                 raise ValueError('All matrices should have the same number of columns.')
-            a = self.reshape(res, (s1, 1, s2))
-            b = self.reshape(e, (1, s3, s4))
-            res = self.reshape(a * b, (-1, n_col))
-        return res
+        shapes = [(1,)*i + (s,) + (1,)*(len(matrices)-i-1) + (n_col,) for i, s in
+                  enumerate([m.shape[0] for m in matrices])]
+        reshaped_matrices = [self.reshape(i, s) for i, s in zip(matrices, shapes)]
+
+        m = mask[:, ..., None] if mask is not None else 1
+        # This could also use np.multiply.reduce
+        for e in reshaped_matrices:
+            m = m*e
+        return self.reshape(m, (-1, n_col))
 
     def partial_svd(self, matrix, n_eigenvecs=None):
         """Computes a fast partial SVD on `matrix`
