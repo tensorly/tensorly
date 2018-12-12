@@ -1,5 +1,5 @@
 from ...backend import set_backend, get_backend
-from .core import (sparse_tensor, tensor, is_tensor, context, shape, ndim, to_numpy,
+from .core import (tensor, is_tensor, context, shape, ndim, to_numpy,
                    copy, concatenate, reshape, moveaxis, transpose, arange, ones,
                    zeros, zeros_like, eye, clip, where, max, min, all, mean,
                    sum, prod, sign, abs, sqrt, norm, dot, kron, kr, solve, qr,
