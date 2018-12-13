@@ -297,7 +297,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
        pp 792-799, ICML, 2005
     """
     return parafac(tensor, rank, n_iter_max=n_iter_max, init=init, svd=svd,
-                   tol=tol, random_state=random_state, verbose=verbose, nonnegative=True)
+                   tol=tol, random_state=random_state, verbose=verbose, non_negative=True)
 
 
 def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
