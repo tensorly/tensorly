@@ -18,7 +18,7 @@ if LooseVersion(sparse.__version__) < _MIN_SPARSE_VERSION:
 
 
 def is_sparse(x):
-    return isinstance(x, sparse.COO)
+    return isinstance(x, sparse.SparseArray)
 
 
 class NumpySparseBackend(Backend):
@@ -68,7 +68,7 @@ class NumpySparseBackend(Backend):
 
     def dot(self, x, y):
         if is_sparse(x) or is_sparse(y):
-            return self.tensor(x).dot(self.tensor(y))
+            return sparse.dot(x, y)
         return np.dot(x, y)
 
     def solve(self, A, b):
