@@ -23,7 +23,7 @@ def matrix_product_state(input_tensor, rank, verbose=False):
 
     References
     ----------
-    .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
+    .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295-2317, 2011.
     """
 
     # Check user input for errors
