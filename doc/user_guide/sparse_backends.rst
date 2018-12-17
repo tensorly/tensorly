@@ -68,6 +68,28 @@ if the input tensor is sparse. Thus, using the sparse ``parafac``
 memory than the dense version (``tensorly.decomposition.parafac``) for a
 sparse input tensor.
 
+Missing Values
+~~~~~~~~~~~~~~
+
+The ``parafac`` function supports masks for missing values. A mask should be a
+boolean array of the same shape as the original tensor that is ``False``/``0``
+where the value is missing and ``True``/``1`` where it is not. It is passed to
+the ``parafac()`` function via the ``mask`` parameter.
+
+When using masks with sparse tensors, there are two important caveats:
+
+- The mask itself should be sparse. In the algorithm, the memory used will be
+  proportional to the number of missing values. Values of the original sparse
+  tensor that are ``0`` should be ``True``/``1`` (i.e., non-missing) in the
+  mask.
+
+- Sparse mask support is currently only supported with the sparse backend
+  ``parafac`` (``tensor.contrib.sparse.decomposition.parafac``). The dense
+  backend ``parafac`` will densify the array.
+
+See the example notebook at
+https://github.com/JeanKossaifi/tensorly-notebooks/tree/master/07_pydata_sparse_backend/sparse_missing_values.ipynb
+
 Example
 =======
 
