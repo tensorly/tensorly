@@ -40,6 +40,7 @@ def least_squares_nway(input_tensor, input_factors,
     for mode in gen:
 
         # Unfolding
+        # TODO : precompute unfoldings
         unfoldY = unfold(input_tensor,mode)
 
         # Computing Hadamard of cross-products
@@ -58,14 +59,15 @@ def least_squares_nway(input_tensor, input_factors,
 
     # error computation (improved using precomputed quantities)
     rec_error = norm_tensor ** 2 - 2*tl.dot(
-            tl.tensor_to_vec(factor),tl.tensor_to_vec(
-                rhs)) + tl.norm(tl.dot(factor,tl.transpose(krao)),2)**2
+            tl.tensor_to_vec(input_factors[mode]),tl.tensor_to_vec(
+                rhs)) + tl.norm(tl.dot(input_factors[mode],tl.transpose(krao)),2)**2
     rec_error = rec_error ** (1/2) / norm_tensor
 
     # outputs
     return input_factors, rec_error
 
-def nn_least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
+def nn_least_squares_nway(input_tensor, input_factors, rank, norm_tensor,
+                          fixed_modes=[]):
     """ One pass of Nonnegative Alternating Least squares update along all modes
     Implements a projected ALS which is often BAD, this is just for demo
 
@@ -85,13 +87,18 @@ def nn_least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
     a projected least squares update.
     rank : rank of the decomposition.
     norm_tensor : the Frobenius norm of the input tensor
+    fixed_modes : a table of indexes specifying which modes are not updated.
 
     Returns -------
     out_factors : updated inputs factors
     rec_error : residual error after the projected ALS steps.
     """
 
-    for mode in range(tl.ndim(input_tensor)):
+    # Generating the mode update sequence
+    gen = (mode for mode in range(tl.ndim(input_tensor)) if mode not in fixed_modes)
+
+
+    for mode in gen:
 
         # Unfolding
         unfoldY = unfold(input_tensor,mode)
@@ -115,8 +122,8 @@ def nn_least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
 
     # error computation (improved using precomputed quantities)
     rec_error = norm_tensor ** 2 - 2*tl.dot(
-            tl.tensor_to_vec(factor),tl.tensor_to_vec(
-                rhs)) + tl.norm(tl.dot(factor,tl.transpose(krao)),2)**2
+            tl.tensor_to_vec(input_factors[mode]),tl.tensor_to_vec(
+                rhs)) + tl.norm(tl.dot(input_factors[modes],tl.transpose(krao)),2)**2
     rec_error = rec_error ** (1/2) / norm_tensor
 
     # outputs

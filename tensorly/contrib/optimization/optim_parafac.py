@@ -1,4 +1,10 @@
 """ Parallel Factor Analysis
+TODO : 
+- nnls for nonnegative factors
+- precompute unfoldings
+- admm for (sparse, nonnegative/box constraints... (search)). Allow
+  personnalization of constraints?
+- line search for ALS
 """
 # Authors:  Jeremy E.Cohen
 #           Jean Kossaifi
@@ -170,9 +176,14 @@ class Parafac:
         factors are used for initiatization. Empty init results in random
         initialization.
 
-        Constraints: constraints are input as a table of strings, containing
+        constraints: constraints are input as a table of strings, containing
         the type of constraint for each factor. For unconstrained
         decomposition, an empty constraints table can be used.
+            [1, x, x] : first factor is nonnegative
+
+        method: the optimization routine used to compute the PARAFAC model.
+        Defaults are 'ALS' for unconstrained optimization, and 'Fast Gradient'
+        for constrained optimization or in the presence of missing data.
 
         weights: weighting of the entries of the input tensor. This is a tensor
             of the same size of the input data.
@@ -181,7 +192,6 @@ class Parafac:
             These modes will not be updated when using Parafac.fit().
         """
         self.rank = rank
-        self.method = method
         self.init = init
         self.constraints = constraints
         self.weights = weights
@@ -192,6 +202,14 @@ class Parafac:
         self.verbose = verbose
         self.svd = svd
         self.random_state = random_state
+
+        # Choosing the default method based on the constraints
+        if not constraints:
+            self.method = method
+        elif constraints and method == 'ALS':
+            print('Warning: ALS does not apply to constrained Parafac,')
+            print(' using default projected fast gradient instead.')
+            self.method = 'FG'
 
     def fit(self, data, init_factors=0):
         """
@@ -214,14 +232,16 @@ class Parafac:
         else:
             factors = init_factors
         # Call the method
-        if self.method == 'ALS':  # TODO change init_factors in parafac_als
+        if self.method == 'ALS':
             factors, errors = parafac_als(data, self.rank, factors,
                                           return_errors=True,
                                           n_iter_max=self.n_iter_max,
                                           tol=self.tol, verbose=self.verbose,
                                           fixed_modes=self.fixed_modes)
-        elif self.method == 'CG':
+        elif self.method == 'FG':
             print('not implemented')
+            factors = []
+            errors = 1
             # factors = parafac_cg()
         elif self.method == 'ADMM':
             print('not implemented')
