@@ -83,7 +83,13 @@ def fast_gradient_step(input_tensor, input_factors,
     # Updates and Extrapolation
     for mode in gen:
         # Gradient step
-        factors[mode] = factors_aux - step*grad[mode] 
+        factors[mode] = aux_factors - step*grad[mode] 
+        
+        # Projection step
+        # factor[mode] = factor
+        
+        # Extrapolation step
+        aux_factors[mode] = factor[mode] + beta*(factor[mode] - input_factor[mode])
         # >>>
 
     # error computation (improved using precomputed quantities)
