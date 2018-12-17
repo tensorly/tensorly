@@ -1,6 +1,6 @@
 """ Parallel Factor Analysis
 """
-# Authors:  Jeremy E.Cohen 
+# Authors:  Jeremy E.Cohen
 #           Jean Kossaifi
 
 import warnings
@@ -32,7 +32,8 @@ def initialize_factors(tensor, rank, init='random', svd='numpy_svd', random_stat
     rank : int
     init : {'svd', 'random'}, optional
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD,
+        acceptable values in tensorly.SVD_FUNS
     non_negative : bool, default is False
         if True, non-negative factors are returned
 
@@ -79,9 +80,11 @@ def initialize_factors(tensor, rank, init='random', svd='numpy_svd', random_stat
 
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
-def parafac_als(tensor, rank, init_factors, n_iter_max=100,  
-        tol=1e-8,
-              verbose=False, return_errors=False):
+
+def parafac_als(tensor, rank, init_factors, n_iter_max=100,
+                tol=1e-8, verbose=False,
+                return_errors=False,
+                fixed_modes=[]):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
@@ -95,7 +98,7 @@ def parafac_als(tensor, rank, init_factors, n_iter_max=100,
         Number of components.
     n_iter_max : int
         Maximum number of iteration
-    init_factors : list 
+    init_factors : list
         Table of initial factors. See initialize_factors().
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
@@ -128,8 +131,10 @@ def parafac_als(tensor, rank, init_factors, n_iter_max=100,
 
     for iteration in range(n_iter_max):
 
-     # TODO: precompute unfoldings
-        factors, rec_error = least_squares_nway(tensor, factors, rank, norm_tensor)
+        # One pass of least squares on each updated mode
+        factors, rec_error = least_squares_nway(tensor, factors,
+                                                rank, norm_tensor,
+                                                fixed_modes)
 
         if tol:
             rec_errors.append(rec_error)
@@ -143,7 +148,7 @@ def parafac_als(tensor, rank, init_factors, n_iter_max=100,
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
                     break
-                    
+
     if return_errors:
         return factors, rec_errors
     else:
@@ -154,7 +159,9 @@ class Parafac:
     """
     This is the doc
     """
-    def __init__(self,rank=1,method='ALS',init='random',constraints=[],weights=[],fixed_modes=[]):
+    def __init__(self, rank=1, method='ALS', init='random', constraints=[],
+                 weights=[], fixed_modes=[], n_iter_max=100, tol=1e-8,
+                 verbose=False, svd='numpy_svd', random_state=None):
         """
         rank: Number of components in the model. Default is 1.
 
@@ -163,9 +170,9 @@ class Parafac:
         factors are used for initiatization. Empty init results in random
         initialization.
 
-        Constraints: constraints are input as a table of strings, containing the type of
-            constraint for each factor. For unconstrained decomposition, an empty 
-            constraints table can be used.
+        Constraints: constraints are input as a table of strings, containing
+        the type of constraint for each factor. For unconstrained
+        decomposition, an empty constraints table can be used.
 
         weights: weighting of the entries of the input tensor. This is a tensor
             of the same size of the input data.
@@ -180,52 +187,62 @@ class Parafac:
         self.weights = weights
         self.fixed_modes = fixed_modes
         self.components = []
+        self.n_iter_max = n_iter_max
+        self.tol = tol
+        self.verbose = verbose
+        self.svd = svd
+        self.random_state = random_state
 
     def fit(self, data, init_factors=0):
-        #, n_iter_max = 100, tol=1e-8, verbose=False, svd='numpy_svd', random_state=None):
         """
         intended behavior: call Parafac.fit(data) if init has been set for the
         Parafac instance,
         TODO:  call
         Parafac.fit(data,init) for testing various initializations.
-        TODO: Add options argument for optimization parameters
         """
         # Call the initialisation method, depending on wether the user prodived
         # initial factors or initialization method.
         if init_factors == 0:
             if isinstance(self.init, str):
                 # TODO cleanup nonnegative in init
-                factors = initialize_factors(data,self.rank,self.init)#,'numpy_svd',False,False)
+                factors = initialize_factors(data, self.rank, self.init,
+                                             svd=self.svd,
+                                             non_negative=False,
+                                             random_state=self.random_state)
             elif isinstance(self.init, list):
                 factors = self.init
         else:
-            factors =  init_factors
+            factors = init_factors
         # Call the method
-        if self.method == 'ALS': #TODO change init_factors in parafac_als
+        if self.method == 'ALS':  # TODO change init_factors in parafac_als
             factors, errors = parafac_als(data, self.rank, factors,
-                                          return_errors=True)#, n_iter_max, tol, verbose, False)
+                                          return_errors=True,
+                                          n_iter_max=self.n_iter_max,
+                                          tol=self.tol, verbose=self.verbose,
+                                          fixed_modes=self.fixed_modes)
         elif self.method == 'CG':
             print('not implemented')
-            #factors = parafac_cg()
+            # factors = parafac_cg()
         elif self.method == 'ADMM':
             print('not implemented')
-            #factors = parafac_admm()
+            # factors = parafac_admm()
         elif self.method == 'HALS':
             print('not implemented')
-            #factors = parafac_hals()
+            # factors = parafac_hals()
 
         # Filling in the components attribute and returning them
         self.components = factors
         return self.components, errors
-        
+
     def reconstruct(self):
         """
         returns the resulting tensor of the fitted Parafac model
         """
+        return kruskal_to_tensor(self.components)
 
         # Build the tensor using the Kruskal operator
 
-    def transform(self,data,factors=0,rank = 0):
+    def transform(self, data, factors=0, rank=0):
         """
         transforms an input tensor by projecting it on the span of the
         estimated factors using the current Parafac model. This only makes

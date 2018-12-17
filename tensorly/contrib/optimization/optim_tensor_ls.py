@@ -6,7 +6,8 @@ from tensorly.tenalg import khatri_rao
 # Author : Jeremy Cohen
 
 
-def least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
+def least_squares_nway(input_tensor, input_factors,
+                       rank, norm_tensor, fixed_modes):
     """ One pass of Alternating Least squares update along all modes
 
     Update the factors by solving a least squares problem per mode. This is a
@@ -25,13 +26,18 @@ def least_squares_nway(input_tensor, input_factors, rank, norm_tensor):
     a least squares update.
     rank : rank of the decomposition.
     norm_tensor : the Frobenius norm of the input tensor
+    fixed_modes : indexes of modes that are not updated
 
     Returns -------
     out_factors : updated inputs factors
     rec_error : residual error after the ALS steps.
     """
+  
+    # Generating the mode update sequence
+    gen = (mode for mode in range(tl.ndim(input_tensor)) if mode not in fixed_modes)
 
-    for mode in range(tl.ndim(input_tensor)):
+    #  for mode in range(tl.ndim(input_tensor)):
+    for mode in gen:
 
         # Unfolding
         unfoldY = unfold(input_tensor,mode)
