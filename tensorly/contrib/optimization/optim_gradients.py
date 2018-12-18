@@ -7,13 +7,13 @@ from tensorly.tenalg import khatri_rao
 # Author : Jeremy Cohen
 
 
-def fast_gradient_step(input_tensor, input_factors,
+def fast_gradient_step(input_tensor, factors,
                        rank, norm_tensor,
-                       input_aux_factors,
+                       aux_factors,
                        step = 0.1, alpha = 0.5,
                        qstep = 0,
-                       fixed_modes=None,
-                       weights=None, constraints=None):
+                       fixed_modes=[],
+                       weights=[], constraints=[]):
     """ One step of fast gradient update along all modes
 
     Updates the factor using one step of a Fast gradient descent algorithm.
@@ -52,53 +52,57 @@ def fast_gradient_step(input_tensor, input_factors,
     gen = (mode for mode in range(tl.ndim(input_tensor)) if mode not in fixed_modes)
 
     # Initialization of factors and aux_factors
-    factors = input_factors
-    aux_factors = input_aux_factors
+    old_factors = np.copy(factors)
+
+    # Gradient initialization
+    grad = np.copy(factors)
+
+    # alpha, beta variables update
+    alpha_new = 1/2*(qstep-alpha**2 + math.sqrt(
+        (qstep-alpha**2)**2 + 4*alpha**2))
+    beta = alpha*(1-alpha)/(alpha**2+alpha_new)
+    alpha = alpha_new
 
     # Computing the gradient for updated modes:
     for mode in gen:
-
         # Unfolding
         # TODO: precompute unfoldings
         unfoldY = unfold(input_tensor,mode)
 
         # Computing Hadamard of cross-products
         cross = tl.tensor(np.ones((rank, rank)), **tl.context(input_tensor))
-        for i, factor in enumerate(input_factors):
+        for i, factor in enumerate(aux_factors):
             if i != mode:
-                cross = cross*tl.dot(tl.transpose(aux_factor),aux_factor)
+                cross = cross*tl.dot(tl.transpose(factor),factor)
 
         # Computing the Khatri Rao product
         krao = khatri_rao(aux_factors,skip_matrix=mode)
         rhs = tl.dot(unfoldY,krao)
 
         # Compute the gradient for given mode
-        grad[mode] = rhs - tl.dot(aux_factors[mode],cross)
-       
-    # alpha, beta variables update
-    alpha_new = 1/2*(qstep-alpha**2 + math.sqrt(
-        (qstep-alpha**2)**2 + 4*alpha**2))
-    beta = alpha*(1-alpha)/((alpha**2)*(1-alpha_new))
+        grad[mode] = - rhs + tl.dot(aux_factors[mode], cross)
+
+    # Rebuilding the loop
+    gen = (mode for mode in range(tl.ndim(input_tensor)) if mode not in fixed_modes)
 
     # Updates and Extrapolation
     for mode in gen:
         # Gradient step
-        factors[mode] = aux_factors - step*grad[mode] 
-        
+        factors[mode] = aux_factors[mode] - step*grad[mode]
+
         # Projection step
-        # factor[mode] = factor
-        
+        # TODO : proximal operator API, customisable
+        # factor[mode] = prox(factor,'proj_method')
+        if constraints and constraints[mode] == 'NN':
+            factors[mode][factors[mode] < 0] = 0
+
         # Extrapolation step
-        aux_factors[mode] = factor[mode] + beta*(factor[mode] - input_factor[mode])
-        # >>>
+        aux_factors[mode] = factors[mode] + beta*(factors[mode] - old_factors[mode])
 
     # error computation (improved using precomputed quantities)
     rec_error = norm_tensor ** 2 - 2*tl.dot(
-            tl.tensor_to_vec(input_factors[mode]),tl.tensor_to_vec(
-                rhs)) + tl.norm(tl.dot(input_factors[mode],tl.transpose(krao)),2)**2
+        tl.tensor_to_vec(factors[mode]), tl.tensor_to_vec(
+            rhs)) + tl.norm(tl.dot(factors[mode], tl.transpose(krao)), 2)**2
     rec_error = rec_error ** (1/2) / norm_tensor
 
-    # outputs
-    return input_factors, rec_error
-
-
+    return rec_error

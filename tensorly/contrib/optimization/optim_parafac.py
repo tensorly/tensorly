@@ -18,7 +18,7 @@ from tensorly.base import unfold
 from tensorly.kruskal_tensor import kruskal_to_tensor
 from tensorly.tenalg import khatri_rao
 from tensorly.contrib.optimization.optim_tensor_ls import least_squares_nway
-
+from tensorly.contrib.optimization.optim_gradients import fast_gradient_step
 
 
 def initialize_factors(tensor, rank, init='random', svd='numpy_svd', random_state=None, non_negative=False):
@@ -160,6 +160,85 @@ def parafac_als(tensor, rank, init_factors, n_iter_max=100,
     else:
         return factors
 
+def parafac_fg(tensor, rank, factors, n_iter_max=100,
+               tol=1e-8, verbose=False,
+               return_errors=False, step = 1e-5,
+               fixed_modes=[], alpha = 0.2,
+               qstep = 0, constraints = None, weights = None):
+    """CANDECOMP/PARAFAC decomposition via proximal fast gradient (FG)
+
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
+
+        ``tensor = [| factors[0], ..., factors[-1] |]``.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank  : int
+        Number of components.
+    n_iter_max : int
+        Maximum number of iteration
+    init_factors : list
+        Table of initial factors. See initialize_factors().
+    tol : float, optional
+        (Default: 1e-6) Relative reconstruction error tolerance. The
+        algorithm is considered to have found the global minimum when the
+        reconstruction error is less than `tol`.
+    verbose : int, optional
+        Level of verbosity
+    return_errors : bool, optional
+        Activate return of iteration errors
+
+    step : float, stepsize
+          How much the gradient is descended in the FG method. Choose 1/L where
+          L is the Lipschitz constant if possible.
+
+
+    Returns
+    -------
+    factors : ndarray list
+        List of factors of the CP decomposition element `i` is of shape
+        (tensor.shape[i], rank)
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+    """
+
+    # initialisation
+    rec_errors = []
+    norm_tensor = tl.norm(tensor, 2)
+    aux_factors = np.copy(factors)
+
+    for iteration in range(n_iter_max):
+
+        # One pass of least squares on each updated mode
+        rec_error = fast_gradient_step(tensor, factors, rank, norm_tensor,
+                                       aux_factors, step, alpha, qstep,
+                                       fixed_modes, weights, constraints)
+
+        if tol:
+            rec_errors.append(rec_error)
+
+            if iteration > 1:
+                if verbose:
+                    print('reconstruction error={}, variation={}.'.format(
+                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                    if verbose:
+                        print('converged in {} iterations.'.format(iteration))
+                    break
+
+    if return_errors:
+        return factors, rec_errors
+    else:
+        return factors
+
+
 
 class Parafac:
     """
@@ -167,7 +246,8 @@ class Parafac:
     """
     def __init__(self, rank=1, method='ALS', init='random', constraints=[],
                  weights=[], fixed_modes=[], n_iter_max=100, tol=1e-8,
-                 verbose=False, svd='numpy_svd', random_state=None):
+                 verbose=False, svd='numpy_svd', random_state=None,
+                 step=1e-5, alpha=0.2):
         """
         rank: Number of components in the model. Default is 1.
 
@@ -179,7 +259,7 @@ class Parafac:
         constraints: constraints are input as a table of strings, containing
         the type of constraint for each factor. For unconstrained
         decomposition, an empty constraints table can be used.
-            [1, x, x] : first factor is nonnegative
+            ['NN', x, x] : first factor is nonnegative
 
         method: the optimization routine used to compute the PARAFAC model.
         Defaults are 'ALS' for unconstrained optimization, and 'Fast Gradient'
@@ -202,6 +282,10 @@ class Parafac:
         self.verbose = verbose
         self.svd = svd
         self.random_state = random_state
+        self.step = step
+        self.alpha = alpha
+        self.method = method
+        self.init_factors = 0
 
         # Choosing the default method based on the constraints
         if not constraints:
@@ -211,12 +295,10 @@ class Parafac:
             print(' using default projected fast gradient instead.')
             self.method = 'FG'
 
-    def fit(self, data, init_factors=0):
+    def init_parafac(self, data, init_factors=0):
         """
-        intended behavior: call Parafac.fit(data) if init has been set for the
-        Parafac instance,
-        TODO:  call
-        Parafac.fit(data,init) for testing various initializations.
+        TODO : clean up this mess
+        intended behavior: call Parafac.init_parafac(data) 
         """
         # Call the initialisation method, depending on wether the user prodived
         # initial factors or initialization method.
@@ -231,6 +313,21 @@ class Parafac:
                 factors = self.init
         else:
             factors = init_factors
+        self.init_factors = factors
+
+    def fit(self, data):
+        """
+        intended behavior: call Parafac.fit(data) if init has been set for the
+        Parafac instance,
+        TODO:  call
+        Parafac.fit(data,init) for testing various initializations.
+        """
+        # Initialize factors
+        if self.init_factors == 0:
+            init_parafac(data)    
+
+        factors = np.copy(self.init_factors)
+
         # Call the method
         if self.method == 'ALS':
             factors, errors = parafac_als(data, self.rank, factors,
@@ -239,10 +336,13 @@ class Parafac:
                                           tol=self.tol, verbose=self.verbose,
                                           fixed_modes=self.fixed_modes)
         elif self.method == 'FG':
-            print('not implemented')
-            factors = []
-            errors = 1
-            # factors = parafac_cg()
+            factors, errors = parafac_fg(data, self.rank, factors,
+                                         return_errors=True,
+                                         n_iter_max=self.n_iter_max,
+                                         tol=self.tol, verbose=self.verbose,
+                                         fixed_modes=self.fixed_modes,
+                                         step = self.step, alpha = self.alpha,
+                                         constraints=self.constraints)
         elif self.method == 'ADMM':
             print('not implemented')
             # factors = parafac_admm()
