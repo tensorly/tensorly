@@ -9,19 +9,18 @@ TODO :
 # Authors:  Jeremy E.Cohen
 #           Jean Kossaifi
 
-import warnings
 import numpy as np
-
 import tensorly as tl
 from tensorly.random import check_random_state
 from tensorly.base import unfold
 from tensorly.kruskal_tensor import kruskal_to_tensor
-from tensorly.tenalg import khatri_rao
-from tensorly.contrib.optimization.optim_tensor_ls import least_squares_nway
-from tensorly.contrib.optimization.optim_gradients import fast_gradient_step
+from tensorly.contrib.optimization.optim_routines import least_squares_nway
+from tensorly.contrib.optimization.optim_routines import fast_gradient_step
+from tensorly.contrib.optimization.optim_routines import multiplicative_update_step
 
 
-def initialize_factors(tensor, rank, init='random', svd='numpy_svd', random_state=None, non_negative=False):
+def initialize_factors(tensor, rank, init='random',
+                       svd='numpy_svd', random_state=None):
     """Initialize factors used in `parafac`.
 
     The type of initialization is set using `init`. If `init == 'random'` then
@@ -54,10 +53,7 @@ def initialize_factors(tensor, rank, init='random', svd='numpy_svd', random_stat
 
     if init == 'random':
         factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
-        if non_negative:
-            return [tl.abs(f) for f in factors]
-        else:
-            return factors
+        return factors
 
     elif init == 'svd':
         try:
@@ -78,16 +74,13 @@ def initialize_factors(tensor, rank, init='random', svd='numpy_svd', random_stat
                 # factor[:, :tensor.shape[mode]] = U
                 random_part = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])), **tl.context(tensor))
                 U = tl.concatenate([U, random_part], axis=1)
-            if non_negative:
-                factors.append(tl.abs(U[:, :rank]))
-            else:
-                factors.append(U[:, :rank])
+            factors.append(U[:, :rank])
         return factors
 
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
 
-def parafac_als(tensor, rank, init_factors, n_iter_max=100,
+def parafac_als(tensor, rank, factors, n_iter_max=100,
                 tol=1e-8, verbose=False,
                 return_errors=False,
                 fixed_modes=[]):
@@ -104,7 +97,7 @@ def parafac_als(tensor, rank, init_factors, n_iter_max=100,
         Number of components.
     n_iter_max : int
         Maximum number of iteration
-    init_factors : list
+    factors : list
         Table of initial factors. See initialize_factors().
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
@@ -131,7 +124,6 @@ def parafac_als(tensor, rank, init_factors, n_iter_max=100,
     """
 
     # initialisation
-    factors = init_factors
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
 
@@ -159,6 +151,87 @@ def parafac_als(tensor, rank, init_factors, n_iter_max=100,
         return factors, rec_errors
     else:
         return factors
+
+
+def parafac_mu(tensor, rank, factors, n_iter_max=100,
+               tol=1e-8, verbose=False,
+               return_errors=False,
+               fixed_modes=[], epsilon=1e-12):
+    """Nonnegative CANDECOMP/PARAFAC decomposition via
+    multiplicative updates [2].
+
+    Computes a rank-`rank` decomposition of `tensor` such that,
+
+        ``tensor = [| factors[0], ..., factors[-1] |]``.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank  : int
+        Number of components.
+    n_iter_max : int
+        Maximum number of iteration
+    init_factors : list
+        Table of initial factors. See initialize_factors().
+    tol : float, optional
+        (Default: 1e-6) Relative reconstruction error tolerance. The
+        algorithm is considered to have found the global minimum when the
+        reconstruction error is less than `tol`.
+    verbose : int, optional
+        Level of verbosity
+    return_errors : bool, optional
+        Activate return of iteration errors
+
+
+    Returns
+    -------
+    factors : ndarray list
+        List of factors of the CP decomposition element `i` is of shape
+        (tensor.shape[i], rank). Factors are nonnegative.
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+   .. [2] Amnon Shashua and Tamir Hazan,
+       "Non-negative tensor factorization with applications to statistics and computer vision",
+       In Proceedings of the International Conference on Machine Learning (ICML),
+       pp 792-799, ICML, 2005
+ 
+    """
+    
+    # initialisation: project variables if negative
+    for mode in range(tl.ndim(tensor)):
+        factors[mode][factors[mode] < 0] = 0
+    rec_errors = []
+    norm_tensor = tl.norm(tensor, 2)
+
+    for iteration in range(n_iter_max):
+
+        # One pass of least squares on each updated mode
+        factors, rec_error = multiplicative_update_step(tensor, factors,
+                                                        rank, norm_tensor,
+                                                        fixed_modes,
+                                                        epsilon)
+
+        if tol:
+            rec_errors.append(rec_error)
+
+            if iteration > 1:
+                if verbose:
+                    print('reconstruction error={}, variation={}.'.format(
+                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                    if verbose:
+                        print('converged in {} iterations.'.format(iteration))
+                    break
+
+    if return_errors:
+        return factors, rec_errors
+    else:
+        return factors
+
 
 def parafac_fg(tensor, rank, factors, n_iter_max=100,
                tol=1e-8, verbose=False,
@@ -216,7 +289,7 @@ def parafac_fg(tensor, rank, factors, n_iter_max=100,
     for iteration in range(n_iter_max):
 
         # One pass of least squares on each updated mode
-        rec_error = fast_gradient_step(tensor, factors, rank, norm_tensor,
+        factors, rec_error = fast_gradient_step(tensor, factors, rank, norm_tensor,
                                        aux_factors, step, alpha, qstep,
                                        fixed_modes, weights, constraints)
 
@@ -247,14 +320,12 @@ class Parafac:
     def __init__(self, rank=1, method='ALS', init='random', constraints=[],
                  weights=[], fixed_modes=[], n_iter_max=100, tol=1e-8,
                  verbose=False, svd='numpy_svd', random_state=None,
-                 step=1e-5, alpha=0.2):
+                 step=1e-5, alpha=0.2, epsilon=1e-12):
         """
         rank: Number of components in the model. Default is 1.
 
-        init: if init is a string, then an initialisation method is used
-        according to that string. If init is a set of factors, then those
-        factors are used for initiatization. Empty init results in random
-        initialization.
+        init: string, refers to initialization technique.  To initialize with a
+        set of factors, use init_factors(data, factors).
 
         constraints: constraints are input as a table of strings, containing
         the type of constraint for each factor. For unconstrained
@@ -286,6 +357,7 @@ class Parafac:
         self.alpha = alpha
         self.method = method
         self.init_factors = 0
+        self.epsilon = epsilon
 
         # Choosing the default method based on the constraints
         if not constraints:
@@ -295,37 +367,23 @@ class Parafac:
             print(' using default projected fast gradient instead.')
             self.method = 'FG'
 
-    def init_parafac(self, data, init_factors=0):
+    def initialize_parafac(self, data=0, init_factors=0):
         """
-        TODO : clean up this mess
-        intended behavior: call Parafac.init_parafac(data) 
         """
-        # Call the initialisation method, depending on wether the user prodived
-        # initial factors or initialization method.
+        # If only the data is given
         if init_factors == 0:
-            if isinstance(self.init, str):
-                # TODO cleanup nonnegative in init
-                factors = initialize_factors(data, self.rank, self.init,
-                                             svd=self.svd,
-                                             non_negative=False,
-                                             random_state=self.random_state)
-            elif isinstance(self.init, list):
-                factors = self.init
-        else:
-            factors = init_factors
-        self.init_factors = factors
+            self.init_factors = initialize_factors(data, self.rank, self.init,
+                                                   svd=self.svd,
+                                                   random_state=self.random_state)
+        else:  # if factors are provided
+            self.init_factors = init_factors
 
     def fit(self, data):
         """
-        intended behavior: call Parafac.fit(data) if init has been set for the
-        Parafac instance,
-        TODO:  call
-        Parafac.fit(data,init) for testing various initializations.
+        Parafac.fit(data) for testing various initializations.
         """
         # Initialize factors
-        if self.init_factors == 0:
-            init_parafac(data)    
-
+        self.initialize_parafac(data, self.init_factors)
         factors = np.copy(self.init_factors)
 
         # Call the method
@@ -343,6 +401,19 @@ class Parafac:
                                          fixed_modes=self.fixed_modes,
                                          step = self.step, alpha = self.alpha,
                                          constraints=self.constraints)
+        elif self.method == 'MU':
+            # Checking that all constraints are set to 'NN'
+            for i in range(tl.ndim(data)):
+                if self.constraints[i] != 'NN':
+                    print('Warning: MU will only perform nonnegative PARAFAC.')
+                    print('For unconstrained PARAFAC, use ALS instead.')
+            factors, errors = parafac_mu(data, self.rank, factors,
+                                          return_errors=True,
+                                          n_iter_max=self.n_iter_max,
+                                          tol=self.tol, verbose=self.verbose,
+                                          fixed_modes=self.fixed_modes,
+                                          epsilon=self.epsilon)
+
         elif self.method == 'ADMM':
             print('not implemented')
             # factors = parafac_admm()
