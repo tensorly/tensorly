@@ -11,7 +11,7 @@ tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
 
 import numpy as np
 
-from .core import Backend, register_backend
+from . import Backend, BackendManager
 
 
 class TensorflowBackend(Backend):
@@ -181,4 +181,4 @@ for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)
 del _FUN_NAMES
 
-register_backend(TensorflowBackend())
+BackendManager.register_backend(TensorflowBackend())

@@ -1,6 +1,5 @@
 import numpy as np
-
-from .core import register_backend, Backend
+from . import BackendManager, Backend
 
 
 class NumpyBackend(Backend):
@@ -78,4 +77,5 @@ for name in ['solve', 'qr']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
 
 
-register_backend(NumpyBackend())
+backend = NumpyBackend()
+BackendManager.register_backend(NumpyBackend())
