@@ -10,8 +10,8 @@ def contract(tensor1, modes1, tensor2, modes2):
     modes1 : int list or int
         modes on which to contract tensor1
     tensor2 : tl.tensor
-    modes1 : int list or int
-        modes on which to contract tensor1
+    modes2 : int list or int
+        modes on which to contract tensor2
 
     Returns
     -------
