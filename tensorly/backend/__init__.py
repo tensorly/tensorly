@@ -3,6 +3,8 @@ from .core import Backend
 import importlib
 import inspect
 import os
+import threading
+from contextlib import contextmanager
 
 class BackendManager():
     _DEFAULT_BACKEND = 'numpy'
@@ -64,6 +66,38 @@ class BackendManager():
     def get_backend():
         return BackendManager.backend.backend_name
 
+get_backend = BackendManager.get_backend
+set_backend = BackendManager.set_backend
+
+@contextmanager
+def backend_context(backend, local_threadsafe=False):
+    """Context manager to set the backend for TensorLy.
+
+    Parameters
+    ----------
+    backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
+        The name of the backend to use. Default is 'numpy'.
+    local_threadsafe : bool, optional
+        If True, the backend will not become the default backend for all threads.
+        Note that this only affects threads where the backend hasn't already
+        been explicitly set. If False (default) the backend is set for the
+        entire session.
+
+    Examples
+    --------
+    Set the backend to numpy globally for this thread:
+
+    >>> import tensorly as tl
+    >>> tl.set_backend('numpy')
+    >>> with tl.backend_context('pytorch'):
+    ...     pass
+    """
+    _old_backend = BackendManager.get_backend()
+    BackendManager.set_backend(backend, local_threadsafe=local_threadsafe)
+    try:
+        yield
+    finally:
+        BackendManager.set_backend(_old_backend)
 
 BackendManager.initialise_backend()
 
