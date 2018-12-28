@@ -16,7 +16,7 @@ if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
 
 import numpy as np
 
-from . import Backend, BackendManager
+from .core import Backend
 
 
 class PyTorchBackend(Backend):
@@ -277,5 +277,3 @@ for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
-
-BackendManager.register_backend(PyTorchBackend())

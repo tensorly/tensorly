@@ -13,7 +13,7 @@ import numpy
 from mxnet import nd
 from mxnet.ndarray import reshape, dot, transpose
 
-from . import Backend, BackendManager
+from .core import Backend
 
 
 class MxnetBackend(Backend):
@@ -257,5 +257,3 @@ for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
              'moveaxis', 'dot', 'transpose', 'reshape',
              'where', 'sign', 'prod']:
     MxnetBackend.register_method(name, getattr(nd, name))
-
-BackendManager.register_backend(MxnetBackend())
