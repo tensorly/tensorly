@@ -46,9 +46,8 @@ def test_set_backend():
 
     # Set not in context manager
     try:
-        obj = tl.set_backend('pytorch')
+        tl.set_backend('pytorch')
         assert tl.get_backend() == 'pytorch'
-        assert repr(obj) == "tensorly.set_backend('pytorch')"
     finally:
         tl.set_backend(toplevel_backend)
 
