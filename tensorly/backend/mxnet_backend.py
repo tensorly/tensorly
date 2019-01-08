@@ -49,6 +49,12 @@ class MxnetBackend(Backend):
     @staticmethod
     def ndim(tensor):
         return tensor.ndim
+      
+    @staticmethod
+    def reshape(tensor, shape):
+        if not shape:
+            shape = [1]
+        return nd.reshape(tensor, shape)
 
     def solve(self, matrix1, matrix2):
         ctx = self.context(matrix1)
@@ -254,6 +260,6 @@ for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
 for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
-             'moveaxis', 'dot', 'transpose', 'reshape',
+             'moveaxis', 'dot', 'transpose',
              'where', 'sign', 'prod']:
     MxnetBackend.register_method(name, getattr(nd, name))
