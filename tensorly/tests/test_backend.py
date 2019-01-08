@@ -95,7 +95,6 @@ def test_set_backend_local_threadsafe():
         assert executor.submit(tl.get_backend).result() == global_default
 
 
-
 def test_backend_and_tensorly_module_attributes():
     for dtype in ['int32', 'int64', 'float32', 'float64']:
         assert dtype in dir(tl)

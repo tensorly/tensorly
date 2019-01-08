@@ -76,5 +76,3 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
 for name in ['solve', 'qr']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
 
-
-backend = NumpyBackend()
