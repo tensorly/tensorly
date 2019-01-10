@@ -1,8 +1,8 @@
 import warnings
 from .core import Backend
 import importlib
-import inspect
 import os
+import sys
 import threading
 from contextlib import contextmanager
 
@@ -117,8 +117,36 @@ def backend_context(backend, local_threadsafe=False):
 initialize_backend()
 
 # Dynamically dispatch the methods and attributes from the current backend
-def __getattr__(item):
-    return getattr(_LOCAL_STATE.backend, item)
+# Python 3.7 or higher, use module __getattr__ (PEP 562)
+if sys.version_info >= (3, 7, 0):
+    def __getattr__(item):
+        return getattr(_LOCAL_STATE.backend, item)
 
-def __dir__():
-    return [k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')]
+    def __dir__():
+        return [k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')]
+
+# Python 3.6 or lower: we need to overwrite the class of the module...
+else:
+    import types
+
+    class BackendAttributeModuleType(types.ModuleType):
+        """A module type to dispatch backend generic attributes."""
+        def __getattr__(self, key):
+            return getattr(_LOCAL_STATE.backend, key)
+
+        def __dir__(self):
+            out = set(super(BackendAttributeModuleType, self).__dir__())
+            out.update({k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')})
+            return list(out)
+
+    def _wrap_module(module_name):
+        """Wrap a module to dynamically dispatch attributes to the backend.
+        Intended use is
+        >>> tl.wrap_module(__name__)
+
+        This will effectively overwrite the __getattr__ and __dir__ methods
+        to dynamically fetch from the current backend rather than the one set at import time
+        """
+        sys.modules[module_name].__class__ = BackendAttributeModuleType
+
+    _wrap_module(__name__)

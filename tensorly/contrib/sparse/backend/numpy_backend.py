@@ -141,4 +141,3 @@ for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye', 'ones
     NumpySparseBackend.register_method(name, getattr(sparse, name))
 
 
-register_sparse_backend(NumpySparseBackend())
