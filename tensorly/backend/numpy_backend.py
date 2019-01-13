@@ -123,7 +123,7 @@ def norm(tensor, order=2, axis=None):
     if order == 1:
         return np.sum(np.abs(tensor), axis=axis)
     elif order == 2:
-        return np.sqrt(np.sum(tensor**2, axis=axis))
+        return np.sqrt(np.sum(np.abs(tensor)**2, axis=axis))
     else:
         return np.sum(np.abs(tensor)**order, axis=axis)**(1/order)
 
