@@ -66,7 +66,7 @@ def test_set_backend_local_threadsafe():
 
     with ThreadPoolExecutor(max_workers=1) as executor:
 
-        with tl.backend_context('numpy',local_threadsafe=True):
+        with tl.backend_context('numpy', local_threadsafe=True):
             assert tl.get_backend() == 'numpy'
             # Changes only happen locally in this thread
             assert executor.submit(tl.get_backend).result() == global_default
@@ -90,6 +90,7 @@ def test_set_backend_local_threadsafe():
                 executor.submit(check).result()
         finally:
             tl.set_backend(global_default, local_threadsafe=False)
+            executor.submit(tl.set_backend,global_default).result()
 
         assert tl.get_backend() == global_default
         assert executor.submit(tl.get_backend).result() == global_default

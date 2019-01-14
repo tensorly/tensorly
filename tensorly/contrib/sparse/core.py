@@ -1,14 +1,13 @@
 import functools
 
-from .backend import using_sparse_backend
+from .backend import sparse_context
 from ... import backend, base, kruskal_tensor, tucker_tensor, mps_tensor
-
 
 def wrap(func):
     @functools.wraps(func, assigned=('__name__', '__qualname__',
                                      '__doc__', '__annotations__'))
     def inner(*args, **kwargs):
-        with using_sparse_backend():
+        with sparse_context():
             return func(*args, **kwargs)
 
     return inner

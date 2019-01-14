@@ -45,7 +45,6 @@ def register_backend(backend_name):
         If `backend_name` does not correspond to one listed
             in `_KNOWN_BACKEND`
     """
-
     if backend_name in _KNOWN_BACKENDS:
         module = importlib.import_module('tensorly.backend.{0}_backend'.format(backend_name))
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
@@ -76,12 +75,22 @@ def set_backend(backend, local_threadsafe=False):
     _LOCAL_STATE.backend = backend
     
     if not local_threadsafe:
-        _DEFAULT_BACKEND = backend
+        global _DEFAULT_BACKEND
+        _DEFAULT_BACKEND = backend.backend_name
 
 def get_backend():
     """Returns the name of the current backend
     """
-    return _LOCAL_STATE.backend.backend_name
+    return get_backend_method('backend_name')
+
+def get_backend_method(key):
+    try:
+        return getattr(_LOCAL_STATE.backend, key)
+    except AttributeError:
+        return getattr(_LOADED_BACKENDS[_DEFAULT_BACKEND], key)
+
+def get_backend_dir():
+    return [k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')]
 
 @contextmanager
 def backend_context(backend, local_threadsafe=False):
@@ -113,40 +122,34 @@ def backend_context(backend, local_threadsafe=False):
     finally:
         set_backend(_old_backend)
 
-# Initialise the backend to the default one
-initialize_backend()
+def override_module_dispatch(module_name, getter_fun, dir_fun):
+    """Override the module's dispatch mechanism
 
-# Dynamically dispatch the methods and attributes from the current backend
-# Python 3.7 or higher, use module __getattr__ (PEP 562)
-if sys.version_info >= (3, 7, 0):
-    def __getattr__(item):
-        return getattr(_LOCAL_STATE.backend, item)
+        In Python >= 3.7, we use module's __getattr__ and __dir__
+        On older versions, we override the sys.module[__name__].__class__
+    """
+    if sys.version_info >= (3, 7, 0):
+        sys.modules[module_name].__getattr__ = getter_fun
+        sys.modules[module_name].__dir__ = dir_fun
 
-    def __dir__():
-        return [k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')]
+    else:
+        import types
 
-# Python 3.6 or lower: we need to overwrite the class of the module...
-else:
-    import types
+        class BackendAttributeModuleType(types.ModuleType):
+            """A module type to dispatch backend generic attributes."""
+            def __getattr__(self, key):
+                return getter_fun(key)
 
-    class BackendAttributeModuleType(types.ModuleType):
-        """A module type to dispatch backend generic attributes."""
-        def __getattr__(self, key):
-            return getattr(_LOCAL_STATE.backend, key)
+            def __dir__(self):
+                out = set(super().__dir__())
+                out.update({k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')})
+                return list(out)
 
-        def __dir__(self):
-            out = set(super(BackendAttributeModuleType, self).__dir__())
-            out.update({k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')})
-            return list(out)
-
-    def _wrap_module(module_name):
-        """Wrap a module to dynamically dispatch attributes to the backend.
-        Intended use is
-        >>> tl.wrap_module(__name__)
-
-        This will effectively overwrite the __getattr__ and __dir__ methods
-        to dynamically fetch from the current backend rather than the one set at import time
-        """
         sys.modules[module_name].__class__ = BackendAttributeModuleType
 
-    _wrap_module(__name__)
+
+# Initialise the backend to the default one
+initialize_backend()
+override_module_dispatch(__name__, 
+                         get_backend_method,
+                         get_backend_dir)

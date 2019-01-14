@@ -11,18 +11,11 @@ from .tucker_tensor import tucker_to_tensor, tucker_to_unfolded, tucker_to_vec
 from .mps_tensor import mps_to_tensor, mps_to_unfolded, mps_to_vec
 
 from .backend import (set_backend, get_backend,
-                      backend_context)
+                      backend_context, get_backend_dir,
+                      get_backend_method, override_module_dispatch)
 
-if sys.version_info[0] >=3 and sys.version_info[1] >= 7:
-    from .backend import __dir__ as backend_dir
-    from .backend import __getattr__
-
-    # We need to add the above methods to the backend dir
+def full_dir():
     static_items = list(sys.modules[__name__].__dict__.keys())
-    def __dir__():
-        return backend_dir() + static_items
+    return get_backend_dir() + static_items
 
-# Python 3.6 or lower: we need to overwrite the class of the module...
-else:
-    from .backend import _wrap_module
-    _wrap_module(__name__)
+override_module_dispatch(__name__, get_backend_method, get_backend_dir)

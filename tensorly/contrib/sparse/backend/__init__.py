@@ -1,14 +1,14 @@
 import importlib
 from contextlib import contextmanager
 
-from ....backend import backend_context, get_backend
+from ....backend import backend_context, get_backend, override_module_dispatch
 
 
 _KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
 _LOADED_BACKENDS = {}
 
 @contextmanager
-def using_sparse_backend():
+def sparse_context():
     backend_name = get_backend()
     if backend_name not in _LOADED_BACKENDS:
         register_sparse_backend(backend_name)
@@ -56,39 +56,4 @@ def get_backend_dir():
     return [k for k in dir(_LOADED_BACKENDS[backend_name]) if not k.startswith('_')]
 
 
-import sys 
-
-# Dynamically dispatch the methods and attributes from the current backend
-# Python 3.7 or higher, use module __getattr__ (PEP 562)
-if sys.version_info >= (3, 7, 0):
-    def __getattr__(item):
-        return get_backend_method(item)
-
-    def __dir__():
-        return get_backend_dir()
-
-# Python 3.6 or lower: we need to overwrite the class of the module...
-else:
-    import types
-
-    class BackendAttributeModuleType(types.ModuleType):
-        """A module type to dispatch backend generic attributes."""
-        def __getattr__(self, key):
-            return get_backend_method(item)
-
-        def __dir__(self):
-            out = set(super(BackendAttributeModuleType, self).__dir__())
-            out.update(get_backend_dir())
-            return list(out)
-
-    def _wrap_module(module_name):
-        """Wrap a module to dynamically dispatch attributes to the backend.
-        Intended use is
-        >>> tl.wrap_module(__name__)
-
-        This will effectively overwrite the __getattr__ and __dir__ methods
-        to dynamically fetch from the current backend rather than the one set at import time
-        """
-        sys.modules[module_name].__class__ = BackendAttributeModuleType
-
-    _wrap_module(__name__)
+override_module_dispatch(__name__, get_backend_method, get_backend_dir)
