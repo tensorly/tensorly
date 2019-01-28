@@ -118,6 +118,7 @@ In addition to the basic functions such as `shape`, `reshape`, `where`, `min`, e
     proximal.svd_thresholding
     proximal.procrustes
     inner
+    contract
 
 
 :mod:`tensorly.decomposition`: Tensor Decomposition
