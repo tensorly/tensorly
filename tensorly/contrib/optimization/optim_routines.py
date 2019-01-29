@@ -318,37 +318,68 @@ def nnlsHALS(UtM, UtU, V, maxiter=500):
         cnt = cnt+1
     return V, eps, cnt
 
-#r, n = tl.shape(UtM)
-#    #UtU = tl.dot(tl.transpose(U), U)
-#    #UtM = tl.dot(tl.transpose(U), M)
-#
-#    if not V.all():  # checks if V is empty
-#        V = tl.solve(UtU, UtM)  # Least squares
-#        V[V < 0] = 0
-#        # Scaling
-#        alpha = tl.sum(UtM * V)/tl.sum(
-#            UtU * tl.dot(V, tl.transpose(V)))
-#        V = tl.dot(alpha, V)
-#
-#    delta = 1e-6 # Stopping condition depending on the evolution of the iterate
-#    # here delta refers to the minimum value of difference
-#    # (err_{iter+1}-err_{iter})/err_{iter}
-#    eps0 = 0
-#    cnt = 1
-#    eps = 1
-#
-#    while eps >= delta * eps0 and cnt <= maxiter:
-#        nodelta = 0
-#        for k in range(r):
-#            # Update
-#            deltaV = tl.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
-#            V[k,:] = V[k,:] + deltaV
-#            nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
-#            # Safety procedure
-#            if not V[k,:].any():
-#                V[k,:] = 1e-16*tl.max(V)
-#        if cnt == 1:
-#            eps0 = nodelta
-#        eps = nodelta
-#        cnt = cnt+1
-#    return V, eps, cnt
+
+# Accelerated version, using gross-tier stopping criterion
+def nnlsHALSacc(UtM, UtU, V, maxiter=500):
+    """ Computes an approximate solution of the following nonnegative least 
+     squares problem (NNLS)  
+
+               min_{V >= 0} ||M-UV||_F^2 
+     
+     with an exact block-coordinate descent scheme. M is m by n, U is m by r.
+
+     See N. Gillis and F. Glineur, Accelerated Multiplicative Updates and 
+     Hierarchical ALS Algorithms for Nonnegative Matrix Factorization, 
+     Neural Computation 24 (4): 1085-1105, 2012.
+     
+     This accelerated function is made for being used repetively inside an
+     outer-loop alternating algorithm, for instance for computing nonnegative
+     matrix Factorization or tensor factorization.
+
+     ****** Input ******
+       UtM  : r-by-n matrix 
+       UtU  : r-by-r matrix
+       V  : r-by-n initialization matrix 
+            default: one non-zero entry per column corresponding to the 
+            clostest column of U of the corresponding column of M 
+       maxiter: upper bound on the number of iterations (default=500).
+
+       *Remark. M, U and V are not required to be nonnegative. 
+
+     ****** Output ******
+       V  : an r-by-n nonnegative matrix \approx argmin_{V >= 0} ||M-UV||_F^2
+       err: final approximation error
+       it : number of iterations
+    """
+ 
+    r, n = tl.shape(UtM)
+    if not V.all():  # checks if V is empty
+        V = tl.solve(UtU, UtM)  # Least squares
+        V[V < 0] = 0
+        # Scaling
+        alpha = tl.sum(UtM * V)/tl.sum(
+            UtU * tl.dot(V, tl.transpose(V)))
+        V = tl.dot(alpha, V)
+
+    delta = 1e-2 # Stopping condition depending on the evolution of the iterate
+    # here delta refers to the minimum value of difference
+    # (err_{iter+1}-err_{iter})/(err_{1}-err_{0})
+    eps0 = 0
+    cnt = 1
+    eps = 1
+
+    while eps >= delta * eps0 and cnt <= maxiter:
+        nodelta = 0
+        for k in range(r):
+            # Update
+            deltaV = tl.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
+            V[k,:] = V[k,:] + deltaV
+            nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
+            # Safety procedure
+            if not V[k,:].any():
+                V[k,:] = 1e-16*tl.max(V)
+        if cnt == 1:
+            eps0 = nodelta
+        eps = nodelta
+        cnt = cnt+1
+    return V, eps, cnt
