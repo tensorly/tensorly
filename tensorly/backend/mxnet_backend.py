@@ -23,7 +23,7 @@ import scipy.sparse.linalg
 from numpy import testing
 from mxnet import nd as nd
 from mxnet.ndarray import arange, zeros, zeros_like, ones, eye
-from mxnet.ndarray import moveaxis, dot, transpose, reshape
+from mxnet.ndarray import moveaxis, dot, transpose
 from mxnet.ndarray import where, maximum, argmax, argmin, sign, prod
 
 # Order 0 tensor, mxnet....
@@ -85,6 +85,11 @@ def assert_equal(actual, desired, err_msg='', verbose=True):
             desired = desired[0]
     testing.assert_equal(actual, desired)
 
+
+def reshape(tensor, shape):
+    if not shape:
+        shape = [1]
+    return nd.reshape(tensor, shape)
 
 
 def shape(tensor):

@@ -22,7 +22,7 @@ from tensorly.contrib.optimization.optim_routines import multiplicative_update_s
 def initialize_factors(tensor, rank, init='random',
                        svd='numpy_svd', random_state=None):
     """Initialize factors used in `parafac`.
-
+    
     The type of initialization is set using `init`. If `init == 'random'` then
     initialize factor matrices using `random_state`. If `init == 'svd'` then
     initialize the `m`th factor matrix using the `rank` left singular vectors
@@ -39,8 +39,6 @@ def initialize_factors(tensor, rank, init='random',
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD,
         acceptable values in tensorly.SVD_FUNS
-    non_negative : bool, default is False
-        if True, non-negative factors are returned
 
     Returns
     -------
@@ -93,20 +91,25 @@ def parafac_als(tensor, rank, factors, n_iter_max=100,
     Parameters
     ----------
     tensor : ndarray
+        Input data tensor
     rank  : int
         Number of components.
+    factors : list
+        Table of initial factors. See initialize_factors(), or the
+        initialize_parafac() method of class parafac.
     n_iter_max : int
         Maximum number of iteration
-    factors : list
-        Table of initial factors. See initialize_factors().
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
         algorithm is considered to have found the global minimum when the
         reconstruction error is less than `tol`.
     verbose : int, optional
-        Level of verbosity
+        (Default: False) Level of verbosity
     return_errors : bool, optional
-        Activate return of iteration errors
+        (Default: False) Activate return of iteration errors
+    fixed_modes : list, optional
+        (Default: []) List of components indexes that are not updates. Returned
+        values for these indexes are therefore the initialization values.
 
 
     Returns
@@ -167,21 +170,28 @@ def parafac_mu(tensor, rank, factors, n_iter_max=100,
     Parameters
     ----------
     tensor : ndarray
+        Input data tensor
     rank  : int
         Number of components.
+    factors : list
+        Table of initial factors. See initialize_factors(), or the
+        initialize_parafac() method of class parafac.
     n_iter_max : int
         Maximum number of iteration
-    init_factors : list
-        Table of initial factors. See initialize_factors().
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
         algorithm is considered to have found the global minimum when the
         reconstruction error is less than `tol`.
     verbose : int, optional
-        Level of verbosity
+        (Default: False) Level of verbosity
     return_errors : bool, optional
-        Activate return of iteration errors
-
+        (Default: False) Activate return of iteration errors
+    fixed_modes : list, optional
+        (Default: []) List of components indexes that are not updates. Returned
+        values for these indexes are therefore the initialization values.
+    epsilon : float, optional
+        (Default: 1e-12) Regularization term to avoid division by zero in
+        multiplicative update.
 
     Returns
     -------
@@ -197,9 +207,8 @@ def parafac_mu(tensor, rank, factors, n_iter_max=100,
        "Non-negative tensor factorization with applications to statistics and computer vision",
        In Proceedings of the International Conference on Machine Learning (ICML),
        pp 792-799, ICML, 2005
- 
     """
-    
+
     # initialisation: project variables if negative
     for mode in range(tl.ndim(tensor)):
         factors[mode][factors[mode] < 0] = 0
@@ -247,25 +256,40 @@ def parafac_fg(tensor, rank, factors, n_iter_max=100,
     Parameters
     ----------
     tensor : ndarray
+        Input data tensor
     rank  : int
         Number of components.
+    factors : list
+        Table of initial factors. See initialize_factors(), or the
+        initialize_parafac() method of class parafac.
     n_iter_max : int
         Maximum number of iteration
-    init_factors : list
-        Table of initial factors. See initialize_factors().
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
         algorithm is considered to have found the global minimum when the
         reconstruction error is less than `tol`.
     verbose : int, optional
-        Level of verbosity
+        (Default: False) Level of verbosity
     return_errors : bool, optional
-        Activate return of iteration errors
-
-    step : float, stepsize
-          How much the gradient is descended in the FG method. Choose 1/L where
-          L is the Lipschitz constant if possible.
-
+        (Default: False) Activate return of iteration errors
+    step : float, stepsize, optional (tuning is recommended)
+        (Default: 1e-5) How much the gradient is descended in the FG method.
+        Choose 1/L where L is the Lipschitz constant if possible.
+    fixed_modes : list, optional
+        (Default: []) List of components indexes that are not updates. Returned
+        values for these indexes are therefore the initialization values.
+    alpha : float in ]0,1[, optional
+        (Default: 0.2) Initial value of the alpha parameter in Nesterov
+        acceleration.
+    qstep : float in ]0,step], optional
+        (Default: 0) A constant in the Nesterov acceleration scheme. If solving
+        a least squares problem, use the smallest eigenvalue of the mixing
+        matrix.
+    constraints : list of strings, optional
+        (Default: []) Contains keywords for imposing constraints on each
+        factor. For a full list of available constraints, check *** TODO.
+        Ex: for nonnegative factorization with a third order tensor, use
+        constraints=['NN','NN','NN'].
 
     Returns
     -------
@@ -288,10 +312,10 @@ def parafac_fg(tensor, rank, factors, n_iter_max=100,
 
     for iteration in range(n_iter_max):
 
-        # One pass of least squares on each updated mode
+        # One pass of fast gradient
         factors, rec_error = fast_gradient_step(tensor, factors, rank, norm_tensor,
-                                       aux_factors, step, alpha, qstep,
-                                       fixed_modes, weights, constraints)
+                                                aux_factors, step, alpha, qstep,
+                                                fixed_modes, weights, constraints)
 
         if tol:
             rec_errors.append(rec_error)
@@ -312,16 +336,33 @@ def parafac_fg(tensor, rank, factors, n_iter_max=100,
         return factors
 
 
-
 class Parafac:
     """
-    This is the doc
+    A class for defining a Parafac model and an optimization technique.
+    Computing PARAFAC of a tensor means finding factor matrices so that
+
+        ``tensor = [| factors[0], ..., factors[-1] |]``.
+
+    This class allows to choose the optimization method, the initialization
+    method, constraints on each mode, fixed modes, and various optimization
+    parameters such as the number of iterations, gradient steps and so on.
+
+
+    Atributes
+    ---------
+
+    Methods
+    -------
+
     """
+
     def __init__(self, rank=1, method='ALS', init='random', constraints=[],
                  weights=[], fixed_modes=[], n_iter_max=100, tol=1e-8,
                  verbose=False, svd='numpy_svd', random_state=None,
                  step=1e-5, alpha=0.2, epsilon=1e-12):
         """
+        TODO : docstring
+
         rank: Number of components in the model. Default is 1.
 
         init: string, refers to initialization technique.  To initialize with a
@@ -369,6 +410,17 @@ class Parafac:
 
     def initialize_parafac(self, data=0, init_factors=0):
         """
+        Compute initial factors for the Parafac model, stored in attribute
+        self.init_factors
+        
+        Parameters
+        ----------
+
+        data : ndarray, optional
+            Input tensor
+        init_factors : list of arrays, optional
+            Initial factors. This initialises the model instance using a priori
+            known factors, obtained by the user using a method of his own.
         """
         # If only the data is given
         if init_factors == 0:
@@ -408,11 +460,11 @@ class Parafac:
                     print('Warning: MU will only perform nonnegative PARAFAC.')
                     print('For unconstrained PARAFAC, use ALS instead.')
             factors, errors = parafac_mu(data, self.rank, factors,
-                                          return_errors=True,
-                                          n_iter_max=self.n_iter_max,
-                                          tol=self.tol, verbose=self.verbose,
-                                          fixed_modes=self.fixed_modes,
-                                          epsilon=self.epsilon)
+                                         return_errors=True,
+                                         n_iter_max=self.n_iter_max,
+                                         tol=self.tol, verbose=self.verbose,
+                                         fixed_modes=self.fixed_modes,
+                                         epsilon=self.epsilon)
 
         elif self.method == 'ADMM':
             print('not implemented')

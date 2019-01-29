@@ -12,9 +12,7 @@ def least_squares_nway(tensor, factors,
                        rank, norm_tensor, fixed_modes):
     """ One pass of Alternating Least squares update along all modes
 
-    Update the factors by solving a least squares problem per mode. This is a
-    first naive implementation to demonstrate the syntax of an optimization
-    submodule.
+    Update the factors by solving a least squares problem per mode.
 
     This function is strictly superior to a least squares solver ran on the
     matricized problems min_X ||Y - AX||_F^2 since A is structured as a
@@ -22,17 +20,24 @@ def least_squares_nway(tensor, factors,
 
     Parameters
     ----------
-    input_tensor : tensor of arbitrary order.
-    input_factors : current estimates for the PARAFAC decomposition of
-    input_tensor. The value of input_factor[update_mode] will be updated using
-    a least squares update.
-    rank : rank of the decomposition.
-    norm_tensor : the Frobenius norm of the input tensor
-    fixed_modes : indexes of modes that are not updated
+    tensor : ndarray
+        Tensor of arbitrary order.
+    factors : list of array
+        Current estimates for the PARAFAC decomposition of
+        tensor. The value of factor[update_mode]
+        will be updated using a least squares update.
+    rank : int
+        Rank of the decomposition.
+    norm_tensor : float
+        The Frobenius norm of the input tensor
+    fixed_modes : list
+        Indexes of modes that are not updated
 
     Returns -------
-    out_factors : updated inputs factors
-    rec_error : residual error after the ALS steps.
+    factors : list of array
+        Updated inputs factors
+    rec_error : float
+        residual error after the ALS steps.
     """
 
     # Generating the mode update sequence
@@ -69,10 +74,10 @@ def least_squares_nway(tensor, factors,
     return factors, rec_error
 
 
-def fast_gradient_step(input_tensor, factors,
+def fast_gradient_step(tensor, factors,
                        rank, norm_tensor,
                        aux_factors,
-                       step=0.1, alpha=0.5,
+                       step, alpha=0.5,
                        qstep=0,
                        fixed_modes=[],
                        weights=[], constraints=[]):
@@ -88,19 +93,35 @@ def fast_gradient_step(input_tensor, factors,
 
     Parameters
     ----------
-    input_tensor : tensor of arbitrary order.
-    input_factors : current estimates for the PARAFAC decomposition of
-    input_tensor. The value of input_factor[update_mode] will be updated using
-    a least squares update.
-    rank : rank of the decomposition.
-    norm_tensor : the Frobenius norm of the input tensor
-    step : size of the update step for the gradient. If possible, choose 1/L
-           where L is the Lipschitz constant.
-    fixed_modes : indexes of modes that are not updated
-    weights : entry-wise weights for each data point, contained in a tensor.
-    constraints : a list containing constraints codes (see class Parafac).
+    tensor : ndarray
+        Tensor of arbitrary order.
+    factors : list of array
+        Current estimates for the PARAFAC decomposition of
+        tensor. The value of factor[update_mode]
+        will be updated using a least squares update.
+    rank : int
+        Rank of the decomposition.
+    norm_tensor : float
+        The Frobenius norm of the input tensor
+    fixed_modes : list
+        Indexes of modes that are not updated
+    step : float
+        Size of the update step for the gradient. If possible, choose 1/L
+        where L is the Lipschitz constant.
+    fixed_modes : list, optional
+        (Default: []) List of components indexes that are not updates. Returned
+        values for these indexes are therefore the initialization values.
+    weights : NOT SUPPORTED
+    constraints : list of strings, optional
+        (Default: []) A list containing constraints codes (see *** TODO).
+
 
     Returns -------
+    factors : list of array
+        Updated inputs factors
+    rec_error : float
+        residual error after the ALS steps.
+        Returns -------
     out_factors : updated inputs factors
     out_factors_aux : auxilliary factors, necessary for looping
     alpha : updated value of averaging variable
@@ -111,7 +132,7 @@ def fast_gradient_step(input_tensor, factors,
     Handle personal projection operator
     """
     # Generating the mode update sequence
-    gen = (mode for mode in range(tl.ndim(input_tensor)) if mode not in fixed_modes)
+    gen = (mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes)
 
     # Initialization of factors and aux_factors
     old_factors = np.copy(factors)
@@ -129,10 +150,10 @@ def fast_gradient_step(input_tensor, factors,
     for mode in gen:
         # Unfolding
         # TODO: precompute unfoldings
-        unfoldY = unfold(input_tensor,mode)
+        unfoldY = unfold(tensor,mode)
 
         # Computing Hadamard of cross-products
-        cross = tl.tensor(np.ones((rank, rank)), **tl.context(input_tensor))
+        cross = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
         for i, factor in enumerate(aux_factors):
             if i != mode:
                 cross = cross*tl.dot(tl.transpose(factor),factor)
@@ -145,7 +166,7 @@ def fast_gradient_step(input_tensor, factors,
         grad[mode] = - rhs + tl.dot(aux_factors[mode], cross)
 
     # Rebuilding the loop
-    gen = (mode for mode in range(tl.ndim(input_tensor)) if mode not in fixed_modes)
+    gen = (mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes)
 
     # Updates and Extrapolation
     for mode in gen:
@@ -179,18 +200,26 @@ def multiplicative_update_step(tensor, factors,
 
     Parameters
     ----------
-    input_tensor : tensor of arbitrary order.
-    input_factors : current estimates for the PARAFAC decomposition of
-    input_tensor. The value of input_factor[update_mode] will be updated using
-    a least squares update.
-    rank : rank of the decomposition.
-    norm_tensor : the Frobenius norm of the input tensor
-    fixed_modes : indexes of modes that are not updated
-    epsilon : tolerance to zero
+     tensor : ndarray
+        Tensor of arbitrary order.
+    factors : list of array
+        Current estimates for the PARAFAC decomposition of
+        tensor. The value of factor[update_mode]
+        will be updated using a least squares update.
+    rank : int
+        Rank of the decomposition.
+    norm_tensor : float
+        The Frobenius norm of the input tensor.
+    fixed_modes : list
+        Indexes of modes that are not updated.
+    epsilon : float
+        Small value to avoid division by zero.
 
     Returns -------
-    out_factors : updated inputs factors
-    rec_error : residual error after the ALS steps.
+    factors : list of array
+        Updated inputs factors
+    rec_error : float
+        residual error after the ALS steps.
 
     References
     ----------
@@ -224,7 +253,6 @@ def multiplicative_update_step(tensor, factors,
 
     # outputs
     return factors, rec_error
-
 
 # Author : Jeremy Cohen, copied from Nicolas Gillis code for HALS on Matlab
 def nnlsHALS(UtM, UtU, V, maxiter=500):
