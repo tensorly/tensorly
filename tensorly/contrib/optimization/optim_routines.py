@@ -267,12 +267,15 @@ def nnlsHALS(UtM, UtU, V, maxiter=500):
             UtU * tl.dot(V, tl.transpose(V)))
         V = tl.dot(alpha, V)
 
-    delta = 1e-6 # Stopping condition depending on the evolution of the iterate
-    eps0 = 0
+    delta = 1e-4 # Stopping condition depending on the evolution of the iterate
+    # here delta refers to the minimum value of difference
+    # (err_{iter+1}-err_{iter})/err_{iter}, which is a classic stopping
+    # criterion in optimization.
+    eps0 = 10
     cnt = 1
     eps = 1
 
-    while eps >= delta ** 2 * eps0 and cnt <= maxiter:
+    while abs(eps-eps0) >= delta * eps0 and cnt <= maxiter:
         nodelta = 0
         for k in range(r):
             # Update
@@ -282,8 +285,42 @@ def nnlsHALS(UtM, UtU, V, maxiter=500):
             # Safety procedure
             if not V[k,:].any():
                 V[k,:] = 1e-16*tl.max(V)
-        if cnt == 1:
-            eps0 = nodelta
+        eps0 = eps
         eps = nodelta
         cnt = cnt+1
     return V, eps, cnt
+
+#r, n = tl.shape(UtM)
+#    #UtU = tl.dot(tl.transpose(U), U)
+#    #UtM = tl.dot(tl.transpose(U), M)
+#
+#    if not V.all():  # checks if V is empty
+#        V = tl.solve(UtU, UtM)  # Least squares
+#        V[V < 0] = 0
+#        # Scaling
+#        alpha = tl.sum(UtM * V)/tl.sum(
+#            UtU * tl.dot(V, tl.transpose(V)))
+#        V = tl.dot(alpha, V)
+#
+#    delta = 1e-6 # Stopping condition depending on the evolution of the iterate
+#    # here delta refers to the minimum value of difference
+#    # (err_{iter+1}-err_{iter})/err_{iter}
+#    eps0 = 0
+#    cnt = 1
+#    eps = 1
+#
+#    while eps >= delta * eps0 and cnt <= maxiter:
+#        nodelta = 0
+#        for k in range(r):
+#            # Update
+#            deltaV = tl.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
+#            V[k,:] = V[k,:] + deltaV
+#            nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
+#            # Safety procedure
+#            if not V[k,:].any():
+#                V[k,:] = 1e-16*tl.max(V)
+#        if cnt == 1:
+#            eps0 = nodelta
+#        eps = nodelta
+#        cnt = cnt+1
+#    return V, eps, cnt
