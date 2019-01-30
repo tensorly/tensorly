@@ -9,7 +9,8 @@ from tensorly.kruskal_tensor import kruskal_to_tensor
 
 
 def least_squares_nway(tensor, factors,
-                       rank, norm_tensor, fixed_modes):
+                       rank, norm_tensor, fixed_modes,
+                       constraints):
     """ One pass of Alternating Least squares update along all modes
 
     Update the factors by solving a least squares problem per mode.
@@ -32,6 +33,9 @@ def least_squares_nway(tensor, factors,
         The Frobenius norm of the input tensor
     fixed_modes : list
         Indexes of modes that are not updated
+    constraints : list
+        List of constraints applied on each factor. See class Parafac
+        for more information
 
     Returns -------
     factors : list of array
@@ -60,9 +64,22 @@ def least_squares_nway(tensor, factors,
         krao = khatri_rao(factors,skip_matrix=mode)
         rhs = tl.dot(unfoldY,krao)
 
-        # Update using backend linear system solver
-        factors[mode] = tl.transpose(
-                tl.solve(tl.transpose(cross),tl.transpose(rhs)))
+        # Verify constraints type for choosing the least squares solver
+        if constraints and constraints[mode] == 'NN':
+            # Homemade nonnegative least squares solver
+            #factors[mode] =  tl.transpose(nnlsHALS(tl.transpose(rhs),
+            #    cross,tl.transpose(factors[mode]),maxiter=50)[0])
+            factors[mode] =  tl.transpose(nnlsHALSacc(tl.transpose(rhs),
+                cross,tl.transpose(factors[mode]),maxiter=50)[0])
+
+
+        else:    
+            # Update using backend linear system solver
+            #factors[mode] = tl.transpose(
+            #        tl.solve(tl.transpose(cross),tl.transpose(rhs)))
+            factors[mode] = tl.transpose(
+                    tl.solve(cross,tl.transpose(rhs)))
+
 
     # error computation (improved using precomputed quantities)
     rec_error = norm_tensor ** 2 - 2*tl.dot(

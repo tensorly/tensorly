@@ -135,7 +135,8 @@ def parafac_als(tensor, rank, factors, n_iter_max=100,
         # One pass of least squares on each updated mode
         factors, rec_error = least_squares_nway(tensor, factors,
                                                 rank, norm_tensor,
-                                                fixed_modes)
+                                                fixed_modes,
+                                                constraints=None)
 
         if tol:
             rec_errors.append(rec_error)
@@ -470,8 +471,16 @@ class Parafac:
             print('not implemented')
             # factors = parafac_admm()
         elif self.method == 'HALS':
-            print('not implemented')
-            # factors = parafac_hals()
+            for i in range(tl.ndim(data)):
+                if self.constraints[i] != 'NN':
+                    print('Warning: HALS will only perform nonnegative PARAFAC.')
+                    print('For unconstrained PARAFAC, use ALS instead.')
+            factors, errors = parafac_hals(data, self.rank, factors,
+                                         return_errors=True,
+                                         n_iter_max=self.n_iter_max,
+                                         tol=self.tol, verbose=self.verbose,
+                                         fixed_modes=self.fixed_modes,
+                                         constraints=self.constraints)
 
         # Filling in the components attribute and returning them
         self.components = factors
@@ -495,3 +504,84 @@ class Parafac:
 
         # For each mode where r<dim, project using the pseudo-inverse of each
         # factor
+
+# --------------------- Ongoing work -----------------#
+def parafac_hals(tensor, rank, factors, n_iter_max=100,
+                tol=1e-8, verbose=False,
+                return_errors=False,
+                fixed_modes=[], constraints=None):
+    """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
+
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
+
+        ``tensor = [| factors[0], ..., factors[-1] |]``.
+
+    Parameters
+    ----------
+    tensor : ndarray
+        Input data tensor
+    rank  : int
+        Number of components.
+    factors : list
+        Table of initial factors. See initialize_factors(), or the
+        initialize_parafac() method of class parafac.
+    n_iter_max : int
+        Maximum number of iteration
+    tol : float, optional
+        (Default: 1e-6) Relative reconstruction error tolerance. The
+        algorithm is considered to have found the global minimum when the
+        reconstruction error is less than `tol`.
+    verbose : int, optional
+        (Default: False) Level of verbosity
+    return_errors : bool, optional
+        (Default: False) Activate return of iteration errors
+    fixed_modes : list, optional
+        (Default: []) List of components indexes that are not updates. Returned
+        values for these indexes are therefore the initialization values.
+
+
+    Returns
+    -------
+    factors : ndarray list
+        List of factors of the CP decomposition element `i` is of shape
+        (tensor.shape[i], rank)
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+    """
+
+    # initialisation
+    rec_errors = []
+    norm_tensor = tl.norm(tensor, 2)
+
+    for iteration in range(n_iter_max):
+
+        # One pass of least squares on each updated mode
+        factors, rec_error = least_squares_nway(tensor, factors,
+                                                rank, norm_tensor,
+                                                fixed_modes,
+                                                constraints)
+
+        if tol:
+            rec_errors.append(rec_error)
+
+            if iteration > 1:
+                if verbose:
+                    print('reconstruction error={}, variation={}.'.format(
+                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                    if verbose:
+                        print('converged in {} iterations.'.format(iteration))
+                    break
+
+    if return_errors:
+        return factors, rec_errors
+    else:
+        return factors
+
+
