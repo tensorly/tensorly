@@ -150,6 +150,10 @@ class PyTorchBackend(Backend):
             return torch.argmax(input, dim=axis)
 
     @staticmethod
+    def stack(arrays, axis=0):
+        return torch.stack(arrays, dim=axis)
+
+    @staticmethod
     def _reverse(tensor, axis=0):
         """Reverses the elements along the specified dimension
 

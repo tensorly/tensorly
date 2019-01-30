@@ -189,6 +189,10 @@ class MxnetBackend(Backend):
     @staticmethod
     def concatenate(tensors, axis):
         return nd.concat(*tensors, dim=axis)
+    
+    @staticmethod
+    def stack(arrays, axis=0):
+        return stack(*arrays, axis=axis)
 
     def symeig_svd(self, matrix, n_eigenvecs=None):
         """Computes a truncated SVD on `matrix` using symeig

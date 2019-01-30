@@ -170,6 +170,7 @@ _FUN_NAMES = [
     (tf.argmax, 'argmax'),
     (tf.identity, 'copy'),
     (tf.concat, 'concatenate'),
+    (tf.stack, 'stack'),
     (tf.reduce_min, 'min'),
     (tf.reduce_max, 'max'),
     (tf.reduce_mean, 'mean'),

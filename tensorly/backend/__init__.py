@@ -5,11 +5,15 @@ import os
 import sys
 import threading
 from contextlib import contextmanager
+import inspect
 
 _DEFAULT_BACKEND = 'numpy'
-_KNOWN_BACKENDS = {'numpy': 'NumpyBackend', 'mxnet':'MxnetBackend', 
-                    'pytorch':'PyTorchBackend', 'tensorflow':'TensorflowBackend',
-                    'cupy':'CupyBackend'}
+_KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
+                   'mxnet':'MxnetBackend', 
+                   'pytorch':'PyTorchBackend', 
+                   'tensorflow':'TensorflowBackend',
+                   'cupy':'CupyBackend'}
+
 _LOADED_BACKENDS = {}
 _LOCAL_STATE = threading.local()
 
@@ -81,15 +85,15 @@ def set_backend(backend, local_threadsafe=False):
 def get_backend():
     """Returns the name of the current backend
     """
-    return get_backend_method('backend_name')
+    return _get_backend_method('backend_name')
 
-def get_backend_method(key):
+def _get_backend_method(key):
     try:
         return getattr(_LOCAL_STATE.backend, key)
     except AttributeError:
         return getattr(_LOADED_BACKENDS[_DEFAULT_BACKEND], key)
 
-def get_backend_dir():
+def _get_backend_dir():
     return [k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')]
 
 @contextmanager
@@ -148,8 +152,74 @@ def override_module_dispatch(module_name, getter_fun, dir_fun):
         sys.modules[module_name].__class__ = BackendAttributeModuleType
 
 
+def dispatch(method):
+    """Create a dispatched function from a generic backend method."""
+    name = method.__name__
+
+    def inner(*args, **kwargs):
+        backend = getattr(_LOCAL_STATE, 'backend', _DEFAULT_BACKEND)
+        return getattr(backend, name)(*args, **kwargs)
+
+    # We don't use `functools.wraps` here because some of the dispatched
+    # methods include the backend (`self`) as a parameter. Instead we manually
+    # copy over the needed information, and filter the signature for `self`.
+    for attr in ['__module__', '__name__', '__qualname__', '__doc__',
+                 '__annotations__']:
+        try:
+            setattr(inner, attr, getattr(method, attr))
+        except AttributeError:
+            pass
+
+    sig = inspect.signature(method)
+    if 'self' in sig.parameters:
+        parameters = [v for k, v in sig.parameters.items() if k != 'self']
+        sig = sig.replace(parameters=parameters)
+    inner.__signature__ = sig
+
+    return inner
+
+# Generic methods, exposed as part of the public API
+context = dispatch(Backend.context)
+tensor = dispatch(Backend.tensor)
+is_tensor = dispatch(Backend.is_tensor)
+shape = dispatch(Backend.shape)
+ndim = dispatch(Backend.ndim)
+to_numpy = dispatch(Backend.to_numpy)
+copy = dispatch(Backend.copy)
+concatenate = dispatch(Backend.concatenate)
+stack = dispatch(Backend.stack)
+reshape = dispatch(Backend.reshape)
+transpose = dispatch(Backend.transpose)
+moveaxis = dispatch(Backend.moveaxis)
+arange = dispatch(Backend.arange)
+ones = dispatch(Backend.ones)
+zeros = dispatch(Backend.zeros)
+zeros_like = dispatch(Backend.zeros_like)
+eye = dispatch(Backend.eye)
+where = dispatch(Backend.where)
+clip = dispatch(Backend.clip)
+max = dispatch(Backend.max)
+min = dispatch(Backend.min)
+argmax = dispatch(Backend.argmax)
+argmin = dispatch(Backend.argmin)
+all = dispatch(Backend.all)
+mean = dispatch(Backend.mean)
+sum = dispatch(Backend.sum)
+prod = dispatch(Backend.prod)
+sign = dispatch(Backend.sign)
+abs = dispatch(Backend.abs)
+sqrt = dispatch(Backend.sqrt)
+norm = dispatch(Backend.norm)
+dot = dispatch(Backend.dot)
+kron = dispatch(Backend.kron)
+solve = dispatch(Backend.solve)
+qr = dispatch(Backend.qr)
+kr = dispatch(Backend.kr)
+partial_svd = dispatch(Backend.partial_svd)
+
+
 # Initialise the backend to the default one
 initialize_backend()
 override_module_dispatch(__name__, 
-                         get_backend_method,
-                         get_backend_dir)
+                         _get_backend_method,
+                         _get_backend_dir)
