@@ -11,6 +11,7 @@ TODO :
 
 import numpy as np
 import tensorly as tl
+import time
 from tensorly.random import check_random_state
 from tensorly.base import unfold
 from tensorly.kruskal_tensor import kruskal_to_tensor
@@ -136,7 +137,8 @@ def parafac_als(tensor, rank, factors, n_iter_max=100,
         factors, rec_error = least_squares_nway(tensor, factors,
                                                 rank, norm_tensor,
                                                 fixed_modes,
-                                                constraints=None)
+                                                constraints=None,
+                                                acc=None)
 
         if tol:
             rec_errors.append(rec_error)
@@ -360,7 +362,8 @@ class Parafac:
     def __init__(self, rank=1, method='ALS', init='random', constraints=[],
                  weights=[], fixed_modes=[], n_iter_max=100, tol=1e-8,
                  verbose=False, svd='numpy_svd', random_state=None,
-                 step=1e-5, alpha=0.2, epsilon=1e-12):
+                 step=1e-5, alpha=0.2, epsilon=1e-12, halsacc='acc',
+                 init_factors=0, alpha_hals=0, delta_hals=0):
         """
         TODO : docstring
 
@@ -398,8 +401,11 @@ class Parafac:
         self.step = step
         self.alpha = alpha
         self.method = method
-        self.init_factors = 0
+        self.init_factors = init_factors
         self.epsilon = epsilon
+        self.halsacc = halsacc
+        self.alpha_hals = alpha_hals
+        self.delta_hals = delta_hals
 
         # Choosing the default method based on the constraints
         if not constraints:
@@ -409,11 +415,11 @@ class Parafac:
             print(' using default projected fast gradient instead.')
             self.method = 'FG'
 
-    def initialize_parafac(self, data=0, init_factors=0):
+    def initialize_parafac(self, data=0): 
         """
         Compute initial factors for the Parafac model, stored in attribute
         self.init_factors
-        
+ 
         Parameters
         ----------
 
@@ -424,20 +430,18 @@ class Parafac:
             known factors, obtained by the user using a method of his own.
         """
         # If only the data is given
-        if init_factors == 0:
+        if self.init_factors == 0:
             self.init_factors = initialize_factors(data, self.rank, self.init,
                                                    svd=self.svd,
                                                    random_state=self.random_state)
-        else:  # if factors are provided
-            self.init_factors = init_factors
 
     def fit(self, data):
         """
         Parafac.fit(data) for testing various initializations.
         """
         # Initialize factors
-        self.initialize_parafac(data, self.init_factors)
-        factors = np.copy(self.init_factors)
+        self.initialize_parafac(data=data)
+        #factors = self.init_factors.copy()
 
         # Call the method
         if self.method == 'ALS':
@@ -474,17 +478,21 @@ class Parafac:
             for i in range(tl.ndim(data)):
                 if self.constraints[i] != 'NN':
                     print('Warning: HALS will only perform nonnegative PARAFAC.')
-                    print('For unconstrained PARAFAC, use ALS instead.')
-            factors, errors = parafac_hals(data, self.rank, factors,
+                    print('For unconstrained modes, ALS used instead.')
+            factors, errors, toc = parafac_hals(data, self.rank,
+                                         self.init_factors,
                                          return_errors=True,
                                          n_iter_max=self.n_iter_max,
                                          tol=self.tol, verbose=self.verbose,
                                          fixed_modes=self.fixed_modes,
-                                         constraints=self.constraints)
+                                         constraints=self.constraints,
+                                         acc = self.halsacc,
+                                         alpha=self.alpha_hals,
+                                         delta=self.delta_hals)
 
         # Filling in the components attribute and returning them
         self.components = factors
-        return self.components, errors
+        return self.components, errors, toc
 
     def reconstruct(self):
         """
@@ -506,10 +514,11 @@ class Parafac:
         # factor
 
 # --------------------- Ongoing work -----------------#
-def parafac_hals(tensor, rank, factors, n_iter_max=100,
+def parafac_hals(tensor, rank, init_factors, n_iter_max=100,
                 tol=1e-8, verbose=False,
                 return_errors=False,
-                fixed_modes=[], constraints=None):
+                fixed_modes=[], constraints=None, acc=None,
+                alpha=0, delta=0):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
@@ -522,7 +531,7 @@ def parafac_hals(tensor, rank, factors, n_iter_max=100,
         Input data tensor
     rank  : int
         Number of components.
-    factors : list
+    init_factors : list
         Table of initial factors. See initialize_factors(), or the
         initialize_parafac() method of class parafac.
     n_iter_max : int
@@ -555,8 +564,11 @@ def parafac_hals(tensor, rank, factors, n_iter_max=100,
     """
 
     # initialisation
+    factors = init_factors.copy()
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
+    tic = time.time()
+    toc = []
 
     for iteration in range(n_iter_max):
 
@@ -564,12 +576,16 @@ def parafac_hals(tensor, rank, factors, n_iter_max=100,
         factors, rec_error = least_squares_nway(tensor, factors,
                                                 rank, norm_tensor,
                                                 fixed_modes,
-                                                constraints)
+                                                constraints,
+                                                acc,
+                                                alpha=alpha,
+                                                delta=delta)
 
+        toc.append(time.time() - tic)
         if tol:
             rec_errors.append(rec_error)
 
-            if iteration > 1:
+            if iteration > 0:
                 if verbose:
                     print('reconstruction error={}, variation={}.'.format(
                         rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
@@ -578,10 +594,11 @@ def parafac_hals(tensor, rank, factors, n_iter_max=100,
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
                     break
+            else:
+                print('reconstruction error={}'.format(rec_errors[iteration]))
+
 
     if return_errors:
-        return factors, rec_errors
+        return factors, rec_errors, toc
     else:
         return factors
-
-
