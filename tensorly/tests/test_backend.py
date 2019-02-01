@@ -45,11 +45,9 @@ def test_set_backend():
     assert tl.get_backend() == toplevel_backend
 
     # Set not in context manager
-    try:
-        tl.set_backend('pytorch')
-        assert tl.get_backend() == 'pytorch'
-    finally:
-        tl.set_backend(toplevel_backend)
+    tl.set_backend('pytorch')
+    assert tl.get_backend() == 'pytorch'
+    tl.set_backend(toplevel_backend)
 
     assert tl.get_backend() == toplevel_backend
 
