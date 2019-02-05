@@ -276,10 +276,6 @@ class MxnetBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'symeig_svd': self.symeig_svd}
 
-    @staticmethod
-    def stack(arrays, axis=0):
-        return stack(*arrays, axis=axis)
-
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
