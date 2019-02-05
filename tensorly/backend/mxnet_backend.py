@@ -49,7 +49,7 @@ class MxnetBackend(Backend):
     @staticmethod
     def ndim(tensor):
         return tensor.ndim
-      
+
     @staticmethod
     def reshape(tensor, shape):
         if not shape:
@@ -206,7 +206,7 @@ class MxnetBackend(Backend):
     @staticmethod
     def concatenate(tensors, axis):
         return nd.concat(*tensors, dim=axis)
-    
+
     @staticmethod
     def stack(arrays, axis=0):
         return stack(*arrays, axis=axis)
@@ -283,7 +283,6 @@ class MxnetBackend(Backend):
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
-for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
-             'moveaxis', 'dot', 'transpose', 'reshape',
-             'where', 'sign', 'prod']:
+for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye', 'dot',
+             'transpose', 'where', 'sign', 'prod']:
     MxnetBackend.register_method(name, getattr(nd, name))
