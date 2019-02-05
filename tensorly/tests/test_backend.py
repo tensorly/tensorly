@@ -23,13 +23,13 @@ def test_set_backend():
     toplevel_backend = tl.get_backend()
 
     # Set in context manager
-    with tl.set_backend('numpy'):
+    with tl.backend_context('numpy'):
         assert tl.get_backend() == 'numpy'
         assert isinstance(tl.tensor([1, 2, 3]), np.ndarray)
         assert isinstance(T.tensor([1, 2, 3]), np.ndarray)
         assert tl.float32 is T.float32 is np.float32
 
-        with tl.set_backend('pytorch'):
+        with tl.backend_context('pytorch'):
             assert tl.get_backend() == 'pytorch'
             assert torch.is_tensor(tl.tensor([1, 2, 3]))
             assert torch.is_tensor(T.tensor([1, 2, 3]))
@@ -45,12 +45,9 @@ def test_set_backend():
     assert tl.get_backend() == toplevel_backend
 
     # Set not in context manager
-    try:
-        obj = tl.set_backend('pytorch')
-        assert tl.get_backend() == 'pytorch'
-        assert repr(obj) == "tensorly.set_backend('pytorch')"
-    finally:
-        tl.set_backend(toplevel_backend)
+    tl.set_backend('pytorch')
+    assert tl.get_backend() == 'pytorch'
+    tl.set_backend(toplevel_backend)
 
     assert tl.get_backend() == toplevel_backend
 
@@ -67,7 +64,7 @@ def test_set_backend_local_threadsafe():
 
     with ThreadPoolExecutor(max_workers=1) as executor:
 
-        with tl.set_backend('numpy',local_threadsafe=True):
+        with tl.backend_context('numpy', local_threadsafe=True):
             assert tl.get_backend() == 'numpy'
             # Changes only happen locally in this thread
             assert executor.submit(tl.get_backend).result() == global_default
@@ -79,18 +76,19 @@ def test_set_backend_local_threadsafe():
             # Changed toplevel default in all threads
             assert executor.submit(tl.get_backend).result() == 'pytorch'
 
-            with tl.set_backend('numpy', local_threadsafe=True):
+            with tl.backend_context('numpy', local_threadsafe=True):
                 assert tl.get_backend() == 'numpy'
 
                 def check():
                     assert tl.get_backend() == 'pytorch'
-                    with tl.set_backend('numpy', local_threadsafe=True) as ctx:
+                    with tl.backend_context('numpy', local_threadsafe=True):
                         assert tl.get_backend() == 'numpy'
                     assert tl.get_backend() == 'pytorch'
 
                 executor.submit(check).result()
         finally:
             tl.set_backend(global_default, local_threadsafe=False)
+            executor.submit(tl.set_backend,global_default).result()
 
         assert tl.get_backend() == global_default
         assert executor.submit(tl.get_backend).result() == global_default

@@ -13,7 +13,7 @@ import numpy
 from mxnet import nd
 from mxnet.ndarray import reshape, dot, transpose, stack
 
-from .core import Backend, register_backend
+from .core import Backend
 
 
 class MxnetBackend(Backend):
@@ -49,6 +49,12 @@ class MxnetBackend(Backend):
     @staticmethod
     def ndim(tensor):
         return tensor.ndim
+      
+    @staticmethod
+    def reshape(tensor, shape):
+        if not shape:
+            shape = [1]
+        return nd.reshape(tensor, shape)
 
     def solve(self, matrix1, matrix2):
         ctx = self.context(matrix1)
@@ -200,6 +206,10 @@ class MxnetBackend(Backend):
     @staticmethod
     def concatenate(tensors, axis):
         return nd.concat(*tensors, dim=axis)
+    
+    @staticmethod
+    def stack(arrays, axis=0):
+        return stack(*arrays, axis=axis)
 
     def symeig_svd(self, matrix, n_eigenvecs=None):
         """Computes a truncated SVD on `matrix` using symeig
@@ -273,9 +283,7 @@ class MxnetBackend(Backend):
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
-for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye', 'dot',
-             'transpose', 'reshape', 'where', 'sign', 'prod']:
+for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
+             'moveaxis', 'dot', 'transpose', 'reshape',
+             'where', 'sign', 'prod']:
     MxnetBackend.register_method(name, getattr(nd, name))
-
-
-register_backend(MxnetBackend())

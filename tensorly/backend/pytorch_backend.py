@@ -16,7 +16,7 @@ if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
 
 import numpy as np
 
-from .core import Backend, register_backend
+from .core import Backend
 
 
 class PyTorchBackend(Backend):
@@ -152,6 +152,10 @@ class PyTorchBackend(Backend):
             return torch.argmax(input, dim=axis)
 
     @staticmethod
+    def stack(arrays, axis=0):
+        return torch.stack(arrays, dim=axis)
+
+    @staticmethod
     def _reverse(tensor, axis=0):
         """Reverses the elements along the specified dimension
 
@@ -282,6 +286,3 @@ for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
-
-
-register_backend(PyTorchBackend())
