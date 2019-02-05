@@ -31,21 +31,21 @@ def contract(tensor1, modes1, tensor2, modes2):
                          '(modes1={}, and modes2={})'.format(
                            len(modes1), len(modes2), modes1, modes2))
     
-    contraction_dims = [tensor1.shape[i] for i in modes1]
-    if contraction_dims != [tensor2.shape[i] for i in modes2]:
+    contraction_dims = [tl.shape(tensor1)[i] for i in modes1]
+    if contraction_dims != [tl.shape(tensor2)[i] for i in modes2]:
         raise ValueError('Trying to contract tensors over modes of different sizes'
                          '(contracting modes of sizes {} and {}'.format(
-                             contraction_dims, [tensor2.shape[i] for i in modes2]))
+                             contraction_dims, [tl.shape(tensor2)[i] for i in modes2]))
     shared_dim = int(np.prod(contraction_dims))
 
     modes1_free = [i for i in range(tl.ndim(tensor1)) if i not in modes1]
-    free_shape1 = [tensor1.shape[i] for i in modes1_free]
+    free_shape1 = [tl.shape(tensor1)[i] for i in modes1_free]
 
     tensor1 = tl.reshape(tl.transpose(tensor1, modes1_free + modes1),
                          (int(np.prod(free_shape1)), shared_dim))
     
     modes2_free = [i for i in range(tl.ndim(tensor2)) if i not in modes2]
-    free_shape2 = [tensor2.shape[i] for i in modes2_free]
+    free_shape2 = [tl.shape(tensor2)[i] for i in modes2_free]
 
     tensor2 = tl.reshape(tl.transpose(tensor2, modes2 + modes2_free),
                          (shared_dim, int(np.prod(free_shape2))))

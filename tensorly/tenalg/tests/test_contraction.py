@@ -2,7 +2,7 @@ import numpy as np
 
 import tensorly as tl
 from ..contraction import contract
-from ... import assert_array_almost_equal, assert_raises
+from ...testing import assert_array_almost_equal, assert_raises
 
 def test_contract():
     shape = [3, 4, 2]
