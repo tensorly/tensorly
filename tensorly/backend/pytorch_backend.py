@@ -101,9 +101,13 @@ class PyTorchBackend(Backend):
                              'tensor.ndim, got %d' % target)
         return tensor.permute(*axes)
 
-    @staticmethod
-    def solve(matrix1, matrix2):
-        solution, _ = torch.gesv(matrix2, matrix1)
+    def solve(self, matrix1, matrix2):
+        if self.ndim(matrix2) < 2:
+            # Currently, gesv doesn't support vectors for matrix2
+            # So we instead solve a least square problem...
+            solution, _ = torch.gels(matrix2, matrix1)
+        else:
+            solution, _ = torch.gesv(matrix2, matrix1)
         return solution
 
     @staticmethod
