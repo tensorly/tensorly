@@ -34,6 +34,10 @@ class NumpyBackend(Backend):
         return np.clip(tensor, a_min, a_max)
 
     @staticmethod
+    def dot(a, b):
+        return a.dot(b)
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         # handle difference in default axis notation
         if axis == ():
@@ -76,4 +80,3 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
 
 for name in ['solve', 'qr']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
-
