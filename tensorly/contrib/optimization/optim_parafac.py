@@ -339,6 +339,101 @@ def parafac_fg(tensor, rank, factors, n_iter_max=100,
         return factors
 
 
+def parafac_hals(tensor, rank, init_factors, n_iter_max=100,
+                 tol=1e-8, verbose=False,
+                 return_errors=False,
+                 fixed_modes=[], constraints=None, acc=None,
+                 alpha=1, delta=0):
+    """Nonnegative PARAFAC decomposition via hierarchical
+       alternating least squares (HALS)
+
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
+
+        ``tensor = [| factors[0], ..., factors[-1] |]``
+
+    with factors having nonnegative entries.
+
+    Parameters
+    ----------
+    tensor : ndarray
+        Input data tensor
+    rank  : int
+        Number of components.
+    init_factors : list
+        Table of initial factors. See initialize_factors(), or the
+        initialize_parafac() method of class parafac.
+    n_iter_max : int
+        Maximum number of iteration
+    tol : float, optional
+        (Default: 1e-6) Relative reconstruction error tolerance. The
+        algorithm is considered to have found the global minimum when the
+        reconstruction error is less than `tol`.
+    verbose : int, optional
+        (Default: False) Level of verbosity
+    return_errors : bool, optional
+        (Default: False) Activate return of iteration errors
+    fixed_modes : list, optional
+        (Default: []) List of components indexes that are not updates. Returned
+        values for these indexes are therefore the initialization values.
+    constraints :
+    acc :
+    alpha :
+    delta :
+
+    Returns
+    -------
+    factors : ndarray list
+        List of factors of the CP decomposition element `i` is of shape
+        (tensor.shape[i], rank)
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+    """
+
+    # initialisation
+    factors = init_factors.copy()
+    rec_errors = []
+    norm_tensor = tl.norm(tensor, 2)
+    tic = time.time()
+    toc = []
+
+    for iteration in range(n_iter_max):
+
+        # One pass of least squares on each updated mode
+        factors, rec_error = least_squares_nway(tensor, factors,
+                                                rank, norm_tensor,
+                                                fixed_modes,
+                                                constraints,
+                                                acc,
+                                                alpha=alpha,
+                                                delta=delta)
+
+        toc.append(time.time() - tic)
+        if tol:
+            rec_errors.append(rec_error)
+
+            if iteration > 0:
+                if verbose:
+                    print('reconstruction error={}, variation={}.'.format(
+                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                    if verbose:
+                        print('converged in {} iterations.'.format(iteration))
+                    break
+            else:
+                print('reconstruction error={}'.format(rec_errors[iteration]))
+
+    if return_errors:
+        return factors, rec_errors, toc
+    else:
+        return factors
+
+
 class Parafac:
     """
     A class for defining a Parafac model and an optimization technique.
@@ -363,7 +458,7 @@ class Parafac:
                  weights=[], fixed_modes=[], n_iter_max=100, tol=1e-8,
                  verbose=False, svd='numpy_svd', random_state=None,
                  step=1e-5, alpha=0.2, epsilon=1e-12, halsacc='acc',
-                 init_factors=0, alpha_hals=0, delta_hals=0):
+                 init_factors=0, alpha_hals=1, delta_hals=0):
         """
         TODO : docstring
 
@@ -415,11 +510,11 @@ class Parafac:
             print(' using default projected fast gradient instead.')
             self.method = 'FG'
 
-    def initialize_parafac(self, data=0): 
+    def initialize_parafac(self, data=0):
         """
         Compute initial factors for the Parafac model, stored in attribute
         self.init_factors
- 
+
         Parameters
         ----------
 
@@ -441,22 +536,21 @@ class Parafac:
         """
         # Initialize factors
         self.initialize_parafac(data=data)
-        #factors = self.init_factors.copy()
 
         # Call the method
         if self.method == 'ALS':
-            factors, errors = parafac_als(data, self.rank, factors,
+            factors, errors = parafac_als(data, self.rank, self.init_factors,
                                           return_errors=True,
                                           n_iter_max=self.n_iter_max,
                                           tol=self.tol, verbose=self.verbose,
                                           fixed_modes=self.fixed_modes)
         elif self.method == 'FG':
-            factors, errors = parafac_fg(data, self.rank, factors,
+            factors, errors = parafac_fg(data, self.rank, self.init_factors,
                                          return_errors=True,
                                          n_iter_max=self.n_iter_max,
                                          tol=self.tol, verbose=self.verbose,
                                          fixed_modes=self.fixed_modes,
-                                         step = self.step, alpha = self.alpha,
+                                         step=self.step, alpha=self.alpha,
                                          constraints=self.constraints)
         elif self.method == 'MU':
             # Checking that all constraints are set to 'NN'
@@ -464,7 +558,7 @@ class Parafac:
                 if self.constraints[i] != 'NN':
                     print('Warning: MU will only perform nonnegative PARAFAC.')
                     print('For unconstrained PARAFAC, use ALS instead.')
-            factors, errors = parafac_mu(data, self.rank, factors,
+            factors, errors = parafac_mu(data, self.rank, self.init_factors,
                                          return_errors=True,
                                          n_iter_max=self.n_iter_max,
                                          tol=self.tol, verbose=self.verbose,
@@ -474,21 +568,23 @@ class Parafac:
         elif self.method == 'ADMM':
             print('not implemented')
             # factors = parafac_admm()
+
         elif self.method == 'HALS':
             for i in range(tl.ndim(data)):
                 if self.constraints[i] != 'NN':
-                    print('Warning: HALS will only perform nonnegative PARAFAC.')
+                    print('Warning: HALS only performs nonnegative PARAFAC.')
                     print('For unconstrained modes, ALS used instead.')
             factors, errors, toc = parafac_hals(data, self.rank,
-                                         self.init_factors,
-                                         return_errors=True,
-                                         n_iter_max=self.n_iter_max,
-                                         tol=self.tol, verbose=self.verbose,
-                                         fixed_modes=self.fixed_modes,
-                                         constraints=self.constraints,
-                                         acc = self.halsacc,
-                                         alpha=self.alpha_hals,
-                                         delta=self.delta_hals)
+                                                self.init_factors,
+                                                return_errors=True,
+                                                n_iter_max=self.n_iter_max,
+                                                tol=self.tol,
+                                                verbose=self.verbose,
+                                                fixed_modes=self.fixed_modes,
+                                                constraints=self.constraints,
+                                                acc=self.halsacc,
+                                                alpha=self.alpha_hals,
+                                                delta=self.delta_hals)
 
         # Filling in the components attribute and returning them
         self.components = factors
@@ -509,96 +605,5 @@ class Parafac:
         sense if the rank is smaller than the dimensions. Other factors can be
         used if specified.
         """
-
         # For each mode where r<dim, project using the pseudo-inverse of each
         # factor
-
-# --------------------- Ongoing work -----------------#
-def parafac_hals(tensor, rank, init_factors, n_iter_max=100,
-                tol=1e-8, verbose=False,
-                return_errors=False,
-                fixed_modes=[], constraints=None, acc=None,
-                alpha=0, delta=0):
-    """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
-
-    Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
-
-        ``tensor = [| factors[0], ..., factors[-1] |]``.
-
-    Parameters
-    ----------
-    tensor : ndarray
-        Input data tensor
-    rank  : int
-        Number of components.
-    init_factors : list
-        Table of initial factors. See initialize_factors(), or the
-        initialize_parafac() method of class parafac.
-    n_iter_max : int
-        Maximum number of iteration
-    tol : float, optional
-        (Default: 1e-6) Relative reconstruction error tolerance. The
-        algorithm is considered to have found the global minimum when the
-        reconstruction error is less than `tol`.
-    verbose : int, optional
-        (Default: False) Level of verbosity
-    return_errors : bool, optional
-        (Default: False) Activate return of iteration errors
-    fixed_modes : list, optional
-        (Default: []) List of components indexes that are not updates. Returned
-        values for these indexes are therefore the initialization values.
-
-
-    Returns
-    -------
-    factors : ndarray list
-        List of factors of the CP decomposition element `i` is of shape
-        (tensor.shape[i], rank)
-    errors : list
-        A list of reconstruction errors at each iteration of the algorithms.
-
-    References
-    ----------
-    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
-       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-    """
-
-    # initialisation
-    factors = init_factors.copy()
-    rec_errors = []
-    norm_tensor = tl.norm(tensor, 2)
-    tic = time.time()
-    toc = []
-
-    for iteration in range(n_iter_max):
-
-        # One pass of least squares on each updated mode
-        factors, rec_error = least_squares_nway(tensor, factors,
-                                                rank, norm_tensor,
-                                                fixed_modes,
-                                                constraints,
-                                                acc,
-                                                alpha=alpha,
-                                                delta=delta)
-
-        toc.append(time.time() - tic)
-        if tol:
-            rec_errors.append(rec_error)
-
-            if iteration > 0:
-                if verbose:
-                    print('reconstruction error={}, variation={}.'.format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
-
-                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
-                    if verbose:
-                        print('converged in {} iterations.'.format(iteration))
-                    break
-            else:
-                print('reconstruction error={}'.format(rec_errors[iteration]))
-
-
-    if return_errors:
-        return factors, rec_errors, toc
-    else:
-        return factors

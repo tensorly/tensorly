@@ -39,6 +39,9 @@ def least_squares_nway(tensor, in_factors,
     constraints : list
         List of constraints applied on each factor. See class Parafac
         for more information
+    acc :
+    alpha :
+    delta :
 
     Returns -------
     factors : list of array
@@ -58,7 +61,7 @@ def least_squares_nway(tensor, in_factors,
 
         # Unfolding
         # TODO : precompute unfoldings
-        unfoldY = unfold(tensor,mode)
+        unfoldY = unfold(tensor, mode)
 
         # Set timer for acceleration in HALSacc
         tic = time.time()
@@ -80,19 +83,18 @@ def least_squares_nway(tensor, in_factors,
         if constraints and constraints[mode] == 'NN':
             # Homemade nonnegative least squares solver
             if acc == 'acc':
-                factors[mode] =  tl.transpose(nnlsHALSacc(tl.transpose(rhs),
+                factors[mode] = tl.transpose(nnlsHALSacc(tl.transpose(rhs),
                     cross,tl.transpose(factors[mode]),maxiter=100,
-                    atime = timer, alpha=alpha, delta=delta)[0])
+                    atime=timer, alpha=alpha, delta=delta)[0])
             else:
                 factors[mode] =  tl.transpose(nnlsHALS(tl.transpose(rhs),
                     cross,tl.transpose(factors[mode]),maxiter=1)[0])
-        else:    
+        else:
             # Update using backend linear system solver
-            #factors[mode] = tl.transpose(
+            # factors[mode] = tl.transpose(
             #        tl.solve(tl.transpose(cross),tl.transpose(rhs)))
             factors[mode] = tl.transpose(
                     tl.solve(cross,tl.transpose(rhs)))
-
 
     # error computation (improved using precomputed quantities)
     rec_error = norm_tensor ** 2 - 2*tl.dot(
@@ -261,11 +263,11 @@ def multiplicative_update_step(tensor, factors,
        In Proceedings of the International Conference on Machine Learning (ICML),
        pp 792-799, ICML, 2005
     """
-    
+
     # Generating the mode update sequence
     gen = (mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes)
-    
-    for mode in gen: 
+
+    for mode in gen:
         # khatri_rao(factors).tl.dot(khatri_rao(factors))
         # simplifies to multiplications
         sub_indices = [i for i in range(tl.ndim(tensor)) if i != mode]
@@ -287,29 +289,30 @@ def multiplicative_update_step(tensor, factors,
     # outputs
     return factors, rec_error
 
+
 # Author : Jeremy Cohen, from Nicolas Gillis code for HALS on Matlab
 def nnlsHALS(UtM, UtU, in_V, maxiter=500):
-    """ Computes an approximate solution of the following nonnegative least 
-     squares problem (NNLS)  
+    """ Computes an approximate solution of the following nonnegative least
+     squares problem (NNLS)
 
-               min_{V >= 0} ||M-UV||_F^2 
-     
+               min_{V >= 0} ||M-UV||_F^2
+
      with an exact block-coordinate descent scheme. M is m by n, U is m by r.
 
-     See N. Gillis and F. Glineur, Accelerated Multiplicative Updates and 
-     Hierarchical ALS Algorithms for Nonnegative Matrix Factorization, 
+     See N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+     Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
      Neural Computation 24 (4): 1085-1105, 2012.
-     
+
 
      ****** Input ******
-       UtM  : r-by-n matrix 
+       UtM  : r-by-n matrix
        UtU  : r-by-r matrix
-       in_V  : r-by-n initialization matrix 
-            default: one non-zero entry per column corresponding to the 
-            clostest column of U of the corresponding column of M 
+       in_V  : r-by-n initialization matrix
+            default: one non-zero entry per column corresponding to the
+            clostest column of U of the corresponding column of M
        maxiter: upper bound on the number of iterations (default=500).
 
-       *Remark. M, U and V are not required to be nonnegative. 
+       *Remark. M, U and V are not required to be nonnegative.
 
      ****** Output ******
        V  : an r-by-n nonnegative matrix \approx argmin_{V >= 0} ||M-UV||_F^2
@@ -325,11 +328,10 @@ def nnlsHALS(UtM, UtU, in_V, maxiter=500):
             UtU * tl.dot(V, tl.transpose(V)))
         V = tl.dot(scale, V)
     else:
-       V = in_V.copy()
-   
+        V = in_V.copy()
+
     cnt = 1
     while cnt <= maxiter:
-        nodelta = 0
         for k in range(r):
             # Update
             deltaV = tl.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
@@ -342,18 +344,18 @@ def nnlsHALS(UtM, UtU, in_V, maxiter=500):
 
 
 # Accelerated version, using gross-tier stopping criterion
-def nnlsHALSacc(UtM, UtU, in_V, maxiter=500, atime = None, alpha=1, delta=0):
-    """ Computes an approximate solution of the following nonnegative least 
-     squares problem (NNLS)  
+def nnlsHALSacc(UtM, UtU, in_V, maxiter=500, atime=None, alpha=1, delta=0):
+    """ Computes an approximate solution of the following nonnegative least
+     squares problem (NNLS)
 
-               min_{V >= 0} ||M-UV||_F^2 
-     
+               min_{V >= 0} ||M-UV||_F^2
+
      with an exact block-coordinate descent scheme. M is m by n, U is m by r.
 
-     See N. Gillis and F. Glineur, Accelerated Multiplicative Updates and 
-     Hierarchical ALS Algorithms for Nonnegative Matrix Factorization, 
+     See N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+     Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
      Neural Computation 24 (4): 1085-1105, 2012.
-     
+
      This accelerated function is made for being used repetively inside an
      outer-loop alternating algorithm, for instance for computing nonnegative
      matrix Factorization or tensor factorization.
@@ -363,22 +365,29 @@ def nnlsHALSacc(UtM, UtU, in_V, maxiter=500, atime = None, alpha=1, delta=0):
      precomputations several times.
 
      ****** Input ******
-       UtM  : r-by-n matrix 
+       UtM  : r-by-n matrix
        UtU  : r-by-r matrix
-       in_V  : r-by-n initialization matrix (mutable)
-            default: one non-zero entry per column corresponding to the 
-            clostest column of U of the corresponding column of M 
+       in_V : r-by-n initialization matrix (mutable)
+            default: one non-zero entry per column corresponding to the
+            clostest column of U of the corresponding column of M
        maxiter: upper bound on the number of iterations (default=500).
        atime : time taken to do the precomputations UtU and UtM
+       alpha : positive float
+            ratio between outer computations and inner loops. Typically set to
+            0.5 or 1.
+       delta : float in [0,1]
+            early stop criterion, while err_k > delta*err_0. Set small for
+            almost exact nnls solution, or larger (e.g. 1e-2) for inner loops
+            of a PARAFAC computation.
 
-       *Remark. M, U and V are not required to be nonnegative. 
+       *Remark. M, U and V are not required to be nonnegative.
 
      ****** Output ******
        V  : an r-by-n nonnegative matrix \approx argmin_{V >= 0} ||M-UV||_F^2
        err: final approximation error
        it : number of iterations
     """
- 
+
     r, n = tl.shape(UtM)
     if not in_V.all():  # checks if V is empty
         V = tl.solve(UtU, UtM)  # Least squares
@@ -389,23 +398,15 @@ def nnlsHALSacc(UtM, UtU, in_V, maxiter=500, atime = None, alpha=1, delta=0):
         V = tl.dot(scale, V)
     else:
         V = in_V.copy()
-    
-    #delta = 1e-2 # Stopping condition depending on the evolution of the iterate
-    # here delta refers to the minimum value of difference
-    # (err_{iter+1}-err_{iter})/(err_{1}-err_{0})
 
-    # Alpha control the number of maximal iterations using the atime/btime
-    # ratio
-    #alpha = 0.5
-    # Initial dummy values
     rho = 100000
     eps0 = 0
     cnt = 1
     eps = 1
-    
+
     # Start timer
     tic = time.time()
-    while eps >= delta * eps0  and cnt <= 1+alpha*rho and cnt <= maxiter:
+    while eps >= delta * eps0 and cnt <= 1+alpha*rho and cnt <= maxiter:
         nodelta = 0
         for k in range(r):
             # Update
@@ -419,9 +420,9 @@ def nnlsHALSacc(UtM, UtU, in_V, maxiter=500, atime = None, alpha=1, delta=0):
             eps0 = nodelta
             # End timer for one iteration
             btime = time.time() - tic
-            if atime: # atime is provided
+            if atime:  # atime is provided
                 # Number of loops authorized
-                rho = atime/btime 
+                rho = atime/btime
         eps = nodelta
         cnt = cnt+1
 
