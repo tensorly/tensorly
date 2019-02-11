@@ -1,9 +1,14 @@
+import itertools
+
 import numpy as np
+
 from ... import backend as T
 from ...base import fold, unfold
 from .._kronecker import kronecker
 from ..n_mode_product import mode_dot, multi_mode_dot
-import itertools
+from ...testing import (assert_array_equal, assert_equal,
+                        assert_array_almost_equal, assert_raises)
+
 
 def test_mode_dot():
     """Test for mode_dot (n_mode_product)"""
@@ -33,7 +38,7 @@ def test_mode_dot():
                           [100, 244],
                           [136, 280]]])
     res = mode_dot(X, U, 0)
-    T.assert_array_equal(true_res, res)
+    assert_array_equal(true_res, res)
 
     #######################
     # tensor times vector #
@@ -44,7 +49,7 @@ def test_mode_dot():
                          [80, 200],
                          [90, 210]])
     res = mode_dot(X, U, 1)
-    T.assert_array_equal(true_res, res)
+    assert_array_equal(true_res, res)
     # Test with a third order tensor
     X = T.tensor(np.arange(24).reshape((3, 4, 2)))
     v = T.tensor(np.arange(4))
@@ -52,7 +57,7 @@ def test_mode_dot():
                  [ 76,  82],
                  [124, 130]])
     res = mode_dot(X, v, 1)
-    T.assert_array_equal(true_res, res)
+    assert_array_equal(true_res, res)
 
     # Using equivalence with unfolded expression
     X = T.tensor(np.random.random((2, 4, 5)))
@@ -60,25 +65,25 @@ def test_mode_dot():
     true_res = fold(T.dot(U, unfold(X, 1)), 1, (2, 3, 5))
     res = mode_dot(X, U, 1)
     assert (res.shape == (2, 3, 5))
-    T.assert_array_almost_equal(true_res, res)
+    assert_array_almost_equal(true_res, res)
 
     #########################################
     # Test for errors that should be raised #
     #########################################
-    with T.assert_raises(ValueError):
+    with assert_raises(ValueError):
         mode_dot(X, U, 0)
     # Same test for the vector case
-    with T.assert_raises(ValueError):
+    with assert_raises(ValueError):
         mode_dot(X, U[:, 0], 0)
     # Cannot take mode product of tensor with tensor
-    with T.assert_raises(ValueError):
+    with assert_raises(ValueError):
         mode_dot(X, X, 0)
 
     # Test using the equivalence with unfolded expression
     X = T.tensor(np.random.random((2, 4, 5)))
     U = T.tensor(np.random.random((3, 4)))
     res = unfold(mode_dot(X, U, 1), 1)
-    T.assert_array_almost_equal(T.dot(U, unfold(X, 1)), res)
+    assert_array_almost_equal(T.dot(U, unfold(X, 1)), res)
 
 
 def test_multi_mode_dot():
@@ -99,20 +104,20 @@ def test_multi_mode_dot():
          T.tensor([-1, 1])]
     true_res = T.tensor([1])
     res = multi_mode_dot(X, U, [0, 1])
-    T.assert_array_equal(true_res, res)
+    assert_array_equal(true_res, res)
 
     X = T.tensor(np.arange(12).reshape((3, 4)))
     U = T.tensor(np.random.random((3, 5)))
     res_1 = multi_mode_dot(X, [U], modes=[0], transpose=True)
     res_2 = T.dot(T.transpose(U), X)
-    T.assert_array_almost_equal(res_1, res_2)
+    assert_array_almost_equal(res_1, res_2)
 
     dims = [2, 3, 4, 5]
     X = T.tensor(np.random.randn(*dims))
     factors = [T.tensor(np.random.rand(dims[i], X.shape[i])) for i in range(T.ndim(X))]
     true_res = T.dot(T.dot(factors[0], unfold(X, 0)), T.transpose(kronecker(factors[1:])))
     n_mode_res = multi_mode_dot(X, factors)
-    T.assert_array_almost_equal(true_res, unfold(n_mode_res, 0))
+    assert_array_almost_equal(true_res, unfold(n_mode_res, 0))
     for i in range(T.ndim(X)):
         indices = [j for j in range(T.ndim(X)) if j != i]
         sub_factors = [factors[j] for j in indices]
@@ -120,9 +125,9 @@ def test_multi_mode_dot():
         res = unfold(n_mode_res, i)
         temp = multi_mode_dot(X, sub_factors, modes=indices)
         res2 = T.dot(factors[i], unfold(temp, i))
-        T.assert_equal(true_res.shape, res.shape, err_msg='shape should be {}, is {}'.format(true_res.shape, res.shape))
-        T.assert_array_almost_equal(true_res, res)
-        T.assert_array_almost_equal(true_res, res2)
+        assert_equal(true_res.shape, res.shape, err_msg='shape should be {}, is {}'.format(true_res.shape, res.shape))
+        assert_array_almost_equal(true_res, res)
+        assert_array_almost_equal(true_res, res2)
 
     # Test skipping a factor
     dims = [2, 3, 4, 5]
@@ -130,7 +135,7 @@ def test_multi_mode_dot():
     factors = [T.tensor(np.random.rand(dims[i], X.shape[i])) for i in range(T.ndim(X))]
     res_1 = multi_mode_dot(X, factors, skip=1)
     res_2 = multi_mode_dot(X, [factors[0]] + factors[2:], modes=[0, 2, 3])
-    T.assert_array_equal(res_1, res_2)
+    assert_array_equal(res_1, res_2)
 
     # Test contracting with a vector
     shape = (3, 5, 4, 2)
@@ -138,13 +143,13 @@ def test_multi_mode_dot():
     vecs = [T.ones(s) for s in shape]
     res = multi_mode_dot(X, vecs)
     # result should be a scalar
-    T.assert_equal(res.shape, (1,))
-    T.assert_equal(res[0], np.prod(shape))
+    assert_equal(res.shape, (1,))
+    assert_equal(res[0], np.prod(shape))
     # Average pooling each mode
     # Order should not matter
     vecs = [vecs[i]/s for i, s in enumerate(shape)]
     for modes in itertools.permutations(range(len(shape))):
         res = multi_mode_dot(X, [vecs[i] for i in modes], modes=modes)
-        T.assert_equal(res.shape, (1,))
-        T.assert_equal(res[0], 1)
+        assert_equal(res.shape, (1,))
+        assert_equal(res[0], 1)
 

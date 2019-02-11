@@ -13,6 +13,9 @@ matrix:
        env: BACKEND=pytorch
      - os: linux
        python: 3.6
+       env: BACKEND=tensorflow
+     - os: linux
+       python: 3.6
        env: BACKEND=numpy DEPLOY_DOCS=1
        addons:
          apt:
@@ -43,7 +46,7 @@ install:
       elif [[ "$BACKEND" == "pytorch" ]]; then
         conda install pytorch-cpu torchvision-cpu -c pytorch;
       elif [[ "$BACKEND" == "tensorflow" ]]; then
-        pip install tensorflow;
+        conda install tensorflow;
       fi
     - pip install -e .
 
