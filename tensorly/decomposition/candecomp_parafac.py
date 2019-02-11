@@ -207,7 +207,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             for r in range(rank):
                 if verbose:
                     print(" Rank", r, "of", rank)
-                partial_factor = tl.transpose(tl.moveaxis(tensor, mode, -1))
+                l = list(range(tl.ndim(tensor)))
+                l.remove(mode)
+                l.reverse()
+                newshape = (mode,) + tuple(l)
+                partial_factor = tl.transpose(tensor, newshape)
                 for i, f in enumerate(factors):
                     if i == mode:
                         continue
