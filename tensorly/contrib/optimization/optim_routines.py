@@ -334,7 +334,8 @@ def nnlsHALS(UtM, UtU, in_V, maxiter=500):
     while cnt <= maxiter:
         for k in range(r):
             # Update
-            deltaV = tl.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
+            # deltaV = tl.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
+            deltaV = np.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
             V[k,:] = V[k,:] + deltaV
             # Safety procedure
             if not V[k,:].any():
@@ -410,7 +411,10 @@ def nnlsHALSacc(UtM, UtU, in_V, maxiter=500, atime=None, alpha=1, delta=0):
         nodelta = 0
         for k in range(r):
             # Update
-            deltaV = tl.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
+            # deltaV = tl.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
+            deltaV = np.maximum((UtM[k,:]-tl.dot(UtU[k,:], V)) / UtU[k,k],-V[k,:])
+            # There is a bug in last version of tensorly, maximum is not
+            # suported anymore
             V[k,:] = V[k,:] + deltaV
             nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
             # Safety procedure
