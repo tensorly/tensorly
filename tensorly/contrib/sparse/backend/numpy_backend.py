@@ -71,8 +71,7 @@ class NumpySparseBackend(Backend):
             return sparse.dot(x, y)
         return np.dot(x, y)
 
-    @staticmethod
-    def partial_svd(matrix, n_eigenvecs=None):
+    def partial_svd(self, matrix, n_eigenvecs=None):
         # Check that matrix is... a matrix!
         if matrix.ndim != 2:
             raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
@@ -124,7 +123,7 @@ class NumpySparseBackend(Backend):
 
             # WARNING: here, V is still the transpose of what it should be
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        return U, S, V.T.conj()
+        return self.tensor(U), self.tensor(S), self.tensor(V.T.conj())
 
     @property
     def SVD_FUNS(self):

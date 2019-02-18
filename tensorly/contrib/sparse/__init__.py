@@ -7,7 +7,7 @@ from .backend import (tensor, is_tensor, context, shape, ndim, to_numpy, copy,
                       prod, sign, abs, sqrt, norm, dot, kron,
                       kr, solve, qr, partial_svd)
 
-from .core import unfold
+from .core import unfold, fold
 
 import sys
 from .backend import _get_backend_method, _get_backend_dir
