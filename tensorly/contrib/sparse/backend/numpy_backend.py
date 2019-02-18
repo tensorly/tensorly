@@ -22,7 +22,7 @@ def is_sparse(x):
 
 
 class NumpySparseBackend(Backend):
-    backend_name = 'numpy.sparse'
+    backend_name = 'sparse'
 
     @staticmethod
     def context(tensor):
