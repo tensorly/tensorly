@@ -6,7 +6,7 @@ from ....backend import backend_context, get_backend, override_module_dispatch
 from .... import backend, base, kruskal_tensor, tucker_tensor, mps_tensor
 
 
-_KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'},
+_KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
 _LOADED_BACKENDS = {}
 
 
@@ -20,14 +20,14 @@ def sparse_context():
         yield
 
 def register_sparse_backend(backend_name):
-    """Registers a new backend by importing the corresponding module 
+    """Registers a new backend by importing the corresponding module
         and adding the correspond `Backend` class in Backend._LOADED_BACKEND
         under the key `backend_name`
-    
+
     Parameterss
     ----------
     backend_name : str, name of the backend to load
-    
+
     Raises
     ------
     ValueError
