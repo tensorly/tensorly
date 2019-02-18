@@ -9,6 +9,7 @@ import inspect
 
 _DEFAULT_BACKEND = 'numpy'
 _KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
+                   'sparse': 'SparseBackend',
                    'mxnet':'MxnetBackend',
                    'pytorch':'PyTorchBackend',
                    'tensorflow':'TensorflowBackend',
