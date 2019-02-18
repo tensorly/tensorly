@@ -9,8 +9,8 @@ import inspect
 
 _DEFAULT_BACKEND = 'numpy'
 _KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
-                   'mxnet':'MxnetBackend', 
-                   'pytorch':'PyTorchBackend', 
+                   'mxnet':'MxnetBackend',
+                   'pytorch':'PyTorchBackend',
                    'tensorflow':'TensorflowBackend',
                    'cupy':'CupyBackend'}
 
@@ -31,18 +31,18 @@ def initialize_backend():
                         backend_name, _DEFAULT_BACKEND)
         warnings.warn(msg, UserWarning)
         backend_name = _DEFAULT_BACKEND
-    
+
     set_backend(backend_name, local_threadsafe=False)
 
 def register_backend(backend_name):
-    """Registers a new backend by importing the corresponding module 
+    """Registers a new backend by importing the corresponding module
         and adding the correspond `Backend` class in Backend._LOADED_BACKEND
         under the key `backend_name`
-    
-    Parameterss
+
+    Parameters
     ----------
     backend_name : str, name of the backend to load
-    
+
     Raises
     ------
     ValueError
@@ -60,13 +60,13 @@ def register_backend(backend_name):
 
 def set_backend(backend, local_threadsafe=False):
     """Changes the backend to the specified one
-    
+
     Parameters
     ----------
     backend : tensorly.Backend or str
         name of the backend to load or Backend Class
     local_threadsafe : bool, optional, default is False
-        If False, set the backend as default for all threads        
+        If False, set the backend as default for all threads
     """
     if not isinstance(backend, Backend):
         # Backend is a string
@@ -77,7 +77,7 @@ def set_backend(backend, local_threadsafe=False):
 
     # Set the backend
     _LOCAL_STATE.backend = backend
-    
+
     if not local_threadsafe:
         global _DEFAULT_BACKEND
         _DEFAULT_BACKEND = backend.backend_name
@@ -217,9 +217,8 @@ qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
 
-
 # Initialise the backend to the default one
 initialize_backend()
-override_module_dispatch(__name__, 
+override_module_dispatch(__name__,
                          _get_backend_method,
                          _get_backend_dir)

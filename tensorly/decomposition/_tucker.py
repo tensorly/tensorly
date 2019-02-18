@@ -39,7 +39,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     Returns
     -------
-    core : ndarray 
+    core : ndarray
             core tensor of the Tucker decomposition
     factors : ndarray list
             list of factors of the Tucker decomposition.
