@@ -1,1 +1,1 @@
-from ..contrib.sparse.backend.numpy_backend import NumpySparseBackend as SparseBackend
+from ..contrib.sparse.backend.sparse_backend import NumpySparseBackend as SparseBackend

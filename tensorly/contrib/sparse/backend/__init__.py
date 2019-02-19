@@ -6,7 +6,7 @@ from ....backend import backend_context, get_backend, override_module_dispatch
 from .... import backend, base, kruskal_tensor, tucker_tensor, mps_tensor
 
 
-_KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
+_KNOWN_BACKENDS = {'sparse': 'NumpySparseBackend'}
 _LOADED_BACKENDS = {}
 
 
