@@ -51,7 +51,7 @@ install:
       elif [[ "$BACKEND" == "tensorflow" ]]; then
         conda install tensorflow;
       elif [[ "$BACKEND" == "sparse" ]]; then
-        conda install sparse;
+        conda install -c conda-forge sparse;
       fi
     - pip install -e .
 
