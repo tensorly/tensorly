@@ -2,9 +2,8 @@
 Core operations on Kruskal tensors.
 """
 
+import tensorly as tl
 from . import backend as T
-from .base import fold, tensor_to_vec
-from .tenalg import khatri_rao
 
 # Author: Jean Kossaifi
 
@@ -42,7 +41,7 @@ def kruskal_to_tensor(factors, weights=None):
         full_tensor = T.dot(factors[0]*weights, T.transpose(khatri_rao(factors[1:])))
     else:
         full_tensor = T.dot(factors[0], T.transpose(khatri_rao(factors[1:])))
-    return fold(full_tensor, 0, shape)
+    return tl.fold(full_tensor, 0, shape)
 
 
 def kruskal_to_unfolded(factors, mode):
@@ -70,6 +69,7 @@ def kruskal_to_unfolded(factors, mode):
     Writing factors = [U_1, ..., U_n], we exploit the fact that
     ``U_k = U[k].dot(khatri_rao(U_1, ..., U_k-1, U_k+1, ..., U_n))``
     """
+    from .tenalg import khatri_rao
     return T.dot(factors[mode], T.transpose(khatri_rao(factors, skip_matrix=mode)))
 
 
@@ -87,7 +87,7 @@ def kruskal_to_vec(factors):
 
             for u in U:
                 u[i].shape == (s_i, R)
-                
+
         where `R` is fixed while `s_i` can vary with `i`
 
     Returns
@@ -95,4 +95,4 @@ def kruskal_to_vec(factors):
     ndarray
         vectorised tensor
     """
-    return tensor_to_vec(kruskal_to_tensor(factors))
+    return tl.tensor_to_vec(kruskal_to_tensor(factors))
