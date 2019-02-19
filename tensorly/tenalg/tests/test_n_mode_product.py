@@ -2,6 +2,7 @@ import itertools
 
 import numpy as np
 
+import tensorly as tl
 from ... import backend as T
 from ...base import fold, unfold
 from .._kronecker import kronecker
@@ -141,6 +142,10 @@ def test_multi_mode_dot():
     shape = (3, 5, 4, 2)
     X = T.ones(shape)
     vecs = [T.ones(s) for s in shape]
+    if tl.get_backend() == 'sparse':
+        # sparse dot does not work with fill value 1.
+        X = tl.tensor(X.todense())
+        vecs = [tl.tensor(i.todense()) for i in vecs]
     res = multi_mode_dot(X, vecs)
     # result should be a scalar
     assert_equal(res.shape, (1,))
@@ -152,4 +157,3 @@ def test_multi_mode_dot():
         res = multi_mode_dot(X, [vecs[i] for i in modes], modes=modes)
         assert_equal(res.shape, (1,))
         assert_equal(res[0], 1)
-
