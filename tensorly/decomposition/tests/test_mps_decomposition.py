@@ -4,6 +4,10 @@ from ...mps_tensor import mps_to_tensor
 from ...random import check_random_state
 from ...testing import assert_
 
+import pytest
+
+pytestmark = pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
 
 def test_matrix_product_state():
     """ Test for matrix_product_state """

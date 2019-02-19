@@ -1,5 +1,6 @@
 import numpy as np
 
+import tensorly as tl
 from ... import backend as T
 from ..proximal import svd_thresholding, soft_thresholding
 from ..proximal import procrustes
@@ -7,6 +8,9 @@ from ...testing import assert_array_equal, assert_array_almost_equal
 
 # Author: Jean Kossaifi
 
+import pytest
+pytestmark = pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
 
 def test_soft_thresholding():
     """Test for shrinkage"""

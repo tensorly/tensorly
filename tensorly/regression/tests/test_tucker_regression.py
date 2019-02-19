@@ -1,11 +1,16 @@
 import numpy as np
 
+import tensorly as tl
 from ..tucker_regression import TuckerRegressor
 from ...base import tensor_to_vec, partial_tensor_to_vec
 from ...metrics.regression import RMSE
 from ... import backend as T
 from ...testing import assert_
 
+import pytest
+
+pytestmark = pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
 
 def test_TuckerRegressor():
     """Test for TuckerRegressor"""

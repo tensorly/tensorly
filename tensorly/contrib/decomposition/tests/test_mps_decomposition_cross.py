@@ -10,6 +10,9 @@ from ....mps_tensor import mps_to_tensor
 from ....random import check_random_state
 from tensorly.testing import assert_
 
+pytestmark = pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
+
 skip_if_tensorflow = pytest.mark.skipif(tl.get_backend() == "tensorflow",
                                         reason="Operation not supported in TensorFlow")
 

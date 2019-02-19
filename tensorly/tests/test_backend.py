@@ -359,6 +359,8 @@ def test_partial_vec_to_tensor():
         assert_array_equal(X, ten)
 
 
+@pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
 def test_svd():
     """Test for the SVD functions"""
     tol = 0.1
@@ -512,6 +514,8 @@ def test_where():
         assert_array_equal(result, expected)
 
 
+@pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
 def test_qr():
     M = 8; N = 5
     A = T.tensor(np.random.random((M,N)))

@@ -4,6 +4,11 @@ import tensorly as tl
 from ..regression import MSE, RMSE, correlation
 from ...testing import assert_array_almost_equal
 
+import pytest
+
+pytestmark = pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
+
 def test_MSE():
     """Test for MSE"""
     y_true = tl.tensor([1, 0, 2, -2])

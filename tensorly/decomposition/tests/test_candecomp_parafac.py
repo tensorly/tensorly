@@ -11,6 +11,8 @@ from ...tenalg import khatri_rao
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
 
+pytestmark = pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
 
 def test_parafac():
     """Test for the CANDECOMP-PARAFAC decomposition

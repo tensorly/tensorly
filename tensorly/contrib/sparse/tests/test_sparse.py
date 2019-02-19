@@ -5,7 +5,7 @@ from tensorly.contrib.sparse.decomposition import partial_tucker
 import pytest
 
 pytestmark = pytest.mark.skipif(tl.get_backend() != "sparse",
-                                        reason="Operation not supported in TensorFlow")
+                                        reason="Operation only supported in Sparse")
 
 try:
     import sparse

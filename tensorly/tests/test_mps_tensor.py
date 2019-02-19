@@ -5,6 +5,9 @@ from ..decomposition import matrix_product_state
 from ..mps_tensor import mps_to_tensor
 from ..testing import assert_array_almost_equal
 
+import pytest
+pytestmark = pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
 
 def test_mps_to_tensor():
     """ Test for mps_to_tensor

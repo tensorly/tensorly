@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import matrix_rank
 
+import tensorly as tl
 from ... import backend as T
 from ..base import (random_kruskal, random_tucker,
                     random_mps, check_random_state)
@@ -9,6 +10,10 @@ from ...tenalg import multi_mode_dot
 from ...base import unfold
 from ...testing import assert_equal, assert_array_almost_equal, assert_raises
 
+import pytest
+
+pytestmark = pytest.mark.skipif(tl.get_backend() == "sparse",
+                                        reason="Operation not supported in Sparse")
 
 def test_check_random_state():
     """Test for check_random_state"""
