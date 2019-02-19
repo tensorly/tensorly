@@ -130,10 +130,16 @@ class NumpySparseBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.partial_svd}
 
+    @staticmethod
+    def arange(*args):
+        # Too many sparse issues with dense arange. See
+        # https://github.com/pydata/sparse/issues/230 and
+        # https://github.com/pydata/sparse/issues/231.
+        return sparse.COO.from_numpy(np.arange(*args))
 
 for name in ['int64', 'int32', 'float64', 'float32', 'moveaxis', 'transpose',
              'reshape', 'ndim', 'shape', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange']:
+             'prod', 'sqrt', 'abs', 'sign', 'clip']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
 for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye', 'ones']:
