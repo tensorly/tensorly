@@ -45,13 +45,13 @@ def register_sparse_backend(backend_name):
         raise ValueError(msg)
 
 def _get_backend_method(method_name):
-    backend_name = get_backend()
+    backend_name = 'sparse'
     if backend_name not in _LOADED_BACKENDS:
         register_sparse_backend(backend_name)
     return getattr(_LOADED_BACKENDS[backend_name], method_name)
 
 def _get_backend_dir():
-    backend_name = get_backend()
+    backend_name = 'sparse'
     if backend_name not in _LOADED_BACKENDS:
         register_sparse_backend(backend_name)
 
