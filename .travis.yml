@@ -50,7 +50,7 @@ install:
         conda install pytorch-cpu torchvision-cpu -c pytorch;
       elif [[ "$BACKEND" == "tensorflow" ]]; then
         conda install tensorflow;
-      elif [[ "$BACKEND" == "sparse" ]]; then
+      elif [[ "$BACKEND" == "sparse" || "$BACKEND" == "numpy" ]]; then
         conda install -c conda-forge sparse;
       fi
     - pip install -e .
