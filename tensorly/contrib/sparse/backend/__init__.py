@@ -12,7 +12,7 @@ _LOADED_BACKENDS = {}
 
 @contextmanager
 def sparse_context():
-    backend_name = get_backend()
+    backend_name = 'sparse'
     if backend_name not in _LOADED_BACKENDS:
         register_sparse_backend(backend_name)
 
