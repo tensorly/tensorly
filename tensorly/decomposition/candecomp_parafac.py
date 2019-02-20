@@ -203,22 +203,13 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             # kr_factors = khatri_rao(factors, skip_matrix=mode)
             # mttkrp = tl.dot(unfolded, kr_factors)
 
-            mttkrp_parts = []
-            for r in range(rank):
-                if verbose:
-                    print(" Rank", r, "of", rank)
-                l = list(range(tl.ndim(tensor)))
-                l.remove(mode)
-                l.reverse()
-                newshape = (mode,) + tuple(l)
-                partial_factor = tl.transpose(tensor, newshape)
-                for i, f in enumerate(factors):
-                    if i == mode:
-                        continue
-                    partial_factor = tl.dot(partial_factor, f[:, r, None])
-                    partial_factor = tl.reshape(partial_factor, partial_factor.shape[:-1])
-                mttkrp_parts.append(partial_factor)
-            mttkrp = tl.stack(mttkrp_parts, axis=1)
+            mttkrp = tensor.reshape(tensor.shape + (1,))
+            for i, f in enumerate(factors):
+                if i == mode:
+                    continue
+                a = int(i > mode)
+                f_shape = (1,)*a + (f.shape[0],) + (1,)*(tl.ndim(mttkrp)-2-a) + (f.shape[1],)
+                mttkrp = tl.sum(mttkrp*f.reshape(f_shape), axis=a)
 
             if non_negative:
                 numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
