@@ -1,18 +1,24 @@
 import tensorly as tl
 
 from tensorly.contrib.sparse.decomposition import partial_tucker
+from tensorly.contrib.sparse.tenalg import multi_mode_dot
 
 import pytest
 
-pytestmark = pytest.mark.skipif(tl.get_backend() != "sparse",
-                                        reason="Operation only supported in Sparse")
 
 try:
     import sparse
     import numpy as np
 except ImportError:
-    pass
+    sparse = None
+    np = None
 
+pytestmark = pytest.mark.skipif(sparse == None,
+                                        reason="sparse library not installed")
+
+
+@pytest.mark.skipif(tl.get_backend() != "sparse",
+                                        reason="Operation only supported in Sparse")
 def test_sparse_backend():
     tensor = tl.tensor([[1, 2], [3, 4]])
     assert isinstance(tensor, sparse.COO)
@@ -30,6 +36,6 @@ def test_sparse_partial_tucker():
     factors = [sparse.random((2862, rank), random_state=random_state),
                sparse.random((14036, rank), random_state=random_state)]
 
-    tensor = tl.tenalg.multi_mode_dot(core, factors, [1, 2])
+    tensor = multi_mode_dot(core, factors, [1, 2])
     new_core, new_factors = partial_tucker(tensor, modes=[1, 2], rank=[rank, rank],
         init='random', tol=1e-3, random_state=random_state)
