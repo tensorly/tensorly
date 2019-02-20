@@ -198,27 +198,16 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
 
             # The below is equivalent to (but more efficient than)
-
             # unfolded = unfold(tensor, mode)
             # kr_factors = khatri_rao(factors, skip_matrix=mode)
             # mttkrp = tl.dot(unfolded, kr_factors)
-
-            mttkrp_parts = []
-            for r in range(rank):
-                if verbose:
-                    print(" Rank", r, "of", rank)
-                l = list(range(tl.ndim(tensor)))
-                l.remove(mode)
-                l.reverse()
-                newshape = (mode,) + tuple(l)
-                partial_factor = tl.transpose(tensor, newshape)
-                for i, f in enumerate(factors):
-                    if i == mode:
-                        continue
-                    partial_factor = tl.dot(partial_factor, tl.reshape(f[:,r], (f[:,r].shape[0], 1)))
-                    partial_factor = tl.reshape(partial_factor, partial_factor.shape[:-1])
-                mttkrp_parts.append(partial_factor)
-            mttkrp = tl.stack(mttkrp_parts, axis=1)
+            projected = tl.tenalg.multi_mode_dot(tensor, factors, skip=mode, transpose=True)
+            ndims = tl.ndim(tensor)
+            res = []
+            for i in range(rank):
+                index = tuple([slice(None) if k == mode  else i for k in range(ndims)])
+                res.append(projected[index])
+            mttkrp =  tl.stack(res, axis=-1)
 
             if non_negative:
                 numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
@@ -231,15 +220,14 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             factors[mode] = factor
 
         if tol:
+            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
             # This is ||kruskal_to_tensor(factors)||^2
             factors_norm = tl.sum(tl.prod(tl.stack([tl.dot(tl.transpose(f), f) for f in factors], 0), 0))
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
             iprod = tl.sum(mttkrp*factor)
-            # Subtract iprod from each term to avoid loss of significance
-            rec_error = tl.sqrt(tl.abs((norm_tensor**2 - iprod) + (factors_norm - iprod))) / norm_tensor
+            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm - 2*iprod)) / norm_tensor
             rec_errors.append(rec_error)
-
 
             if iteration >= 1:
                 if verbose:
@@ -253,7 +241,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
-
 
     if return_errors:
         return factors, rec_errors
