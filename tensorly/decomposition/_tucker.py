@@ -1,4 +1,5 @@
 import tensorly as tl
+from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
 from ..tucker_tensor import tucker_to_tensor
 from ..random import check_random_state
@@ -70,7 +71,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     if init == 'svd':
         factors = []
         for index, mode in enumerate(modes):
-            eigenvecs, _, _ = svd_fun(tl.unfold(tensor, mode), n_eigenvecs=rank[index])
+            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index])
             factors.append(eigenvecs)
     else:
         rng = check_random_state(random_state)
@@ -83,7 +84,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     for iteration in range(n_iter_max):
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
-            eigenvecs, _, _ = svd_fun(tl.unfold(core_approximation, mode), n_eigenvecs=rank[index])
+            eigenvecs, _, _ = svd_fun(unfold(core_approximation, mode), n_eigenvecs=rank[index])
             factors[index] = eigenvecs
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
@@ -214,9 +215,9 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
     for iteration in range(n_iter_max):
         for mode in range(tl.ndim(tensor)):
             B = tucker_to_tensor(nn_core, nn_factors, skip_factor=mode)
-            B = tl.transpose(tl.unfold(B, mode))
+            B = tl.transpose(unfold(B, mode))
 
-            numerator = tl.dot(tl.unfold(tensor, mode), B)
+            numerator = tl.dot(unfold(tensor, mode), B)
             numerator = tl.clip(numerator, a_min=epsilon, a_max=None)
             denominator = tl.dot(nn_factors[mode], tl.dot(tl.transpose(B), B))
             denominator = tl.clip(denominator, a_min=epsilon, a_max=None)

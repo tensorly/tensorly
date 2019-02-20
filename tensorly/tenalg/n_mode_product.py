@@ -1,4 +1,4 @@
-import tensorly as tl
+from ..base import unfold, fold, vec_to_tensor
 from .. import backend as T
 
 def mode_dot(tensor, matrix_or_vector, mode):
@@ -57,12 +57,12 @@ def mode_dot(tensor, matrix_or_vector, mode):
             raise ValueError('Can only take n_mode_product with a vector or a matrix.'
                              'Provided array of dimension {} not in [1, 2].'.format(T.ndim(matrix_or_vector)))
 
-        res = T.dot(matrix_or_vector, tl.unfold(tensor, mode))
+        res = T.dot(matrix_or_vector, unfold(tensor, mode))
 
         if vec: # We contracted with a vector, leading to a vector
-            return tl.vec_to_tensor(res, shape=new_shape)
+            return vec_to_tensor(res, shape=new_shape)
         else: # tensor times vec: refold the unfolding
-            return tl.fold(res, fold_mode, new_shape)
+            return fold(res, fold_mode, new_shape)
 
 
 def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False):

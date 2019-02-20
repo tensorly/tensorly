@@ -2,7 +2,7 @@
 Core operations on Tucker tensors.
 """
 
-import tensorly as tl
+from .base import unfold, tensor_to_vec
 from .tenalg import multi_mode_dot
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -54,7 +54,7 @@ def tucker_to_unfolded(core, factors, mode=0, skip_factor=None, transpose_factor
     2D-array
         unfolded tensor
     """
-    return tl.unfold(tucker_to_tensor(core, factors, skip_factor=skip_factor, transpose_factors=transpose_factors), mode)
+    return unfold(tucker_to_tensor(core, factors, skip_factor=skip_factor, transpose_factors=transpose_factors), mode)
 
 
 def tucker_to_vec(core, factors, skip_factor=None, transpose_factors=False):
@@ -85,4 +85,4 @@ def tucker_to_vec(core, factors, skip_factor=None, transpose_factors=False):
     >>> def tucker_to_vec(core, factors):
     ...     return kronecker(factors).dot(tensor_to_vec(core))
     """
-    return tl.tensor_to_vec(tucker_to_tensor(core, factors, skip_factor=skip_factor, transpose_factors=transpose_factors))
+    return tensor_to_vec(tucker_to_tensor(core, factors, skip_factor=skip_factor, transpose_factors=transpose_factors))

@@ -2,7 +2,7 @@
 Core operations on Kruskal tensors.
 """
 
-import tensorly as tl
+from .base import fold, tensor_to_vec
 from . import backend as T
 
 # Author: Jean Kossaifi
@@ -42,7 +42,7 @@ def kruskal_to_tensor(factors, weights=None):
         full_tensor = T.dot(factors[0]*weights, T.transpose(khatri_rao(factors[1:])))
     else:
         full_tensor = T.dot(factors[0], T.transpose(khatri_rao(factors[1:])))
-    return tl.fold(full_tensor, 0, shape)
+    return fold(full_tensor, 0, shape)
 
 
 def kruskal_to_unfolded(factors, mode):
@@ -96,4 +96,4 @@ def kruskal_to_vec(factors):
     ndarray
         vectorised tensor
     """
-    return tl.tensor_to_vec(kruskal_to_tensor(factors))
+    return tensor_to_vec(kruskal_to_tensor(factors))
