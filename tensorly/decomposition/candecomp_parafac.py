@@ -201,6 +201,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             # unfolded = unfold(tensor, mode)
             # kr_factors = khatri_rao(factors, skip_matrix=mode)
             # mttkrp = tl.dot(unfolded, kr_factors)
+
             projected = tl.tenalg.multi_mode_dot(tensor, factors, skip=mode, transpose=True)
             ndims = tl.ndim(tensor)
             res = []
