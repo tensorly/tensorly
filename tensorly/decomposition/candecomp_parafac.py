@@ -197,18 +197,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                 if i != mode:
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
 
-            # The below is equivalent to (but more efficient than)
-            # unfolded = unfold(tensor, mode)
-            # kr_factors = khatri_rao(factors, skip_matrix=mode)
-            # mttkrp = tl.dot(unfolded, kr_factors)
-
-            projected = tl.tenalg.multi_mode_dot(tensor, factors, skip=mode, transpose=True)
-            ndims = tl.ndim(tensor)
-            res = []
-            for i in range(rank):
-                index = tuple([slice(None) if k == mode  else i for k in range(ndims)])
-                res.append(projected[index])
-            mttkrp =  tl.stack(res, axis=-1)
+            mttkrp = tl.tenalg.unfolding_dot_khatri_rao(tensor, factors, mode)
 
             if non_negative:
                 numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)

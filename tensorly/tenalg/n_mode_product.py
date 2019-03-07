@@ -123,3 +123,38 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             decrement += 1
 
     return res
+
+def unfolding_dot_khatri_rao(tensor, factors, mode):
+    """mode-n unfolding times khatri-rao product of factors
+    
+    Parameters
+    ----------
+    tensor : tl.tensor
+        tensor to unfold
+    factors : tl.tensor list
+        list of matrices of which to the khatri-rao product
+    mode : int
+        mode on which to unfold `tensor`
+    
+    Returns
+    -------
+    mttkrp
+        dot(unfold(tensor, mode), khatri-rao(factors))
+
+    Notes
+    -----
+    The below is equivalent to:
+
+    .. code-block::
+
+        unfolded = unfold(tensor, mode)
+        kr_factors = khatri_rao(factors, skip_matrix=mode)
+        mttkrp = tl.dot(unfolded, kr_factors)
+    """
+    projected = multi_mode_dot(tensor, factors, skip=mode, transpose=True)
+    ndims = T.ndim(tensor)
+    res = []
+    for i in range(factors[0].shape[1]):
+        index = tuple([slice(None) if k == mode  else i for k in range(ndims)])
+        res.append(projected[index])
+    return T.stack(res, axis=-1)
