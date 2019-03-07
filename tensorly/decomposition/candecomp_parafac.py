@@ -332,7 +332,6 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
 
-    n_factors = len(matrices)
     rank = tl.shape(matrices[0])[1]
     sizes = [tl.shape(m)[0] for m in matrices]
 
