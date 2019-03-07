@@ -7,9 +7,10 @@ from ..base import unfold
 from ..kruskal_tensor import kruskal_to_tensor
 from ..tenalg import khatri_rao
 
-# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
-# Author: Chris Swierczewski <csw@amazon.com>
-# Author: Sam Schneider <samjohnschneider@gmail.com>
+# Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+#          Chris Swierczewski <csw@amazon.com>
+#          Sam Schneider <samjohnschneider@gmail.com>
+#          Aaron Meurer
 
 # License: BSD 3 clause
 
