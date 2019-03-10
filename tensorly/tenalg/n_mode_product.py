@@ -143,13 +143,37 @@ def unfolding_dot_khatri_rao(tensor, factors, mode):
 
     Notes
     -----
-    The below is equivalent to:
-
-    .. code-block::
-
+    This is a variant of::
+    
         unfolded = unfold(tensor, mode)
         kr_factors = khatri_rao(factors, skip_matrix=mode)
-        mttkrp = tl.dot(unfolded, kr_factors)
+        mttkrp2 = tl.dot(unfolded, kr_factors)
+
+    Multiplying with the Khatri-Rao product is equivalent to multiplying,
+    for each rank, with the kronecker product of each factor. 
+    In code::
+
+        mttkrp_parts = []
+        for r in range(rank):
+            component = tl.tenalg.multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode)
+            mttkrp_parts.append(component)
+        mttkrp = tl.stack(mttkrp_parts, axis=1)
+        return mttkrp 
+    
+    The same idea could be expressed using einsum::
+    
+        ndims = tl.ndim(tensor)
+        tensor_idx = ''.join(chr(ord('a') + i) for i in range(ndims))
+        rank = chr(ord('a') + ndims + 1)
+        op = tensor_idx
+        for i in range(ndims):
+            if i != mode:
+                op += ',' + ''.join([tensor_idx[i], rank])
+            else:
+                result = ''.join([tensor_idx[i], rank])
+        op += '->' + result
+        factors = [f for (i, f) in enumerate(factors) if i != mode]
+        return tl_einsum(op, tensor, *factors)
     """
     projected = multi_mode_dot(tensor, factors, skip=mode, transpose=True)
     ndims = T.ndim(tensor)

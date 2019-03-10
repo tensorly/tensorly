@@ -10,7 +10,7 @@ from ..tenalg import khatri_rao
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
 #          Sam Schneider <samjohnschneider@gmail.com>
-#          Aaron Meurer
+#          Aaron Meurer <asmeurer@gmail.com>
 
 # License: BSD 3 clause
 
