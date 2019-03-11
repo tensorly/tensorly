@@ -35,18 +35,23 @@ install:
     - conda update -q conda
     # Useful for debugging any issues with conda
     - conda info -a
-    # Replace dep1 dep2 ... with your dependencies
+    # Create and activate a test-environment with numpy and scipy
     - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy
     - source activate test-environment
     - pip install coveralls pytest pytest-cov nose
-    - if [[ "$BACKEND" == "mxnet" ]]; then
-        sudo apt-get -qq update;
-        sudo apt-get install -y libatlas-base-dev;
-        pip install mxnet;
+    # For NumPy: install sparse for contrib.sparse tests
+    # For MXNet, additionnal dependencies are required
+    # For PyTorch, install the cpu version and torchvision
+    - if [[ "$BACKEND" == "numpy" ]]; then
+        pip install sparse
       elif [[ "$BACKEND" == "pytorch" ]]; then
         conda install pytorch-cpu torchvision-cpu -c pytorch;
       elif [[ "$BACKEND" == "tensorflow" ]]; then
         conda install tensorflow;
+      elif [[ "$BACKEND" == "mxnet" ]]; then
+        sudo apt-get -qq update;
+        sudo apt-get install -y libatlas-base-dev;
+        pip install mxnet;
       fi
     - pip install -e .
 
