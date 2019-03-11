@@ -43,7 +43,7 @@ install:
     # For MXNet, additionnal dependencies are required
     # For PyTorch, install the cpu version and torchvision
     - if [[ "$BACKEND" == "numpy" ]]; then
-        pip install sparse
+        pip install sparse;
       elif [[ "$BACKEND" == "pytorch" ]]; then
         conda install pytorch-cpu torchvision-cpu -c pytorch;
       elif [[ "$BACKEND" == "tensorflow" ]]; then
