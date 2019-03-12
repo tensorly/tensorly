@@ -4,8 +4,6 @@ import warnings
 import tensorly as tl
 from ..random import check_random_state
 from ..base import unfold
-from ..kruskal_tensor import kruskal_to_tensor
-from ..tenalg import khatri_rao
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -206,7 +204,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
 
             if mask is not None:
-                tensor = tensor*mask + kruskal_to_tensor(factors, mask=1-mask)
+                tensor = tensor*mask + tl.kruskal_to_tensor(factors, mask=1-mask)
 
             mttkrp = tl.tenalg.unfolding_dot_khatri_rao(tensor, factors, mode)
 
@@ -427,7 +425,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
             factors[mode] = factor
 
         if max_stagnation or tol:
-            rec_error = tl.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+            rec_error = tl.norm(tensor - tl.kruskal_to_tensor(factors), 2) / norm_tensor
             if not min_error or rec_error < min_error:
                 min_error = rec_error
                 stagnation = -1
