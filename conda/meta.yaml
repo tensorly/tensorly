@@ -1,25 +1,25 @@
 package:
   name: tensorly
-  version: "0.4.2"
+  version: "0.4.3"
 
 source:
   path: ../
 
 build:
   number: 0
-  noarch: generic
-  script: python setup.py install --single-version-externally-managed --record=record.txt
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
 
 requirements:
   build:
     - python >=3.4
     - setuptools
+    - pip
 
   run:
     - python
     - numpy
     - scipy
-    - matplotlib
 
 test:
   requires:
@@ -34,3 +34,10 @@ about:
   home: https://github.com/tensorly/tensorly/
   license: BSD
   summary: "Tensor learning in Python"
+  description: |
+    TensorLy is a Python library that aims at making tensor learning simple 
+    and accessible. It allows to easily perform tensor decomposition, 
+    tensor learning and tensor algebra. Its backend system allows to 
+    seamlessly perform computation with NumPy, MXNet, PyTorch, TensorFlow 
+    or CuPy, and run methods at scale on CPU or GPU.
+

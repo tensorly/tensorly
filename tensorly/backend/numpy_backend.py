@@ -1,6 +1,5 @@
 import numpy as np
-
-from .core import register_backend, Backend
+from .core import Backend
 
 
 class NumpyBackend(Backend):
@@ -82,6 +81,3 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
 
 for name in ['solve', 'qr']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
-
-
-register_backend(NumpyBackend())

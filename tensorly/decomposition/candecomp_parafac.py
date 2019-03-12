@@ -7,9 +7,10 @@ from ..base import unfold
 from ..kruskal_tensor import kruskal_to_tensor
 from ..tenalg import khatri_rao
 
-# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
-# Author: Chris Swierczewski <csw@amazon.com>
-# Author: Sam Schneider <samjohnschneider@gmail.com>
+# Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+#          Chris Swierczewski <csw@amazon.com>
+#          Sam Schneider <samjohnschneider@gmail.com>
+#          Aaron Meurer <asmeurer@gmail.com>
 
 # License: BSD 3 clause
 
@@ -207,24 +208,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             if mask is not None:
                 tensor = tensor*mask + kruskal_to_tensor(factors, mask=1-mask)
 
-            # The below is equivalent to (but more efficient than)
-
-            # unfolded = unfold(tensor, mode)
-            # kr_factors = khatri_rao(factors, skip_matrix=mode)
-            # mttkrp = tl.dot(unfolded, kr_factors)
-
-            mttkrp_parts = []
-            for r in range(rank):
-                if verbose:
-                    print(" Rank", r, "of", rank)
-                partial_factor = tl.transpose(tl.moveaxis(tensor, mode, -1))
-                for i, f in enumerate(factors):
-                    if i == mode:
-                        continue
-                    partial_factor = tl.dot(partial_factor, tl.reshape(f[:,r], (f[:,r].shape[0], 1)))
-                    partial_factor = tl.reshape(partial_factor, partial_factor.shape[:-1])
-                mttkrp_parts.append(partial_factor)
-            mttkrp = tl.stack(mttkrp_parts, axis=1)
+            mttkrp = tl.tenalg.unfolding_dot_khatri_rao(tensor, factors, mode)
 
             if non_negative:
                 numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
@@ -237,15 +221,14 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             factors[mode] = factor
 
         if tol:
+            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
             # This is ||kruskal_to_tensor(factors)||^2
             factors_norm = tl.sum(tl.prod(tl.stack([tl.dot(tl.transpose(f), f) for f in factors], 0), 0))
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
             iprod = tl.sum(mttkrp*factor)
-            # Subtract iprod from each term to avoid loss of significance
-            rec_error = tl.sqrt(tl.abs((norm_tensor**2 - iprod) + (factors_norm - iprod))) / norm_tensor
+            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm - 2*iprod)) / norm_tensor
             rec_errors.append(rec_error)
-
 
             if iteration >= 1:
                 if verbose:
@@ -259,7 +242,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
-
 
     if return_errors:
         return factors, rec_errors
@@ -360,7 +342,6 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
 
-    n_factors = len(matrices)
     rank = tl.shape(matrices[0])[1]
     sizes = [tl.shape(m)[0] for m in matrices]
 

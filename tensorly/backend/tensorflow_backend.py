@@ -11,7 +11,7 @@ tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
 
 import numpy as np
 
-from .core import Backend, register_backend
+from . import Backend
 
 
 class TensorflowBackend(Backend):
@@ -173,6 +173,7 @@ _FUN_NAMES = [
     (tf.stack, 'stack'),
     (tf.identity, 'copy'),
     (tf.concat, 'concatenate'),
+    (tf.stack, 'stack'),
     (tf.reduce_min, 'min'),
     (tf.reduce_max, 'max'),
     (tf.reduce_mean, 'mean'),
@@ -184,4 +185,3 @@ for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)
 del _FUN_NAMES
 
-register_backend(TensorflowBackend())

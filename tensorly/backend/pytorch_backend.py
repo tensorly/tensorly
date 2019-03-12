@@ -16,7 +16,7 @@ if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
 
 import numpy as np
 
-from .core import Backend, register_backend
+from .core import Backend
 
 
 class PyTorchBackend(Backend):
@@ -103,9 +103,13 @@ class PyTorchBackend(Backend):
                              'tensor.ndim, got %d' % target)
         return tensor.permute(*axes)
 
-    @staticmethod
-    def solve(matrix1, matrix2):
-        solution, _ = torch.gesv(matrix2, matrix1)
+    def solve(self, matrix1, matrix2):
+        if self.ndim(matrix2) < 2:
+            # Currently, gesv doesn't support vectors for matrix2
+            # So we instead solve a least square problem...
+            solution, _ = torch.gels(matrix2, matrix1)
+        else:
+            solution, _ = torch.gesv(matrix2, matrix1)
         return solution
 
     @staticmethod
@@ -150,6 +154,10 @@ class PyTorchBackend(Backend):
     @staticmethod
     def argmax(input, axis=None):
             return torch.argmax(input, dim=axis)
+
+    @staticmethod
+    def stack(arrays, axis=0):
+        return torch.stack(arrays, dim=axis)
 
     @staticmethod
     def _reverse(tensor, axis=0):
@@ -282,6 +290,3 @@ for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
-
-
-register_backend(PyTorchBackend())
