@@ -143,5 +143,5 @@ If you use TensorLy in an academic paper, please cite [1]_::
     }
     
     
-.. [1] J. Kossaifi, Y. Panagakis, A. Anandkumar and M. Pantic, **TensorLy: Tensor Learning in Python**, *Journal of Machine Learning Research (JMLR)*, 2019, volume 20, number 26.
+.. [1] Jean Kossaifi, Yannis Panagakis, Anima Anandkumar and Maja Pantic, **TensorLy: Tensor Learning in Python**, *Journal of Machine Learning Research (JMLR)*, 2019, volume 20, number 26.
 
