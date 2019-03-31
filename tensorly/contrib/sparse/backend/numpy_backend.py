@@ -146,7 +146,7 @@ class NumpySparseBackend(Backend):
 
 for name in ['int64', 'int32', 'float64', 'float32', 'moveaxis', 'transpose',
              'reshape', 'ndim', 'shape', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange']:
+             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
 for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye',

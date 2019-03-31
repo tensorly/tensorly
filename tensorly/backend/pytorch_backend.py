@@ -158,6 +158,14 @@ class PyTorchBackend(Backend):
     @staticmethod
     def stack(arrays, axis=0):
         return torch.stack(arrays, dim=axis)
+    
+    @staticmethod
+    def conj(x, *args, **kwargs):
+        """WARNING: IDENTITY FUNCTION (does nothing)
+
+            This backend currently does not support complex tensors
+        """
+        return x
 
     @staticmethod
     def _reverse(tensor, axis=0):
