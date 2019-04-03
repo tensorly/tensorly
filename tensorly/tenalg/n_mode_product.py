@@ -84,6 +84,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
     transpose : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
+        (the conjugate is used for complex tensors)
 
     Returns
     -------
@@ -115,7 +116,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             continue
 
         if transpose:
-            res = mode_dot(res, T.transpose(matrix_or_vec), mode - decrement)
+            res = mode_dot(res, T.conj(T.transpose(matrix_or_vec)), mode - decrement)
         else:
             res = mode_dot(res, matrix_or_vec, mode - decrement)
 

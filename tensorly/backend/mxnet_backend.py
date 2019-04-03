@@ -155,6 +155,13 @@ class MxnetBackend(Backend):
     def all(tensor):
         return nd.sum(tensor != 0).asscalar()
 
+    @staticmethod
+    def conj(x, *args, **kwargs):
+        """WARNING: IDENTITY FUNCTION (does nothing)
+
+            This backend currently does not support complex tensors
+        """
+        return x
 
     def moveaxis(self, tensor, source, target):
         axes = list(range(self.ndim(tensor)))
