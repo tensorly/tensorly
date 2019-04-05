@@ -4,8 +4,6 @@ import warnings
 import tensorly as tl
 from ..random import check_random_state
 from ..base import unfold
-from ..kruskal_tensor import kruskal_to_tensor
-from ..tenalg import khatri_rao
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -119,8 +117,9 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             orthogonalise=False, random_state=None, verbose=False,
-            return_errors=False, non_negative=False):
-    """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
+            return_errors=False, non_negative=False, mask=None):
+    """
+    CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -148,6 +147,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
         Activate return of iteration errors
     non_negative : bool, optional
         Perform non_negative PARAFAC. See :func:`non_negative_parafac`.
+    mask : ndarray
+        array of booleans with the same shape as ``tensor`` should be 0 where
+        the values are missing and 1 everywhere else. Note:  if tensor is
+        sparse, then mask should also be sparse with a fill value of 1 (or
+        True). Allows for missing values [2]_
+
 
     Returns
     -------
@@ -159,8 +164,13 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
 
     References
     ----------
-    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+       
+    .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
+            Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
+
+
     """
     epsilon = 10e-12
 
@@ -197,8 +207,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
             for i, factor in enumerate(factors):
                 if i != mode:
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.conj(tl.transpose(factor)), factor)
-            
-            #factor = tl.dot(unfold(tensor, mode), khatri_rao(factors, skip_matrix=mode).conj())
+
+            if mask is not None:
+                tensor = tensor*mask + tl.kruskal_to_tensor(factors, mask=1-mask)
+
             mttkrp = tl.tenalg.unfolding_dot_khatri_rao(tensor, factors, mode)
 
             if non_negative:
@@ -418,7 +430,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
             factors[mode] = factor
 
         if max_stagnation or tol:
-            rec_error = tl.norm(tensor - kruskal_to_tensor(factors), 2) / norm_tensor
+            rec_error = tl.norm(tensor - tl.kruskal_to_tensor(factors), 2) / norm_tensor
             if not min_error or rec_error < min_error:
                 min_error = rec_error
                 stagnation = -1
