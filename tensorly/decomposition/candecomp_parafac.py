@@ -151,7 +151,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
         array of booleans with the same shape as ``tensor`` should be 0 where
         the values are missing and 1 everywhere else. Note:  if tensor is
         sparse, then mask should also be sparse with a fill value of 1 (or
-        True).
+        True). Allows for missing values [2]_
+
 
     Returns
     -------
@@ -163,8 +164,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', tol=1e-8,
 
     References
     ----------
-    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+       
+    .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
+            Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
+
 
     """
     epsilon = 10e-12
