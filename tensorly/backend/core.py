@@ -541,6 +541,14 @@ class Backend(object):
         Join a sequence of arrays along a new axis.
         """
         raise NotImplementedError
+    
+    @staticmethod
+    def conj(x, *args, **kwargs):
+        """Return the complex conjugate, element-wise.
+
+            The complex conjugate of a complex number is obtained by changing the sign of its imaginary part.
+        """
+        raise NotImplementedError
 
     def kron(self, a, b):
         """Kronecker product of two tensors.

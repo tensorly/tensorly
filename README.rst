@@ -129,12 +129,19 @@ If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_
 Citing
 ======
 
-If you use TensorLy in an academic paper, please cite::
+If you use TensorLy in an academic paper, please cite [1]_::
 
-   @article{tensorly,
-     author    = {Jean Kossaifi and Yannis Panagakis and Anima Anandkumar and Maja Pantic},
-     title     = {TensorLy: Tensor Learning in Python},
-     journal   = {CoRR},
-     volume    = {abs/1610.09555},
-     year      = {2018},
-   }
+    @article{tensorly,
+      author  = {Jean Kossaifi and Yannis Panagakis and Anima Anandkumar and Maja Pantic},
+      title   = {TensorLy: Tensor Learning in Python},
+      journal = {Journal of Machine Learning Research},
+      year    = {2019},
+      volume  = {20},
+      number  = {26},
+      pages   = {1-6},
+      url     = {http://jmlr.org/papers/v20/18-277.html}
+    }
+    
+    
+.. [1] Jean Kossaifi, Yannis Panagakis, Anima Anandkumar and Maja Pantic, **TensorLy: Tensor Learning in Python**, *Journal of Machine Learning Research (JMLR)*, 2019, volume 20, number 26.
+

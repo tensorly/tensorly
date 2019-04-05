@@ -98,6 +98,14 @@ class TensorflowBackend(Backend):
 
     def dot(self, tensor1, tensor2):
         return tf.tensordot(tensor1, tensor2, axes=([self.ndim(tensor1) - 1], [0]))
+        
+    @staticmethod
+    def conj(x, *args, **kwargs):
+        """WARNING: IDENTITY FUNCTION (does nothing)
+
+            This backend currently does not support complex tensors
+        """
+        return x
 
     @staticmethod
     def solve(lhs, rhs):
