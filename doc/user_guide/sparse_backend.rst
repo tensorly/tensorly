@@ -7,13 +7,19 @@ TensorLy supports sparse tensors for some backends and algorithms.
 
 When selecting a backend to be used for tensorly, this backend will also
 be applied to the sparse implementations. This is because many backends
-naively support both dense and sparse tensors as distinct objects. For example,
-TensorFlow and PyTorch both support separate interfaces for dense and sparse
-representations. Using TensorLy's dense or sparse interfaces will give you
+natively support both dense and sparse tensors as distinct objects. For example,
+TensorFlow and PyTorch both have (some) support for sparse tensors.
+Using TensorLy's dense or sparse interfaces will give you
 appropriate objects for the selected backend.
 
-However, not all backends have a native sparse representation. For instance,
-NumPy lacks a sparse object. In these cases, TensorLy makes opinionated decisions
+Why a separate sparse backend?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some algorithms need to be adapted to be *sparse-safe*. 
+
+In addition, not all backends have a native sparse representation. For instance,
+NumPy lacks a sparse array structure.
+In these cases, TensorLy makes opinionated decisions
 about how to handle sparse support, if at all. It is usually necessary for
 non-native sparse support to require additional dependencies. For the NumPy
 backend, the `PyData/Sparse <https://sparse.pydata.org>`_ project is used
@@ -52,8 +58,9 @@ Note that not all algorithms currently support sparse. This is because some
 algorithms may need to be rewritten to properly avoid densifying large sparse
 arrays, or creating arrays with large shapes. The algorithms listed above have
 been tested with sparse tensors. Other algorithms may work, but one should be
-careful to watch tensorly's memory usage when using them. With the
-PyData/Sparse backend, you can set the environment variable
+careful to watch tensorly's memory usage when using them. 
+
+With the PyData/Sparse backend, you can set the environment variable
 ``SPARSE_AUTO_DENSIFY=0`` before importing ``sparse`` and it will cause it to
 raise a ``RuntimeError`` whenever a sparse tensor would be automatically
 densified. However, be aware that this does not protect against an algorithm
@@ -86,9 +93,6 @@ When using masks with sparse tensors, there are two important caveats:
 - Sparse mask support is currently only supported with the sparse backend
   ``parafac`` (``tensor.contrib.sparse.decomposition.parafac``). The dense
   backend ``parafac`` will densify the array.
-
-See the example notebook at
-https://github.com/JeanKossaifi/tensorly-notebooks/tree/master/07_pydata_sparse_backend/sparse_missing_values.ipynb
 
 Example
 =======
@@ -132,8 +136,8 @@ Now to decompose the tensor.
 
 Note that the decomposition takes much longer when using the sparse variant.
 
-   >>> from tensorly.contrib.sparse.decomposition import parafac as parafac_sparse # The sparse version
-   >>> t = time.time(); factors_sparse = parafac_sparse(tensor, 5, init='random'); print(time.time() - t)
+   >>> from tensorly.contrib.sparse.decomposition import parafac as sparse_parafac # The sparse version
+   >>> t = time.time(); sparse_factors = sparse_parafac(tensor, 5, init='random'); print(time.time() - t)
    14.053689002990723
 
 However, there can be advantages to using the sparse variant. It is currently
@@ -143,7 +147,3 @@ also makes it use ``scipy.sparse.linalg.spsolve`` instead of
 ``numpy.linalg.solve``, which can have advantages, for instance, when using
 the scikit-umfpack backend, it is more robust against nearly singular
 intermediate matrices.
-
-For more examples of Decompositions with sparse backends, see the example
-notebooks at
-https://github.com/JeanKossaifi/tensorly-notebooks/tree/master/07_pydata_sparse_backend.
