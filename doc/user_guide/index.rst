@@ -11,3 +11,4 @@ User guide
    tensor_basics.rst
    tensor_decomposition.rst
    tensor_regression.rst
+   sparse_backends.rst
