@@ -96,7 +96,7 @@ Create a small third order tensor of size 3 x 4 x 2 and perform simple operation
    import numpy as np
 
 
-   tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)))
+   tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)), dtype=tl.float64)
    unfolded = tl.unfold(tensor, mode=0)
    tl.fold(unfolded, mode=0, shape=tensor.shape)
 
