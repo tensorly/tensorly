@@ -9,7 +9,7 @@ except ImportError as error:
 import warnings
 import numpy as np
 
-from .core import Backend, register_backend
+from .core import Backend
 
 
 class CupyBackend(Backend):
@@ -119,8 +119,7 @@ class CupyBackend(Backend):
 for name in ['float64', 'float32', 'int64', 'int32', 'reshape', 'moveaxis',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye',
              'arange', 'where', 'dot', 'kron', 'qr', 'concatenate', 'max',
-             'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt']:
+             'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'stack',
+             'conj']:
     CupyBackend.register_method(name, getattr(cp, name))
 
-
-register_backend(CupyBackend())

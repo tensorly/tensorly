@@ -150,6 +150,7 @@ For each backend, tensorly provides the following uniform functions:
     proximal.svd_thresholding
     proximal.procrustes
     inner
+    contract
 
 
 :mod:`tensorly.decomposition`: Tensor Decomposition

@@ -75,6 +75,18 @@ class NumpySparseBackend(Backend):
             return sparse.dot(x, y)
         return np.dot(x, y)
 
+    def solve(self, A, b):
+        """
+        Compute x s.t. Ax = b
+        """
+        if is_sparse(A) or is_sparse(b):
+            A, b = A.tocsc(), b.tocsc()
+            x = sparse.COO(scipy.sparse.linalg.spsolve(A, b))
+        else:
+            x = np.linalg.solve(A, b)
+
+        return x
+
     @staticmethod
     def partial_svd(matrix, n_eigenvecs=None):
         # Check that matrix is... a matrix!
@@ -150,11 +162,11 @@ class NumpySparseBackend(Backend):
 
 for name in ['int64', 'int32', 'float64', 'float32', 'moveaxis', 'transpose',
              'reshape', 'ndim', 'shape', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'arange']:
+             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
-for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye', 'ones']:
+for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye',
+             'ones', 'stack']:
     NumpySparseBackend.register_method(name, getattr(sparse, name))
 
 
-register_sparse_backend(NumpySparseBackend())

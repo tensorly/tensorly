@@ -11,7 +11,7 @@ tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
 
 import numpy as np
 
-from .core import Backend, register_backend
+from . import Backend
 
 
 class TensorflowBackend(Backend):
@@ -72,6 +72,8 @@ class TensorflowBackend(Backend):
 
     def moveaxis(self, tensor, source, target):
         axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
         try:
             axes.pop(source)
         except IndexError:
@@ -96,6 +98,14 @@ class TensorflowBackend(Backend):
 
     def dot(self, tensor1, tensor2):
         return tf.tensordot(tensor1, tensor2, axes=([self.ndim(tensor1) - 1], [0]))
+        
+    @staticmethod
+    def conj(x, *args, **kwargs):
+        """WARNING: IDENTITY FUNCTION (does nothing)
+
+            This backend currently does not support complex tensors
+        """
+        return x
 
     @staticmethod
     def solve(lhs, rhs):
@@ -168,8 +178,10 @@ _FUN_NAMES = [
     (tf.qr, 'qr'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
+    (tf.stack, 'stack'),
     (tf.identity, 'copy'),
     (tf.concat, 'concatenate'),
+    (tf.stack, 'stack'),
     (tf.reduce_min, 'min'),
     (tf.reduce_max, 'max'),
     (tf.reduce_mean, 'mean'),
@@ -181,4 +193,3 @@ for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)
 del _FUN_NAMES
 
-register_backend(TensorflowBackend())

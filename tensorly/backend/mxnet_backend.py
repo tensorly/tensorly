@@ -11,9 +11,9 @@ import warnings
 
 import numpy
 from mxnet import nd
-from mxnet.ndarray import reshape, dot, transpose
+from mxnet.ndarray import reshape, dot, transpose, stack
 
-from .core import Backend, register_backend
+from .core import Backend
 
 
 class MxnetBackend(Backend):
@@ -49,6 +49,12 @@ class MxnetBackend(Backend):
     @staticmethod
     def ndim(tensor):
         return tensor.ndim
+
+    @staticmethod
+    def reshape(tensor, shape):
+        if not shape:
+            shape = [1]
+        return nd.reshape(tensor, shape)
 
     def solve(self, matrix1, matrix2):
         ctx = self.context(matrix1)
@@ -150,6 +156,30 @@ class MxnetBackend(Backend):
         return nd.sum(tensor != 0).asscalar()
 
     @staticmethod
+    def conj(x, *args, **kwargs):
+        """WARNING: IDENTITY FUNCTION (does nothing)
+
+            This backend currently does not support complex tensors
+        """
+        return x
+
+    def moveaxis(self, tensor, source, target):
+        axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
+        try:
+            axes.pop(source)
+        except IndexError:
+            raise ValueError('Source should verify 0 <= source < tensor.ndim'
+                             'Got %d' % source)
+        try:
+            axes.insert(target, source)
+        except IndexError:
+            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
+                             'Got %d' % target)
+        return transpose(tensor, axes)
+
+    @staticmethod
     def mean(tensor, axis=None, **kwargs):
         if axis is None:
             axis = ()
@@ -183,6 +213,10 @@ class MxnetBackend(Backend):
     @staticmethod
     def concatenate(tensors, axis):
         return nd.concat(*tensors, dim=axis)
+
+    @staticmethod
+    def stack(arrays, axis=0):
+        return stack(*arrays, axis=axis)
 
     def symeig_svd(self, matrix, n_eigenvecs=None):
         """Computes a truncated SVD on `matrix` using symeig
@@ -249,14 +283,9 @@ class MxnetBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'symeig_svd': self.symeig_svd}
 
-
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
-for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
-             'moveaxis', 'dot', 'transpose', 'reshape',
-             'where', 'sign', 'prod']:
+for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye', 'dot',
+             'transpose', 'where', 'sign', 'prod']:
     MxnetBackend.register_method(name, getattr(nd, name))
-
-
-register_backend(MxnetBackend())
