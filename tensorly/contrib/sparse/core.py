@@ -10,4 +10,3 @@ def wrap(func):
             return func(*args, **kwargs)
 
     return inner
-
