@@ -90,10 +90,7 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
     for iteration in range(n_iter_max):
 
         for i in range(T.ndim(X)):
-            svd_thresh = svd_thresholding(unfold(D, i) + unfold(L[i], i)/mu, reg_J/mu)
-            if not T.is_tensor(svd_thresh):
-                svd_thresh = T.tensor(svd_thresh)
-            J[i] = fold(svd_thresh, i, X.shape)
+            J[i] = fold(svd_thresholding(unfold(D, i) + unfold(L[i], i)/mu, reg_J/mu), i, X.shape)
 
         D = L_x/mu + X - E
         for i in range(T.ndim(X)):
