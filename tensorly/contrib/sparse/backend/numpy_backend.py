@@ -52,6 +52,10 @@ class NumpySparseBackend(Backend):
         return _py_copy(tensor)
 
     @staticmethod
+    def clip(tensor, a_min=None, a_max=None, inplace=False):
+        return np.clip(tensor, a_min, a_max)
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         # handle difference in default axis notation
         if axis == ():
@@ -106,10 +110,14 @@ class NumpySparseBackend(Backend):
             U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
             return U, S, V
-
+        elif n_eigenvecs is None:
+            raise ValueError('n_eigenvecs cannot be none')
+        elif is_sparse(matrix) and matrix.nnz == 0:
+            # all-zeros matrix, so we should do a quick return.
+            U = sparse.eye(dim_1, n_eigenvecs, dtype=matrix.dtype)
+            S = np.zeros(n_eigenvecs, dtype=matrix.dtype)
+            V = sparse.eye(dim_2, n_eigenvecs, dtype=matrix.dtype)
         else:
-            if n_eigenvecs is None:
-                raise ValueError('n_eigenvecs cannot be none')
             if n_eigenvecs > min_dim:
                 msg = ('n_eigenvecs={} if greater than the minimum matrix '
                        'dimension ({})')
@@ -123,14 +131,22 @@ class NumpySparseBackend(Backend):
                 xxT = matrix.dot(conj)
                 if is_sparse(xxT):
                     xxT = xxT.to_scipy_sparse()
-                S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM')
+                if n_eigenvecs >= xxT.shape[0]:
+                    # use dense form when sparse form will fail
+                    S, U = scipy.linalg.eigh(xxT.toarray())
+                else:
+                    S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM')
                 S = np.sqrt(S)
                 V = conj.dot(U / S[None, :])
             else:
                 xTx = matrix.T.dot(matrix)
                 if is_sparse(xTx):
                     xTx = xTx.to_scipy_sparse()
-                S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM')
+                if n_eigenvecs >= xTx.shape[0]:
+                    # use dense form when sparse form will fail
+                    S, V = scipy.linalg.eigh(xTx.toarray())
+                else:
+                    S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM')
                 S = np.sqrt(S)
                 U = matrix.dot(V / S[None, :])
 
