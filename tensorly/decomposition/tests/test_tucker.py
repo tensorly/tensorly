@@ -111,3 +111,14 @@ def test_non_negative_tucker():
             'norm 2 of difference between svd and random init too high')
     assert_(tl.norm(rec_svd - rec_random, 'inf') < tol_max_abs,
             'abs norm of difference between svd and random init too high')
+
+    # Test for a single rank passed
+    # (should be used for all modes)
+    rank = 3
+    target_shape = (rank, )*tl.ndim(tensor)
+    core, factors = non_negative_tucker(tensor, rank=rank)
+    assert_(tl.shape(core) == target_shape, 'core has the wrong shape, got {}, but expected {}.'.format(tl.shape(core), target_shape))
+    for i, f in enumerate(factors):
+        expected_shape = (tl.shape(tensor)[i], rank)
+        assert_(tl.shape(f) == expected_shape, '{}-th factor has the wrong shape, got {}, but expected {}.'.format(
+                i, tl.shape(f), expected_shape))
