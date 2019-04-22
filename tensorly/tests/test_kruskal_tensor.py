@@ -1,6 +1,6 @@
 import numpy as np
-import tensorly as tl
 
+import tensorly as tl
 from ..tenalg import khatri_rao, mode_dot
 from ..kruskal_tensor import (kruskal_to_tensor, kruskal_to_unfolded, 
                               kruskal_to_vec, _validate_kruskal_tensor,
@@ -97,7 +97,7 @@ def test_kruskal_to_tensor():
         unfolded = unfold(tensor, mode=i)
         U_i = matrices.pop(i)
         reconstructed = tl.dot(U_i, tl.transpose(khatri_rao(matrices)))
-        tl.assert_array_almost_equal(reconstructed, unfolded)
+        assert_array_almost_equal(reconstructed, unfolded)
         matrices.insert(i, U_i)
 
 def test_kruskal_to_tensor_with_weights():
@@ -107,7 +107,7 @@ def test_kruskal_to_tensor_with_weights():
 
     out = kruskal_to_tensor((weights, [A,B]))
     expected = tl.tensor([[-2,-2], [6, 10]])  # computed by hand
-    tl.assert_array_equal(out, expected)
+    assert_array_equal(out, expected)
 
 
 def test_kruskal_to_unfolded():

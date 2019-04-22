@@ -1,9 +1,8 @@
 import tensorly as tl
-import numpy as np
-
 from ..mps_decomposition import matrix_product_state
 from ...mps_tensor import mps_to_tensor
 from ...random import check_random_state
+from ...testing import assert_
 
 
 def test_matrix_product_state():
@@ -55,9 +54,8 @@ def test_matrix_product_state():
     tol = 10e-5
     tensor = tl.tensor(rng.random_sample([3, 3, 3]))
     factors = matrix_product_state(tensor, (1, 3, 3, 1))
-    reconstructed_tensor = mps_to_tensor(factors)
+    reconstructed_tensor = tl.mps_to_tensor(factors)
     error = tl.norm(reconstructed_tensor - tensor, 2)
     error /= tl.norm(tensor, 2)
-    tl.assert_(error < tol,
+    assert_(error < tol,
               'norm 2 of reconstruction higher than tol')
-

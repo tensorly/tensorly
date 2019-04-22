@@ -6,7 +6,7 @@ from .. import backend as T
 
 
 
-def khatri_rao(matrices, skip_matrix=None, reverse=False):
+def khatri_rao(matrices, skip_matrix=None, reverse=False, mask=None):
     """Khatri-Rao product of a list of matrices
 
         This can be seen as a column-wise kronecker product.
@@ -80,10 +80,8 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
                              'Matrix {} has {} columns != {}.'.format(
                                  i, matrix.shape[1], n_columns))
 
-    n_factors = len(matrices)
-
     if reverse:
         matrices = matrices[::-1]
         # Note: we do NOT use .reverse() which would reverse matrices even outside this function
 
-    return T.kr(matrices)
+    return T.kr(matrices, mask=mask)

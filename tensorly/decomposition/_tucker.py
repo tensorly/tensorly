@@ -187,11 +187,13 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         rank = ranks
 
     if rank is None:
-        rank = [tl.shape(tensor)[mode] for mode in modes]
+        rank = [tl.shape(tensor)[mode] for mode in range(tl.ndim(tensor))]
+
     elif isinstance(rank, int):
-        message = "Given only one int for 'rank' intead of a list of {} modes. Using this rank for all modes.".format(len(modes))
-        warnings.warn(message, DeprecationWarning)
-        rank = [rank for _ in modes]
+        n_mode = tl.ndim(tensor)
+        message = "Given only one int for 'rank' for decomposition a tensor of order {}. Using this rank for all modes.".format(n_mode)
+        warnings.warn(message, RuntimeWarning)
+        rank = [rank]*n_mode
 
 
     epsilon = 10e-12

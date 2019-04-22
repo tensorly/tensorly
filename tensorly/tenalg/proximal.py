@@ -1,4 +1,4 @@
-from .. import backend as T
+import tensorly as tl
 
 # Author: Jean Kossaifi
 
@@ -29,7 +29,7 @@ def soft_thresholding(tensor, threshold):
 
     >>> import tensorly.backend as T
     >>> from tensorly.tenalg.proximal import soft_thresholding
-    >>> tensor = T.tensor([[1, -2, 1.5], [-4, 3, -0.5]])
+    >>> tensor = tl.tensor([[1, -2, 1.5], [-4, 3, -0.5]])
     >>> soft_thresholding(tensor, 1.1)
     array([[ 0. , -0.9,  0.4],
            [-2.9,  1.9,  0. ]])
@@ -37,7 +37,7 @@ def soft_thresholding(tensor, threshold):
 
     Example with missing values
 
-    >>> mask = T.tensor([[0, 0, 1], [1, 0, 1]])
+    >>> mask = tl.tensor([[0, 0, 1], [1, 0, 1]])
     >>> soft_thresholding(tensor, mask*1.1)
     array([[ 1. , -2. ,  0.4],
            [-2.9,  3. ,  0. ]])
@@ -47,7 +47,7 @@ def soft_thresholding(tensor, threshold):
     inplace_soft_thresholding : Inplace version of the soft-thresholding operator
     svd_thresholding : SVD-thresholding operator
     """
-    return T.sign(tensor)*T.clip(T.abs(tensor) - threshold, a_min=0)
+    return tl.sign(tensor)*tl.clip(tl.abs(tensor) - threshold, a_min=0)
 
 
 def svd_thresholding(matrix, threshold):
@@ -67,8 +67,8 @@ def svd_thresholding(matrix, threshold):
     --------
     procrustes : procrustes operator
     """
-    U, s, V = T.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
-    return T.dot(U, T.reshape(soft_thresholding(s, threshold), (-1, 1))*V)
+    U, s, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
+    return tl.dot(U, tl.reshape(soft_thresholding(s, threshold), (-1, 1))*V)
 
 
 def procrustes(matrix):
@@ -89,6 +89,6 @@ def procrustes(matrix):
     --------
     svd_thresholding : SVD-thresholding operator
     """
-    U, _, V = T.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
-    return T.dot(U, V)
+    U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
+    return tl.dot(U, V)
 

@@ -156,6 +156,10 @@ def kruskal_to_tensor(kruskal_tensor):
         i.e. for all matrix U in factor_matrices:
         U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
 
+    mask : ndarray a mask to be applied to the final tensor. It should be
+        broadcastable to the shape of the final tensor, that is
+        ``(U[1].shape[0], ... U[-1].shape[0])``.
+
     Returns
     -------
     ndarray
@@ -168,14 +172,17 @@ def kruskal_to_tensor(kruskal_tensor):
 
     There are other possible and equivalent alternate implementation, e.g.
     summing over r and updating an outer product of vectors.
+
     """
     shape, _ = _validate_kruskal_tensor(kruskal_tensor)
     weights, factors = kruskal_tensor
 
     if weights is not None:
-        full_tensor = T.dot(factors[0]*weights, T.transpose(khatri_rao(factors[1:])))
+        full_tensor = T.dot(factors[0]*weights,
+                             T.transpose(khatri_rao(factors, skip_matrix=0)))
     else:
-        full_tensor = T.dot(factors[0], T.transpose(khatri_rao(factors[1:])))
+        full_tensor = T.dot(factors[0], 
+                             T.transpose(khatri_rao(factors, skip_matrix=0)))
     return fold(full_tensor, 0, shape)
 
 
@@ -227,7 +234,7 @@ def kruskal_to_vec(kruskal_tensor):
 
             for u in U:
                 u[i].shape == (s_i, R)
-                
+
         where `R` is fixed while `s_i` can vary with `i`
 
     Returns

@@ -10,7 +10,7 @@ from tensorly.base import tensor_to_vec, partial_tensor_to_vec
 from tensorly.datasets.synthetic import gen_image
 from tensorly.random import check_random_state
 from tensorly.regression.kruskal_regression import KruskalRegressor
-import tensorly.backend as T
+import tensorly as tl
 
 # Parameter of the experiment
 image_height = 25
@@ -22,7 +22,7 @@ ranks = [1, 2, 3, 4, 5]
 
 # Generate random samples
 rng = check_random_state(1)
-X = T.tensor(rng.normal(size=(1000, image_height, image_width), loc=0, scale=1))
+X = tl.tensor(rng.normal(size=(1000, image_height, image_width), loc=0, scale=1))
 
 
 # Paramters of the plot, deduced from the data
@@ -35,14 +35,14 @@ for i, pattern in enumerate(patterns):
 
     # Generate the original image
     weight_img = gen_image(region=pattern, image_height=image_height, image_width=image_width)
-    weight_img = T.tensor(weight_img)
+    weight_img = tl.tensor(weight_img)
 
     # Generate the labels
-    y = T.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(weight_img))
+    y = tl.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(weight_img))
 
     # Plot the original weights
     ax = fig.add_subplot(n_rows, n_columns, i*n_columns + 1)
-    ax.imshow(T.to_numpy(weight_img), cmap=plt.cm.OrRd, interpolation='nearest')
+    ax.imshow(tl.to_numpy(weight_img), cmap=plt.cm.OrRd, interpolation='nearest')
     ax.set_axis_off()
     if i == 0:
         ax.set_title('Original\nweights')
@@ -56,7 +56,7 @@ for i, pattern in enumerate(patterns):
         estimator.fit(X, y)
 
         ax = fig.add_subplot(n_rows, n_columns, i*n_columns + j + 2)
-        ax.imshow(T.to_numpy(estimator.weight_tensor_), cmap=plt.cm.OrRd, interpolation='nearest')
+        ax.imshow(tl.to_numpy(estimator.weight_tensor_), cmap=plt.cm.OrRd, interpolation='nearest')
         ax.set_axis_off()
 
         if i == 0:
