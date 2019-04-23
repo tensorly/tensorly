@@ -3,8 +3,9 @@ import numpy as np
 from .. import backend as tl
 from ..base import unfold, tensor_to_vec
 from ..tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
-                             tucker_to_vec, _validate_tucker_tensor)
-from ..tenalg import kronecker
+                             tucker_to_vec, _validate_tucker_tensor,
+                             tucker_mode_dot)
+from ..tenalg import kronecker, mode_dot
 from ..testing import (assert_array_equal, assert_array_almost_equal, 
                        assert_equal, assert_raises)
 from ..random import check_random_state, random_tucker
@@ -99,3 +100,41 @@ def test_tucker_to_vec():
     vec = tensor_to_vec(tucker_to_tensor(G, U))
     assert_array_almost_equal(tucker_to_vec(G, U), vec)
     assert_array_almost_equal(tucker_to_vec(G, U), tl.dot(kronecker(U), tensor_to_vec(G)), decimal=5)
+
+
+def test_tucker_mode_dot():
+    """Test for tucker_mode_dot
+    
+        We will compare tucker_mode_dot 
+        (which operates directly on decomposed tensors)
+        with mode_dot (which operates on full tensors)
+        and check that the results are the same.
+    """
+    rng = check_random_state(12345)
+    shape = (5, 4, 6)
+    rank = (3, 2, 4)
+    tucker_ten = random_tucker(shape, rank=rank, full=False, random_state=rng)
+    full_tensor = tucker_to_tensor(*tucker_ten)
+    # matrix for mode 1
+    matrix = tl.tensor(rng.random_sample((7, shape[1])))
+    # vec for mode 2
+    vec = tl.tensor(rng.random_sample(shape[2]))
+
+    # Test tucker_mode_dot with matrix
+    res = tucker_mode_dot(tucker_ten, matrix, mode=1, copy=True)
+    # Note that if copy=True is not respected, factors will be changes
+    # And the next test will fail
+    res = tucker_to_tensor(*res)
+    true_res = mode_dot(full_tensor, matrix, mode=1)
+    assert_array_almost_equal(true_res, res, decimal=5)
+    
+    # Check that the data was indeed copied
+    rec = tucker_to_tensor(*tucker_ten)
+    assert_array_almost_equal(full_tensor, rec, decimal=5)
+    
+    # Test tucker_mode_dot with vec
+    res = tucker_mode_dot(tucker_ten, vec, mode=2, copy=True)
+    res = tucker_to_tensor(*res)
+    true_res = mode_dot(full_tensor, vec, mode=2)
+    assert_equal(res.shape, true_res.shape)
+    assert_array_almost_equal(true_res, res, decimal=5)
