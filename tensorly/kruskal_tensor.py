@@ -377,3 +377,5 @@ def unfolding_dot_khatri_rao(tensor, kruskal_tensor, mode):
         mttkrp_parts.append(component)
     mttkrp = T.stack(mttkrp_parts, axis=1)*T.reshape(weights, (1, -1))
     return mttkrp 
+
+

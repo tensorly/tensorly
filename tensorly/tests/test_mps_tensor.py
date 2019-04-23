@@ -24,17 +24,17 @@ def test_validate_mps_tensor():
 
     
     # One of the factors has the wrong ndim
-    factors[0] = rng.random_sample((4, 4))
+    factors[0] = tl.tensor(rng.random_sample((4, 4)))
     with assert_raises(ValueError):
         _validate_mps_tensor(factors)
     
     # Consecutive factors ranks don't match
-    factors[0] = rng.random_sample((1, 3, 2))
+    factors[0] = tl.tensor(rng.random_sample((1, 3, 2)))
     with assert_raises(ValueError):
         _validate_mps_tensor(factors)
         
     # Boundary conditions not respected
-    factors[0] = rng.random_sample((3, 3, 2))
+    factors[0] = tl.tensor(rng.random_sample((3, 3, 2)))
     with assert_raises(ValueError):
         _validate_mps_tensor(factors)
 
