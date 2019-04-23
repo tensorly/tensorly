@@ -5,11 +5,37 @@ Core operations on Tucker tensors.
 from .base import unfold, tensor_to_vec
 from .tenalg import multi_mode_dot
 from .tenalg import kronecker
+from . import backend as tl
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
 # License: BSD 3 clause
 
+def _validate_tucker_tensor(tucker_tensor):
+    core, factors = tucker_tensor
+    
+    if len(factors) < 2:
+        raise ValueError('A Tucker tensor should be composed of at least two factors and a core.'
+                         'However, {} factor was given.'.format(len(factors)))
+
+    if len(factors) != tl.ndim(core):
+        raise ValueError('Tucker decompositions should have one factor per more of the core tensor.'
+                         'However, core has {} modes but {} factors have been provided'.format(
+                         tl.ndim(core), len(factors)))
+
+    shape = []
+    rank = []
+    for i, factor in enumerate(factors):
+        current_shape, current_rank = tl.shape(factor)
+        if current_rank != tl.shape(core)[i]:
+            raise ValueError('Factor `n` of Tucker decomposition should verify:\n'
+                             'factors[n].shape[1] = core.shape[n].'
+                             'However, factors[{0}].shape[1]={1} but core.shape[{0}]={2}.'.format(
+                                 i, tl.shape(factor)[1], tl.shape(core)[i]))
+        shape.append(current_shape)
+        rank.append(current_rank)
+
+    return tuple(shape), tuple(rank)
 
 def tucker_to_tensor(core, factors, skip_factor=None, transpose_factors=False):
     """Converts the Tucker tensor into a full tensor
