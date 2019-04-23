@@ -8,7 +8,7 @@ if not tl.get_backend() == "numpy":
 pytest.importorskip("sparse")
 
 import tensorly.contrib.sparse as stl
-from tensorly.contrib.sparse.tenalg import unfolding_dot_khatri_rao as sparse_unfolding_dot_khatri_rao
+from tensorly.contrib.sparse.kruskal_tensor import unfolding_dot_khatri_rao as sparse_unfolding_dot_khatri_rao
 
 def test_sparse_unfolding_times_kruskal():
     """Test for unfolding_times_kruskal with sparse tensors

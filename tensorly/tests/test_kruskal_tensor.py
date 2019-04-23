@@ -5,9 +5,11 @@ from ..tenalg import khatri_rao, mode_dot
 from ..kruskal_tensor import (kruskal_to_tensor, kruskal_to_unfolded, 
                               kruskal_to_vec, _validate_kruskal_tensor,
                               kruskal_normalise, KruskalTensor,
-                              kruskal_mode_dot)
+                              kruskal_mode_dot, unfolding_dot_khatri_rao)
 from ..base import unfold, tensor_to_vec
 from tensorly.random import check_random_state, random_kruskal
+from tensorly.testing import (assert_equal, assert_raises,
+                              assert_array_equal, assert_array_almost_equal)
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -20,26 +22,26 @@ def test_validate_kruskal_tensor():
     
     # Check correct rank and shapes are returned
     shape, rank = _validate_kruskal_tensor((weights, factors))
-    tl.assert_equal(shape, true_shape,
+    assert_equal(shape, true_shape,
                     err_msg='Returned incorrect shape (got {}, expected {})'.format(
                         shape, true_shape))
-    tl.assert_equal(rank, true_rank,
+    assert_equal(rank, true_rank,
                     err_msg='Returned incorrect rank (got {}, expected {})'.format(
                         rank, true_rank))
     
     # One of the factors has the wrong rank
     factors[0], copy = tl.tensor(rng.random_sample((4, 4))), factors[0]
-    with tl.assert_raises(ValueError):
+    with assert_raises(ValueError):
         _validate_kruskal_tensor((weights, factors))
     
     # Not the correct amount of weights
     factors[0] = copy
     wrong_weights = weights[1:]
-    with tl.assert_raises(ValueError):
+    with assert_raises(ValueError):
         _validate_kruskal_tensor((wrong_weights, factors))
 
     # Not enought factors
-    with tl.assert_raises(ValueError):
+    with assert_raises(ValueError):
         _validate_kruskal_tensor((weights[:1], factors[:1]))
 
 def test_kruskal_to_tensor():
@@ -87,7 +89,7 @@ def test_kruskal_to_tensor():
                            [[ 324728.,  358154.],
                             [ 366830.,  404594.]]]])
     res = kruskal_to_tensor((tl.ones(3), U))
-    tl.assert_array_equal(res, true_res, err_msg='Khatri-rao incorrectly transformed into full tensor.')
+    assert_array_equal(res, true_res, err_msg='Khatri-rao incorrectly transformed into full tensor.')
 
     columns = 4
     rows = [3, 4, 2]
@@ -125,7 +127,7 @@ def test_kruskal_to_unfolded():
     for mode in range(4):
         true_res = unfold(full_tensor, mode)
         res = kruskal_to_unfolded(kruskal_tensor, mode)
-        tl.assert_array_equal(true_res, res, err_msg='khatri_rao product unfolded incorrectly for mode {}.'.format(mode))
+        assert_array_equal(true_res, res, err_msg='khatri_rao product unfolded incorrectly for mode {}.'.format(mode))
 
 
 def test_kruskal_to_vec():
@@ -139,7 +141,7 @@ def test_kruskal_to_vec():
     full_tensor = kruskal_to_tensor(kruskal_tensor)
     true_res = tensor_to_vec(full_tensor)
     res = kruskal_to_vec(kruskal_tensor)
-    tl.assert_array_equal(true_res, res, err_msg='khatri_rao product converted incorrectly to vec.')
+    assert_array_equal(true_res, res, err_msg='khatri_rao product converted incorrectly to vec.')
 
 def test_kruskal_mode_dot():
     """Test for kruskal_mode_dot
@@ -165,15 +167,38 @@ def test_kruskal_mode_dot():
     # And the next test will fail
     res = tl.kruskal_to_tensor(res)
     true_res = mode_dot(full_tensor, matrix, mode=1)
-    tl.assert_array_almost_equal(true_res, res)
+    assert_array_almost_equal(true_res, res)
     
     # Check that the data was indeed copied
     rec = tl.kruskal_to_tensor(kruskal_ten)
-    tl.assert_array_almost_equal(full_tensor, rec)
+    assert_array_almost_equal(full_tensor, rec)
     
     # Test kruskal_mode_dot with vec
     res = kruskal_mode_dot(kruskal_ten, vec, mode=2, copy=True)
     res = tl.kruskal_to_tensor(res)
     true_res = mode_dot(full_tensor, vec, mode=2)
-    tl.assert_equal(res.shape, true_res.shape)
-    tl.assert_array_almost_equal(true_res, res)
+    assert_equal(res.shape, true_res.shape)
+    assert_array_almost_equal(true_res, res)
+
+
+def test_unfolding_dot_khatri_rao():
+    """Test for unfolding_dot_khatri_rao
+    
+    Check against other version check sparse safe
+    """
+    shape = (10, 10, 10, 4)
+    rank = 5
+    tensor = tl.tensor(np.random.random(shape))
+    weights, factors = random_kruskal(shape=shape, rank=rank, 
+                                      full=False, normalise_factors=True)
+    
+    for mode in range(tl.ndim(tensor)):
+        # Version forming explicitely the khatri-rao product
+        unfolded = unfold(tensor, mode)
+        kr_factors = khatri_rao(factors, weights=weights, skip_matrix=mode)
+        true_res = tl.dot(unfolded, kr_factors)
+
+        # Efficient sparse-safe version
+        res = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
+
+        assert_array_almost_equal(true_res, res, decimal=4)

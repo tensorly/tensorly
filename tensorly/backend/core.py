@@ -568,7 +568,7 @@ class Backend(object):
         b = self.reshape(b, (1, s3, 1, s4))
         return self.reshape(a * b, (s1 * s3, s2 * s4))
 
-    def kr(self, matrices, mask=None):
+    def kr(self, matrices, weights=None, mask=None):
         """Khatri-Rao product of a list of matrices
 
         This can be seen as a column-wise kronecker product.
@@ -603,7 +603,10 @@ class Backend(object):
         n_col = self.shape(matrices[0])[1]
         for i, e in enumerate(matrices[1:]):
             if not i:
-                res = matrices[0]
+                if weights is None:
+                    res = matrices[0]
+                else:
+                    res = matrices[0]*self.reshape(weights, (1, -1))
             s1, s2 = self.shape(res)
             s3, s4 = self.shape(e)
             if not s2 == s4 == n_col:
@@ -661,7 +664,7 @@ class Backend(object):
 
         if n_eigenvecs >= min_dim:
             if n_eigenvecs > max_dim:
-                warnings.warn(('Trying to compute SVD with n_eigenvecs={1}, which '
+                warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
                                'is larger than max(matrix.shape)={1}. Setting '
                                'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
                 n_eigenvecs = max_dim

@@ -122,7 +122,7 @@ def test_randomised_parafac():
     n_samples = 8
     tensor = T.tensor(rng.random_sample(t_shape))
     rank = 4
-    weights, factors_svd = randomised_parafac(tensor, rank, n_samples, n_iter_max=1000,
+    _, factors_svd = randomised_parafac(tensor, rank, n_samples, n_iter_max=1000,
                                      init='svd', tol=10e-5, verbose=True)
     for i, f in enumerate(factors_svd):
         assert_(T.shape(f) == (t_shape[i], rank),

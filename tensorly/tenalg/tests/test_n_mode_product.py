@@ -7,7 +7,7 @@ from ...base import fold, unfold
 from .._kronecker import kronecker
 from .._khatri_rao import khatri_rao
 from ...random import random_kruskal
-from ..n_mode_product import mode_dot, multi_mode_dot, unfolding_dot_khatri_rao
+from ..n_mode_product import mode_dot, multi_mode_dot
 from ...testing import (assert_array_equal, assert_equal,
                         assert_array_almost_equal, assert_raises)
 
@@ -154,24 +154,3 @@ def test_multi_mode_dot():
         res = multi_mode_dot(X, [vecs[i] for i in modes], modes=modes)
         assert_equal(res.shape, (1,))
         assert_equal(res[0], 1)
-
-def test_unfolding_dot_khatri_rao():
-    """Test for unfolding_dot_khatri_rao
-    
-    Check against other version check sparse safe
-    """
-    shape = (10, 10, 10, 4)
-    rank = 5
-    tensor = T.tensor(np.random.random(shape))
-    factors = random_kruskal(shape=shape, rank=rank, full=False)
-    
-    for mode in range(T.ndim(tensor)):
-        # Version forming explicitely the khatri-rao product
-        unfolded = unfold(tensor, mode)
-        kr_factors = khatri_rao(factors, skip_matrix=mode)
-        true_res = T.dot(unfolded, kr_factors)
-
-        # Efficient sparse-safe version
-        res = unfolding_dot_khatri_rao(tensor, factors, mode)
-
-        assert_array_almost_equal(true_res, res, decimal=4)

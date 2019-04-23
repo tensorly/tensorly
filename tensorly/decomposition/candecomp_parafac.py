@@ -4,7 +4,8 @@ import warnings
 import tensorly as tl
 from ..random import check_random_state
 from ..base import unfold
-from ..kruskal_tensor import kruskal_to_tensor, KruskalTensor
+from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
+                              unfolding_dot_khatri_rao)
 from ..tenalg import khatri_rao
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -176,8 +177,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
             if mask is not None:
                 tensor = tensor*mask + tl.kruskal_to_tensor(factors, mask=1-mask)
 
-            # TODO!!! Add weights in computation of mttkrp!!
-            mttkrp = tl.tenalg.unfolding_dot_khatri_rao(tensor, factors, mode)
+            mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
             if non_negative:
                 numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
