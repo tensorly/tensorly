@@ -9,6 +9,7 @@ if not tl.get_backend() == "numpy":
 pytest.importorskip("sparse")
 
 import sparse
+import numpy as np
 
 def test_sparse_parafac():
     """Test for sparse parafac"""
@@ -18,7 +19,7 @@ def test_sparse_parafac():
     rank = 3
     factors = [sparse.random((2862, rank), random_state=random_state),
                sparse.random((14036, rank), random_state=random_state)]
-
-    tensor = kruskal_to_tensor(factors)
+    weights = np.ones(rank)
+    tensor = kruskal_to_tensor((weights, factors))
     _ = parafac(tensor, rank=rank, init='random', 
                 n_iter_max=1, random_state=random_state)

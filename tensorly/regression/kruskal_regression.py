@@ -74,6 +74,7 @@ class KruskalRegressor():
 
         # Norm of the weight tensor at each iteration
         norm_W = []
+        weights = T.ones(self.weight_rank, **T.context(X))
 
         for iteration in range(self.n_iter_max):
 
@@ -86,7 +87,7 @@ class KruskalRegressor():
                 inv_term = T.dot(T.transpose(phi), phi) + self.reg_W*T.tensor(np.eye(phi.shape[1]), **T.context(X))
                 W[i] = T.reshape(T.solve(inv_term, T.dot(T.transpose(phi), y)), (X.shape[i + 1], self.weight_rank))
 
-            weight_tensor_ = kruskal_to_tensor(W)
+            weight_tensor_ = kruskal_to_tensor((weights, W))
             norm_W.append(T.norm(weight_tensor_, 2))
 
             # Convergence check
@@ -99,8 +100,9 @@ class KruskalRegressor():
                     break
 
         self.weight_tensor_ = weight_tensor_
-        self.kruskal_weight_ = W
-        self.vec_W_ = kruskal_to_vec(W)
+        self.kruskal_weight_ = (weights, W)
+
+        self.vec_W_ = kruskal_to_vec((weights, W))
         self.n_iterations_ = iteration + 1
         self.norm_W_ = norm_W
 

@@ -37,14 +37,14 @@ def test_random_kruskal():
     for i in range(T.ndim(tensor)):
         assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
 
-    factors = random_kruskal(shape, rank, full=False)
+    weights, factors = random_kruskal(shape, rank, full=False)
     for i, factor in enumerate(factors):
         assert_equal(factor.shape, (shape[i], rank),
                 err_msg=('{}-th factor has shape {}, expected {}'.format(
                      i, factor.shape, (shape[i], rank))))
 
     # tests that the columns of each factor matrix are indeed orthogonal
-    factors = random_kruskal(shape, rank, full=False, orthogonal=True)
+    weights, factors = random_kruskal(shape, rank, full=False, orthogonal=True)
     for i, factor in enumerate(factors):
         for j in range(rank):
             for k in range(j):

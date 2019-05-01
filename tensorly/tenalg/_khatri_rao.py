@@ -6,7 +6,7 @@ from .. import backend as T
 
 
 
-def khatri_rao(matrices, skip_matrix=None, reverse=False, mask=None):
+def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=None):
     """Khatri-Rao product of a list of matrices
 
         This can be seen as a column-wise kronecker product.
@@ -16,11 +16,15 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False, mask=None):
 
     Parameters
     ----------
-    matrices : ndarray list
+    matrices : 2D-array list
         list of matrices with the same number of columns, i.e.::
 
             for i in len(matrices):
                 matrices[i].shape = (n_i, m)
+    
+    weights : 1D-array
+        array of weights for each rank, of length m, the number of column of the factors
+        (i.e. m == factor[i].shape[1] for any factor)
 
     skip_matrix : None or int, optional, default is None
         if not None, index of a matrix to skip
@@ -83,5 +87,5 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False, mask=None):
     if reverse:
         matrices = matrices[::-1]
         # Note: we do NOT use .reverse() which would reverse matrices even outside this function
-
-    return T.kr(matrices, mask=mask)
+        
+    return T.kr(matrices, weights=weights, mask=mask)
