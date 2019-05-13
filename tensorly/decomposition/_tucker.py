@@ -210,13 +210,12 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         nn_factors = [tl.abs(f) for f in factors]
         nn_core = tl.abs(core)
 
-    n_factors = len(nn_factors)
     norm_tensor = tl.norm(tensor, 2)
     rec_errors = []
 
     for iteration in range(n_iter_max):
         for mode in range(tl.ndim(tensor)):
-            B = tucker_to_tensor(nn_core, nn_factors, skip_factor=mode)
+            B = tucker_to_tensor((nn_core, nn_factors), skip_factor=mode)
             B = tl.transpose(unfold(B, mode))
 
             numerator = tl.dot(unfold(tensor, mode), B)
@@ -225,7 +224,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
             denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
             nn_factors[mode] *= numerator / denominator
 
-        numerator = tucker_to_tensor(tensor, nn_factors, transpose_factors=True)
+        numerator = tucker_to_tensor((tensor, nn_factors), transpose_factors=True)
         numerator = tl.clip(numerator, a_min=epsilon, a_max=None)
         for i, f in enumerate(nn_factors):
             if i:
@@ -235,7 +234,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
         nn_core *= numerator / denominator
 
-        rec_error = tl.norm(tensor - tucker_to_tensor(nn_core, nn_factors), 2) / norm_tensor
+        rec_error = tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2) / norm_tensor
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
             print('reconsturction error={}, variation={}.'.format(

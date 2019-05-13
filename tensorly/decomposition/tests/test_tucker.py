@@ -41,7 +41,7 @@ def test_tucker():
     tol_max_abs = 10e-1
     tensor = tl.tensor(rng.random_sample((3, 4, 3)))
     core, factors = tucker(tensor, rank=None, n_iter_max=200, verbose=True)
-    reconstructed_tensor = tucker_to_tensor(core, factors)
+    reconstructed_tensor = tucker_to_tensor((core, factors))
     norm_rec = tl.norm(reconstructed_tensor, 2)
     norm_tensor = tl.norm(tensor, 2)
     assert((norm_rec - norm_tensor)/norm_rec < tol_norm_2)
@@ -65,8 +65,8 @@ def test_tucker():
 
     core_svd, factors_svd = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, init='svd', verbose=1)
     core_random, factors_random = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
-    rec_svd = tucker_to_tensor(core_svd, factors_svd)
-    rec_random = tucker_to_tensor(core_random, factors_random)
+    rec_svd = tucker_to_tensor((core_svd, factors_svd))
+    rec_random = tucker_to_tensor((core_random, factors_random))
     error = tl.norm(rec_svd - rec_random, 2)
     error /= tl.norm(rec_svd, 2)
     assert_(error < tol_norm_2,
@@ -90,8 +90,8 @@ def test_non_negative_tucker():
         assert_(tl.all(factor >= 0))
     assert_(tl.all(nn_core >= 0))
 
-    reconstructed_tensor = tucker_to_tensor(core, factors)
-    nn_reconstructed_tensor = tucker_to_tensor(nn_core, nn_factors)
+    reconstructed_tensor = tucker_to_tensor((core, factors))
+    nn_reconstructed_tensor = tucker_to_tensor((nn_core, nn_factors))
     error = tl.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
     error /= tl.norm(reconstructed_tensor, 2)
     assert_(error < tol_norm_2,
@@ -103,8 +103,8 @@ def test_non_negative_tucker():
 
     core_svd, factors_svd = non_negative_tucker(tensor, rank=[3, 4, 3], n_iter_max=500, init='svd', verbose=1)
     core_random, factors_random = non_negative_tucker(tensor, rank=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
-    rec_svd = tucker_to_tensor(core_svd, factors_svd)
-    rec_random = tucker_to_tensor(core_random, factors_random)
+    rec_svd = tucker_to_tensor((core_svd, factors_svd))
+    rec_random = tucker_to_tensor((core_random, factors_random))
     error = tl.norm(rec_svd - rec_random, 2)
     error /= tl.norm(rec_svd, 2)
     assert_(error < tol_norm_2,

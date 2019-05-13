@@ -91,7 +91,7 @@ def test_random_tucker():
                                      core.shape, rank))
     for factor in factors:
         assert_array_almost_equal(T.dot(T.transpose(factor), factor), T.tensor(np.eye(factor.shape[1])))
-    tensor = tucker_to_tensor(core, factors)
+    tensor = tucker_to_tensor((core, factors))
     reconstructed = multi_mode_dot(tensor, factors, transpose=True)
     assert_array_almost_equal(core, reconstructed)
 
