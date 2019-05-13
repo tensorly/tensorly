@@ -92,6 +92,9 @@ For each backend, tensorly provides the following uniform functions:
     kruskal_to_tensor
     kruskal_to_unfolded
     kruskal_to_vec
+    kruskal_mode_dot
+    unfolding_dot_khatri_rao
+
 
 :mod:`tensorly.tucker_tensor`: Tensors in Tucker format
 =======================================================
@@ -109,6 +112,8 @@ For each backend, tensorly provides the following uniform functions:
     tucker_to_tensor
     tucker_to_unfolded
     tucker_to_vec
+    tucker_mode_dot
+
 
 :mod:`tensorly.mps_tensor`: Tensors in Matrix-Product-State format
 ==================================================================
@@ -126,7 +131,6 @@ For each backend, tensorly provides the following uniform functions:
     mps_to_tensor
     mps_to_unfolded
     mps_to_vec
-
 
 
 :mod:`tensorly.tenalg`: Tensor algebra

@@ -32,13 +32,13 @@ cp_rank = 25
 tucker_rank = [100, 100, 2]
 
 # Perform the CP decomposition
-factors = parafac(image, rank=cp_rank, init='random', tol=10e-6)
+weights, factors = parafac(image, rank=cp_rank, init='random', tol=10e-6)
 # Reconstruct the image from the factors
-cp_reconstruction = tl.kruskal_to_tensor(factors)
+cp_reconstruction = tl.kruskal_to_tensor((weights, factors))
 
 # Tucker decomposition
 core, tucker_factors = tucker(image, ranks=tucker_rank, init='random', tol=10e-5, random_state=random_state)
-tucker_reconstruction = tl.tucker_to_tensor(core, tucker_factors)
+tucker_reconstruction = tl.tucker_to_tensor((core, tucker_factors))
 
 # Plotting the original and reconstruction from the decompositions
 fig = plt.figure()

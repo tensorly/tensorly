@@ -43,10 +43,8 @@ def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False):
 
     Parameters
     ----------
-    core : ndarray
-       core tensor
-    factors : ndarray list
-       list of matrices of shape ``(s_i, core.shape[i])``
+    tucker_tensor : tl.TuckerTensor or (core, factors)
+        core tensor and list of factor matrices
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
         Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
@@ -67,10 +65,8 @@ def tucker_to_unfolded(tucker_tensor, mode=0, skip_factor=None, transpose_factor
 
     Parameters
     ----------
-    core : ndarray
-        core tensor
-    factors : ndarray list
-        list of matrices
+    tucker_tensor : tl.TuckerTensor or (core, factors)
+        core tensor and list of factor matrices
     mode : None or int list, optional, default is None
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
@@ -91,10 +87,8 @@ def tucker_to_vec(tucker_tensor, skip_factor=None, transpose_factors=False):
 
     Parameters
     ----------
-    core : ndarray
-        core tensor
-    factors : ndarray list
-        list of factor matrices
+    tucker_tensor : tl.TuckerTensor or (core, factors)
+        core tensor and list of factor matrices
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
         Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
