@@ -157,8 +157,7 @@ def dispatch(method):
     name = method.__name__
 
     def inner(*args, **kwargs):
-        backend = getattr(_LOCAL_STATE, 'backend', _DEFAULT_BACKEND)
-        return getattr(backend, name)(*args, **kwargs)
+        return _get_backend_method(name)(*args, **kwargs)
 
     # We don't use `functools.wraps` here because some of the dispatched
     # methods include the backend (`self`) as a parameter. Instead we manually

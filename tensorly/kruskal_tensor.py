@@ -127,12 +127,9 @@ def kruskal_normalise(kruskal_tensor, copy=False):
     
     if copy:
         factors = [T.copy(f) for f in factors]
-        if weights is not None:
-            factors[0] *= weights
-        weights = T.ones(rank, **T.context(factors[0]))
-    else:
+    if weights is not None:
         factors[0] *= weights
-        weights = 0
+    weights = T.ones(rank, **T.context(factors[0]))
         
     for factor in factors:
         scales = T.norm(factor, axis=0)
