@@ -266,4 +266,24 @@ For each backend, tensorly provides the following uniform functions:
 
     decomposition.matrix_product_state_cross
 
+Sparse tensor operations
+------------------------
+
+Enables tensor operations on sparse tensors.
+Currently, the following decomposition methods are supported (for the NumPy backend, using Sparse):
+
+.. automodule:: tensorly.contrib.sparse
+
+.. currentmodule:: tensorly.contrib
+
+.. autosummary::
+    :toctree: generated/
+
+   sparse.decomposition.tucker
+   sparse.decomposition.partial_tucker
+   sparse.decomposition.non_negative_tucker
+   sparse.decomposition.robust_pca
+   sparse.decomposition.parafac
+   sparse.decomposition.non_negative_parafac
+
 
