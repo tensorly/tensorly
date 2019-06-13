@@ -102,8 +102,12 @@ rank (by construction), and decompose it with parafac.
 
 .. code:: python
 
+   >>> import tensorly.contrib.sparse as stl; import sparse
    >>> shape = (1000, 1001, 1002)
    >>> rank = 5
+   >>> starting_weights = stl.ones((rank))
+   >>> starting_weights
+   <COO: shape=(5,), dtype=float64, nnz=0, fill_value=1.0>
    >>> starting_factors = [sparse.random((i, rank)) for i in shape]
    >>> starting_factors
    [<COO: shape=(1000, 5), dtype=float64, nnz=50, fill_value=0.0>, <COO: shape=(1001, 5), dtype=float64, nnz=50, fill_value=0.0>, <COO: shape=(1002, 5), dtype=float64, nnz=50, fill_value=0.0>]
@@ -114,7 +118,7 @@ sparse, so we can use ``kruskal_to_tensor`` without worrying about using too
 much memory.
 
    >>> from tensorly.contrib.sparse.kruskal_tensor import kruskal_to_tensor
-   >>> tensor = kruskal_to_tensor(starting_factors)
+   >>> tensor = kruskal_to_tensor((starting_weights, starting_factors))
    >>> tensor
    <COO: shape=(1000, 1001, 1002), dtype=float64, nnz=5044, fill_value=0.0>
 
