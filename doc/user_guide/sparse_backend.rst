@@ -135,13 +135,13 @@ Now to decompose the tensor.
 
    >>> from tensorly.decomposition import parafac # The dense version
    >>> import time
-   >>> t = time.time(); factors = parafac(tensor, 5, init='random'); print(time.time() - t)
+   >>> t = time.time(); dense_kruskal = parafac(tensor, 5, init='random'); print(time.time() - t)
    1.3858051300048828
 
 Note that the decomposition takes much longer when using the sparse variant.
 
    >>> from tensorly.contrib.sparse.decomposition import parafac as sparse_parafac # The sparse version
-   >>> t = time.time(); sparse_factors = sparse_parafac(tensor, 5, init='random'); print(time.time() - t)
+   >>> t = time.time(); sparse_kruskal = sparse_parafac(tensor, 5, init='random'); print(time.time() - t)
    14.053689002990723
 
 However, there can be advantages to using the sparse variant. It is currently
