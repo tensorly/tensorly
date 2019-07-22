@@ -7,6 +7,7 @@ from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               unfolding_dot_khatri_rao)
 from ..tenalg import khatri_rao
+from collections.abc import Mapping
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -72,6 +73,17 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
             else:
                 factors.append(U[:, :rank])
         return factors
+
+    elif isinstance(init, (tuple, list, KruskalTensor)):
+        # TODO: Test this
+        try:
+            return KruskalTensor(init).factors
+        except ValueError:
+            raise ValueError(
+                'If initialization method is a mapping, then it must '
+                'be possible to convert it to a KruskalTensor instance'
+            )
+
 
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
@@ -148,7 +160,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
     weights = tl.ones(rank, **tl.context(tensor))
-
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
             factor = [tl.qr(factor)[0] for factor in factors]
@@ -178,7 +189,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
                 tensor = tensor*mask + tl.kruskal_to_tensor(factors, mask=1-mask)
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
-
             if non_negative:
                 numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
                 denominator = tl.dot(factors[mode], accum)
@@ -210,7 +220,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
             if iteration >= 1:
                 if verbose:
                     print('reconstruction error={}, variation={}.'.format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+                       rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
                 if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                     if verbose:
