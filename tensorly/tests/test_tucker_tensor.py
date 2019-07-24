@@ -65,7 +65,7 @@ def test_tucker_to_tensor():
                         [[1524, 5892, 10260, 14628],
                          [5108, 19204, 33300, 47396],
                          [8692, 32516, 56340, 80164]]])
-    res = tucker_to_tensor(X, U)
+    res = tucker_to_tensor((X, U))
     assert_array_equal(true_res, res)
 
 
@@ -79,10 +79,10 @@ def test_tucker_to_unfolded():
     G = tl.tensor(np.random.random((4, 3, 5, 2)))
     ranks = [2, 2, 3, 4]
     U = [tl.tensor(np.random.random((ranks[i], G.shape[i]))) for i in range(tl.ndim(G))]
-    full_tensor = tucker_to_tensor(G, U)
+    full_tensor = tucker_to_tensor((G, U))
     for mode in range(tl.ndim(G)):
-        assert_array_almost_equal(tucker_to_unfolded(G, U, mode), unfold(full_tensor, mode))
-        assert_array_almost_equal(tucker_to_unfolded(G, U, mode),
+        assert_array_almost_equal(tucker_to_unfolded((G, U), mode), unfold(full_tensor, mode))
+        assert_array_almost_equal(tucker_to_unfolded((G, U), mode),
                                     tl.dot(tl.dot(U[mode], unfold(G, mode)), tl.transpose(kronecker(U, skip_matrix=mode))),
                                     decimal=5)
 
@@ -97,9 +97,9 @@ def test_tucker_to_vec():
     G = tl.tensor(np.random.random((4, 3, 5, 2)))
     ranks = [2, 2, 3, 4]
     U = [tl.tensor(np.random.random((ranks[i], G.shape[i]))) for i in range(tl.ndim(G))]
-    vec = tensor_to_vec(tucker_to_tensor(G, U))
-    assert_array_almost_equal(tucker_to_vec(G, U), vec)
-    assert_array_almost_equal(tucker_to_vec(G, U), tl.dot(kronecker(U), tensor_to_vec(G)), decimal=5)
+    vec = tensor_to_vec(tucker_to_tensor((G, U)))
+    assert_array_almost_equal(tucker_to_vec((G, U)), vec)
+    assert_array_almost_equal(tucker_to_vec((G, U)), tl.dot(kronecker(U), tensor_to_vec(G)), decimal=5)
 
 
 def test_tucker_mode_dot():
@@ -114,7 +114,7 @@ def test_tucker_mode_dot():
     shape = (5, 4, 6)
     rank = (3, 2, 4)
     tucker_ten = random_tucker(shape, rank=rank, full=False, random_state=rng)
-    full_tensor = tucker_to_tensor(*tucker_ten)
+    full_tensor = tucker_to_tensor(tucker_ten)
     # matrix for mode 1
     matrix = tl.tensor(rng.random_sample((7, shape[1])))
     # vec for mode 2
@@ -124,17 +124,17 @@ def test_tucker_mode_dot():
     res = tucker_mode_dot(tucker_ten, matrix, mode=1, copy=True)
     # Note that if copy=True is not respected, factors will be changes
     # And the next test will fail
-    res = tucker_to_tensor(*res)
+    res = tucker_to_tensor(res)
     true_res = mode_dot(full_tensor, matrix, mode=1)
     assert_array_almost_equal(true_res, res, decimal=5)
     
     # Check that the data was indeed copied
-    rec = tucker_to_tensor(*tucker_ten)
+    rec = tucker_to_tensor(tucker_ten)
     assert_array_almost_equal(full_tensor, rec, decimal=5)
     
     # Test tucker_mode_dot with vec
     res = tucker_mode_dot(tucker_ten, vec, mode=2, copy=True)
-    res = tucker_to_tensor(*res)
+    res = tucker_to_tensor(res)
     true_res = mode_dot(full_tensor, vec, mode=2)
     assert_equal(res.shape, true_res.shape)
     assert_array_almost_equal(true_res, res, decimal=5)

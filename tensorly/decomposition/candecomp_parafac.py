@@ -162,7 +162,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
     weights = tl.ones(rank, **tl.context(tensor))
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
-            factor = [tl.qr(factor)[0] for factor in factors]
+            factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
         if verbose:
             print("Starting iteration", iteration)

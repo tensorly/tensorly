@@ -127,12 +127,9 @@ def kruskal_normalise(kruskal_tensor, copy=False):
     
     if copy:
         factors = [T.copy(f) for f in factors]
-        if weights is not None:
-            factors[0] *= weights
-        weights = T.ones(rank, **T.context(factors[0]))
-    else:
+    if weights is not None:
         factors[0] *= weights
-        weights = 0
+    weights = T.ones(rank, **T.context(factors[0]))
         
     for factor in factors:
         scales = T.norm(factor, axis=0)
@@ -151,8 +148,8 @@ def kruskal_to_tensor(kruskal_tensor):
 
     Parameters
     ----------
-    factors : ndarray list
-        list of factor matrices, all with the same number of columns
+    kruskal_tensor : KruskalTensor = (weight, factors)
+        factors is a list of factor matrices, all with the same number of columns
         i.e. for all matrix U in factor_matrices:
         U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
 
@@ -194,8 +191,8 @@ def kruskal_to_unfolded(kruskal_tensor, mode):
 
     Parameters
     ----------
-    factors : ndarray list
-        list of matrices, all with the same number of columns
+    kruskal_tensor : KruskalTensor = (weight, factors)
+        factors is a list of matrices, all with the same number of columns
         ie for all u in factor_matrices:
         u[i] has shape (s_u_i, R), where R is fixed
     mode: int
@@ -228,8 +225,8 @@ def kruskal_to_vec(kruskal_tensor):
 
     Parameters
     ----------
-    factors : ndarray list
-        list of matrices, all with the same number of columns
+    kruskal_tensor : KruskalTensor = (weight, factors)
+        factors is a list of matrices, all with the same number of columns
         i.e.::
 
             for u in U:

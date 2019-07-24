@@ -38,15 +38,13 @@ def _validate_tucker_tensor(tucker_tensor):
 
     return tuple(shape), tuple(rank)
 
-def tucker_to_tensor(core, factors, skip_factor=None, transpose_factors=False):
+def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False):
     """Converts the Tucker tensor into a full tensor
 
     Parameters
     ----------
-    core : ndarray
-       core tensor
-    factors : ndarray list
-       list of matrices of shape ``(s_i, core.shape[i])``
+    tucker_tensor : tl.TuckerTensor or (core, factors)
+        core tensor and list of factor matrices
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
         Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
@@ -58,18 +56,17 @@ def tucker_to_tensor(core, factors, skip_factor=None, transpose_factors=False):
     2D-array
        full tensor of shape ``(factors[0].shape[0], ..., factors[-1].shape[0])``
     """
+    core, factors = tucker_tensor
     return multi_mode_dot(core, factors, skip=skip_factor, transpose=transpose_factors)
 
 
-def tucker_to_unfolded(core, factors, mode=0, skip_factor=None, transpose_factors=False):
+def tucker_to_unfolded(tucker_tensor, mode=0, skip_factor=None, transpose_factors=False):
     """Converts the Tucker decomposition into an unfolded tensor (i.e. a matrix)
 
     Parameters
     ----------
-    core : ndarray
-        core tensor
-    factors : ndarray list
-        list of matrices
+    tucker_tensor : tl.TuckerTensor or (core, factors)
+        core tensor and list of factor matrices
     mode : None or int list, optional, default is None
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
@@ -82,18 +79,16 @@ def tucker_to_unfolded(core, factors, mode=0, skip_factor=None, transpose_factor
     2D-array
         unfolded tensor
     """
-    return unfold(tucker_to_tensor(core, factors, skip_factor=skip_factor, transpose_factors=transpose_factors), mode)
+    return unfold(tucker_to_tensor(tucker_tensor, skip_factor=skip_factor, transpose_factors=transpose_factors), mode)
 
 
-def tucker_to_vec(core, factors, skip_factor=None, transpose_factors=False):
+def tucker_to_vec(tucker_tensor, skip_factor=None, transpose_factors=False):
     """Converts a Tucker decomposition into a vectorised tensor
 
     Parameters
     ----------
-    core : ndarray
-        core tensor
-    factors : ndarray list
-        list of factor matrices
+    tucker_tensor : tl.TuckerTensor or (core, factors)
+        core tensor and list of factor matrices
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
         Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
@@ -113,10 +108,8 @@ def tucker_to_vec(core, factors, skip_factor=None, transpose_factors=False):
     >>> def tucker_to_vec(core, factors):
     ...     return kronecker(factors).dot(tensor_to_vec(core))
     """
-    return tensor_to_vec(tucker_to_tensor(core, factors, skip_factor=skip_factor, transpose_factors=transpose_factors))
+    return tensor_to_vec(tucker_to_tensor(tucker_tensor, skip_factor=skip_factor, transpose_factors=transpose_factors))
 
-
-import warnings
 
 def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
         """n-mode product of a Tucker tensor and a matrix or vector at the specified mode

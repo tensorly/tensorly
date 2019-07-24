@@ -31,6 +31,18 @@ def test_parafac():
     assert_(T.max(T.abs(rec_svd - tensor)) < tol_max_abs,
             'abs norm of reconstruction error higher than tol')
 
+    rec_orthogonal = parafac(tensor, rank=4, n_iter_max=100, init='svd', tol=10e-5, random_state=1234, orthogonalise=True, verbose=0)
+    rec_orthogonal = kruskal_to_tensor(rec_orthogonal)
+    tol_norm_2 = 10e-2
+    tol_max_abs = 10e-2
+    error = T.norm(rec_orthogonal - tensor, 2)
+    error /= T.norm(tensor, 2)
+    assert_(error < tol_norm_2,
+            'l2 Reconstruction error for orthogonalise=True too high')
+    assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
+            'abs Reconstruction error for orthogonalise=True too high')
+
+    # Should also converge with orthogonolise = True
     tol_norm_2 = 10e-1
     tol_max_abs = 10e-1
     error = T.norm(rec_svd - rec_random, 2)

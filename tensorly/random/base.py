@@ -165,7 +165,7 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
 
     core = T.tensor(rns.random_sample(rank), **context)
     if full:
-        return tucker_to_tensor(core, factors)
+        return tucker_to_tensor((core, factors))
     else:
         return core, factors
 
