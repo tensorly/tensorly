@@ -41,7 +41,7 @@ def check_random_state(seed):
 
     raise ValueError('Seed should be None, int or np.random.RandomState')
 
-def random_parafac2(shapes, rank, full, random_state=None,
+def random_parafac2(shapes, rank, full=False, random_state=None,
                     normalise_factors=True, **context):
     """Generate a random PARAFAC2 tensor
 
