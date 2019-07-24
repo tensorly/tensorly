@@ -10,11 +10,38 @@ from ..kruskal_tensor import kruskal_normalise
 #          Yngve Mardal Moe
 
 
-def initialize_factors(tensor_slices, rank, random_state, non_negative):
-    """Initiate a random PARAFAC2 decomposition given rank and tensor.
+def initialize_decomposition(tensor_slices, rank, init='random', random_state=None):
+    r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices
+
+    Parameters
+    ----------
+    tensor_slices : Iterable of ndarray
+    rank : int
+    init : {'random', Parafac2Tensor}, optional
+    random_state : `np.random.RandomState`
+
+    Returns
+    -------
+    parafac2_tensor : Parafac2Tensor
+        List of initialized factors of the CP decomposition where element `i`
+        is of shape (tensor.shape[i], rank)
+
     """
     shapes = [m.shape for m in tensor_slices]
-    return random_parafac2(shapes, rank, full=False, random_state=random_state)
+    
+    if init == 'random':
+        return random_parafac2(shapes, rank, full=False, random_state=random_state)
+
+    elif isinstance(init, (tuple, list, Parafac2Tensor)):
+        # TODO: Test this
+        try:
+            return Parafac2Tensor(init)
+        except ValueError:
+            raise ValueError(
+                'If initialization method is a mapping, then it must '
+                'be possible to convert it to a Parafac2Tensor instance'
+            )
+    raise ValueError('Initialization method "{}" not recognized'.format(init))
 
 
 def _compute_projections(tensor_slices, factors, svd_fun, out=None):
@@ -61,12 +88,10 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
 
 
 def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, random_state=None, verbose=False, return_errors=False, non_negative=False,
-             mask=None, n_iter_parafac=5):
+             tol=1e-8, random_state=None, verbose=False, return_errors=False, mask=None, n_iter_parafac=5):
     epsilon = 10e-12
 
-    weights, factors, projections = initialize_factors(tensor_slices, rank, random_state=random_state,
-                                                       non_negative=non_negative)
+    weights, factors, projections = initialize_decomposition(tensor_slices, rank, random_state=random_state)
 
     rec_errors = []
     norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2) for tensor_slice in tensor_slices))
@@ -89,7 +114,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         for factor in factors:
             norms = T.norm(factor, axis=0)
             weights *= norms
-            factor /= norms
+            factor /= norms + epsilon
         
 
         if tol:
