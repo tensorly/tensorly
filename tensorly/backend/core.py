@@ -251,6 +251,17 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def diag(diagnoal):
+        """Return a 2-D tensor with the elements of `diagonal` on the diagonal and zeros elsewhere.
+
+        Parameters
+        ----------
+        diagonal : 1-D tensor
+            diagonnal elements of the 2-D tensor to construct.
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def eye(N):
         """Return a 2-D tensor with ones on the diagonal and zeros elsewhere.
 

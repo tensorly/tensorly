@@ -167,6 +167,7 @@ _FUN_NAMES = [
     (np.float64, 'float64'),
     (tf.ones, 'ones'),
     (tf.zeros, 'zeros'),
+    (tf.diag, 'diag'),
     (tf.zeros_like, 'zeros_like'),
     (tf.eye, 'eye'),
     (tf.reshape, 'reshape'),
