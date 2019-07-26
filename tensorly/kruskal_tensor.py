@@ -140,7 +140,7 @@ def kruskal_normalise(kruskal_tensor, copy=False):
     return KruskalTensor((weights, factors))
     
 
-def kruskal_to_tensor(kruskal_tensor):
+def kruskal_to_tensor(kruskal_tensor, mask=None):
     """Turns the Khatri-product of matrices into a full tensor
 
         ``factor_matrices = [|U_1, ... U_n|]`` becomes
@@ -171,17 +171,20 @@ def kruskal_to_tensor(kruskal_tensor):
     summing over r and updating an outer product of vectors.
 
     """
-    shape, _ = _validate_kruskal_tensor(kruskal_tensor)
+    shape, rank = _validate_kruskal_tensor(kruskal_tensor)
     weights, factors = kruskal_tensor
 
-    if weights is not None:
+    if weights is None:
+        weights = T.ones(rank, **T.context(factors[0]))
+    weights = T.reshape(weights, (1, rank))
+
+    if mask is None:
         full_tensor = T.dot(factors[0]*weights,
                              T.transpose(khatri_rao(factors, skip_matrix=0)))
     else:
-        full_tensor = T.dot(factors[0], 
-                             T.transpose(khatri_rao(factors, skip_matrix=0)))
-    return fold(full_tensor, 0, shape)
+        full_tensor = T.sum(khatri_rao([factors[0]*weights]+factors[1:], mask=mask), axis=1)
 
+    return fold(full_tensor, 0, shape)
 
 def kruskal_to_unfolded(kruskal_tensor, mode):
     """Turns the khatri-product of matrices into an unfolded tensor
