@@ -11,8 +11,6 @@ from tensorly.random import check_random_state, random_kruskal
 from tensorly.testing import (assert_equal, assert_raises,
                               assert_array_equal, assert_array_almost_equal)
 
-# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
-
 def test_validate_kruskal_tensor():
     rng = check_random_state(12345)
     true_shape = (3, 4, 5)
@@ -105,12 +103,19 @@ def test_kruskal_to_tensor():
 def test_kruskal_to_tensor_with_weights():
     A = tl.reshape(tl.arange(1,5), (2,2))
     B = tl.reshape(tl.arange(5,9), (2,2))
-    weights = tl.tensor([2,-1])
+    weigths = tl.tensor([2,-1])
 
-    out = kruskal_to_tensor((weights, [A,B]))
+    out = kruskal_to_tensor((weigths, [A,B]))
     expected = tl.tensor([[-2,-2], [6, 10]])  # computed by hand
     assert_array_equal(out, expected)
 
+    (weigths, factors) = random_kruskal((5, 5, 5), rank=5, normalise_factors=True, full=False)
+    true_res = tl.dot(tl.dot(factors[0], tl.diag(weigths)),
+                      tl.transpose(tl.tenalg.khatri_rao(factors[1:])))
+    true_res = tl.fold(true_res, 0, (5, 5, 5))  
+    res = kruskal_to_tensor((weigths, factors))
+    assert_array_almost_equal(true_res, res,
+     err_msg='weigths incorrectly incorporated in kruskal_to_tensor')
 
 def test_kruskal_to_unfolded():
     """Test for kruskal_to_unfolded.
@@ -128,7 +133,6 @@ def test_kruskal_to_unfolded():
         true_res = unfold(full_tensor, mode)
         res = kruskal_to_unfolded(kruskal_tensor, mode)
         assert_array_equal(true_res, res, err_msg='khatri_rao product unfolded incorrectly for mode {}.'.format(mode))
-
 
 def test_kruskal_to_vec():
     """Test for kruskal_to_vec"""
