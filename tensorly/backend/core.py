@@ -591,6 +591,9 @@ class Backend(object):
                 for i in len(matrices):
                     matrices[i].shape = (n_i, m)
 
+        weights : should be complete by writing description about parameter
+        mask : should be complete by writing description about parameter
+
         Returns
         -------
         khatri_rao_product : tensor of shape ``(prod(n_i), m)``
