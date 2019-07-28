@@ -285,6 +285,7 @@ class MxnetBackend(Backend, ABC):
         return {'numpy_svd': self.partial_svd,
                 'symeig_svd': self.symeig_svd}
 
+
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
