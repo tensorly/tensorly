@@ -257,7 +257,7 @@ class Backend(object):
         Parameters
         ----------
         diagonal : 1-D tensor
-            diagonnal elements of the 2-D tensor to construct.
+            diagonal elements of the 2-D tensor to construct.
         """
         raise NotImplementedError
 
@@ -341,7 +341,6 @@ class Backend(object):
         scalar
         """
         raise NotImplementedError
-
 
     @staticmethod
     def argmax(tensor):
