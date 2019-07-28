@@ -27,7 +27,7 @@ def initialize_backend():
     """
     backend_name = os.environ.get('TENSORLY_BACKEND', _DEFAULT_BACKEND)
     if backend_name not in _KNOWN_BACKENDS:
-        msg = ("TENSORLY_BACKEND should be one of {}, got {}. Defaulting to {}'").format(
+        msg = "TENSORLY_BACKEND should be one of {}, got {}. Defaulting to {}'".format(
                     ', '.join(map(repr, _KNOWN_BACKENDS)),
                         backend_name, _DEFAULT_BACKEND)
         warnings.warn(msg, UserWarning)
