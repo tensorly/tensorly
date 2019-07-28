@@ -17,6 +17,7 @@ _KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
 _LOADED_BACKENDS = {}
 _LOCAL_STATE = threading.local()
 
+
 def initialize_backend():
     """Initialises the backend
 
@@ -33,6 +34,7 @@ def initialize_backend():
         backend_name = _DEFAULT_BACKEND
     
     set_backend(backend_name, local_threadsafe=False)
+
 
 def register_backend(backend_name):
     """Registers a new backend by importing the corresponding module 
@@ -58,6 +60,7 @@ def register_backend(backend_name):
                 backend_name, ', '.join(map(repr, _KNOWN_BACKENDS)))
         raise ValueError(msg)
 
+
 def set_backend(backend, local_threadsafe=False):
     """Changes the backend to the specified one
     
@@ -82,10 +85,12 @@ def set_backend(backend, local_threadsafe=False):
         global _DEFAULT_BACKEND
         _DEFAULT_BACKEND = backend.backend_name
 
+
 def get_backend():
     """Returns the name of the current backend
     """
     return _get_backend_method('backend_name')
+
 
 def _get_backend_method(key):
     try:
@@ -93,8 +98,10 @@ def _get_backend_method(key):
     except AttributeError:
         return getattr(_LOADED_BACKENDS[_DEFAULT_BACKEND], key)
 
+
 def _get_backend_dir():
     return [k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')]
+
 
 @contextmanager
 def backend_context(backend, local_threadsafe=False):
@@ -125,6 +132,7 @@ def backend_context(backend, local_threadsafe=False):
         yield
     finally:
         set_backend(_old_backend)
+
 
 def override_module_dispatch(module_name, getter_fun, dir_fun):
     """Override the module's dispatch mechanism
@@ -178,6 +186,8 @@ def dispatch(method):
     return inner
 
 # Generic methods, exposed as part of the public API
+
+
 context = dispatch(Backend.context)
 tensor = dispatch(Backend.tensor)
 is_tensor = dispatch(Backend.is_tensor)
