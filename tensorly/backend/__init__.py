@@ -41,7 +41,7 @@ def register_backend(backend_name):
         and adding the correspond `Backend` class in Backend._LOADED_BACKEND
         under the key `backend_name`
     
-    Parameterss
+    Parameters
     ----------
     backend_name : str, name of the backend to load
     
