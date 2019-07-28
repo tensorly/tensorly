@@ -1,3 +1,5 @@
+from abc import ABC
+
 try:
     import mxnet as mx
 except ImportError as error:
@@ -16,7 +18,7 @@ from mxnet.ndarray import reshape, dot, transpose, stack
 from .core import Backend
 
 
-class MxnetBackend(Backend):
+class MxnetBackend(Backend, ABC):
     backend_name = 'mxnet'
 
     @staticmethod
