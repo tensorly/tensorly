@@ -1,3 +1,5 @@
+from abc import ABC
+
 try:
     import cupy as cp
 except ImportError as error:
@@ -12,7 +14,7 @@ import numpy as np
 from .core import Backend
 
 
-class CupyBackend(Backend):
+class CupyBackend(Backend, ABC):
 
     @staticmethod
     def context(tensor):
