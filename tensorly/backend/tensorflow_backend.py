@@ -1,3 +1,6 @@
+import numpy as np
+from . import Backend
+
 try:
     import tensorflow as tf
 except ImportError as error:
@@ -8,10 +11,6 @@ except ImportError as error:
 
 import tensorflow.contrib.eager as tfe
 tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
-
-import numpy as np
-
-from . import Backend
 
 
 class TensorflowBackend(Backend):
