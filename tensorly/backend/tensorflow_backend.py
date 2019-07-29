@@ -159,6 +159,7 @@ class TensorflowBackend(Backend, ABC):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.truncated_svd}
 
+
 _FUN_NAMES = [
     # source_fun, target_fun
     (np.int32, 'int32'),
@@ -193,4 +194,3 @@ _FUN_NAMES = [
 for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)
 del _FUN_NAMES
-
