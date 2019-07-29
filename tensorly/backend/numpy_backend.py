@@ -75,6 +75,7 @@ class NumpyBackend(Backend, ABC):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.partial_svd}
 
+
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
