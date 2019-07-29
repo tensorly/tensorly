@@ -1,3 +1,4 @@
+from abc import ABC
 import numpy as np
 import warnings
 from distutils.version import LooseVersion
@@ -17,7 +18,7 @@ if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
                       % torch.__version__)
 
 
-class PyTorchBackend(Backend):
+class PyTorchBackend(Backend, ABC):
     backend_name = 'pytorch'
 
     @staticmethod
