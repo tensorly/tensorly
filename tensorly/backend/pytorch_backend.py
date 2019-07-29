@@ -287,9 +287,6 @@ class PyTorchBackend(Backend, ABC):
                 'truncated_svd': self.truncated_svd,
                 'symeig_svd': self.symeig_svd}
 
-    @staticmethod
-    def stack(arrays, axis=0):
-        return torch.stack(arrays, dim=axis)
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
              'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
