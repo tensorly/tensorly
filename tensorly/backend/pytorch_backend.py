@@ -1,5 +1,7 @@
+import numpy as np
 import warnings
 from distutils.version import LooseVersion
+from .core import Backend
 
 try:
     import torch
@@ -13,10 +15,6 @@ if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
     raise ImportError('You are using version=%r of PyTorch.'
                       'Please update to "0.4.0" or higher.'
                       % torch.__version__)
-
-import numpy as np
-
-from .core import Backend
 
 
 class PyTorchBackend(Backend):
