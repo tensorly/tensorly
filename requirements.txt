@@ -1,3 +1,4 @@
+torch
 mxnet
 numpy
 scipy
