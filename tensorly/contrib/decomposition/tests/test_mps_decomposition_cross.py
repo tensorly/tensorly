@@ -3,7 +3,6 @@ import tensorly as tl
 import pytest
 import numpy as np
 import itertools
-import numpy.random as npr
 
 from ..mps_decomposition_cross import matrix_product_state_cross
 from ....mps_tensor import mps_to_tensor
