@@ -1,8 +1,10 @@
+from abc import ABC
+
 import numpy as np
 from .core import Backend
 
 
-class NumpyBackend(Backend):
+class NumpyBackend(Backend, ABC):
     backend_name = 'numpy'
 
     @staticmethod
