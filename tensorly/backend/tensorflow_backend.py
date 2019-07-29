@@ -1,3 +1,4 @@
+from abc import ABC
 import numpy as np
 from . import Backend
 
@@ -13,7 +14,7 @@ import tensorflow.contrib.eager as tfe
 tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
 
 
-class TensorflowBackend(Backend):
+class TensorflowBackend(Backend, ABC):
     backend_name = 'tensorflow'
 
     @staticmethod
