@@ -1,5 +1,4 @@
 from ..decomposition import parafac
-from ..tenalg import multi_mode_dot
 from ..kruskal_tensor import kruskal_to_tensor
 from .... import backend as tl 
 
