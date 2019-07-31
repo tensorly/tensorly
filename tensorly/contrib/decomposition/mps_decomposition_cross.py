@@ -345,7 +345,7 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
 
 
 def maxvol(A):
-    """ Find the rxr submatrix of maximal volume in A(nxr), n>=r
+    """ Find the rxr sub-matrix of maximal volume in A(nxr), n>=r
 
             We want to decompose matrix A as
                     A = A[:,J] * (A[I,J])^-1 * A[I,:]
