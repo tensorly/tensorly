@@ -1,15 +1,15 @@
 """Sparse-specific tests for the :mod:`tensorly.tenalg` module.
 """
-from  .... import backend as tl
+from .... import backend as tl
 
 import pytest
 import numpy as np
+import tensorly.contrib.sparse as stl
+from tensorly.contrib.sparse.kruskal_tensor import unfolding_dot_khatri_rao as sparse_unfolding_dot_khatri_rao
 if not tl.get_backend() == "numpy":
     pytest.skip("Tests for sparse only with numpy backend", allow_module_level=True)
 pytest.importorskip("sparse")
 
-import tensorly.contrib.sparse as stl
-from tensorly.contrib.sparse.kruskal_tensor import unfolding_dot_khatri_rao as sparse_unfolding_dot_khatri_rao
 
 def test_sparse_unfolding_times_kruskal():
     """Test for unfolding_times_kruskal with sparse tensors
