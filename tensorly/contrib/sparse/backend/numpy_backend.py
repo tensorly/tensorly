@@ -6,8 +6,6 @@ import scipy
 import scipy.linalg
 import scipy.sparse.linalg
 import sparse
-
-from . import register_sparse_backend
 from ....backend.core import Backend
 
 
