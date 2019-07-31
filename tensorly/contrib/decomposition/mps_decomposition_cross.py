@@ -335,7 +335,7 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     new_idx = [np.unravel_index(idx, [tensor_shape[k - 1], rank[k]]) for idx in J]  # First retrive idx in folded core
     next_col_idx = [(jc[0],) + col_idx[k - 1][jc[1]] for jc in new_idx]  # Then reconstruct the idx in the tensor
 
-    return (next_col_idx, fibers_list, Q_skeleton)
+    return next_col_idx, fibers_list, Q_skeleton
 
 
 def maxvol(A):
