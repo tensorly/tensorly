@@ -264,7 +264,7 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     new_idx = [np.unravel_index(idx, [rank[k], tensor_shape[k]]) for idx in I]  # First retrive idx in folded core
     next_row_idx = [row_idx[k][ic[0]] + (ic[1],) for ic in new_idx]  # Then reconstruct the idx in the tensor
 
-    return (next_row_idx, fibers_list)
+    return next_row_idx, fibers_list
 
 
 def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
