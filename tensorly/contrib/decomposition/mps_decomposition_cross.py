@@ -382,7 +382,7 @@ def maxvol(A):
     row_idx = tl.zeros(r)
 
     # Rest of rows / unselected rows
-    rest_of_rows = tl.tensor(list(range(n)),dtype= tl.int64)
+    rest_of_rows = tl.tensor(list(range(n)), dtype=tl.int64)
 
     # Find r rows iteratively
     i = 0
