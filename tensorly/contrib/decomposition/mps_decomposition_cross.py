@@ -196,8 +196,8 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
 def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     """ Compute the next (right) core's row indices by QR decomposition.
 
-            For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
-            and compute the next core's row indices by QR and max volume algorithm.
+            For the current Tensor train core, we use the row indices and col indices to extract
+             the entries from the input tensor and compute the next core's row indices by QR and max volume algorithm.
 
     Parameters
     ----------
