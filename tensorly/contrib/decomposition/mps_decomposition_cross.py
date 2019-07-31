@@ -210,6 +210,7 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
             list of (tensor_order-1) of lists of left indices
     col_idx: list of list of int
             list of (tensor_order-1) of lists of right indices
+    input_tensor: should be complete by description about this parameter
 
     Returns
     -------
