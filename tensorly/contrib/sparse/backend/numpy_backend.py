@@ -1,3 +1,4 @@
+from abc import ABC
 from copy import copy as _py_copy
 from distutils.version import LooseVersion
 
@@ -19,7 +20,7 @@ def is_sparse(x):
     return isinstance(x, sparse.SparseArray)
 
 
-class NumpySparseBackend(Backend):
+class NumpySparseBackend(Backend, ABC):
     backend_name = 'numpy.sparse'
 
     @staticmethod
