@@ -2,13 +2,14 @@ from ..decomposition import parafac
 from ..tenalg import multi_mode_dot
 from ..kruskal_tensor import kruskal_to_tensor
 from .... import backend as tl 
-import sparse
-import numpy as np
 
 import pytest
 if not tl.get_backend() == "numpy":
     pytest.skip("Tests for sparse only with numpy backend", allow_module_level=True)
 pytest.importorskip("sparse")
+
+import sparse
+import numpy as np
 
 
 def test_sparse_parafac():
