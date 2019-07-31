@@ -90,8 +90,7 @@ class NumpySparseBackend(Backend, ABC):
     def partial_svd(matrix, n_eigenvecs=None):
         # Check that matrix is... a matrix!
         if matrix.ndim != 2:
-            raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
-                matrix.ndim))
+            raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(matrix.ndim))
 
         # Choose what to do depending on the params
         dim_1, dim_2 = matrix.shape
