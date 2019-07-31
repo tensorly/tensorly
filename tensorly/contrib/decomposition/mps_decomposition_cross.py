@@ -237,8 +237,10 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
         idx = [[] for i in range(tensor_order)]
         for lidx in row_idx[k]:
             for ridx in col_idx[k]:
-                for j, jj in enumerate(lidx): idx[j].append(jj)
-                for j, jj in enumerate(ridx): idx[len(lidx) + 1 + j].append(jj)
+                for j, jj in enumerate(lidx):
+                    idx[j].append(jj)
+                for j, jj in enumerate(ridx):
+                    idx[len(lidx) + 1 + j].append(jj)
         idx[k] = slice(None, None, None)
         idx = tuple(idx)
 
@@ -313,8 +315,10 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
         idx = [[] for i in range(tensor_order)]
         for lidx in row_idx[k - 1]:
             for ridx in col_idx[k - 1]:
-                for j, jj in enumerate(lidx): idx[j].append(jj)
-                for j, jj in enumerate(ridx): idx[len(lidx) + 1 + j].append(jj)
+                for j, jj in enumerate(lidx):
+                    idx[j].append(jj)
+                for j, jj in enumerate(ridx):
+                    idx[len(lidx) + 1 + j].append(jj)
         idx[k - 1] = slice(None, None, None)
         idx = tuple(idx)
 
