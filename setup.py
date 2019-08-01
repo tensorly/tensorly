@@ -36,7 +36,7 @@ def readme(root_path):
     root_path : pathlib.Path
         path to the root of the package
     """
-    with root_path.joinpath('README.rst').open() as f:
+    with root_path.joinpath('README.rst').open(encoding='UTF-8') as f:
         return f.read()
 
 
