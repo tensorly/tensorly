@@ -673,20 +673,18 @@ class Backend(object):
             min_dim = dim_2
             max_dim = dim_1
 
-        if n_eigenvecs >= min_dim:
-            if n_eigenvecs > max_dim:
-                warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
-                               'is larger than max(matrix.shape)={1}. Setting '
-                               'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
-                n_eigenvecs = max_dim
-
-            if n_eigenvecs is None or n_eigenvecs > min_dim:
-                full_matrices = True
-            else:
-                full_matrices = False
-
+        if n_eigenvecs is None:
             # Default on standard SVD
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
+            U, S, V = scipy.linalg.svd(matrix, full_matrices=True)
+            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+        elif min_dim <= n_eigenvecs:
+            if max_dim < n_eigenvecs:
+                warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
+                                'is larger than max(matrix.shape)={1}. Setting '
+                                'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
+                n_eigenvecs = max_dim
+            # Sparse eigendecomposition
+            U, S, V = scipy.linalg.svd(matrix, full_matrices=False)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
             # We can perform a partial SVD
