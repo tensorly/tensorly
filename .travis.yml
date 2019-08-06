@@ -3,19 +3,19 @@ language: python
 matrix:
     include:
      - os: linux
-       python: 3.5
+       python: 3.6
        env: BACKEND=numpy
      - os: linux
-       python: 3.6
+       python: 3.7
        env: BACKEND=mxnet
      - os: linux
-       python: 3.6
+       python: 3.7
        env: BACKEND=pytorch
      - os: linux
-       python: 3.6
+       python: 3.7
        env: BACKEND=tensorflow
      - os: linux
-       python: 3.6
+       python: 3.7
        env: BACKEND=numpy DEPLOY_DOCS=1
        addons:
          apt:
