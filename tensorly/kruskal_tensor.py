@@ -416,7 +416,8 @@ def kruskal_norm(kruskal_tensor):
         norm *= T.dot(T.transpose(factor), factor)
     
     if weights is not None:
-        norm = T.dot(T.dot(weights, norm), weights)
+        #norm = T.dot(T.dot(weights, norm), weights)
+        norm = norm * (T.reshape(weights, (-1, 1))*T.reshape(weights, (1, -1)))
 
     # We sum even if weigths is not None
     # as e.g. MXNet would return a 1D tensor, not a 0D tensor
