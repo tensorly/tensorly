@@ -205,8 +205,7 @@ def test_unfolding_dot_khatri_rao():
 
         # Efficient sparse-safe version
         res = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
-
-        assert_array_almost_equal(true_res, res, decimal=4)
+        assert_array_almost_equal(true_res, res, decimal=3)
 
 
 def test_kruskal_norm():
