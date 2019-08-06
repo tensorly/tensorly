@@ -176,7 +176,7 @@ _FUN_NAMES = [
     (tf.sign, 'sign'),
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
-    (tf.qr, 'qr'),
+    (tf.linalg.qr, 'qr'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),
