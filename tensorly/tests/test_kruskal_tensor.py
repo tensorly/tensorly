@@ -5,10 +5,11 @@ from ..tenalg import khatri_rao, mode_dot
 from ..kruskal_tensor import (kruskal_to_tensor, kruskal_to_unfolded, 
                               kruskal_to_vec, _validate_kruskal_tensor,
                               kruskal_normalise, KruskalTensor,
-                              kruskal_mode_dot, unfolding_dot_khatri_rao)
+                              kruskal_mode_dot, unfolding_dot_khatri_rao,
+                              kruskal_norm)
 from ..base import unfold, tensor_to_vec
 from tensorly.random import check_random_state, random_kruskal
-from tensorly.testing import (assert_equal, assert_raises,
+from tensorly.testing import (assert_equal, assert_raises, assert_,
                               assert_array_equal, assert_array_almost_equal)
 
 def test_validate_kruskal_tensor():
@@ -206,3 +207,17 @@ def test_unfolding_dot_khatri_rao():
         res = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
         assert_array_almost_equal(true_res, res, decimal=4)
+
+
+def test_kruskal_norm():
+    """Test for kruskal_norm
+    """
+    shape = (8, 5, 6, 4)
+    rank = 25
+    tol = 10e-12
+    kruskal_tensor = random_kruskal(shape=shape, rank=rank, 
+                                      full=False, normalise_factors=True)
+    rec = tl.kruskal_to_tensor(kruskal_tensor)
+    true_res = tl.norm(rec, 2)
+    res = kruskal_norm(kruskal_tensor)
+    assert_(true_res - res <= tol)

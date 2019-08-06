@@ -1,4 +1,5 @@
 from .. import backend as T
+import warnings
 
 # Author: Jean Kossaifi
 
@@ -71,7 +72,13 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
     if len(matrices) == 1:
         return matrices[0]
 
-    n_columns = matrices[0].shape[1]
+    if T.ndim(matrices[0]) == 2:
+        n_columns = matrices[0].shape[1]
+    else:
+        n_columns = 1
+        matrices = [T.reshape(m, (-1, 1)) for m in matrices]
+        warnings.warn('Khatri-rao of a series of vectors instead of matrices. '
+                      'Condidering each has a matrix with 1 column.')
 
     # Optional part, testing whether the matrices have the proper size
     for i, matrix in enumerate(matrices):
@@ -87,5 +94,5 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
     if reverse:
         matrices = matrices[::-1]
         # Note: we do NOT use .reverse() which would reverse matrices even outside this function
-        
+    
     return T.kr(matrices, weights=weights, mask=mask)

@@ -553,6 +553,12 @@ class Backend(object):
         """
         raise NotImplementedError
     
+    def eps(self, dtype):
+        return self.finfo(dtype).eps
+    
+    def finfo(self, dtype):
+        return np.finfo(self.to_numpy(self.tensor([], dtype=dtype)).dtype)
+
     @staticmethod
     def conj(x, *args, **kwargs):
         """Return the complex conjugate, element-wise.

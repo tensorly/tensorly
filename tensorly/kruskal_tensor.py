@@ -4,7 +4,7 @@ Core operations on Kruskal tensors.
 
 from . import backend as T
 from .base import fold, tensor_to_vec
-from .tenalg import khatri_rao, multi_mode_dot
+from .tenalg import khatri_rao, multi_mode_dot, inner
 
 import warnings
 from collections.abc import Mapping
@@ -76,10 +76,18 @@ def _validate_kruskal_tensor(kruskal_tensor):
         raise ValueError('A Kruskal tensor should be composed of at least two factors.'
                          'However, {} factor was given.'.format(len(factors)))
 
-    rank = int(T.shape(factors[0])[1])
+    if T.ndim(factors[0]) == 2:
+        rank = int(T.shape(factors[0])[1])
+    else:
+        rank = 1
     shape = []
     for i, factor in enumerate(factors):
-        current_mode_size, current_rank = T.shape(factor)
+        s = T.shape(factor)
+        if len(s) == 2:
+            current_mode_size, current_rank = s
+        else:
+            current_mode_size, current_rank = s, 1
+
         if current_rank != rank:
             raise ValueError('All the factors of a Kruskal tensor should have the same number of column.'
                              'However, factors[0].shape[1]={} but factors[{}].shape[1]={}.'.format(
@@ -175,14 +183,13 @@ def kruskal_to_tensor(kruskal_tensor, mask=None):
     weights, factors = kruskal_tensor
 
     if weights is None:
-        weights = T.ones(rank, **T.context(factors[0]))
-    weights = T.reshape(weights, (1, rank))
+        weights = 1
 
     if mask is None:
         full_tensor = T.dot(factors[0]*weights,
                              T.transpose(khatri_rao(factors, skip_matrix=0)))
     else:
-        full_tensor = T.sum(khatri_rao([factors[0]*weights]+factors[1:], mask=mask), axis=1)
+        full_tensor = T.sum(khatri_rao([factor[0]*weights]+factors[1:], mask=mask), axis=1)
 
     return fold(full_tensor, 0, shape)
 
@@ -375,7 +382,42 @@ def unfolding_dot_khatri_rao(tensor, kruskal_tensor, mode):
     for r in range(rank):
         component = multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode)
         mttkrp_parts.append(component)
-    mttkrp = T.stack(mttkrp_parts, axis=1)*T.reshape(weights, (1, -1))
-    return mttkrp 
+
+    if weights is None:
+        return T.stack(mttkrp_parts, axis=1)
+    else:
+        return T.stack(mttkrp_parts, axis=1)*T.reshape(weights, (1, -1))
 
 
+def kruskal_norm(kruskal_tensor):
+    """Returns the l2 norm of a Kruskal tensor
+
+    Parameters
+    ----------
+    kruskal_tensor : tl.KruskalTensor or (core, factors)
+
+    Returns
+    -------
+    l2-norm : int
+
+    Notes
+    -----
+    This is ||kruskal_to_tensor(factors)||^2 and equivalent to
+    
+    .. code-block:: python
+
+        parts = [tl.dot(tl.transpose(f), f) for f in factors]
+        for i, f in enumerate(factors):
+            if i:
+                parts.append(tl.dot(tl.transpose(f), f))
+            else:
+                parts.append(tl.dot(tl.transpose(f*tl.reshape(weights, (1, -1))), f))
+        factors_norm = tl.sum(tl.prod(tl.stack(parts*tl.reshape(weights, (1, -1)), 0), 0))
+    """
+    _ = _validate_kruskal_tensor(kruskal_tensor)
+    weights, factors = kruskal_tensor
+    norm = T.dot(T.reshape(weights, (-1, 1)), T.reshape(weights, (1, -1)))
+    for factor in factors:
+        norm *= T.dot(T.transpose(factor), factor)
+    
+    return T.sqrt(T.sum(norm))
