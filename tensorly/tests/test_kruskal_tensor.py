@@ -214,9 +214,9 @@ def test_kruskal_norm():
     """
     shape = (8, 5, 6, 4)
     rank = 25
-    tol = 10e-10
     kruskal_tensor = random_kruskal(shape=shape, rank=rank, 
                                       full=False, normalise_factors=True)
+    tol = 10e-5
     rec = tl.kruskal_to_tensor(kruskal_tensor)
     true_res = tl.norm(rec, 2)
     res = kruskal_norm(kruskal_tensor)
