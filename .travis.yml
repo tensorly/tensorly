@@ -15,7 +15,7 @@ matrix:
        env: BACKEND=tensorflow
      - os: linux
        python: 3.7
-       env: BACKEND=numpy DEPLOY_DOCS=1
+       env: BACKEND=numpy DEPLOY_DOCS=1 DEPLOY_PYPI=1
        addons:
          apt:
            packages:
@@ -65,6 +65,8 @@ deploy:
   provider: pypi
   user: JeanKossaifi
   password:
-    secure: ${pypi_token}
+    secure: EwSQv5dDX0EKruPBxJ2rqM/SjqLgok8VTPAtAZkbxPRhq/nJdBtkuIJGiErAoGzX5UXCQRkj67oHHlGcMjEKHVu27h0iFSMpxqVYPJ4zYXIhrMEJH2IqUrIlFs9QjaXOJap4N0Pb+4UkVvf6TeLhvlH3OBvW+IOnyhEH2ijZlFUQHyZuihrYXpesskIuvhEZ1letaV4SaAtkKeGEM3A3ZxawklNSPjB/55nKXBDhGqRET0ynqwbSxmUUXExoe+9m0L2zksVR3uX8BM7GKAFYO1IDRIB6U/51sTVyOi1quJmBFMb5B0ROs4eTJR2iFrXL1/GQrFFNUxiwAhY0Y3by+CU8rVMJTE5sQHy1dcXxDYIydAipCCSNi7Jj8EazRUe7ZS2XfCGwiNVASha0fW243Z6UVY5vLrHdQiHPVf/pNOb8aLqBoPd97BqPT6KHEidGBx/PnMNBAj/sYNZbM6Xo7xtdOhcALAb16Jz3hkE2M0ao0q1dT2DTKm51VFZVficv7BXxAuX72t79IVFxazHK5EVN0ZyVeOl54+gMhTMq5Cx6AZ6opmaImAoGgN7t/+adpyRrczwoKlM+CQeShf3vVy8V+eElTy1EqOTxiRrJ9noVF9nVEfpiQI25WcNLciMjnG/HUvGsNzPXSQ32yW4fZvegWJUea9XzHQtVYsgGWg0=
   on:
     tags: true
+    branch: master
+    condition: $DEPLOY_PYPI == 1
