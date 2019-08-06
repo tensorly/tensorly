@@ -27,7 +27,7 @@ class TensorflowBackend(Backend):
             return data
 
         out = tf.constant(data, dtype=dtype)
-        return out.gpu(device_id) if device == 'GPU' else out
+        return out.gpu(device_id) if device == 'gpu' else out
 
     @staticmethod
     def is_tensor(tensor):
