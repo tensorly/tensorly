@@ -109,12 +109,13 @@ class TensorflowBackend(Backend):
 
     @staticmethod
     def solve(lhs, rhs):
-        squeeze = []
+        squeeze = False
         if rhs.ndim == 1:
             squeeze = [-1]
             rhs = tf.reshape(rhs, (-1, 1))
-        res = tf.matrix_solve(lhs, rhs)
-        res = tf.squeeze(res, squeeze)
+        res = tf.linalg.solve(lhs, rhs)
+        if squeeze:
+            res = tf.squeeze(res, squeeze)
         return res
 
     @staticmethod
@@ -177,6 +178,7 @@ _FUN_NAMES = [
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
     (tf.linalg.qr, 'qr'),
+    #(tf.linalg.solve, 'solve'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),
