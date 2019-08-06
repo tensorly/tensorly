@@ -421,7 +421,7 @@ def kruskal_norm(kruskal_tensor):
     
     if weights is not None:
         norm = T.dot(T.dot(weights, norm), weights)
-    else:
-        norm = T.sum(norm)
 
-    return T.sqrt(norm)
+    # We sum even if weigths is not None
+    # as e.g. MXNet would return a 1D tensor, not a 0D tensor
+    return T.sqrt(T.sum(norm))
