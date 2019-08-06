@@ -1,5 +1,4 @@
 language: python
-
 matrix:
     include:
      - os: linux
@@ -56,8 +55,16 @@ install:
     - pip install -e .
 
 script:
-    - travis_wait make BACKEND=$BACKEND test-coverage
+- travis_wait make BACKEND=$BACKEND test-coverage
 
 after_success:
-    - coveralls
-    - bash deploy_docs.sh
+- coveralls
+- bash deploy_docs.sh
+
+deploy:
+  provider: pypi
+  user: JeanKossaifi
+  password:
+    secure: ${pypi_token}
+  on:
+    tags: true
