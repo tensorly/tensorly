@@ -408,22 +408,20 @@ def kruskal_norm(kruskal_tensor):
 
     Notes
     -----
-    This is ||kruskal_to_tensor(factors)||^2 and equivalent to
+    This is ||kruskal_to_tensor(factors)||^2 
     
-    .. code-block:: python
-
-        parts = [tl.dot(tl.transpose(f), f) for f in factors]
-        for i, f in enumerate(factors):
-            if i:
-                parts.append(tl.dot(tl.transpose(f), f))
-            else:
-                parts.append(tl.dot(tl.transpose(f*tl.reshape(weights, (1, -1))), f))
-        factors_norm = tl.sum(tl.prod(tl.stack(parts*tl.reshape(weights, (1, -1)), 0), 0))
+    You can see this using the fact that
+    khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
     """
     _ = _validate_kruskal_tensor(kruskal_tensor)
     weights, factors = kruskal_tensor
-    norm = T.dot(T.reshape(weights, (-1, 1)), T.reshape(weights, (1, -1)))
+    norm = 1
     for factor in factors:
         norm *= T.dot(T.transpose(factor), factor)
     
-    return T.sqrt(T.sum(norm))
+    if weights is not None:
+        norm = T.dot(T.dot(weights, norm), weights)
+    else:
+        norm = T.sum(norm)
+
+    return T.sqrt(norm)

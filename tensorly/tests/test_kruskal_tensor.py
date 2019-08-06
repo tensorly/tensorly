@@ -220,4 +220,4 @@ def test_kruskal_norm():
     rec = tl.kruskal_to_tensor(kruskal_tensor)
     true_res = tl.norm(rec, 2)
     res = kruskal_norm(kruskal_tensor)
-    assert_(true_res - res <= tol)
+    assert_(tl.abs(true_res - res) <= tol)
