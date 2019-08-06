@@ -56,6 +56,12 @@ def test_parafac():
         rank = 4
         _ = initialize_factors(tensor, rank, init='bogus init type')
 
+    # Test with rank-1 decomposition
+    tol = 10e-3
+    tensor = random_kruskal((3, 4, 2), rank=1, full=True) 
+    rec = kruskal_to_tensor(parafac(tensor, rank=1))
+    error = T.norm(tensor - rec, 2)/T.norm(tensor)
+    assert_(error < tol)
 
 def test_non_negative_parafac():
     """Test for non-negative PARAFAC
