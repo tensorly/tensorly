@@ -104,12 +104,27 @@ class PyTorchBackend(Backend):
         return tensor.permute(*axes)
 
     def solve(self, matrix1, matrix2):
+        """Solve a linear system of equation
+
+        Notes
+        -----
+
+        Previously, this was implemented as follows:: 
+
+            if self.ndim(matrix2) < 2:
+                # Currently, gesv doesn't support vectors for matrix2
+                # So we instead solve a least square problem...
+                solution, _ = torch.gels(matrix2, matrix1)
+            else:
+                solution, _ = torch.gesv(matrix2, matrix1)
+            return solution
+
+        """
         if self.ndim(matrix2) < 2:
             # Currently, gesv doesn't support vectors for matrix2
-            # So we instead solve a least square problem...
-            solution, _ = torch.gels(matrix2, matrix1)
+            solution, _ = torch.solve(matrix2.unsqueeze(1), matrix1)
         else:
-            solution, _ = torch.gesv(matrix2, matrix1)
+            solution, _ = torch.solve(matrix2, matrix1)
         return solution
 
     @staticmethod
