@@ -74,11 +74,11 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     ----------
     tensor : ndarray
 
-    matrix_or_vec_list : list of matrices or vectors of lengh ``tensor.ndim``
+    matrix_or_vec_list : list of matrices or vectors of length ``tensor.ndim``
 
     skip : None or int, optional, default is None
         if not None, index of a matrix to skip
-        Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
+        Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
 
     modes : None or int list, optional, default is None
 

@@ -95,7 +95,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
         if iteration > 1:
             if verbose:
-                print('reconsturction error={}, variation={}.'.format(
+                print('reconstruction error={}, variation={}.'.format(
                     rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
@@ -237,7 +237,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         rec_error = tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2) / norm_tensor
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
-            print('reconsturction error={}, variation={}.'.format(
+            print('reconstruction error={}, variation={}.'.format(
                 rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
         if iteration > 1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:

@@ -39,7 +39,7 @@ def test_validate_kruskal_tensor():
     with assert_raises(ValueError):
         _validate_kruskal_tensor((wrong_weights, factors))
 
-    # Not enought factors
+    # Not enough factors
     with assert_raises(ValueError):
         _validate_kruskal_tensor((weights[:1], factors[:1]))
 
@@ -116,7 +116,7 @@ def test_kruskal_to_tensor_with_weights():
     true_res = tl.fold(true_res, 0, (5, 5, 5))  
     res = kruskal_to_tensor((weigths, factors))
     assert_array_almost_equal(true_res, res,
-     err_msg='weigths incorrectly incorporated in kruskal_to_tensor')
+     err_msg='weights incorrectly incorporated in kruskal_to_tensor')
 
 def test_kruskal_to_unfolded():
     """Test for kruskal_to_unfolded.

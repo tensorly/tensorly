@@ -38,7 +38,7 @@ def test_validate_mps_tensor():
     with assert_raises(ValueError):
         _validate_mps_tensor(factors)
 
-    # Not enought factors
+    # Not enough factors
     with assert_raises(ValueError):
         _validate_mps_tensor(factors[:1])
 

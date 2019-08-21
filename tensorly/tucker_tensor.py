@@ -70,7 +70,7 @@ def tucker_to_unfolded(tucker_tensor, mode=0, skip_factor=None, transpose_factor
     mode : None or int list, optional, default is None
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
-        Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
+        Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
     transpose_factors : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
 
@@ -91,7 +91,7 @@ def tucker_to_vec(tucker_tensor, skip_factor=None, transpose_factors=False):
         core tensor and list of factor matrices
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
-        Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
+        Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
     transpose_factors : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
 
