@@ -701,14 +701,14 @@ class Backend(object):
                 S, U = scipy.sparse.linalg.eigsh(
                     np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM'
                 )
-                S = np.sqrt(S)
-                V = np.dot(matrix.T.conj(), U * 1 / S[None, :])
+                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+                V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
             else:
                 S, V = scipy.sparse.linalg.eigsh(
                     np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM'
                 )
-                S = np.sqrt(S)
-                U = np.dot(matrix, V) * 1 / S[None, :]
+                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+                U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
 
             # WARNING: here, V is still the transpose of what it should be
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]

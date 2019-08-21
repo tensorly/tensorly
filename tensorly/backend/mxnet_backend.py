@@ -121,11 +121,16 @@ class MxnetBackend(Backend):
         return res
 
     def qr(self, matrix):
+        # TODO: FIX THIS CASE
+        # s1, s2 = matrix.shape
+        # if s2 > s1:
+        #     Q, L = nd.linalg.gelqf(matrix[:, :s1].T)
+        #     return Q.T, L.T
         try:
             # NOTE - should be replaced with geqrf when available
             Q, L = nd.linalg.gelqf(matrix.T)
             return Q.T, L.T
-        except AttributeError:
+        except:
             warnings.warn('This version of MXNet does not include the linear '
                           'algebra function gelqf(). Substituting with numpy.')
             ctx = self.context(matrix)
