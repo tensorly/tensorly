@@ -51,7 +51,7 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
 
         kr_product = np.zeros((n_rows, n_columns))
         for i in range(n_columns):
-            cum_prod = matrices[0][:, i]  # Acuumulates the khatri-rao product of the i-th columns
+            cum_prod = matrices[0][:, i]  # Accumulates the khatri-rao product of the i-th columns
             for matrix in matrices[1:]:
                 cum_prod = np.einsum('i,j->ij', cum_prod, matrix[:, i]).ravel()
             # the i-th column corresponds to the kronecker product of all the i-th columns of all matrices:

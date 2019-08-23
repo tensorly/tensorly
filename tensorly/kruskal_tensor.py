@@ -346,7 +346,7 @@ def unfolding_dot_khatri_rao(tensor, kruskal_tensor, mode):
         return mttkrp 
 
     This can be done by taking n-mode-product with the full factors 
-    (faster but more memory consumming)::
+    (faster but more memory consuming)::
 
         projected = multi_mode_dot(tensor, factors, skip=mode, transpose=True)
         ndims = T.ndim(tensor)

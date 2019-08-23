@@ -36,7 +36,7 @@ def test_validate_tucker_tensor():
     with assert_raises(ValueError):
         _validate_tucker_tensor((core, factors[1:]))
 
-    # Not enought factors
+    # Not enough factors
     with assert_raises(ValueError):
         _validate_tucker_tensor((core, factors[:1]))
 
