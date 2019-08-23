@@ -12,6 +12,18 @@ from tensorly.random import check_random_state, random_kruskal
 from tensorly.testing import (assert_equal, assert_raises, assert_,
                               assert_array_equal, assert_array_almost_equal)
 
+
+def test_kruskal_normalise():
+    shape = (3, 4, 5)
+    rank = 4
+    kruskal_tensor = random_kruskal(shape, rank)
+    weights, factors = kruskal_normalise(kruskal_tensor)
+    expected_norm = tl.ones(rank)
+    for f in factors:
+        assert_array_almost_equal(tl.norm(f, axis=0), expected_norm)
+    assert_array_almost_equal(kruskal_to_tensor((weights, factors)), kruskal_to_tensor(kruskal_tensor))
+    
+
 def test_validate_kruskal_tensor():
     rng = check_random_state(12345)
     true_shape = (3, 4, 5)

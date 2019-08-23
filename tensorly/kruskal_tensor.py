@@ -101,7 +101,7 @@ def _validate_kruskal_tensor(kruskal_tensor):
     return tuple(shape), rank
 
 
-def kruskal_normalise(kruskal_tensor, copy=False):
+def kruskal_normalise(kruskal_tensor):
     """Returns kruskal_tensor with factors normalised to unit length
 
     Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
@@ -124,30 +124,24 @@ def kruskal_normalise(kruskal_tensor, copy=False):
     -------
     KruskalTensor = (normalisation_weights, normalised_factors)
     """
-    # allocate variables for weights, and normalized factors
     _, rank = _validate_kruskal_tensor(kruskal_tensor)
     weights, factors = kruskal_tensor
     
-    if (not copy) and (weights is None):
-        warnings.warn('Provided copy=False and weights=None: a new KruskalTensor'
-                      'with new weights and factors normalised inplace will be returned.')
+    if weights is None:
         weights = T.ones(rank, **T.context(factors[0]))
     
-    if copy:
-        factors = [T.copy(f) for f in factors]
-
-    if weights is not None:
-        factors[0] *= weights
-    
-    weights = T.ones(rank, **T.context(factors[0]))
-
-    for factor in factors:
+    normalized_factors = []
+    for i, factor in enumerate(factors):
+        if i == 0:
+            factor = factor*weights
+            weights = T.ones(rank, **T.context(factor))
+            
         scales = T.norm(factor, axis=0)
-        weights *= scales
-        scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factors[0])), scales)
-        factor /= scales_non_zero
-        
-    return KruskalTensor((weights, factors))
+        scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factor)), scales)
+        weights = weights*scales
+        normalized_factors.append(factor / T.reshape(scales_non_zero, (1, -1)))
+
+    return KruskalTensor((weights, normalized_factors))
     
 
 def kruskal_to_tensor(kruskal_tensor, mask=None):
