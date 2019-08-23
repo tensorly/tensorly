@@ -107,9 +107,9 @@ Applying tensor decomposition is easy:
 
    from tensorly.decomposition import tucker
    # Apply Tucker decomposition 
-   core, factors = tucker(tensor, rank=[2, 2, 2])
+   tucker_tensor = tucker(tensor, rank=[2, 3, 2])
    # Reconstruct the full tensor from the decomposed form
-   tl.tucker_to_tensor(core, factors) 
+   tl.tucker_to_tensor(tucker_tensor)
 
 You can change the backend to perform computation with a different framework. Note that using MXNet, PyTorch, TensorFlow or CuPy requires to have installed them first. For instance, after setting the backend to PyTorch, all the computation is done by PyTorch, and tensors can be created on GPU:
 
