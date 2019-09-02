@@ -107,7 +107,7 @@ Applying tensor decomposition is easy:
 
    from tensorly.decomposition import tucker
    # Apply Tucker decomposition 
-   tucker_tensor = tucker(tensor, rank=[2, 3, 2])
+   tucker_tensor = tucker(tensor, rank=[2, 2, 2])
    # Reconstruct the full tensor from the decomposed form
    tl.tucker_to_tensor(tucker_tensor)
 
