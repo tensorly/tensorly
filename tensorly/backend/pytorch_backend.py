@@ -200,7 +200,6 @@ class PyTorchBackend(Backend):
         indices = torch.arange(tensor.shape[axis] - 1, -1, -1, dtype=torch.int64)
         return tensor.index_select(axis, indices)
 
-    @staticmethod
     def truncated_svd(self, matrix, n_eigenvecs=None):
         """Computes a truncated SVD on `matrix` using pytorch's SVD
 
