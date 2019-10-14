@@ -11,6 +11,7 @@ import warnings
 
 # License: BSD 3 clause
 
+
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
                    svd='numpy_svd', random_state=None, verbose=False, ranks=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
@@ -24,6 +25,8 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
             list of the modes on which to perform the decomposition
     ranks : None or int list
             size of the core tensor, ``(len(ranks) == len(modes))``
+    rank : None or int
+            number of components
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
@@ -56,7 +59,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         warnings.warn(message, Warning)
         rank = [tl.shape(tensor)[mode] for mode in modes]
     elif isinstance(rank, int):
-        message = "Given only one int for 'rank' intead of a list of {} modes. Using this rank for all modes.".format(len(modes))
+        message = "Given only one int for 'rank' instead of a list of {} modes. Using this rank for all modes.".format(len(modes))
         warnings.warn(message, Warning)
         rank = [rank for _ in modes]
 
@@ -118,6 +121,8 @@ def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd',
     tensor : ndarray
     ranks : None or int list
             size of the core tensor, ``(len(ranks) == tensor.ndim)``
+    rank : None or int
+            number of components
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
@@ -164,6 +169,10 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
                  maximum number of iteration
     init : {'svd', 'random'}
     random_state : {None, int, np.random.RandomState}
+    verbose : int , optional
+                level of verbosity
+    ranks : None or int list
+            size of the core tensor
 
     Returns
     -------
@@ -177,7 +186,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
     References
     ----------
     .. [2] Yong-Deok Kim and Seungjin Choi,
-       "Nonnegative tucker decomposition",
+       "Non-negative tucker decomposition",
        IEEE Conference on Computer Vision and Pattern Recognition s(CVPR),
        pp 1-8, 2007
     """
@@ -194,7 +203,6 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         message = "Given only one int for 'rank' for decomposition a tensor of order {}. Using this rank for all modes.".format(n_mode)
         warnings.warn(message, RuntimeWarning)
         rank = [rank]*n_mode
-
 
     epsilon = 10e-12
 
