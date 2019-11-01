@@ -6,8 +6,8 @@ except ImportError as error:
                'you must first install TensorFlow!')
     raise ImportError(message) from error
 
-import tensorflow.contrib.eager as tfe
-tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
+#import tensorflow.contrib.eager as tfe
+#tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
 
 import numpy as np
 
@@ -61,12 +61,12 @@ class TensorflowBackend(Backend):
         if a_min is not None:
             a_min = self.tensor(a_min, **self.context(tensor_))
         else:
-            a_min = tf.reduce_min(tensor_)
+            a_min = tf.reduce_min(input_tensor=tensor_)
 
         if a_max is not None:
             a_max = self.tensor(a_max, **self.context(tensor_))
         else:
-            a_max = tf.reduce_max(tensor_)
+            a_max = tf.reduce_max(input_tensor=tensor_)
 
         return tf.clip_by_value(tensor_, clip_value_min=a_min, clip_value_max=a_max)
 
@@ -84,13 +84,13 @@ class TensorflowBackend(Backend):
         except IndexError:
             raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
                              'Got %d' % target)
-        return tf.transpose(tensor, axes)
+        return tf.transpose(a=tensor, perm=axes)
 
     @staticmethod
     def norm(tensor, order=2, axis=None):
         if order == 'inf':
             order = np.inf
-        res = tf.norm(tensor, ord=order, axis=axis)
+        res = tf.norm(tensor=tensor, ord=order, axis=axis)
 
         if res.shape == ():
             return res.numpy()
@@ -151,8 +151,8 @@ class TensorflowBackend(Backend):
         else:
             full_matrices = False
 
-        S, U, V = tf.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], tf.transpose(V)[:n_eigenvecs, :]
+        S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
+        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], tf.transpose(a=V)[:n_eigenvecs, :]
         return U, S, V
 
     @property
@@ -168,12 +168,12 @@ _FUN_NAMES = [
     (np.float64, 'float64'),
     (tf.ones, 'ones'),
     (tf.zeros, 'zeros'),
-    (tf.diag, 'diag'),
+    (tf.linalg.tensor_diag, 'diag'),
     (tf.zeros_like, 'zeros_like'),
     (tf.eye, 'eye'),
     (tf.reshape, 'reshape'),
     (tf.transpose, 'transpose'),
-    (tf.where, 'where'),
+    (tf.compat.v1.where, 'where'),
     (tf.sign, 'sign'),
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
