@@ -185,7 +185,7 @@ def kruskal_to_tensor(kruskal_tensor, mask=None):
         full_tensor = T.dot(factors[0]*weights,
                              T.transpose(khatri_rao(factors, skip_matrix=0)))
     else:
-        full_tensor = T.sum(khatri_rao([factor[0]*weights]+factors[1:], mask=mask), axis=1)
+        full_tensor = T.sum(khatri_rao([factors[0]*weights]+factors[1:], mask=mask), axis=1)
 
     return fold(full_tensor, 0, shape)
 
