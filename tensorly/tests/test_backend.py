@@ -412,7 +412,7 @@ def test_svd():
         assert_(true_rec_error <= tol)
 
         # Test if partial_svd returns the same result for the same setting
-        matrix = np.random.random((20, 5))
+        matrix = T.tensor(np.random.random((20, 5)))
         v0 = np.random.random(5)
         U1, S1, V1 = tl.partial_svd(matrix, v0=v0, n_eigenvecs=2)
         U2, S2, V2 = tl.partial_svd(matrix, v0=v0, n_eigenvecs=2)
