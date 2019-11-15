@@ -637,7 +637,7 @@ class Backend(object):
         
         return res*m
 
-    def partial_svd(self, matrix, n_eigenvecs=None):
+    def partial_svd(self, matrix, n_eigenvecs=None, v0=None):
         """Computes a fast partial SVD on `matrix`
 
         If `n_eigenvecs` is specified, sparse eigendecomposition is used on
@@ -649,6 +649,8 @@ class Backend(object):
             A 2D tensor.
         n_eigenvecs : int, optional, default is None
             If specified, number of eigen[vectors-values] to return.
+        v0 : numpy.ndarray shape (min_dim, min_dim), optional, default is None, where min_dim = min(matrix.shape)
+            If specified, use it as starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
 
         Returns
         -------
@@ -699,13 +701,13 @@ class Backend(object):
             # First choose whether to use X * X.T or X.T *X
             if dim_1 < dim_2:
                 S, U = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM'
+                    np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
                 )
                 S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
                 V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
             else:
                 S, V = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM'
+                    np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
                 )
                 S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
                 U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
