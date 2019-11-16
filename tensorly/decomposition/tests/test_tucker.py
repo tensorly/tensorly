@@ -3,7 +3,7 @@ from .._tucker import tucker, partial_tucker, non_negative_tucker
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...random import check_random_state
-from ...testing import assert_equal, assert_
+from ...testing import assert_equal, assert_, assert_array_equal
 
 
 def test_partial_tucker():
@@ -31,6 +31,13 @@ def test_partial_tucker():
                          i, factors[i].shape, (tensor.shape[i+1], ranks[i])))
     assert_equal(core.shape, [tensor.shape[0]]+ranks, err_msg="Core.shape={}, "
                      "expected {}".format(core.shape, [tensor.shape[0]]+ranks))
+
+    # Test random_state fixes the core and the factor matrices
+    core1, factors1 = partial_tucker(tensor, modes=modes, rank=ranks, random_state=0)
+    core2, factors2 = partial_tucker(tensor, modes=modes, rank=ranks, random_state=0)
+    assert_array_equal(core1, core2)
+    for factor1, factor2 in zip(factors1, factors2):
+        assert_array_equal(factor1, factor2)
 
 
 def test_tucker():

@@ -6,6 +6,8 @@ from ..random import check_random_state
 from math import sqrt
 
 import warnings
+from inspect import signature
+from functools import partial
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -65,6 +67,8 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     try:
         svd_fun = tl.SVD_FUNS[svd]
+        if "random_state" in signature(svd_fun).parameters:
+            svd_fun = partial(svd_fun, random_state=random_state)
     except KeyError:
         message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
                 svd, tl.get_backend(), tl.SVD_FUNS)

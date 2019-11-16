@@ -637,7 +637,7 @@ class Backend(object):
         
         return res*m
 
-    def partial_svd(self, matrix, n_eigenvecs=None, v0=None):
+    def partial_svd(self, matrix, n_eigenvecs=None, random_state=None):
         """Computes a fast partial SVD on `matrix`
 
         If `n_eigenvecs` is specified, sparse eigendecomposition is used on
@@ -649,8 +649,8 @@ class Backend(object):
             A 2D tensor.
         n_eigenvecs : int, optional, default is None
             If specified, number of eigen[vectors-values] to return.
-        v0 : numpy.ndarray shape (min_dim, min_dim), optional, default is None, where min_dim = min(matrix.shape)
-            If specified, use it as starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
+        random_state: {None, int, np.random.RandomState}
+            If specified, use it for sampling starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
 
         Returns
         -------
@@ -698,6 +698,13 @@ class Backend(object):
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
             # We can perform a partial SVD
+            # construct np.random.RandomState for sampling a starting vector
+            if random_state is None or isinstance(random_state, int):
+                rns = np.random.RandomState(random_state)
+            elif isinstance(random_state, np.random.RandomState):
+                rns = random_state
+            v0 = rns.rand(min_dim)
+
             # First choose whether to use X * X.T or X.T *X
             if dim_1 < dim_2:
                 S, U = scipy.sparse.linalg.eigsh(

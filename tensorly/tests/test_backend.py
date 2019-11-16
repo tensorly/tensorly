@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from inspect import signature
 
 import pytest
 import numpy as np
@@ -412,13 +413,14 @@ def test_svd():
         assert_(true_rec_error <= tol)
 
         # Test if partial_svd returns the same result for the same setting
-        matrix = T.tensor(np.random.random((20, 5)))
-        v0 = np.random.random(5)
-        U1, S1, V1 = tl.partial_svd(matrix, v0=v0, n_eigenvecs=2)
-        U2, S2, V2 = tl.partial_svd(matrix, v0=v0, n_eigenvecs=2)
-        assert_array_equal(U1, U2)
-        assert_array_equal(S1, S2)
-        assert_array_equal(V1, V2)
+        if "random_state" in signature(tl.partial_svd).parameters:
+            matrix = T.tensor(np.random.random((20, 5)))
+            random_state = np.random.RandomState(0)
+            U1, S1, V1 = tl.partial_svd(matrix, n_eigenvecs=2, random_state=random_state)
+            U2, S2, V2 = tl.partial_svd(matrix, n_eigenvecs=2, random_state=0)
+            assert_array_equal(U1, U2)
+            assert_array_equal(S1, S2)
+            assert_array_equal(V1, V2)
 
 
 def test_shape():
