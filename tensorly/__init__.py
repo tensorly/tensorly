@@ -1,6 +1,8 @@
 __version__ = '0.4.5'
 import sys
 
+from .quantization import quantize_qint
+
 from .base import unfold, fold
 from .base import tensor_to_vec, vec_to_tensor
 from .base import partial_unfold, partial_fold

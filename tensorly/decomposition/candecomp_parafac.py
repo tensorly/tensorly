@@ -7,6 +7,7 @@ from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               unfolding_dot_khatri_rao, kruskal_norm)
 from ..tenalg import khatri_rao
+from ..quantization import quantize_qint
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -434,3 +435,179 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
                     break
 
     return KruskalTensor((weights, factors))
+
+
+def quantized_parafac(tensor, rank, n_iter_max, init,\
+                      svd = 'numpy_svd', normalize_factors=False,\
+                      tol = None, random_state = None,\
+                      qmodes = None,\
+                      quantize_every = 2,\
+                      qscheme = None, dtype = None,\
+                      dim = None, return_scale_zeropoint = False
+                     ):
+    """Modified version of tensorly.decomposition.parafac
+
+        CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
+
+        ``tensor = [|weights; factors[0], ..., factors[-1] |]``.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank  : int
+        Number of components.
+    n_iter_max : int
+        Maximum number of iteration
+    init : {'svd', 'random'}, optional
+        Type of factor matrix initialization. See `initialize_factors`.
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+        of shape (rank, ), which will contain the norms of the factors
+    tol : float, optional
+        If an iteration didn't cause the relative reconstraction error to become smaller than
+        (1 - tol)*previous_rel_rec_error then finish
+    random_state : {None, int, np.random.RandomState}
+
+    qmodes : list
+        Indexes of modes, whose corresponding factors should be found in quantized format
+
+    quantize_every : int
+        Quantize factors corresponding to modes from `qmodes` every `quantize_every` iters
+
+    qscheme : quantization scheme, default is torch.per_tensor_affine
+        If qscheme is not None, a factor is quantized at the end of ALS iteration.
+        Has to be one of: ``torch.per_tensor_affine``, ``torch.per_tensor_symmetric``, ``torch.per_channel_affine``, ``torch.per_channel_symmetric``
+
+    dtype : ``torch.dtype``, default is ``torch.qint8``
+        Active when `qscheme` is not None.
+        The desired data type of returned tensor.
+        Has to be one of the quantized dtypes: ``torch.quint8``, ``torch.qint8``, ``torch.qint32``.
+
+    dim : int or None, default is None
+        Active when `qscheme` is not None.
+        If dim is not None, along the dimension `dim` the values in the `tensor` are scaled and offset by a different value (effectively the scale and offset become vectors).
+        If dim is None, all values in the `tensor` are scaled and offset by the same value.
+
+
+    Returns
+    -------
+    factors : List of factors of the CP decomposition element `i` is of shape
+            (tensor.shape[i], rank)
+
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+
+    .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
+            Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
+
+
+    """
+    import torch
+    tl.set_backend('pytorch')
+
+    if qmodes:
+        if not qscheme:
+            qscheme = torch.per_tensor_affine
+        if not dtype:
+            dtype = torch.qint8
+
+    factors = initialize_factors(tensor, rank,\
+                                 init = init, svd = svd,\
+                                 random_state = random_state,
+                                 normalize_factors=normalize_factors)
+    weights = tl.ones(rank, **tl.context(tensor))
+
+    ## Scales and zero_points for quantization
+    factors_scale = [None]*len(factors)
+    factors_zeropoint= [None]*len(factors)
+
+    diff_fro_norms_history = []
+    original_tensor_fro_norm = float(tl.norm(tensor, 2))
+
+    print("In parafac original_tensor_norm = {}".format(original_tensor_fro_norm))
+
+    def diff_fro_norm_to_rel_rec_error(diff_fro_norm):
+        return diff_fro_norm / original_tensor_fro_norm
+
+
+    with torch.no_grad():
+        for iteration in range(n_iter_max):
+            for mode in range(tl.ndim(tensor)):
+
+                ## If factor `factors[mode]` should be found in quantized format,
+                ## approximate, quantize and update it every `quantized_every` iters,
+                ## stariting from `mode` iter.
+                ## Otherwise, if `factors[mode]` should be found in float format,
+                ## approximate and update it every iter.
+                if ((iteration + mode) % quantize_every != 0) and qmodes and (mode in qmodes):
+                    continue
+
+                ## Approximate the factor and update weights
+                pseudo_inverse = tl.tensor(np.ones((rank, rank), dtype = np.float32),
+                                          **tl.context(tensor))
+                for i,factor in enumerate(factors):
+                    if i != mode:
+                        pseudo_inverse = pseudo_inverse * tl.dot(
+                            tl.transpose(factor), factor)
+
+                mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+
+                factor = tl.transpose(
+                    tl.solve(tl.transpose(pseudo_inverse),
+                    tl.transpose(mttkrp)
+                    )
+                    )
+
+                if normalize_factors:
+                    weights = tl.norm(factor, order=2, axis=0)
+                    weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype),
+                                       tl.ones(tl.shape(weights), **tl.context(factors[0])),
+                                       weights)
+                    factor = factor/(tl.reshape(weights, (1, -1)))
+
+                ## Quantize the factor
+                if ((iteration + mode) % quantize_every == 0) and qmodes and (mode in qmodes):
+                    if return_scale_zeropoint:
+                        factor, scale, zero_point = quantize_qint(factor,\
+                                                                  dtype, qscheme,\
+                                                                  dim = dim,\
+                                                                  return_scale_zeropoint = True)
+                        factors_scale[mode] = scale
+                        factors_zeropoint[mode] = zero_point
+                    else:
+                        factor = quantize_qint(factor, dtype, qscheme, dim = dim)
+
+                ## Update the factor
+                factors[mode] = factor
+
+
+            diff_fro_norm = float(tl.norm(tensor - tl.kruskal_to_tensor((weights, factors)), 2))
+            diff_fro_norms_history.append(diff_fro_norm)
+
+
+            if iteration > 0:
+                rel_rec_error = diff_fro_norm_to_rel_rec_error(diff_fro_norm)
+                rel_rec_error_change = rel_rec_error - diff_fro_norm_to_rel_rec_error(
+                    diff_fro_norms_history[-2]
+                )
+
+                if iteration % 500 == 0:
+                    print("iteration {}, diff_from_norm = {}, rel_rec_error = {}".format(
+                        iteration, diff_fro_norm, rel_rec_error))
+
+                if tol:
+                    if rel_rec_error_change > -tol:
+                        print("parafac has stopped after iteration {}".format(iteration))
+                        break
+
+    if return_scale_zeropoint:
+        return (tuple(factors), weights), tuple(diff_fro_norms_history), tuple(factors_scale), tuple(factors_zeropoint)
+    else:
+        return (tuple(factors), weights), tuple(diff_fro_norms_history)
