@@ -441,7 +441,8 @@ def quantized_parafac(tensor, rank, n_iter_max, init,\
                       svd = 'numpy_svd', normalize_factors=False,\
                       tol = None, random_state = None,\
                       qmodes = None,\
-                      quantize_every = 2,\
+                      warmup_iters = 0,\
+                      quantize_every = 1,\
                       qscheme = None, dtype = None,\
                       dim = None, return_scale_zeropoint = False
                      ):
@@ -472,7 +473,10 @@ def quantized_parafac(tensor, rank, n_iter_max, init,\
 
     qmodes : list
         Indexes of modes, whose corresponding factors should be found in quantized format
-
+    
+    warmup_iters : int
+        Number of first ALS iterations when approximated factors are not quantized 
+    
     quantize_every : int
         Quantize factors corresponding to modes from `qmodes` every `quantize_every` iters
 
@@ -517,6 +521,8 @@ def quantized_parafac(tensor, rank, n_iter_max, init,\
             qscheme = torch.per_tensor_affine
         if not dtype:
             dtype = torch.qint8
+    else:
+        qmodes = []
 
     factors = initialize_factors(tensor, rank,\
                                  init = init, svd = svd,\
@@ -539,6 +545,14 @@ def quantized_parafac(tensor, rank, n_iter_max, init,\
 
     with torch.no_grad():
         for iteration in range(n_iter_max):
+            
+            ## Freeze some quantized modes for current iter
+            frozen_modes = []
+            if iteration >= warmup_iters:
+                for mode in qmodes:
+                    if (iteration - warmup_iters) % quantize_every != 0:
+                        frozen_modes.append(mode)
+            
             for mode in range(tl.ndim(tensor)):
 
                 ## If factor `factors[mode]` should be found in quantized format,
@@ -546,7 +560,7 @@ def quantized_parafac(tensor, rank, n_iter_max, init,\
                 ## stariting from `mode` iter.
                 ## Otherwise, if `factors[mode]` should be found in float format,
                 ## approximate and update it every iter.
-                if ((iteration + mode) % quantize_every != 0) and qmodes and (mode in qmodes):
+                if mode in frozen_modes:
                     continue
 
                 ## Approximate the factor and update weights
@@ -573,7 +587,7 @@ def quantized_parafac(tensor, rank, n_iter_max, init,\
                     factor = factor/(tl.reshape(weights, (1, -1)))
 
                 ## Quantize the factor
-                if ((iteration + mode) % quantize_every == 0) and qmodes and (mode in qmodes):
+                if mode in qmodes:
                     if return_scale_zeropoint:
                         factor, scale, zero_point = quantize_qint(factor,\
                                                                   dtype, qscheme,\
