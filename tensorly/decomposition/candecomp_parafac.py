@@ -587,7 +587,7 @@ def quantized_parafac(tensor, rank, n_iter_max, init,\
                     factor = factor/(tl.reshape(weights, (1, -1)))
 
                 ## Quantize the factor
-                if mode in qmodes:
+                if (iteration >= warmup_iters) and (mode in qmodes):
                     if return_scale_zeropoint:
                         factor, scale, zero_point = quantize_qint(factor,\
                                                                   dtype, qscheme,\
