@@ -98,7 +98,7 @@ class TensorflowBackend(Backend):
 
     def dot(self, tensor1, tensor2):
         return tf.tensordot(tensor1, tensor2, axes=([self.ndim(tensor1) - 1], [0]))
-        
+
     @staticmethod
     def conj(x, *args, **kwargs):
         """WARNING: IDENTITY FUNCTION (does nothing)
@@ -119,7 +119,7 @@ class TensorflowBackend(Backend):
         return res
 
     @staticmethod
-    def truncated_svd(matrix, n_eigenvecs=None):
+    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
         """Computes an SVD on `matrix`
 
         Parameters
@@ -127,6 +127,8 @@ class TensorflowBackend(Backend):
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------

@@ -552,10 +552,10 @@ class Backend(object):
         Join a sequence of arrays along a new axis.
         """
         raise NotImplementedError
-    
+
     def eps(self, dtype):
         return self.finfo(dtype).eps
-    
+
     def finfo(self, dtype):
         return np.finfo(self.to_numpy(self.tensor([], dtype=dtype)).dtype)
 
@@ -632,12 +632,12 @@ class Backend(object):
             a = self.reshape(res, (s1, 1, s2))
             b = self.reshape(e, (1, s3, s4))
             res = self.reshape(a * b, (-1, n_col))
-        
+
         m = self.reshape(mask, (-1, 1)) if mask is not None else 1
-        
+
         return res*m
 
-    def partial_svd(self, matrix, n_eigenvecs=None, random_state=None):
+    def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`
 
         If `n_eigenvecs` is specified, sparse eigendecomposition is used on
@@ -651,6 +651,8 @@ class Backend(object):
             If specified, number of eigen[vectors-values] to return.
         random_state: {None, int, np.random.RandomState}
             If specified, use it for sampling starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
