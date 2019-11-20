@@ -42,7 +42,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     Returns
     -------
-    core : ndarray 
+    core : ndarray
             core tensor of the Tucker decomposition
     factors : ndarray list
             list of factors of the Tucker decomposition.
@@ -74,7 +74,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     if init == 'svd':
         factors = []
         for index, mode in enumerate(modes):
-            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index])
+            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
             factors.append(eigenvecs)
     else:
         rng = check_random_state(random_state)
@@ -87,7 +87,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     for iteration in range(n_iter_max):
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
-            eigenvecs, _, _ = svd_fun(unfold(core_approximation, mode), n_eigenvecs=rank[index])
+            eigenvecs, _, _ = svd_fun(unfold(core_approximation, mode), n_eigenvecs=rank[index], random_state=random_state)
             factors[index] = eigenvecs
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)

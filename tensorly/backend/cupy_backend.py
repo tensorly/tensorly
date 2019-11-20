@@ -74,7 +74,7 @@ class CupyBackend(Backend):
             return self.tensor(res, **ctx)
 
     @staticmethod
-    def truncated_svd(matrix, n_eigenvecs=None):
+    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
         """Computes a truncated SVD on `matrix`
 
         Parameters
@@ -82,6 +82,8 @@ class CupyBackend(Backend):
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------

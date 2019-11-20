@@ -552,10 +552,10 @@ class Backend(object):
         Join a sequence of arrays along a new axis.
         """
         raise NotImplementedError
-    
+
     def eps(self, dtype):
         return self.finfo(dtype).eps
-    
+
     def finfo(self, dtype):
         return np.finfo(self.to_numpy(self.tensor([], dtype=dtype)).dtype)
 
@@ -632,12 +632,12 @@ class Backend(object):
             a = self.reshape(res, (s1, 1, s2))
             b = self.reshape(e, (1, s3, s4))
             res = self.reshape(a * b, (-1, n_col))
-        
+
         m = self.reshape(mask, (-1, 1)) if mask is not None else 1
-        
+
         return res*m
 
-    def partial_svd(self, matrix, n_eigenvecs=None):
+    def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`
 
         If `n_eigenvecs` is specified, sparse eigendecomposition is used on
@@ -649,6 +649,10 @@ class Backend(object):
             A 2D tensor.
         n_eigenvecs : int, optional, default is None
             If specified, number of eigen[vectors-values] to return.
+        random_state: {None, int, np.random.RandomState}
+            If specified, use it for sampling starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
@@ -696,16 +700,28 @@ class Backend(object):
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
             # We can perform a partial SVD
+            # construct np.random.RandomState for sampling a starting vector
+            if random_state is None:
+                # if random_state is not specified, do not initialize a starting vector
+                v0 = None
+            elif isinstance(random_state, int):
+                rns = np.random.RandomState(random_state)
+                # initilize with [-1, 1] as in ARPACK
+                v0 = rns.uniform(-1, 1, min_dim)
+            elif isinstance(random_state, np.random.RandomState):
+                # initilize with [-1, 1] as in ARPACK
+                v0 = random_state.uniform(-1, 1, min_dim)
+
             # First choose whether to use X * X.T or X.T *X
             if dim_1 < dim_2:
                 S, U = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM'
+                    np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
                 )
                 S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
                 V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
             else:
                 S, V = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM'
+                    np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
                 )
                 S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
                 U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]

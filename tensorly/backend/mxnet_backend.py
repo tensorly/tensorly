@@ -223,7 +223,7 @@ class MxnetBackend(Backend):
     def stack(arrays, axis=0):
         return stack(*arrays, axis=axis)
 
-    def symeig_svd(self, matrix, n_eigenvecs=None):
+    def symeig_svd(self, matrix, n_eigenvecs=None, **kwargs):
         """Computes a truncated SVD on `matrix` using symeig
 
             Uses symeig on matrix.T.dot(matrix) or its transpose
@@ -233,6 +233,8 @@ class MxnetBackend(Backend):
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
