@@ -701,11 +701,16 @@ class Backend(object):
         else:
             # We can perform a partial SVD
             # construct np.random.RandomState for sampling a starting vector
-            if random_state is None or isinstance(random_state, int):
+            if random_state is None:
+                # if random_state is not specified, do not initialize a starting vector
+                v0 = None
+            elif isinstance(random_state, int):
                 rns = np.random.RandomState(random_state)
+                # initilize with [-1, 1] as in ARPACK
+                v0 = rns.uniform(-1, 1, min_dim)
             elif isinstance(random_state, np.random.RandomState):
-                rns = random_state
-            v0 = rns.rand(min_dim)
+                # initilize with [-1, 1] as in ARPACK
+                v0 = random_state.uniform(-1, 1, min_dim)
 
             # First choose whether to use X * X.T or X.T *X
             if dim_1 < dim_2:
