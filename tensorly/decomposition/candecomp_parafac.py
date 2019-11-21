@@ -82,9 +82,12 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
 
-def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize_factors=False,
-            tol=1e-8, orthogonalise=False, random_state=None, verbose=0, return_errors=False,
-            non_negative=False, mask=None):
+def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
+            normalize_factors=False, orthogonalise=False,\
+            tol=1e-8, random_state=None,\
+            verbose=0, return_errors=False,\
+            non_negative=False, mask=None,\
+            stop_criterion = 'rec_error_decrease'):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -119,7 +122,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
         the values are missing and 1 everywhere else. Note:  if tensor is
         sparse, then mask should also be sparse with a fill value of 1 (or
         True). Allows for missing values [2]_
-
+    stop_criterion : {'rec_error_deviation', 'rec_error_decrease'}, optional
+       Stopping criterion if `tol` is not None
 
     Returns
     -------
@@ -131,7 +135,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
             (tensor.shape[i], rank)
 
     errors : list
-        A list of reconstruction errors at each iteration of the algorithms.
+        A list of relative reconstruction errors at each iteration of the algorithms.
 
     References
     ----------
@@ -205,24 +209,39 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
             factors[mode] = factor
 
         if tol:
-            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-            factors_norm = kruskal_norm((weights, factors))
+            if stop_criterion == 'rec_error_deviation':
+                # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+                factors_norm = kruskal_norm((weights, factors))
 
-            # mttkrp and factor for the last mode. This is equivalent to the
-            # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
-            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod)) / norm_tensor
+                # mttkrp and factor for the last mode. This is equivalent to the
+                # inner product <tensor, factorization>
+                iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
+                unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
+                rec_error = unnorml_rec_error / norm_tensor
+            else:
+                unnorml_rec_error = float(tl.norm(tensor - tl.kruskal_to_tensor((weights, factors)), 2))            
+                rec_error = unnorml_rec_error / norm_tensor
+                
             rec_errors.append(rec_error)
 
             if iteration >= 1:
+                rec_error_decrease = rec_errors[-2] - rec_errors[-1]
+                
                 if verbose:
-                    print('reconstruction error={}, variation={}.'.format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+                    print("iteration {},  reconstraction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
 
-                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                if stop_criterion == 'rec_error_deviation':
+                    stop_flag = abs(rec_error_decrease) < tol
+                elif stop_criterion == 'rec_error_decrease':
+                    stop_flag =  rec_error_decrease < tol
+                else:
+                    raise TypeError("Unknown stop criterion")
+                
+                if stop_flag:
                     if verbose:
-                        print('converged in {} iterations.'.format(iteration))
-                    break       
+                        print("PARAFAC has stopped after iteration {}".format(iteration))
+                    break
+                    
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
@@ -233,7 +252,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize
         return kruskal_tensor, rec_errors
     else:
         return kruskal_tensor
-
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                          tol=10e-7, random_state=None, verbose=0):
