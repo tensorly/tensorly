@@ -135,7 +135,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             (tensor.shape[i], rank)
 
     errors : list
-        A list of relative reconstruction errors at each iteration of the algorithms.
+        A list of reconstruction errors at each iteration of the algorithms.
 
     References
     ----------
