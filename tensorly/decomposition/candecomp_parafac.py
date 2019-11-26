@@ -87,7 +87,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             tol=1e-8, random_state=None,\
             verbose=0, return_errors=False,\
             non_negative=False, mask=None,\
-            stop_criterion = 'rec_error_decrease'):
+            stop_criterion = 'rec_error_deviation'):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -209,19 +209,14 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             factors[mode] = factor
 
         if tol:
-            if stop_criterion == 'rec_error_deviation':
-                # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-                factors_norm = kruskal_norm((weights, factors))
+            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+            factors_norm = kruskal_norm((weights, factors))
 
-                # mttkrp and factor for the last mode. This is equivalent to the
-                # inner product <tensor, factorization>
-                iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
-                unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
-                rec_error = unnorml_rec_error / norm_tensor
-            else:
-                unnorml_rec_error = float(tl.norm(tensor - tl.kruskal_to_tensor((weights, factors)), 2))            
-                rec_error = unnorml_rec_error / norm_tensor
-                
+            # mttkrp and factor for the last mode. This is equivalent to the
+            # inner product <tensor, factorization>
+            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
+            unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
+            rec_error = unnorml_rec_error / norm_tensor
             rec_errors.append(rec_error)
 
             if iteration >= 1:
