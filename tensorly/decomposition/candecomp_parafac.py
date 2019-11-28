@@ -87,7 +87,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             tol=1e-8, random_state=None,\
             verbose=0, return_errors=False,\
             non_negative=False, mask=None,\
-            stop_criterion = 'rec_error_deviation'):
+            cvg_criterion = 'abs_rec_error'):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -122,8 +122,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         the values are missing and 1 everywhere else. Note:  if tensor is
         sparse, then mask should also be sparse with a fill value of 1 (or
         True). Allows for missing values [2]_
-    stop_criterion : {'rec_error_deviation', 'rec_error_decrease'}, optional
-       Stopping criterion if `tol` is not None
+    cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
+       Stopping criterion for ALS, works if `tol` is not None. 
+       If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
+       If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
 
     Returns
     -------
@@ -225,16 +227,16 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 if verbose:
                     print("iteration {},  reconstraction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
 
-                if stop_criterion == 'rec_error_deviation':
+                if cvg_criterion == 'abs_rec_error':
                     stop_flag = abs(rec_error_decrease) < tol
-                elif stop_criterion == 'rec_error_decrease':
+                elif cvg_criterion == 'rec_error':
                     stop_flag =  rec_error_decrease < tol
                 else:
-                    raise TypeError("Unknown stop criterion")
+                    raise TypeError("Unknown convergence criterion")
                 
                 if stop_flag:
                     if verbose:
-                        print("PARAFAC has stopped after iteration {}".format(iteration))
+                        print("PARAFAC converged after {} iterations".format(iteration))
                     break
                     
             else:
