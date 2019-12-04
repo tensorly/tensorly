@@ -690,8 +690,8 @@ class Backend(object):
         elif min_dim <= n_eigenvecs:
             if max_dim < n_eigenvecs:
                 warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
-                                'is larger than max(matrix.shape)={1}. Setting '
-                                'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
+                               'is larger than max(matrix.shape)={1}. Setting '
+                               'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
                 n_eigenvecs = max_dim
             if n_eigenvecs > min_dim:
                 full_matrices=True
