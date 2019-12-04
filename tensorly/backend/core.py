@@ -693,8 +693,11 @@ class Backend(object):
                                 'is larger than max(matrix.shape)={1}. Setting '
                                 'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
                 n_eigenvecs = max_dim
-            # Sparse eigendecomposition
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=False)
+            if n_eigenvecs > min_dim:
+                full_matrices=True
+            else:
+                full_matrices=False
+            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
             # We can perform a partial SVD
