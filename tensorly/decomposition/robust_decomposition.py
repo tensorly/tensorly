@@ -1,9 +1,8 @@
 import numpy as np
-from ..base import fold, unfold
-from ..tenalg import khatri_rao
-from ..random import check_random_state
-from ..tenalg.proximal import soft_thresholding, svd_thresholding
 from .. import backend as T
+from ..base import fold, unfold
+from ..tenalg.proximal import soft_thresholding, svd_thresholding
+
 
 # Author: Jean Kossaifi
 
