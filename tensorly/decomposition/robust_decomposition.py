@@ -11,7 +11,7 @@ from ..tenalg.proximal import soft_thresholding, svd_thresholding
 
 def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
                mu_init=10e-5, mu_max=10e9, learning_rate=1.1,
-               n_iter_max=100, random_state=None, verbose=1):
+               n_iter_max=100, verbose=1):
     """Robust Tensor PCA via ALM with support for missing values
 
         Decomposes a tensor `X` into the sum of a low-rank component `D`
@@ -38,7 +38,6 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
         percentage increase of mu at each iteration
     n_iter_max : int, optional, default is 100
         maximum number of iteration
-    random_state : None, int or RandomState, optional, default is None
     verbose : int, default is 1
         level of verbosity
 
