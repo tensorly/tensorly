@@ -1,24 +1,19 @@
-"""Utility class and functions for the PARAFAC2 decomposition [1]_
+"""Utility class and functions for the PARAFAC2 decomposition
 
 These utility functions assume that the second mode ``(factors[1])`` evolve over
-the first mode (factors[0]). Therefore, there are ``len(factors[1])`` separate 
+the first mode ``(factors[0])``. Therefore, there are ``len(factors[1])`` separate 
 factor matrices in the second mode. This decomposition is implemented in the same 
 way as the direct fitting method described in [2] (except that the evolving mode 
 and the mode that the tensor evolves over is changed). Mathematically this is 
 equivalent to saying ``B[i] = P[i]@B`` for some matrix ``P[i].T@P[i] = I``, 
 where ``I`` is an identity matrix.
-
-References
-----------
-  .. [1] Kiers, H.A.L., ten Berge, J.M.F. and Bro, R. (1999), 
-         PARAFAC2—Part I. A direct fitting algorithm for the PARAFAC2 model. 
-         J. Chemometrics, 13: 275-294.
 """
 
 # Authors: Marie Roald
 #          Yngve Mardal Moe
 
 from . import backend as T
+from .base import unfold, tensor_to_vec
 import warnings
 from collections.abc import Mapping
 
@@ -345,3 +340,13 @@ def parafac2_to_tensor(parafac2_tensor):
     for i, (slice_, length) in enumerate(zip(slices, lengths)):
         tensor[i, :length] = slice_
     return tensor
+
+
+
+def parafac2_to_unfolded(parafac2_tensor, mode):
+    return unfold(parafac2_to_tensor(parafac2_tensor), mode)
+
+
+def parafac2_to_vec(parafac2_tensor):
+    return tensor_to_vec(parafac2_to_tensor(parafac2_tensor))
+
