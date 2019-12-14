@@ -37,16 +37,21 @@ def best_correlation(A, B):
     return best_corr
 
 
-def test_parafac2():
+@pytest.mark.parametrize("normalize_factors", [True, False])
+def test_parafac2(normalize_factors):
     rng = check_random_state(1234)
     tol_norm_2 = 10e-2
     rank = 6
 
-    random_parafac2_tensor = random_parafac2(shapes=[(50 + rng.randint(10),60) for _ in range(40)], rank=rank, random_state=rng)
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(50 + rng.randint(10),60) for _ in range(40)],
+        rank=rank,
+        random_state=rng,
+    )
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
-    rec = parafac2(slices, rank, random_state=rng)
+    rec = parafac2(slices, rank, random_state=rng, normalize_factors=normalize_factors)
     rec_tensor = parafac2_to_tensor(rec)
 
     error = T.norm(rec_tensor - tensor, 2)
@@ -68,6 +73,60 @@ def test_parafac2():
         rec_Bi = T.dot(rec_proj, rec.factors[1])*rec_A_sign[i]
         Bi_corr = best_correlation(true_Bi, rec_Bi)
         assert_(T.prod(Bi_corr) > 0.98**rank)
+
+
+def test_parafac2_slice_and_tensor_input():
+    rank = 6
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(50, 60) for _ in range(40)],
+        rank=rank,
+        random_state=1234
+    )
+    tensor = parafac2_to_tensor(random_parafac2_tensor)
+    slices = parafac2_to_slices(random_parafac2_tensor)
+
+    slice_rec = parafac2(slices, rank, random_state=1234, normalize_factors=False)
+    slice_rec_tensor = parafac2_to_tensor(slice_rec)
+
+    tensor_rec = parafac2(tensor, rank, random_state=1234, normalize_factors=False)
+    tensor_rec_tensor = parafac2_to_tensor(tensor_rec)
+
+    assert np.allclose(slice_rec_tensor, tensor_rec_tensor)
+
+
+def test_parafac2_normalize_factors():
+    rng = check_random_state(1234)
+    tol_norm_2 = 10e-2
+    rank = 6
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(50 + rng.randint(10),60) for _ in range(40)],
+        rank=rank,
+        random_state=rng,
+    )
+    random_parafac2_tensor.weights[0] = 100
+    slices = parafac2_to_tensor(random_parafac2_tensor)
+    normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
+    assert normalized_rec.weights[0] > 1
+    assert np.allclose(T.norm(normalized_rec.factors[0], axis=0), 1)
+    
+    unnormalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=False)
+    assert unnormalized_rec.weights[0] == 1
+
+
+def test_parafac2_init_valid():
+    rng = check_random_state(1234)
+    rank = 6
+
+    random_parafac2_tensor = random_parafac2(shapes=[(30,60)]*50, rank=rank, random_state=rng)
+    tensor = parafac2_to_tensor(random_parafac2_tensor)
+    weights, (A, B, C), projections = random_parafac2_tensor
+    B = T.dot(projections[0], B)
+    
+    for init_method in ['random', 'svd', random_parafac2_tensor, (weights, (A, B, C))]:
+        init = initialize_decomposition(tensor, rank, init=init_method)
+        assert init.shape == random_parafac2_tensor.shape
 
 
 def test_parafac2_init_error():
