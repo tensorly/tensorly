@@ -6,8 +6,8 @@ except ImportError as error:
                'you must first install TensorFlow!')
     raise ImportError(message) from error
 
-import tensorflow.contrib.eager as tfe
-tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
+#import tensorflow.contrib.eager as tfe
+#tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
 
 import numpy as np
 
@@ -27,7 +27,7 @@ class TensorflowBackend(Backend):
             return data
 
         out = tf.constant(data, dtype=dtype)
-        return out.gpu(device_id) if device == 'GPU' else out
+        return out.gpu(device_id) if device == 'gpu' else out
 
     @staticmethod
     def is_tensor(tensor):
@@ -61,12 +61,12 @@ class TensorflowBackend(Backend):
         if a_min is not None:
             a_min = self.tensor(a_min, **self.context(tensor_))
         else:
-            a_min = tf.reduce_min(tensor_)
+            a_min = tf.reduce_min(input_tensor=tensor_)
 
         if a_max is not None:
             a_max = self.tensor(a_max, **self.context(tensor_))
         else:
-            a_max = tf.reduce_max(tensor_)
+            a_max = tf.reduce_max(input_tensor=tensor_)
 
         return tf.clip_by_value(tensor_, clip_value_min=a_min, clip_value_max=a_max)
 
@@ -84,13 +84,13 @@ class TensorflowBackend(Backend):
         except IndexError:
             raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
                              'Got %d' % target)
-        return tf.transpose(tensor, axes)
+        return tf.transpose(a=tensor, perm=axes)
 
     @staticmethod
     def norm(tensor, order=2, axis=None):
         if order == 'inf':
             order = np.inf
-        res = tf.norm(tensor, ord=order, axis=axis)
+        res = tf.norm(tensor=tensor, ord=order, axis=axis)
 
         if res.shape == ():
             return res.numpy()
@@ -98,7 +98,7 @@ class TensorflowBackend(Backend):
 
     def dot(self, tensor1, tensor2):
         return tf.tensordot(tensor1, tensor2, axes=([self.ndim(tensor1) - 1], [0]))
-        
+
     @staticmethod
     def conj(x, *args, **kwargs):
         """WARNING: IDENTITY FUNCTION (does nothing)
@@ -109,16 +109,17 @@ class TensorflowBackend(Backend):
 
     @staticmethod
     def solve(lhs, rhs):
-        squeeze = []
+        squeeze = False
         if rhs.ndim == 1:
             squeeze = [-1]
             rhs = tf.reshape(rhs, (-1, 1))
-        res = tf.matrix_solve(lhs, rhs)
-        res = tf.squeeze(res, squeeze)
+        res = tf.linalg.solve(lhs, rhs)
+        if squeeze:
+            res = tf.squeeze(res, squeeze)
         return res
 
     @staticmethod
-    def truncated_svd(matrix, n_eigenvecs=None):
+    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
         """Computes an SVD on `matrix`
 
         Parameters
@@ -126,6 +127,8 @@ class TensorflowBackend(Backend):
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
@@ -150,8 +153,8 @@ class TensorflowBackend(Backend):
         else:
             full_matrices = False
 
-        S, U, V = tf.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], tf.transpose(V)[:n_eigenvecs, :]
+        S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
+        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], tf.transpose(a=V)[:n_eigenvecs, :]
         return U, S, V
 
     @property
@@ -167,15 +170,17 @@ _FUN_NAMES = [
     (np.float64, 'float64'),
     (tf.ones, 'ones'),
     (tf.zeros, 'zeros'),
+    (tf.linalg.tensor_diag, 'diag'),
     (tf.zeros_like, 'zeros_like'),
     (tf.eye, 'eye'),
     (tf.reshape, 'reshape'),
     (tf.transpose, 'transpose'),
-    (tf.where, 'where'),
+    (tf.compat.v1.where, 'where'),
     (tf.sign, 'sign'),
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
-    (tf.qr, 'qr'),
+    (tf.linalg.qr, 'qr'),
+    #(tf.linalg.solve, 'solve'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),

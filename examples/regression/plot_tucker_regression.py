@@ -24,7 +24,7 @@ ranks = [1, 2, 3, 4, 5]
 rng = check_random_state(1)
 X = tl.tensor(rng.normal(size=(1000, image_height, image_width), loc=0, scale=1))
 
-# Paramters of the plot, deduced from the data
+# Parameters of the plot, deduced from the data
 n_rows = len(patterns)
 n_columns = len(ranks) + 1
 # Plot the three images

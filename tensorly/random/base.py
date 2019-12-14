@@ -105,8 +105,8 @@ def random_kruskal(shape, rank, full=False, orthogonal=False,
         2D-array list : list of factors otherwise
     """
     if (rank > min(shape)) and orthogonal:
-        raise ValueError('Can only construct orthogonal tensors when rank <= '
-                         'min(shape)')
+        warnings.warn('Can only construct orthogonal tensors when rank <= min(shape) but got '
+                      'a tensor with min(shape)={} < rank={}'.format(min(shape), rank))
 
     rns = check_random_state(random_state)
     factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
@@ -150,9 +150,11 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
     if isinstance(rank, int):
         rank = [rank for _ in shape]
 
-    for i, (s, r) in enumerate(zip(shape, rank)):
-        if r > s:
-            raise ValueError('The rank should be smaller than the tensor size, yet rank[{0}]={1} > shape[{0}]={2}.'.format(i, r, s))
+    if orthogonal:
+        for i, (s, r) in enumerate(zip(shape, rank)):
+            if r > s:
+                warnings.warn('Selected orthogonal=True, but selected a rank larger than the tensor size for mode {0}: '
+                             'rank[{0}]={1} > shape[{0}]={2}.'.format(i, r, s))
 
     factors = []
     for (s, r) in zip(shape, rank):

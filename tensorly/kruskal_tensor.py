@@ -4,7 +4,7 @@ Core operations on Kruskal tensors.
 
 from . import backend as T
 from .base import fold, tensor_to_vec
-from .tenalg import khatri_rao, multi_mode_dot
+from .tenalg import khatri_rao, multi_mode_dot, inner
 
 import warnings
 from collections.abc import Mapping
@@ -76,10 +76,18 @@ def _validate_kruskal_tensor(kruskal_tensor):
         raise ValueError('A Kruskal tensor should be composed of at least two factors.'
                          'However, {} factor was given.'.format(len(factors)))
 
-    rank = int(T.shape(factors[0])[1])
+    if T.ndim(factors[0]) == 2:
+        rank = int(T.shape(factors[0])[1])
+    else:
+        rank = 1
     shape = []
     for i, factor in enumerate(factors):
-        current_mode_size, current_rank = T.shape(factor)
+        s = T.shape(factor)
+        if len(s) == 2:
+            current_mode_size, current_rank = s
+        else:
+            current_mode_size, current_rank = s, 1
+
         if current_rank != rank:
             raise ValueError('All the factors of a Kruskal tensor should have the same number of column.'
                              'However, factors[0].shape[1]={} but factors[{}].shape[1]={}.'.format(
@@ -93,7 +101,7 @@ def _validate_kruskal_tensor(kruskal_tensor):
     return tuple(shape), rank
 
 
-def kruskal_normalise(kruskal_tensor, copy=False):
+def kruskal_normalise(kruskal_tensor):
     """Returns kruskal_tensor with factors normalised to unit length
 
     Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
@@ -116,31 +124,27 @@ def kruskal_normalise(kruskal_tensor, copy=False):
     -------
     KruskalTensor = (normalisation_weights, normalised_factors)
     """
-    # allocate variables for weights, and normalized factors
     _, rank = _validate_kruskal_tensor(kruskal_tensor)
     weights, factors = kruskal_tensor
     
-    if (not copy) and (weights is None):
-        warnings.warn('Provided copy=False and weights=None: a new KruskalTensor'
-                      'with new weights and factors normalised inplace will be returned.')
+    if weights is None:
         weights = T.ones(rank, **T.context(factors[0]))
     
-    if copy:
-        factors = [T.copy(f) for f in factors]
-    if weights is not None:
-        factors[0] *= weights
-    weights = T.ones(rank, **T.context(factors[0]))
-        
-    for factor in factors:
+    normalized_factors = []
+    for i, factor in enumerate(factors):
+        if i == 0:
+            factor = factor*weights
+            weights = T.ones(rank, **T.context(factor))
+            
         scales = T.norm(factor, axis=0)
-        weights *= scales
-        scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factors[0])), scales)
-        factor /= scales_non_zero
-        
-    return KruskalTensor((weights, factors))
+        scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factor)), scales)
+        weights = weights*scales
+        normalized_factors.append(factor / T.reshape(scales_non_zero, (1, -1)))
+
+    return KruskalTensor((weights, normalized_factors))
     
 
-def kruskal_to_tensor(kruskal_tensor):
+def kruskal_to_tensor(kruskal_tensor, mask=None):
     """Turns the Khatri-product of matrices into a full tensor
 
         ``factor_matrices = [|U_1, ... U_n|]`` becomes
@@ -171,17 +175,19 @@ def kruskal_to_tensor(kruskal_tensor):
     summing over r and updating an outer product of vectors.
 
     """
-    shape, _ = _validate_kruskal_tensor(kruskal_tensor)
+    shape, rank = _validate_kruskal_tensor(kruskal_tensor)
     weights, factors = kruskal_tensor
 
-    if weights is not None:
+    if weights is None:
+        weights = 1
+
+    if mask is None:
         full_tensor = T.dot(factors[0]*weights,
                              T.transpose(khatri_rao(factors, skip_matrix=0)))
     else:
-        full_tensor = T.dot(factors[0], 
-                             T.transpose(khatri_rao(factors, skip_matrix=0)))
-    return fold(full_tensor, 0, shape)
+        full_tensor = T.sum(khatri_rao([factors[0]*weights]+factors[1:], mask=mask), axis=1)
 
+    return fold(full_tensor, 0, shape)
 
 def kruskal_to_unfolded(kruskal_tensor, mode):
     """Turns the khatri-product of matrices into an unfolded tensor
@@ -340,7 +346,7 @@ def unfolding_dot_khatri_rao(tensor, kruskal_tensor, mode):
         return mttkrp 
 
     This can be done by taking n-mode-product with the full factors 
-    (faster but more memory consumming)::
+    (faster but more memory consuming)::
 
         projected = multi_mode_dot(tensor, factors, skip=mode, transpose=True)
         ndims = T.ndim(tensor)
@@ -372,7 +378,41 @@ def unfolding_dot_khatri_rao(tensor, kruskal_tensor, mode):
     for r in range(rank):
         component = multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode)
         mttkrp_parts.append(component)
-    mttkrp = T.stack(mttkrp_parts, axis=1)*T.reshape(weights, (1, -1))
-    return mttkrp 
+
+    if weights is None:
+        return T.stack(mttkrp_parts, axis=1)
+    else:
+        return T.stack(mttkrp_parts, axis=1)*T.reshape(weights, (1, -1))
 
 
+def kruskal_norm(kruskal_tensor):
+    """Returns the l2 norm of a Kruskal tensor
+
+    Parameters
+    ----------
+    kruskal_tensor : tl.KruskalTensor or (core, factors)
+
+    Returns
+    -------
+    l2-norm : int
+
+    Notes
+    -----
+    This is ||kruskal_to_tensor(factors)||^2 
+    
+    You can see this using the fact that
+    khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
+    """
+    _ = _validate_kruskal_tensor(kruskal_tensor)
+    weights, factors = kruskal_tensor
+    norm = 1
+    for factor in factors:
+        norm *= T.dot(T.transpose(factor), factor)
+    
+    if weights is not None:
+        #norm = T.dot(T.dot(weights, norm), weights)
+        norm = norm * (T.reshape(weights, (-1, 1))*T.reshape(weights, (1, -1)))
+
+    # We sum even if weigths is not None
+    # as e.g. MXNet would return a 1D tensor, not a 0D tensor
+    return T.sqrt(T.sum(norm))

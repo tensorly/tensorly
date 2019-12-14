@@ -95,9 +95,6 @@ def test_random_tucker():
     reconstructed = multi_mode_dot(tensor, factors, transpose=True)
     assert_array_almost_equal(core, reconstructed)
 
-    with assert_raises(ValueError):
-        random_tucker((3, 4, 5), (3, 6, 3))
-
 
 def test_random_mps():
     """test for random.random_mps"""

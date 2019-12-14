@@ -120,7 +120,7 @@ def test_matrix_product_state_cross_4():
         return sum(X)**3
 
     maxvoleps = 1e-4
-    tol = 1e-4
+    tol = 1e-3
     n = 10
     d = 4
     rng = 1

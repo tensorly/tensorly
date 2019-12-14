@@ -121,11 +121,16 @@ class MxnetBackend(Backend):
         return res
 
     def qr(self, matrix):
+        # TODO: FIX THIS CASE
+        # s1, s2 = matrix.shape
+        # if s2 > s1:
+        #     Q, L = nd.linalg.gelqf(matrix[:, :s1].T)
+        #     return Q.T, L.T
         try:
             # NOTE - should be replaced with geqrf when available
             Q, L = nd.linalg.gelqf(matrix.T)
             return Q.T, L.T
-        except AttributeError:
+        except:
             warnings.warn('This version of MXNet does not include the linear '
                           'algebra function gelqf(). Substituting with numpy.')
             ctx = self.context(matrix)
@@ -218,7 +223,7 @@ class MxnetBackend(Backend):
     def stack(arrays, axis=0):
         return stack(*arrays, axis=axis)
 
-    def symeig_svd(self, matrix, n_eigenvecs=None):
+    def symeig_svd(self, matrix, n_eigenvecs=None, **kwargs):
         """Computes a truncated SVD on `matrix` using symeig
 
             Uses symeig on matrix.T.dot(matrix) or its transpose
@@ -228,6 +233,8 @@ class MxnetBackend(Backend):
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
@@ -287,5 +294,5 @@ for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
 for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye', 'dot',
-             'transpose', 'where', 'sign', 'prod']:
+             'transpose', 'where', 'sign', 'prod', 'diag']:
     MxnetBackend.register_method(name, getattr(nd, name))

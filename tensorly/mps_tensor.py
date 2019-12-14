@@ -25,7 +25,7 @@ def _validate_mps_tensor(mps_tensor):
                                  index, tl.ndim(factor)))
         # Consecutive factors should have matching ranks
         if index and tl.shape(factors[index - 1])[2] != current_rank:
-            raise ValueError('Consecutive factors should have matchine ranks\n'
+            raise ValueError('Consecutive factors should have matching ranks\n'
                              ' -- e.g. tl.shape(factors[0])[2]) == tl.shape(factors[1])[0])\n'
                              'However, tl.shape(factor[{}])[2] == {} but'
                              ' tl.shape(factor[{}])[0] == {} '.format(

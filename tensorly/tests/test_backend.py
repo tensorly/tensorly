@@ -404,6 +404,22 @@ def test_svd():
             tensor = T.tensor(np.random.random((3, 3, 3)))
             svd_fun(tensor)
 
+        # Test for singular matrices (some eigenvals will be zero)
+        # Rank at most 5
+        matrix = T.tensor(np.dot(np.random.random((20, 5)), np.random.random((5, 20))))
+        U, S, V = tl.partial_svd(matrix, n_eigenvecs=n)
+        true_rec_error = tl.sum((matrix - tl.dot(U, tl.reshape(S, (-1, 1))*V))**2)
+        assert_(true_rec_error <= tol)
+
+        # Test if partial_svd returns the same result for the same setting
+        matrix = T.tensor(np.random.random((20, 5)))
+        random_state = np.random.RandomState(0)
+        U1, S1, V1 = tl.partial_svd(matrix, n_eigenvecs=2, random_state=random_state)
+        U2, S2, V2 = tl.partial_svd(matrix, n_eigenvecs=2, random_state=0)
+        assert_array_equal(U1, U2)
+        assert_array_equal(S1, S2)
+        assert_array_equal(V1, V2)
+
 
 def test_shape():
     A = T.arange(3*4*5)
