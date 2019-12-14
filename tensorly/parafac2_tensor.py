@@ -1,4 +1,4 @@
-"""Utility class and functions for the PARAFAC2 decomposition [1]
+"""Utility class and functions for the PARAFAC2 decomposition [1]_
 
 These utility functions assume that the second mode ``(factors[1])`` evolve over
 the first mode (factors[0]). Therefore, there are ``len(factors[1])`` separate 
@@ -7,7 +7,17 @@ way as the direct fitting method described in [2] (except that the evolving mode
 and the mode that the tensor evolves over is changed). Mathematically this is 
 equivalent to saying ``B[i] = P[i]@B`` for some matrix ``P[i].T@P[i] = I``, 
 where ``I`` is an identity matrix.
+
+References
+----------
+  .. [1] Kiers, H.A.L., ten Berge, J.M.F. and Bro, R. (1999), 
+         PARAFAC2—Part I. A direct fitting algorithm for the PARAFAC2 model. 
+         J. Chemometrics, 13: 275-294.
 """
+
+# Authors: Marie Roald
+#          Yngve Mardal Moe
+
 from . import backend as T
 import warnings
 from collections.abc import Mapping
@@ -32,6 +42,32 @@ class Parafac2Tensor(Mapping):
         self.weights = weights
         self.projections = projections
         
+    @classmethod
+    def from_kruskaltensor(self, kruskal_tensor, parafac2_tensor_ok=False):
+        """Create a Parafac2Tensor from a KruskalTensor
+
+        Parameters:
+        -----------
+        kruskal_tensor: KruskalTensor or Parafac2Tensor
+            If it is a Parafac2Tensor, then the argument ``parafac2_tensor_ok`` must be True'
+        parafac2_tensor: bool (optional)
+            Whether or not Parafac2Tensors can be used as input.
+
+        Returns:
+        --------
+        Parafac2Tensor
+            Parafac2Tensor with factor matrices and weigths extracted from a KruskalTensor
+        """
+        if parafac2_tensor_ok and len(kruskal_tensor) == 3:
+            return Parafac2Tensor(kruskal_tensor)
+        elif len(kruskal_tensor) == 3:
+            raise TypeError('Input is not a KruskalTensor. If it is a Parafac2Tensor, then the argument ``parafac2_tensor_ok`` must be True')
+        
+        weights, (A, B, C) = kruskal_tensor
+        Q, R = T.qr(B)
+        projections = [Q for _ in A]
+        B = R
+        return Parafac2Tensor((weights, (A, B, C), projections))
 
     def __getitem__(self, index):
         if index == 0:
@@ -110,7 +146,7 @@ def _validate_parafac2_tensor(parafac2_tensor):
     for i, factor in enumerate(factors[1:]):
         current_mode_size, current_rank = T.shape(factor)
         if current_rank != rank:
-            raise ValueError('All the factors of a PARAFAC2 tensor should have the same number of column.'
+            raise ValueError('All the factors of a PARAFAC2 tensor should have the same number of columns.'
                              'However, factors[0].shape[1]={} but factors[{}].shape[1]={}.'.format(
                                  rank, i, T.shape(factor)[1]))
 
@@ -182,16 +218,20 @@ def apply_parafac2_projections(parafac2_tensor):
     Returns
     -------
     (weights, factors) : ndarray, tuple
-        The d
+        A tensor decomposition on the form A [B_i] C such that
+        the :math:`X_{ijk}` is given by :math:`\sum_r A_{ir} [B_i]_{jr} C_{kr}`.
+
+        This is also equivalent to a coupled matrix factorisation, where
+        each matrix, :math:`X_i = C diag([a_{i1}, ..., a_{ir}] B_i)`.
+
+        The first element of factors is the A matrix, the second element is
+        a list of B-matrices and the third element is the C matrix.
     """
     _validate_parafac2_tensor(parafac2_tensor)
     weights, factors, projections = parafac2_tensor
 
-    evolving_factor = []
+    evolving_factor = [T.dot(projection, factors[1]) for projection in projections]
     
-    for projection in projections:
-        evolving_factor.append(T.dot(projection, factors[1]))
-
     return weights, (factors[0], evolving_factor, factors[2])
 
 
