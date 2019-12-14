@@ -22,7 +22,7 @@ def initialize_backend():
 
     1) retrieve the default backend name from the `TENSORLY_BACKEND` environment variable
         if not found, use _DEFAULT_BACKEND
-    2) sets the backend to the retrived backend name
+    2) sets the backend to the retrieved backend name
     """
     backend_name = os.environ.get('TENSORLY_BACKEND', _DEFAULT_BACKEND)
     if backend_name not in _KNOWN_BACKENDS:
@@ -39,7 +39,7 @@ def register_backend(backend_name):
         and adding the correspond `Backend` class in Backend._LOADED_BACKEND
         under the key `backend_name`
     
-    Parameterss
+    Parameters
     ----------
     backend_name : str, name of the backend to load
     

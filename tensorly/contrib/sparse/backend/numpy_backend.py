@@ -24,6 +24,31 @@ def is_sparse(x):
 class NumpySparseBackend(Backend):
     backend_name = 'numpy.sparse'
 
+    # moveaxis and shape are temporarily redefine to fix issue #131
+    # Using the builting functionsn raises a TypeError:
+    #     no implementation found for 'numpy.shape' on types
+    #     that implement __array_function__: [<class 'sparse._coo.core.COO'>]
+    def moveaxis(self, tensor, source, target):
+        axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
+        try:
+            axes.pop(source)
+        except IndexError:
+            raise ValueError('Source should verify 0 <= source < tensor.ndim'
+                             'Got %d' % source)
+        try:
+            axes.insert(target, source)
+        except IndexError:
+            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
+                             'Got %d' % target)
+        return self.transpose(tensor, axes)
+
+    # Temporary, see moveaxis above
+    @staticmethod
+    def shape(tensor):
+        return tensor.shape
+
     @staticmethod
     def context(tensor):
         return {'dtype': tensor.dtype}
@@ -88,7 +113,7 @@ class NumpySparseBackend(Backend):
         return x
 
     @staticmethod
-    def partial_svd(matrix, n_eigenvecs=None):
+    def partial_svd(matrix, n_eigenvecs=None, random_state=None, **kwargs):
         # Check that matrix is... a matrix!
         if matrix.ndim != 2:
             raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
@@ -125,6 +150,18 @@ class NumpySparseBackend(Backend):
             if np.issubdtype(matrix.dtype, np.complexfloating):
                 raise NotImplementedError("Complex dtypes")
             # We can perform a partial SVD
+            # construct np.random.RandomState for sampling a starting vector
+            if random_state is None:
+                # if random_state is not specified, do not initialize a starting vector
+                v0 = None
+            elif isinstance(random_state, int):
+                rns = np.random.RandomState(random_state)
+                # initilize with [-1, 1] as in ARPACK
+                v0 = rns.uniform(-1, 1, min_dim)
+            elif isinstance(random_state, np.random.RandomState):
+                # initilize with [-1, 1] as in ARPACK
+                v0 = random_state.uniform(-1, 1, min_dim)
+
             # First choose whether to use X * X.T or X.T *X
             if dim_1 < dim_2:
                 conj = matrix.T
@@ -135,7 +172,7 @@ class NumpySparseBackend(Backend):
                     # use dense form when sparse form will fail
                     S, U = scipy.linalg.eigh(xxT.toarray())
                 else:
-                    S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM')
+                    S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM', v0=v0)
                 S = np.sqrt(S)
                 V = conj.dot(U / S[None, :])
             else:
@@ -146,7 +183,7 @@ class NumpySparseBackend(Backend):
                     # use dense form when sparse form will fail
                     S, V = scipy.linalg.eigh(xTx.toarray())
                 else:
-                    S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM')
+                    S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM', v0=v0)
                 S = np.sqrt(S)
                 U = matrix.dot(V / S[None, :])
 
@@ -160,8 +197,8 @@ class NumpySparseBackend(Backend):
                 'truncated_svd': self.partial_svd}
 
 
-for name in ['int64', 'int32', 'float64', 'float32', 'moveaxis', 'transpose',
-             'reshape', 'ndim', 'shape', 'max', 'min', 'all', 'mean', 'sum',
+for name in ['int64', 'int32', 'float64', 'float32', 'transpose',
+             'reshape', 'ndim', 'max', 'min', 'all', 'mean', 'sum',
              'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
