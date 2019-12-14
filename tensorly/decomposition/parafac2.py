@@ -4,20 +4,21 @@ from tensorly.random import random_parafac2
 from tensorly import backend as T
 from . import parafac
 from ..parafac2_tensor import parafac2_to_slice, Parafac2Tensor, _validate_parafac2_tensor
-from ..kruskal_tensor import kruskal_normalise
+from ..kruskal_tensor import kruskal_normalise, KruskalTensor
+from ..base import unfold
 
 # Authors: Marie Roald
 #          Yngve Mardal Moe
 
 
-def initialize_decomposition(tensor_slices, rank, init='random', random_state=None):
+def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd', random_state=None):
     r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices
 
     Parameters
     ----------
     tensor_slices : Iterable of ndarray
     rank : int
-    init : {'random', Parafac2Tensor}, optional
+    init : {'random', 'svd', KruskalTensor, Parafac2Tensor}, optional
     random_state : `np.random.RandomState`
 
     Returns
@@ -31,17 +32,47 @@ def initialize_decomposition(tensor_slices, rank, init='random', random_state=No
     
     if init == 'random':
         return random_parafac2(shapes, rank, full=False, random_state=random_state)
-
-    elif isinstance(init, (tuple, list, Parafac2Tensor)):
-        # TODO: Test this
+    elif init == 'svd':
         try:
-            return Parafac2Tensor(init)
+            svd_fun = tl.SVD_FUNS[svd]
+        except KeyError:
+            message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
+                    svd, tl.get_backend(), tl.SVD_FUNS)
+            raise ValueError(message)
+        
+        padded_tensor = _pad_by_zeros(tensor_slices)
+        A = svd_fun(unfold(padded_tensor, 0), n_eigenvecs=rank)[0]
+        C = svd_fun(unfold(padded_tensor, 2), n_eigenvecs=rank)[0]
+        B = T.eye(rank)
+        projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
+        return Parafac2Tensor((None, (A, B, C), projections))
+
+    elif isinstance(init, (tuple, list, Parafac2Tensor, KruskalTensor)):
+        try:
+            decomposition = Parafac2Tensor.from_kruskaltensor(init, parafac2_tensor_ok=True)
         except ValueError:
             raise ValueError(
                 'If initialization method is a mapping, then it must '
                 'be possible to convert it to a Parafac2Tensor instance'
             )
+        if decomposition.rank != rank:
+            raise ValueError('Cannot init with a decomposition of different rank')
+        return decomposition
     raise ValueError('Initialization method "{}" not recognized'.format(init))
+
+
+def _pad_by_zeros(tensor_slices):
+    """Return zero-padded full tensor.
+    """
+    I = len(tensor_slices)
+    J = max(tensor_slice.shape[0] for tensor_slice in tensor_slices)
+    K = tensor_slices[0].shape[1]
+    unfolded = T.zeros((I, J, K))
+    for i, tensor_slice in enumerate(tensor_slices):
+        J_i = len(tensor_slice)
+        unfolded[i, :J_i] = tensor_slice
+    
+    return unfolded
 
 
 def _compute_projections(tensor_slices, factors, svd_fun, out=None):
@@ -88,7 +119,101 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
 
 
 def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, random_state=None, verbose=False, return_errors=False, mask=None, n_iter_parafac=5):
+             tol=1e-8, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5):
+    r"""PARAFAC2 decomposition [1]_ via alternating least squares (ALS)
+
+    Computes a rank-`rank` PARAFAC2 decomposition of the tensor defined by `tensor_slices`. 
+    The decomposition is on the form (A [B_i] C) such that the i-th frontal slice,
+    :math:`X_i`, of :math:`X` is given by
+
+    .. math::
+    
+        X_i = B_i diag(a_i) C^T,
+    
+    where :math:`diag(a_i)` is the diagonal matrix whose nonzero entries are equal to
+    the :math:`i`-th row of the :math:`I \times R` factor matrix :math:`A`, :math:`B_i` 
+    is a :math:`J_i \times R` factor matrix such that the cross product matrix :math:`B_{i_1}^T B_{i_1}`
+    is constant for all :math:`i`, and :math:`C` is a :math:`K \times R` factor matrix. 
+    To compute this decomposition, we reformulate the expression for :math:`B_i` such that
+
+    .. math::
+
+        B_i = P_i B,
+
+    where :math:`P_i` is a :math:`J_i \times R` orthogonal matrix and :math:`B` is a
+    :math:`R \times R` matrix.
+
+    An alternative formulation of the PARAFAC2 decomposition is that the tensor element
+    :math:`X_{ijk}` is given by
+
+    .. math::
+
+        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
+    
+    with the same constraints hold for :math:`B_i` as above.
+     
+
+    Parameters
+    ----------
+    tensor_slices : ndarray or list of ndarrays
+        Either a third order tensor or a list of second order tensors that may have different number of rows.
+    rank  : int
+        Number of components.
+    n_iter_max : int
+        Maximum number of iteration
+    init : {'svd', 'random', KruskalTensor, Parafac2Tensor}
+        Type of factor matrix initialization. See `initialize_factors`.
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+        of shape (rank, ), which will contain the norms of the factors 
+    tol : float, optional
+        (Default: 1e-8) Relative reconstruction error tolerance. The
+        algorithm is considered to have found the global minimum when the
+        reconstruction error is less than `tol`.
+    random_state : {None, int, np.random.RandomState}
+    verbose : int, optional
+        Level of verbosity
+    return_errors : bool, optional
+        Activate return of iteration errors
+    n_iter_parafac: int, optional
+        Number of PARAFAC iterations to perform for each PARAFAC2 iteration
+
+    Returns
+    -------
+    Parafac2Tensor : (weight, factors, projection_matrices)
+        * weights : 1D array of shape (rank, )
+            all ones if normalize_factors is False (default), 
+            weights of the (normalized) factors otherwise
+        * factors : List of factors of the CP decomposition element `i` is of shape
+            (tensor.shape[i], rank)
+        * projection_matrices : List of projection matrices used to create evolving
+            factors.
+         
+    KruskalTensor : (weight, factors)
+        * weights : 1D array of shape (rank, )
+            all ones if normalize_factors is False (default), 
+            weights of the (normalized) factors otherwise
+        * factors : List of factors of the CP decomposition element `i` is of shape
+            (tensor.shape[i], rank)
+
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+    .. [1] Kiers, H.A.L., ten Berge, J.M.F. and Bro, R. (1999), 
+            PARAFAC2—Part I. A direct fitting algorithm for the PARAFAC2 model. 
+            J. Chemometrics, 13: 275-294.
+
+    Notes
+    -----
+    This formulation of the PARAFAC2 decomposition is slightly different from the one in [1]_.
+    The difference lies in that here, the second mode changes over the first mode, whereas in
+    [1]_, the second mode changes over the third mode. We made this change since that means
+    that the function accept both lists of matrices and a single nd-array as input without
+    any reordering of the modes.
+    """
     epsilon = 10e-12
 
     weights, factors, projections = initialize_decomposition(tensor_slices, rank, random_state=random_state)
@@ -109,12 +234,13 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         projected_tensor = _project_tensor_slices(tensor_slices, projections, out=projected_tensor)
         _, factors = parafac(projected_tensor, rank, n_iter_max=n_iter_parafac, init=(weights, factors),
                              svd=svd, orthogonalise=False, verbose=verbose, return_errors=False,
-                             normalize_factors=False, mask=None)
-        # There are some issues with normalize_factors=True...
-        for factor in factors:
-            norms = T.norm(factor, axis=0)
-            weights *= norms
-            factor /= norms + epsilon
+                             normalize_factors=False, mask=None, random_state=random_state)
+
+        if normalize_factors:
+            for factor in factors:
+                norms = T.norm(factor, axis=0)
+                weights *= norms
+                factor /= norms + epsilon
         
 
         if tol:
@@ -123,9 +249,6 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
 
             if iteration >= 1:
                 if verbose:
-                    #print('reconstruction error={}, variation={}.'.format(
-                    #    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
-
                     print('PARAFAC2 reconstruction error={}, variation={}.'.format(
                         rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
@@ -135,7 +258,6 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
                     break       
             else:
                 if verbose:
-                    #print('reconstruction error={}'.format(rec_errors[-1]))
                     print('PARAFAC2 reconstruction error={}'.format(rec_errors[-1]))
 
     parafac2_tensor = Parafac2Tensor((weights, factors, projections))
