@@ -81,12 +81,31 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
+def sparsify_tensor(tensor, card):
+    """Zeros out all elements in the `tensor` except `card` elements with maximum absolute values. 
+    
+    Parameters
+    ----------
+    tensor : ndarray
+    card : int
+        Desired number of non-zero elements in the `tensor`
+        
+    Returns
+    -------
+    ndarray of shape tensor.shape
+    """
+    if card >= np.prod(tensor.shape):
+        return tensor
+    bound = np.sort(np.abs(tensor.flatten()))[-card]
+    tensor[np.abs(tensor) < bound] = 0
+    return tensor
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\
             tol=1e-8, random_state=None,\
             verbose=0, return_errors=False,\
             non_negative=False, mask=None,\
+            sparsity = None,\
             cvg_criterion = 'abs_rec_error'):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
@@ -126,6 +145,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
        Stopping criterion for ALS, works if `tol` is not None. 
        If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
+    sparsity : float or int
+        If `sparsity` is not None, we approximate tensor as a sum of dense_component and sparse_component, where dense_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
 
     Returns
     -------
@@ -135,6 +156,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             weights of the (normalized) factors otherwise
         * factors : List of factors of the CP decomposition element `i` is of shape
             (tensor.shape[i], rank)
+        * sparse_component : nD array of shape tensor.shape. Returns only if `sparsity` is not None.
 
     errors : list
         A list of reconstruction errors at each iteration of the algorithms.
@@ -162,6 +184,13 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     norm_tensor = tl.norm(tensor, 2)
     weights = tl.ones(rank, **tl.context(tensor))
 
+    if sparsity:
+        sparse_component = tl.zeros_like(tensor)
+        if isinstance(sparsity, float):
+            sparsity = int(sparsity * np.prod(tensor.shape))
+        else:
+            sparsity = int(sparsity)
+            
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
@@ -211,13 +240,20 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             factors[mode] = factor
 
         if tol:
-            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-            factors_norm = kruskal_norm((weights, factors))
+            if sparsity:
+                dense_component = kruskal_to_tensor((weights, factors))
+                sparse_component = sparsify_tensor(tensor - dense_component, sparsity)
+                
+                unnorml_rec_error = tl.norm(tensor - dense_component - sparse_component, 2)
+            else:
+                # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+                factors_norm = kruskal_norm((weights, factors))
 
-            # mttkrp and factor for the last mode. This is equivalent to the
-            # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
-            unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
+                # mttkrp and factor for the last mode. This is equivalent to the
+                # inner product <tensor, factorization>
+                iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
+                unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
+                
             rec_error = unnorml_rec_error / norm_tensor
             rec_errors.append(rec_error)
 
@@ -244,11 +280,18 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                     print('reconstruction error={}'.format(rec_errors[-1]))
 
     kruskal_tensor = KruskalTensor((weights, factors))
+    
+    if sparsity:
+        sparse_component = sparsify_tensor(tensor -\
+                                           kruskal_to_tensor((weights, factors)),\
+                                           sparsity)
+        kruskal_tensor = (kruskal_tensor, sparse_component)
 
     if return_errors:
         return kruskal_tensor, rec_errors
     else:
         return kruskal_tensor
+    
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                          tol=10e-7, random_state=None, verbose=0):
