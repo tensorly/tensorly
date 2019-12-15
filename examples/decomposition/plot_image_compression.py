@@ -8,7 +8,8 @@ Example on how to use :func:`tensorly.decomposition.parafac`and :func:`tensorly.
 import matplotlib.pyplot as plt
 import tensorly as tl
 import numpy as np
-from scipy.misc import face, imresize
+from scipy.misc import face
+from scipy.ndimage import zoom
 from tensorly.decomposition import parafac
 from tensorly.decomposition import tucker
 from math import ceil
@@ -16,11 +17,12 @@ from math import ceil
 
 random_state = 12345
 
-image = tl.tensor(imresize(face(), 0.3), dtype='float64')
+image = face()
+image = tl.tensor(zoom(face(), (0.3, 0.3, 1)), dtype='float64')
 
 def to_image(tensor):
     """A convenience function to convert from a float dtype back to uint8"""
-    im = tl.to_numpy(tensor)
+    im = tl.to_numpy(tensor).squeeze()
     im -= im.min()
     im /= im.max()
     im *= 255
