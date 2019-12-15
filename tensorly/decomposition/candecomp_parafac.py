@@ -146,7 +146,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
        If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
     sparsity : float or int
-        If `sparsity` is not None, we approximate tensor as a sum of dense_component and sparse_component, where dense_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+        If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
 
     Returns
     -------
@@ -241,10 +241,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
         if tol:
             if sparsity:
-                dense_component = kruskal_to_tensor((weights, factors))
-                sparse_component = sparsify_tensor(tensor - dense_component, sparsity)
+                low_rank_component = kruskal_to_tensor((weights, factors))
+                sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
                 
-                unnorml_rec_error = tl.norm(tensor - dense_component - sparse_component, 2)
+                unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
             else:
                 # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
                 factors_norm = kruskal_norm((weights, factors))
