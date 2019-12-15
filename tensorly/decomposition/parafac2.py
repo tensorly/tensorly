@@ -123,7 +123,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     r"""PARAFAC2 decomposition [1]_ via alternating least squares (ALS)
 
     Computes a rank-`rank` PARAFAC2 decomposition of the tensor defined by `tensor_slices`. 
-    The decomposition is on the form (A [B_i] C) such that the i-th frontal slice,
+    The decomposition is on the form :math:`(A [B_i] C)` such that the i-th frontal slice,
     :math:`X_i`, of :math:`X` is given by
 
     .. math::
@@ -190,13 +190,6 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         * projection_matrices : List of projection matrices used to create evolving
             factors.
          
-    KruskalTensor : (weight, factors)
-        * weights : 1D array of shape (rank, )
-            all ones if normalize_factors is False (default), 
-            weights of the (normalized) factors otherwise
-        * factors : List of factors of the CP decomposition element `i` is of shape
-            (tensor.shape[i], rank)
-
     errors : list
         A list of reconstruction errors at each iteration of the algorithms.
 
