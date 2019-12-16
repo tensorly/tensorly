@@ -22,7 +22,7 @@ image = tl.tensor(zoom(face(), (0.3, 0.3, 1)), dtype='float64')
 
 def to_image(tensor):
     """A convenience function to convert from a float dtype back to uint8"""
-    im = tl.to_numpy(tensor).squeeze()
+    im = tl.to_numpy(tensor)
     im -= im.min()
     im /= im.max()
     im *= 255
