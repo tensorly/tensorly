@@ -29,18 +29,31 @@ def test_validate_parafac2_tensor():
                     rank, true_rank))
 
     # One of the factors has the wrong rank
-    factors[0], copy = tl.tensor(rng.random_sample((4, 4))), factors[0]
-    with assert_raises(ValueError):
-        _validate_parafac2_tensor((weights, factors, projections))
-    
+    for mode in range(3):
+        false_shape = (len(factors[mode]), true_rank+1)
+        factors[mode], copy = tl.tensor(rng.random_sample(false_shape)), factors[mode]
+        with assert_raises(ValueError):
+            _validate_parafac2_tensor((weights, factors, projections))
+        
+        factors[mode] = copy
+
     # Not three factor matrices
-    factors[0] = copy
     with assert_raises(ValueError):
         _validate_parafac2_tensor((weights, factors[1:], projections))
 
     # Not enough projections
     with assert_raises(ValueError):
         _validate_parafac2_tensor((weights, factors, projections[1:]))
+    
+    # Wrong number of weights
+    with assert_raises(ValueError):
+        _validate_parafac2_tensor((weights[1:], factors, projections))
+    
+    # The projections aren't orthogonal
+    false_projections = [rng.random_sample(tl.shape(P)) for P in projections]
+    with assert_raises(ValueError):
+        _validate_parafac2_tensor((weights, factors, false_projections))
+
 
 
 @pytest.mark.parametrize('copy', [True, False])
@@ -127,11 +140,11 @@ def test_parafac2_to_slices():
 
 
 def test_parafac2_to_unfolded():
-    """Test for tucker_to_unfolded
+    """Test for parafac2_to_unfolded
 
     Notes
     -----
-    Assumes that tucker_to_tensor is properly tested
+    Assumes that parafac2_to_tensor is properly tested
     """
     rng = check_random_state(12345)
     true_shape = [(4, 5)]*3
@@ -143,11 +156,11 @@ def test_parafac2_to_unfolded():
 
 
 def test_parafac2_to_vec():
-    """Test for tucker_to_vec
+    """Test for parafac2_to_vec
 
     Notes
     -----
-    Assumes that tucker_to_tensor works correctly
+    Assumes that parafac2_to_tensor works correctly
     """
     rng = check_random_state(12345)
     true_shape = [(4, 5)]*3
