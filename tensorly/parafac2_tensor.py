@@ -105,6 +105,11 @@ def _validate_parafac2_tensor(parafac2_tensor):
         raise ValueError('A PARAFAC2 tensor should be composed of exactly three factors.'
                          'However, {} factors was given.'.format(len(factors)))
 
+    if len(projections) != factors[0].shape[0]:
+        raise ValueError('A PARAFAC2 tensor should have one projection matrix for each horisontal'
+                         ' slice. However, {} projection matrices was given and the first mode has'
+                         'length {}'.format(len(projections), factors[0].shape[0]))
+
     rank = int(T.shape(factors[0])[1])
 
     shape = []
@@ -168,7 +173,7 @@ def parafac2_normalise(parafac2_tensor, copy=False):
     Parafac2Tensor = (normalisation_weights, normalised_factors, normalised_projections)
     """
     # allocate variables for weights, and normalized factors
-    _, rank, _ = _validate_parafac2_tensor(parafac2_tensor)
+    _, rank = _validate_parafac2_tensor(parafac2_tensor)
     weights, factors, projections = parafac2_tensor
     
     if (not copy) and (weights is None):
@@ -182,9 +187,8 @@ def parafac2_normalise(parafac2_tensor, copy=False):
         if weights is not None:
             factors[0] *= weights
         weights = T.ones(rank, **T.context(factors[0]))
-    else:
-        factors[0] *= weights
-        weights = 0
+    elif weights is None:
+        weights = 1
         
     for factor in factors:
         scales = T.norm(factor, axis=0)
@@ -220,25 +224,6 @@ def apply_parafac2_projections(parafac2_tensor):
     evolving_factor = [T.dot(projection, factors[1]) for projection in projections]
     
     return weights, (factors[0], evolving_factor, factors[2])
-
-
-def _get_projected_tensor_slice(tensor_slice, projection):
-    """Get one slice of the projected tensor used for the PARAFAC step of a PARAFAC2 decompostion."""
-    return T.dot(projection.T, tensor_slice)
-
-
-def _get_projected_tensor(tensor, projections, out=None):
-    """Get the projected tensor used for the PARAFAC step of a PARAFAC2 decompostion."""
-    if out is None:
-        I = len(tensor)
-        J = projections[0].shape[1]
-        K = tensor[0].shape[1]
-        out = T.zeros((I, J, K), **T.context(tensor[0]))
-
-    for i, (tensor_slice, projection) in enumerate(zip(tensor, projections)):
-        out[i] = _get_projected_tensor_slice(tensor_slice, projection)
-
-    return out
 
 
 def parafac2_to_slice(parafac2_tensor, slice_idx, validate=True):
