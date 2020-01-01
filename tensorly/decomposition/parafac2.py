@@ -227,7 +227,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         projected_tensor = _project_tensor_slices(tensor_slices, projections, out=projected_tensor)
         _, factors = parafac(projected_tensor, rank, n_iter_max=n_iter_parafac, init=(weights, factors),
                              svd=svd, orthogonalise=False, verbose=verbose, return_errors=False,
-                             normalize_factors=False, mask=None, random_state=random_state)
+                             normalize_factors=False, mask=None, random_state=random_state, tol=1e-100)
 
         if normalize_factors:
             for factor in factors:
