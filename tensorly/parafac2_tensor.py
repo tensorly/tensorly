@@ -135,6 +135,7 @@ def _validate_parafac2_tensor(parafac2_tensor):
         shape.append((current_mode_size, *[f.shape[0] for f in factors[2:]]))  # Tuple unpacking to possibly support higher order PARAFAC2 tensors in the future
 
     
+    # Skip first factor matrix since the rank is extracted from it.
     for i, factor in enumerate(factors[1:]):
         current_mode_size, current_rank = T.shape(factor)
         if current_rank != rank:
@@ -187,8 +188,6 @@ def parafac2_normalise(parafac2_tensor, copy=False):
         if weights is not None:
             factors[0] *= weights
         weights = T.ones(rank, **T.context(factors[0]))
-    elif weights is None:
-        weights = 1
         
     for factor in factors:
         scales = T.norm(factor, axis=0)
