@@ -82,8 +82,10 @@ def _compute_projections(tensor_slices, factors, svd_fun, out=None):
         out = [T.zeros((tensor_slice.shape[0], C.shape[1]), **T.context(tensor_slice)) for tensor_slice in tensor_slices]
 
     for projection, a_i, tensor_slice in zip(out, A, tensor_slices):
-        U, S, Vh = svd_fun(B@(a_i*C).T@tensor_slice.T, n_eigenvecs=A.shape[1])
-        projection[...] = Vh.T@U.T
+        lhs = B@T.transpose(a_i*C)
+        rhs = T.transpose(tensor_slice)
+        U, S, Vh = svd_fun(lhs@rhs, n_eigenvecs=A.shape[1])
+        projection[...] = T.transpose(U@Vh)
     
     return out
 

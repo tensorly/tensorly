@@ -123,7 +123,7 @@ def _validate_parafac2_tensor(parafac2_tensor):
                 )
             )
 
-        inner_product = projection.T@projection
+        inner_product = T.transpose(projection)@projection
         if T.norm(inner_product - T.eye(rank)) > 1e-10:
             raise ValueError(
                 'All the projection matrices must be orthonormal, that is, P.T@P = I. '

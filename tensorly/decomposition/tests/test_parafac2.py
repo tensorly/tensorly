@@ -18,7 +18,7 @@ def corrcoef(A, B):
     As = Ac/T.norm(Ac, axis=0)
     Bs = Bc/T.norm(Bc, axis=0)
 
-    return T.dot(As.T, Bs)
+    return T.dot(T.transpose(As), Bs)
 
 
 def best_correlation(A, B):
