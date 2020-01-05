@@ -98,7 +98,7 @@ def _project_tensor_slices(tensor_slices, projections, out=None):
         out = T.zeros((num_slices, rank, num_cols), **T.context(tensor_slices[0]))
 
     for projected_tensor_slice, tensor_slice, projection in zip(out, tensor_slices, projections):
-        projected_tensor_slice[...] = T.dot(projection.T, tensor_slice)
+        projected_tensor_slice[...] = T.dot(T.transpose(projection), tensor_slice)
     return out
 
 
