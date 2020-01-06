@@ -121,7 +121,7 @@ class PyTorchBackend(Backend):
 
         """
         if self.ndim(matrix2) < 2:
-            # Currently, gesv doesn't support vectors for matrix2
+            # Currently, solve doesn't support vectors for matrix2
             solution, _ = torch.solve(matrix2.unsqueeze(1), matrix1)
         else:
             solution, _ = torch.solve(matrix2, matrix1)

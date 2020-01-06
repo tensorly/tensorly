@@ -175,7 +175,7 @@ _FUN_NAMES = [
     (tf.eye, 'eye'),
     (tf.reshape, 'reshape'),
     (tf.transpose, 'transpose'),
-    (tf.compat.v1.where, 'where'),
+    (tf.where, 'where'),
     (tf.sign, 'sign'),
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
