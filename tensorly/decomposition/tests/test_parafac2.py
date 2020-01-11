@@ -92,12 +92,11 @@ def test_parafac2_slice_and_tensor_input():
     tensor_rec = parafac2(tensor, rank, random_state=1234, normalize_factors=False)
     tensor_rec_tensor = parafac2_to_tensor(tensor_rec)
 
-    assert np.allclose(slice_rec_tensor, tensor_rec_tensor)
+    assert tl.max(tl.abs(slice_rec_tensor - tensor_rec_tensor)) < 1e-8
 
 
 def test_parafac2_normalize_factors():
     rng = check_random_state(1234)
-    tol_norm_2 = 10e-2
     rank = 6
 
     random_parafac2_tensor = random_parafac2(
@@ -109,7 +108,7 @@ def test_parafac2_normalize_factors():
     slices = parafac2_to_tensor(random_parafac2_tensor)
     normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
     assert normalized_rec.weights[0] > 1
-    assert np.allclose(T.norm(normalized_rec.factors[0], axis=0), 1)
+    assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-8
     
     unnormalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=False)
     assert unnormalized_rec.weights[0] == 1
@@ -162,6 +161,6 @@ def test_parafac2_to_tensor():
                 for r in range(rank):
                     tensor_manual[i, j, k] += factors[0][i][r]*Bi[j][r]*factors[2][k][r]
 
-    assert_(np.allclose(constructed_tensor, tensor_manual))
+    assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-8)
     
     
