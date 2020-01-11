@@ -108,7 +108,7 @@ def test_parafac2_normalize_factors():
     slices = parafac2_to_tensor(random_parafac2_tensor)
     normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
     assert normalized_rec.weights[0] > 1
-    assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-8
+    assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-5
     
     unnormalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=False)
     assert unnormalized_rec.weights[0] == 1
