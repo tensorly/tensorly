@@ -215,6 +215,7 @@ solve = dispatch(Backend.solve)
 qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
+pinv = dispatch(Backend.pinv)
 
 
 # Initialise the backend to the default one
