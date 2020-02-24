@@ -736,3 +736,27 @@ class Backend(object):
             S = self.tensor(S, **ctx)
             V = self.tensor(V, **ctx)
         return U, S, V
+
+    def pinv(self, a):
+        """Pseudo inverse of a matrix.
+
+        Parameters
+        ----------
+        a : matrix
+            The matrix to compute the pseudo inverse of.
+
+        Returns
+        -------
+        matrix
+        """
+
+        m, n = self.shape(a)
+        a_tran = self.reshape(a, (n,m))
+
+        if m > n:
+            return  self.dot(self.solve(self.dot(a_tran, a), self.eye(n)), a_tran)
+        elif m < n:
+            return self.dot(a_tran, self.solve(self.dot(a_tran, a), self.eye(m)))
+        else:
+            return self.solve(a, self.eye(m))
+        
