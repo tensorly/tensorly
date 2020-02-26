@@ -18,10 +18,6 @@ class MyTestCase(unittest.TestCase):
     B = np.random.randn(J, R)
     C = np.random.randn(K, R)
     V = np.random.randn(M, R)
-    A = cmtf_als.rescale_to_unit_frobenius(A)
-    B = cmtf_als.rescale_to_unit_frobenius(B)
-    C = cmtf_als.rescale_to_unit_frobenius(C)
-    V = cmtf_als.rescale_to_unit_frobenius(V)
 
     N_tens = np.random.randn(I, J, K)
     N = np.random.randn(I, M)
