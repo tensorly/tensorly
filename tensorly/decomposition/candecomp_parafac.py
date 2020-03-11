@@ -333,16 +333,6 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
             rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod)) / norm_tensor
             rec_errors.append(rec_error)
-
-            # if iteration >= 1:
-            #     if verbose:
-            #         print('reconstruction error={}, variation={}.'.format(
-            #             rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
-
-            #     if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
-            #         if verbose:
-            #             print('converged in {} iterations.'.format(iteration))
-            #         break 
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
                 
