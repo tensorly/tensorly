@@ -43,7 +43,7 @@ def test_parafac():
             'abs Reconstruction error for orthogonalise=True too high')
     
     
-    rec_sparse, sparse_component = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=10e-5, sparsity = 0.99)
+    rec_sparse, sparse_component = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=10e-5, sparsity = 0.9)
     rec_sparse = kruskal_to_tensor(rec_sparse) + sparse_component
     tol_norm_2 = 10e-2
     tol_max_abs = 10e-2
