@@ -95,10 +95,10 @@ def sparsify_tensor(tensor, card):
     -------
     ndarray of shape tensor.shape
     """
-    if card >= np.prod(tensor.shape):
+    if card >= tl.prod(tl.tensor(tensor.shape)):
         return tensor
-    bound = np.sort(np.abs(tensor.flatten()))[-card]
-    tensor[np.abs(tensor) < bound] = 0
+    bound = tl.sort(tl.abs(tensor), axis = None)[-card]
+    tensor[tl.abs(tensor) < bound] = 0
     return tensor
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\

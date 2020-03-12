@@ -72,6 +72,14 @@ class NumpyBackend(Backend):
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.partial_svd}
+    
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if descending:
+            raise NotImplementedError
+        else:
+            return np.sort(tensor, axis=axis)
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
@@ -82,3 +90,6 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
 
 for name in ['solve', 'qr']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
+    
+    
+
