@@ -42,13 +42,14 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
     """
     rng = check_random_state(random_state)
+    eps = tl.eps(tensor.dtype)
 
     if init == 'random':
         factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
         if non_negative:
             factors = [tl.abs(f) for f in factors]
         if normalize_factors: 
-            factors = [f/(tl.reshape(tl.norm(f, axis=0), (1, -1)) + 1e-12) for f in factors]
+            factors = [f/(tl.reshape(tl.norm(f, axis=0), (1, -1)) + eps) for f in factors]
         return factors
 
     elif init == 'svd':
@@ -75,7 +76,7 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
             if non_negative:
                 factor = tl.abs(factor)
             if normalize_factors:
-                factor = factor / (tl.reshape(tl.norm(factor, axis=0), (1, -1)) + 1e-12)
+                factor = factor / (tl.reshape(tl.norm(factor, axis=0), (1, -1)) + eps)
             factors.append(factor)
         return factors
 
@@ -135,8 +136,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         Level of verbosity
     return_errors : bool, optional
         Activate return of iteration errors
-    non_negative : bool, optional
-        Perform non_negative PARAFAC. See :func:`non_negative_parafac`.
     mask : ndarray
         array of booleans with the same shape as ``tensor`` should be 0 where
         the values are missing and 1 everywhere else. Note:  if tensor is
@@ -170,7 +169,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
             Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
 
-
     """
     epsilon = 10e-12
 
@@ -179,11 +177,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
     factors = initialize_factors(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
-                                 non_negative=non_negative,
                                  normalize_factors=normalize_factors)
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
     weights = tl.ones(rank, **tl.context(tensor))
+    Id = tl.eye(rank)*l2_reg
 
     if sparsity:
         sparse_component = tl.zeros_like(tensor)
@@ -201,36 +199,20 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         for mode in range(tl.ndim(tensor)):
             if verbose > 1:
                 print("Mode", mode, "of", tl.ndim(tensor))
-            if non_negative:
-                accum = 1
-                # khatri_rao(factors).tl.dot(khatri_rao(factors))
-                # simplifies to multiplications
-                sub_indices = [i for i in range(len(factors)) if i != mode]
-                for i, e in enumerate(sub_indices):
-                    if i:
-                        accum *= tl.dot(tl.transpose(factors[e]), factors[e])
-                    else:
-                        accum = tl.dot(tl.transpose(factors[e]), factors[e])
 
             pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.conj(tl.transpose(factor)), factor)
+            pseudo_inverse += Id
 
             if mask is not None:
                 tensor = tensor*mask + tl.kruskal_to_tensor((None, factors), mask=1-mask)
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+            factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
+                                    tl.transpose(mttkrp)))
 
-            if non_negative:
-                numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
-                denominator = tl.dot(factors[mode], accum)
-                denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
-                factor = factors[mode] * numerator / denominator
-            else:
-                factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
-                                      tl.transpose(mttkrp)))
-            
             if normalize_factors:
                 weights = tl.norm(factor, order=2, axis=0)
                 weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype), 
@@ -295,7 +277,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
-                         tol=10e-7, random_state=None, verbose=0):
+                         tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
+                         return_errors=False, mask=None, orthogonalise=False, cvg_criterion='abs_rec_error'):
     """
     Non-negative CP decomposition
 
@@ -333,9 +316,94 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
        In Proceedings of the International Conference on Machine Learning (ICML),
        pp 792-799, ICML, 2005
     """
-    return parafac(tensor, rank, n_iter_max=n_iter_max, init=init, svd=svd,
-                   tol=tol, random_state=random_state, verbose=verbose, non_negative=True)
+    epsilon = 10e-12
 
+    if orthogonalise and not isinstance(orthogonalise, int):
+        orthogonalise = n_iter_max
+
+    factors = initialize_factors(tensor, rank, init=init, svd=svd,
+                                 random_state=random_state,
+                                 non_negative=True,
+                                 normalize_factors=normalize_factors)
+    rec_errors = []
+    norm_tensor = tl.norm(tensor, 2)
+    weights = tl.ones(rank, **tl.context(tensor))
+
+    for iteration in range(n_iter_max):
+        if orthogonalise and iteration <= orthogonalise:
+            factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
+
+        if verbose > 1:
+            print("Starting iteration", iteration + 1)
+        for mode in range(tl.ndim(tensor)):
+            if verbose > 1:
+                print("Mode", mode, "of", tl.ndim(tensor))
+
+            accum = 1
+            # khatri_rao(factors).tl.dot(khatri_rao(factors))
+            # simplifies to multiplications
+            sub_indices = [i for i in range(len(factors)) if i != mode]
+            for i, e in enumerate(sub_indices):
+                if i:
+                    accum *= tl.dot(tl.transpose(factors[e]), factors[e])
+                else:
+                    accum = tl.dot(tl.transpose(factors[e]), factors[e])
+
+            if mask is not None:
+                tensor = tensor*mask + tl.kruskal_to_tensor((None, factors), mask=1-mask)
+
+            mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+
+            numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
+            denominator = tl.dot(factors[mode], accum)
+            denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
+            factor = factors[mode] * numerator / denominator
+            
+            if normalize_factors:
+                weights = tl.norm(factor, order=2, axis=0)
+                weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype), 
+                                   tl.ones(tl.shape(weights), **tl.context(factors[0])),
+                                   weights)
+                factor = factor/(tl.reshape(weights, (1, -1)))
+
+            factors[mode] = factor
+
+        if tol:
+            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+            factors_norm = kruskal_norm((weights, factors))
+
+            # mttkrp and factor for the last mode. This is equivalent to the
+            # inner product <tensor, factorization>
+            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
+            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod)) / norm_tensor
+            rec_errors.append(rec_error)
+            if iteration >= 1:
+                rec_error_decrease = rec_errors[-2] - rec_errors[-1]
+                
+                if verbose:
+                    print("iteration {},  reconstraction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
+
+                if cvg_criterion == 'abs_rec_error':
+                    stop_flag = abs(rec_error_decrease) < tol
+                elif cvg_criterion == 'rec_error':
+                    stop_flag =  rec_error_decrease < tol
+                else:
+                    raise TypeError("Unknown convergence criterion")
+                
+                if stop_flag:
+                    if verbose:
+                        print("PARAFAC converged after {} iterations".format(iteration))
+                    break 
+            else:
+                if verbose:
+                    print('reconstruction error={}'.format(rec_errors[-1]))
+
+    kruskal_tensor = KruskalTensor((weights, factors))
+
+    if return_errors:
+        return kruskal_tensor, rec_errors
+    else:
+        return kruskal_tensor
 
 def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
                       return_sampled_rows=False, random_state=None):

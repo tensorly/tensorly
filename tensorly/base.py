@@ -79,7 +79,7 @@ def fold(unfolded_tensor, mode, shape):
 def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False):
     """Partially unfolds a tensor while ignoring the specified number of dimensions at the beginning and the end.                                       
 
-        For instance, if the first dimension of the tensor is the number of samples, to unfold each sample, you would
+        For instance, if the first dimension of the tensor is the number of samples, to unfold each sample, 
         set skip_begin=1.
         This would, for each i in ``range(tensor.shape[0])``, unfold ``tensor[i, ...]``.
 
