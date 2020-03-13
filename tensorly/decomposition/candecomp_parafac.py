@@ -98,8 +98,15 @@ def sparsify_tensor(tensor, card):
     if card >= tl.prod(tl.tensor(tensor.shape)):
         return tensor
     bound = tl.sort(tl.abs(tensor), axis = None)[-card]
-    tensor[tl.abs(tensor) < bound] = 0
-    return tensor
+    
+## ND boolean slice doesn't work for mxnet
+#     if tl.get_backend() != 'mxnet':
+#         tensor[tl.abs(tensor) < bound] = 0
+#         return tensor
+#     else:
+#         return tensor * (tl.abs(tensor) >= bound)
+
+    return tensor * tl.tensor(tl.abs(tensor) >= bound)
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\

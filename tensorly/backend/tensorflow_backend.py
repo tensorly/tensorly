@@ -161,6 +161,20 @@ class TensorflowBackend(Backend):
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.truncated_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if descending:
+            direction = 'DESCENDING'
+        else:
+            direction = 'ASCENDING'
+            
+        if axis is None:
+            tensor = tf.reshape(tensor, [-1])
+            axis = -1
+
+        return tf.sort(tensor, axis=axis, direction = direction)
+    
 
 _FUN_NAMES = [
     # source_fun, target_fun

@@ -77,7 +77,7 @@ class NumpyBackend(Backend):
     @staticmethod
     def sort(tensor, axis, descending = False):
         if descending:
-            raise NotImplementedError
+            return np.flip(np.sort(tensor, axis=axis), axis = axis)
         else:
             return np.sort(tensor, axis=axis)
 

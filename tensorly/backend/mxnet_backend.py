@@ -285,6 +285,16 @@ class MxnetBackend(Backend):
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
                 'symeig_svd': self.symeig_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if descending:
+            is_ascend = False
+        else:
+            is_ascend = True
+
+        return mx.ndarray.sort(tensor, axis=axis, is_ascend = is_ascend)
+    
 
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
