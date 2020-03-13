@@ -106,7 +106,7 @@ def sparsify_tensor(tensor, card):
 #     else:
 #         return tensor * (tl.abs(tensor) >= bound)
 
-    return tensor * tl.tensor(tl.abs(tensor) >= bound)
+    return tensor * tl.tensor(tl.abs(tensor) >= bound, dtype=tl.float32)
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\
