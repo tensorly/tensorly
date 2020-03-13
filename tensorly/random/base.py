@@ -4,6 +4,7 @@ from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               kruskal_normalise)
 from ..tucker_tensor import tucker_to_tensor
 from ..mps_tensor import mps_to_tensor
+from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor
 from .. import backend as T
 import warnings
 
@@ -39,6 +40,44 @@ def check_random_state(seed):
         return seed
 
     raise ValueError('Seed should be None, int or np.random.RandomState')
+
+def random_parafac2(shapes, rank, full=False, random_state=None,
+                    normalise_factors=True, **context):
+    """Generate a random PARAFAC2 tensor
+
+    Parameters
+    ----------
+    shape : tuple
+        A tuple where each element represents the shape of a matrix
+        represented by the PARAFAC2 model. The second element in each
+        shape-tuple must be
+        constant.
+    rank : int or int list
+        rank of the Parafac2 decomposition
+    full : bool, optional, default is False
+        if True, a full tensor is returned otherwise,
+        the decomposed tensor is returned
+    random_state : `np.random.RandomState`
+    """
+    rns = check_random_state(random_state)
+    if not all(shape[1] == shapes[0][1] for shape in shapes):
+        raise ValueError('All matrices must have equal number of columns.')
+    
+    projection_matrices = [
+        T.qr(T.tensor(rns.random_sample((shape[0], rank)), **context))[0]
+            for shape in shapes
+    ]
+    weights, factors = random_kruskal(
+        [len(shapes), rank, shapes[0][1]], rank=rank, normalise_factors=False, random_state=rns
+    )
+
+    parafac2_tensor = Parafac2Tensor((weights, factors, projection_matrices))
+
+    if full:
+        return parafac2_to_tensor(parafac2_tensor)
+    else:
+        return parafac2_tensor
+
 
 def random_kruskal(shape, rank, full=False, orthogonal=False, 
                    random_state=None, normalise_factors=True, **context):

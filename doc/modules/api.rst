@@ -133,6 +133,26 @@ For each backend, tensorly provides the following uniform functions:
     mps_to_vec
 
 
+:mod:`tensorly.parafac2_tensor`: Tensors in PARAFAC2 format
+===========================================================
+
+.. automodule:: tensorly.parafac2_tensor
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.parafac2_tensor
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    parafac2_to_tensor
+    parafac2_to_slice
+    parafac2_to_slices
+    parafac2_to_unfolded
+    parafac2_to_vec
+
+
 :mod:`tensorly.tenalg`: Tensor algebra
 ======================================
 
@@ -179,6 +199,7 @@ For each backend, tensorly provides the following uniform functions:
     non_negative_tucker
     robust_pca
     matrix_product_state
+    parafac2
 
 
 :mod:`tensorly.regression`: Tensor Regression
