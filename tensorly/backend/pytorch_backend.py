@@ -57,11 +57,11 @@ class PyTorchBackend(Backend):
         return tensor.dim()
 
     @staticmethod
-    def arange(start, stop=None, step=1.0):
+    def arange(start, stop=None, step=1.0, *args, **kwargs):
         if stop is None:
-            return torch.arange(start=0., end=float(start), step=float(step))
+            return torch.arange(start=0., end=float(start), step=float(step), *args, **kwargs)
         else:
-            return torch.arange(float(start), float(stop), float(step))
+            return torch.arange(float(start), float(stop), float(step), *args, **kwargs)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, inplace=False):

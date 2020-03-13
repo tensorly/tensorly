@@ -99,7 +99,7 @@ def sparsify_tensor(tensor, card):
         return tensor
     bound = tl.sort(tl.abs(tensor), axis = None)[-card]
     
-    return tl.where(tl.abs(tensor) < bound, tl.zeros(tensor.shape), tensor)
+    return tl.where(tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor)
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\
@@ -181,7 +181,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
     weights = tl.ones(rank, **tl.context(tensor))
-    Id = tl.eye(rank)*l2_reg
+    Id = tl.eye(rank, **tl.context(tensor))*l2_reg
 
     if sparsity:
         sparse_component = tl.zeros_like(tensor)
