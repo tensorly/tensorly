@@ -215,6 +215,7 @@ solve = dispatch(Backend.solve)
 qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
+sort = dispatch(Backend.sort)
 
 
 # Initialise the backend to the default one

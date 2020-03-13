@@ -307,6 +307,14 @@ class PyTorchBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.truncated_svd,
                 'symeig_svd': self.symeig_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if axis is None:
+            tensor = tensor.flatten()
+            axis = -1
+
+        return torch.sort(tensor, dim=axis, descending = descending).values
 
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
@@ -315,3 +323,7 @@ for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
+
+
+
+

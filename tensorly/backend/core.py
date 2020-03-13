@@ -736,3 +736,24 @@ class Backend(object):
             S = self.tensor(S, **ctx)
             V = self.tensor(V, **ctx)
         return U, S, V
+    
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        """Return a sorted copy of an array
+
+        Parameters
+        ----------
+        tensor : tensor
+            An N-D tensor
+        axis : int or None
+            Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
+        descending : bool
+            If True, values are sorted in descending order, otherwise in ascending.
+
+        Returns
+        -------
+        sorted_tensor : tensor
+            An N-D array, sorted copy of input tensor
+        """
+        raise NotImplementedError
