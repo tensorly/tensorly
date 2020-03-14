@@ -331,7 +331,9 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
-            factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
+            for i, f in enumerate(factors):
+                if min(tl.shape(f)) >= rank:
+                    factors[i] = tl.abs(tl.qr(f)[0])
 
         if verbose > 1:
             print("Starting iteration", iteration + 1)
