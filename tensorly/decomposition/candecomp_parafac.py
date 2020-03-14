@@ -383,7 +383,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
                 
                 if verbose:
-                    print("iteration {},  reconstraction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
+                    print("iteration {}, reconstraction error: {}, decrease = {}".format(iteration, rec_error, rec_error_decrease))
 
                 if cvg_criterion == 'abs_rec_error':
                     stop_flag = abs(rec_error_decrease) < tol
