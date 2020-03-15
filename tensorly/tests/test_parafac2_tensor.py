@@ -50,7 +50,7 @@ def test_validate_parafac2_tensor():
         _validate_parafac2_tensor((weights[1:], factors, projections))
     
     # The projections aren't orthogonal
-    false_projections = [rng.random_sample(tl.shape(P)) for P in projections]
+    false_projections = [tl.tensor(rng.random_sample(tl.shape(P))) for P in projections]
     with assert_raises(ValueError):
         _validate_parafac2_tensor((weights, factors, false_projections))
 
