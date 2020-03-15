@@ -43,7 +43,7 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
         padded_tensor = _pad_by_zeros(tensor_slices)
         A = svd_fun(unfold(padded_tensor, 0), n_eigenvecs=rank)[0]
         C = svd_fun(unfold(padded_tensor, 2), n_eigenvecs=rank)[0]
-        B = T.eye(rank)
+        B = T.eye(rank, **T.context(tensor_slices[0]))
         projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
         return Parafac2Tensor((None, (A, B, C), projections))
 
