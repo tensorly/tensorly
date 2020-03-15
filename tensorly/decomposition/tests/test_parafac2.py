@@ -161,6 +161,6 @@ def test_parafac2_to_tensor():
                 for r in range(rank):
                     tensor_manual[i, j, k] += factors[0][i][r]*Bi[j][r]*factors[2][k][r]
 
-    assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-8)
+    assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-6)
     
     
