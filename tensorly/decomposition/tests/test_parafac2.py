@@ -152,7 +152,7 @@ def test_parafac2_to_tensor():
     weights, factors, projections = random_parafac2(shapes=[(J, K)]*I, rank=rank, random_state=rng)
 
     constructed_tensor = parafac2_to_tensor((weights, factors, projections))
-    tensor_manual = T.zeros((I, J, K))
+    tensor_manual = T.zeros((I, J, K), **T.context(weights))
 
     for i in range(I):
         Bi = T.dot(projections[i], factors[1])
