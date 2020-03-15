@@ -48,6 +48,12 @@ def test_parafac2(normalize_factors):
         rank=rank,
         random_state=rng,
     )
+    # It is difficult to correctly identify B[i, :, r] if A[i, r] is small.
+    # This is sensible, since then B[i, :, r] contributes little to the total value of X.
+    # To test the PARAFAC2 decomposition in the precence of roundoff errors, we therefore add
+    # 0.01 to the A factor matrix.
+    random_parafac2_tensor.factors[0] += 0.01
+
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
