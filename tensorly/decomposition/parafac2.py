@@ -67,12 +67,12 @@ def _pad_by_zeros(tensor_slices):
     I = len(tensor_slices)
     J = max(tensor_slice.shape[0] for tensor_slice in tensor_slices)
     K = tensor_slices[0].shape[1]
-    unfolded = T.zeros((I, J, K), **T.context(tensor_slices[0])) 
+    padded = T.zeros((I, J, K), **T.context(tensor_slices[0])) 
     for i, tensor_slice in enumerate(tensor_slices):
         J_i = len(tensor_slice)
-        unfolded[i, :J_i] = tensor_slice
+        padded[i, :J_i] = tensor_slice
     
-    return unfolded
+    return padded
 
 
 def _compute_projections(tensor_slices, factors, svd_fun, out=None):
