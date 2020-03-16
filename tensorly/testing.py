@@ -25,5 +25,10 @@ def assert_equal(actual, desired, *args, **kwargs):
                             *args, **kwargs)
 
 
+def assert_array_less(a, b, *args, **kwargs):
+    np.testing.assert_array_less(T.to_numpy(a), T.to_numpy(b),
+                                 *args, **kwargs)
+
+
 assert_ = np.testing.assert_
 assert_raises = np.testing.assert_raises
