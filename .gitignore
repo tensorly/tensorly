@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 *.DS_Store
 
+# Fork
+README.rst
+
 # C extensions
 *.so
 *.py~
