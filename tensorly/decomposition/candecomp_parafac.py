@@ -88,7 +88,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             tol=1e-8, random_state=None,\
             verbose=0, return_errors=False,\
             l2_reg=0, mask=None,\
-            cvg_criterion = 'abs_rec_error'):
+            cvg_criterion = 'abs_rec_error',\
+            fixed_modes = []):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -125,6 +126,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
        Stopping criterion for ALS, works if `tol` is not None. 
        If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
+    fixed_modes : list, default is []
+        A list of modes for which the initial value is not modified.
 
     Returns
     -------
@@ -160,13 +163,17 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     weights = tl.ones(rank, **tl.context(tensor))
     Id = tl.eye(rank)*l2_reg
 
+    # MGR: fixed Modes
+    # Generating the mode update sequence
+    gen = (mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes)
+
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
         if verbose > 1:
             print("Starting iteration", iteration + 1)
-        for mode in range(tl.ndim(tensor)):
+        for mode in gen:
             if verbose > 1:
                 print("Mode", mode, "of", tl.ndim(tensor))
 
