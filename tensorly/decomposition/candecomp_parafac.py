@@ -15,7 +15,7 @@ from ..tenalg import khatri_rao
 
 # License: BSD 3 clause
 
-def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
+def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
                        non_negative=False, normalize_factors=False):
     r"""Initialize factors used in `parafac`.
 
@@ -48,7 +48,7 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
         factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
         if non_negative:
             factors = [tl.abs(f) for f in factors]
-        if normalize_factors: 
+        if normalize_factors:
             factors = [f/(tl.reshape(tl.norm(f, axis=0), (1, -1)) + eps) for f in factors]
         return factors
 
@@ -71,7 +71,7 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
                 # factor[:, :tensor.shape[mode]] = U
                 random_part = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])), **tl.context(tensor))
                 U = tl.concatenate([U, random_part], axis=1)
-            
+
             factor = U[:, :rank]
             if non_negative:
                 factor = tl.abs(factor)
@@ -83,14 +83,14 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
 def sparsify_tensor(tensor, card):
-    """Zeros out all elements in the `tensor` except `card` elements with maximum absolute values. 
-    
+    """Zeros out all elements in the `tensor` except `card` elements with maximum absolute values.
+
     Parameters
     ----------
     tensor : ndarray
     card : int
         Desired number of non-zero elements in the `tensor`
-        
+
     Returns
     -------
     ndarray of shape tensor.shape
@@ -98,7 +98,7 @@ def sparsify_tensor(tensor, card):
     if card >= tl.prod(tl.tensor(tensor.shape)):
         return tensor
     bound = tl.sort(tl.abs(tensor), axis = None)[-card]
-    
+
     return tl.where(tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor)
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
@@ -108,7 +108,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             non_negative=False,\
             sparsity = None,\
             l2_reg = 0,  mask=None,\
-            cvg_criterion = 'abs_rec_error'):
+            cvg_criterion = 'abs_rec_error',\
+            fixed_modes = []):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -142,17 +143,19 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         sparse, then mask should also be sparse with a fill value of 1 (or
         True). Allows for missing values [2]_
     cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
-       Stopping criterion for ALS, works if `tol` is not None. 
+       Stopping criterion for ALS, works if `tol` is not None.
        If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
     sparsity : float or int
         If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+    fixed_modes : list, default is []
+        A list of modes for which the initial value is not modified.
 
     Returns
     -------
     KruskalTensor : (weight, factors)
         * weights : 1D array of shape (rank, )
-            all ones if normalize_factors is False (default), 
+            all ones if normalize_factors is False (default),
             weights of the (normalized) factors otherwise
         * factors : List of factors of the CP decomposition element `i` is of shape
             (tensor.shape[i], rank)
@@ -165,8 +168,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     ----------
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-       
-    .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
+
+    .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
             Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
 
     """
@@ -189,14 +192,18 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             sparsity = int(sparsity * np.prod(tensor.shape))
         else:
             sparsity = int(sparsity)
-            
+
+    # MGR: fixed Modes
+    # Generating the mode update sequence
+    gen = (mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes)
+
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
         if verbose > 1:
             print("Starting iteration", iteration + 1)
-        for mode in range(tl.ndim(tensor)):
+        for mode in gen:
             if verbose > 1:
                 print("Mode", mode, "of", tl.ndim(tensor))
 
@@ -215,7 +222,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
             if normalize_factors:
                 weights = tl.norm(factor, order=2, axis=0)
-                weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype), 
+                weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype),
                                    tl.ones(tl.shape(weights), **tl.context(factors[0])),
                                    weights)
                 factor = factor/(tl.reshape(weights, (1, -1)))
@@ -226,7 +233,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             if sparsity:
                 low_rank_component = kruskal_to_tensor((weights, factors))
                 sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
-                
+
                 unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
             else:
                 # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
@@ -236,13 +243,13 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 # inner product <tensor, factorization>
                 iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
                 unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
-                
+
             rec_error = unnorml_rec_error / norm_tensor
             rec_errors.append(rec_error)
 
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
-                
+
                 if verbose:
                     print("iteration {},  reconstraction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
 
@@ -252,18 +259,18 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                     stop_flag =  rec_error_decrease < tol
                 else:
                     raise TypeError("Unknown convergence criterion")
-                
+
                 if stop_flag:
                     if verbose:
                         print("PARAFAC converged after {} iterations".format(iteration))
                     break
-                    
+
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
 
     kruskal_tensor = KruskalTensor((weights, factors))
-    
+
     if sparsity:
         sparse_component = sparsify_tensor(tensor -\
                                            kruskal_to_tensor((weights, factors)),\
@@ -274,7 +281,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         return kruskal_tensor, rec_errors
     else:
         return kruskal_tensor
-    
+
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                          tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
@@ -358,10 +365,10 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             denominator = tl.dot(factors[mode], accum)
             denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
             factor = factors[mode] * numerator / denominator
-            
+
             if normalize_factors:
                 weights = tl.norm(factor, order=2, axis=0)
-                weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype), 
+                weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype),
                                    tl.ones(tl.shape(weights), **tl.context(factors[0])),
                                    weights)
                 factor = factor/(tl.reshape(weights, (1, -1)))
@@ -379,7 +386,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             rec_errors.append(rec_error)
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
-                
+
                 if verbose:
                     print("iteration {},  reconstraction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
 
@@ -389,11 +396,11 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                     stop_flag =  rec_error_decrease < tol
                 else:
                     raise TypeError("Unknown convergence criterion")
-                
+
                 if stop_flag:
                     if verbose:
                         print("PARAFAC converged after {} iterations".format(iteration))
-                    break 
+                    break
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
