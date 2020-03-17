@@ -9,3 +9,4 @@ from ._khatri_rao import khatri_rao
 from .generalised_inner_product import inner
 from .contraction import contract
 from .least_squares import solve_least_squares
+from .outer_product import outer
