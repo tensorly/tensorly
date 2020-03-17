@@ -34,6 +34,10 @@ class NumpyBackend(Backend):
         return np.clip(tensor, a_min, a_max)
 
     @staticmethod
+    def dot(a, b):
+        return a.dot(b)
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         # handle difference in default axis notation
         if axis == ():
@@ -48,8 +52,8 @@ class NumpyBackend(Backend):
         else:
             return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
 
-    @staticmethod
-    def kr(matrices):
+    def kr(self, matrices, weights=None, mask=None):
+        if mask is None: mask = 1
         n_columns = matrices[0].shape[1]
         n_factors = len(matrices)
 
@@ -58,22 +62,34 @@ class NumpyBackend(Backend):
         target = ''.join(chr(start + i) for i in range(n_factors))
         source = ','.join(i + common_dim for i in target)
         operation = source + '->' + target + common_dim
-        return np.einsum(operation, *matrices).reshape((-1, n_columns))
+
+        if weights is not None:
+            matrices = [m if i else m*self.reshape(weights, (1, -1)) for i, m in enumerate(matrices)]
+
+        return np.einsum(operation, *matrices).reshape((-1, n_columns))*mask
 
     @property
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.partial_svd}
-
+    
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if descending:
+            return np.flip(np.sort(tensor, axis=axis), axis = axis)
+        else:
+            return np.sort(tensor, axis=axis)
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
-             'zeros_like', 'eye', 'dot', 'kron', 'concatenate', 'max', 'min',
+             'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack']:
+             'argmax', 'stack', 'conj', 'diag']:
     NumpyBackend.register_method(name, getattr(np, name))
-
 
 for name in ['solve', 'qr']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
+    
+    
 

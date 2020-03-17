@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import qr
-from ..kruskal_tensor import kruskal_to_tensor
+from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
+                              kruskal_normalise)
 from ..tucker_tensor import tucker_to_tensor
 from ..mps_tensor import mps_to_tensor
 from .. import backend as T
@@ -39,7 +40,8 @@ def check_random_state(seed):
 
     raise ValueError('Seed should be None, int or np.random.RandomState')
 
-def random_kruskal(shape, rank, full=False, orthogonal=False, random_state=None, **context):
+def random_kruskal(shape, rank, full=False, orthogonal=False, 
+                   random_state=None, normalise_factors=True, **context):
     """Generates a random CP tensor
 
     Parameters
@@ -64,18 +66,21 @@ def random_kruskal(shape, rank, full=False, orthogonal=False, random_state=None,
         2D-array list : list of factors otherwise
     """
     if (rank > min(shape)) and orthogonal:
-        raise ValueError('Can only construct orthogonal tensors when rank <= '
-                         'min(shape)')
+        warnings.warn('Can only construct orthogonal tensors when rank <= min(shape) but got '
+                      'a tensor with min(shape)={} < rank={}'.format(min(shape), rank))
 
     rns = check_random_state(random_state)
     factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
+    weights = T.ones(rank, **context)
     if orthogonal:
         factors = [T.qr(factor)[0] for factor in factors]
 
     if full:
-        return kruskal_to_tensor(factors)
+        return kruskal_to_tensor((weights, factors))
+    elif normalise_factors:
+        return kruskal_normalise((weights, factors))
     else:
-        return factors
+        return KruskalTensor((weights, factors))
 
 def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, **context):
     """Generates a random Tucker tensor
@@ -106,9 +111,11 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
     if isinstance(rank, int):
         rank = [rank for _ in shape]
 
-    for i, (s, r) in enumerate(zip(shape, rank)):
-        if r > s:
-            raise ValueError('The rank should be smaller than the tensor size, yet rank[{0}]={1} > shape[{0}]={2}.'.format(i, r, s))
+    if orthogonal:
+        for i, (s, r) in enumerate(zip(shape, rank)):
+            if r > s:
+                warnings.warn('Selected orthogonal=True, but selected a rank larger than the tensor size for mode {0}: '
+                             'rank[{0}]={1} > shape[{0}]={2}.'.format(i, r, s))
 
     factors = []
     for (s, r) in zip(shape, rank):
@@ -121,7 +128,7 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
 
     core = T.tensor(rns.random_sample(rank), **context)
     if full:
-        return tucker_to_tensor(core, factors)
+        return tucker_to_tensor((core, factors))
     else:
         return core, factors
 

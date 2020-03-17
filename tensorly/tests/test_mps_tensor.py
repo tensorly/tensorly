@@ -2,8 +2,45 @@ import numpy as np
 
 import tensorly as tl
 from ..decomposition import matrix_product_state
-from ..mps_tensor import mps_to_tensor
-from ..testing import assert_array_almost_equal
+from ..mps_tensor import mps_to_tensor, _validate_mps_tensor
+from ..testing import assert_array_almost_equal, assert_equal, assert_raises
+from ..random import check_random_state, random_mps
+
+
+def test_validate_mps_tensor():
+    rng = check_random_state(12345)
+    true_shape = (3, 4, 5)
+    true_rank = (1, 3, 2, 1)
+    factors = random_mps(true_shape, rank=true_rank)
+    
+    # Check that the correct shape/rank are returned
+    shape, rank = _validate_mps_tensor(factors)
+    assert_equal(shape, true_shape,
+                    err_msg='Returned incorrect shape (got {}, expected {})'.format(
+                        shape, true_shape))
+    assert_equal(rank, true_rank,
+                    err_msg='Returned incorrect rank (got {}, expected {})'.format(
+                        rank, true_rank))
+
+    
+    # One of the factors has the wrong ndim
+    factors[0] = tl.tensor(rng.random_sample((4, 4)))
+    with assert_raises(ValueError):
+        _validate_mps_tensor(factors)
+    
+    # Consecutive factors ranks don't match
+    factors[0] = tl.tensor(rng.random_sample((1, 3, 2)))
+    with assert_raises(ValueError):
+        _validate_mps_tensor(factors)
+        
+    # Boundary conditions not respected
+    factors[0] = tl.tensor(rng.random_sample((3, 3, 2)))
+    with assert_raises(ValueError):
+        _validate_mps_tensor(factors)
+
+    # Not enough factors
+    with assert_raises(ValueError):
+        _validate_mps_tensor(factors[:1])
 
 
 def test_mps_to_tensor():

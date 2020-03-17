@@ -19,8 +19,12 @@ import os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('sphinx_ext'))
+sys.path.insert(0, '..')
 
 # -- General configuration ------------------------------------------------
+
+
+html4_writer=True
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
@@ -78,9 +82,10 @@ author = 'Jean Kossaifi'
 # built documents.
 #
 # The short X.Y version.
-version = '0.1'
-# The full version, including alpha/beta/rc tags.
+# version = '0.1'
 import tensorly
+version = '.'.join(tensorly.__version__.split('.')[:2])
+# The full version, including alpha/beta/rc tags.
 release = tensorly.__version__
 # release = ''
 
@@ -240,20 +245,6 @@ htmlhelp_basename = 'tensorlydoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
-
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
-
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
-
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
-}
-
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
@@ -294,10 +285,11 @@ trim_doctests_flags = True
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []
 latex_elements = {
-  'classoptions': ',oneside',
-  'babel': '\\usepackage[english]{babel}',
-  # Get completely rid of index
-  'printindex': '',
+    'classoptions': ',oneside',
+    'babel': '\\usepackage[english]{babel}',
+    # Get completely rid of index
+    'printindex': '',
+    'preamble': latex_preamble,
 }
 
 # If false, no module index is generated.
@@ -409,4 +401,3 @@ epub_exclude_files = ['search.html']
 
 # If false, no index is generated.
 #epub_use_index = True
-

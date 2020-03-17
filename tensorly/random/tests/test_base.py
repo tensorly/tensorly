@@ -37,14 +37,14 @@ def test_random_kruskal():
     for i in range(T.ndim(tensor)):
         assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
 
-    factors = random_kruskal(shape, rank, full=False)
+    weights, factors = random_kruskal(shape, rank, full=False)
     for i, factor in enumerate(factors):
         assert_equal(factor.shape, (shape[i], rank),
                 err_msg=('{}-th factor has shape {}, expected {}'.format(
                      i, factor.shape, (shape[i], rank))))
 
     # tests that the columns of each factor matrix are indeed orthogonal
-    factors = random_kruskal(shape, rank, full=False, orthogonal=True)
+    weights, factors = random_kruskal(shape, rank, full=False, orthogonal=True)
     for i, factor in enumerate(factors):
         for j in range(rank):
             for k in range(j):
@@ -53,7 +53,7 @@ def test_random_kruskal():
                 try:
                     T.shape(dot_product)
                 except:
-                    dot_product = T.tensor([dot_product])
+                    dot_product = T.tensor([dot_product], **T.context(weights))
                 assert_array_almost_equal(dot_product, T.tensor([0]))
 
     with np.testing.assert_raises(ValueError):
@@ -90,13 +90,11 @@ def test_random_tucker():
     assert_equal(core.shape, rank, err_msg='core has shape {}, expected {}.'.format(
                                      core.shape, rank))
     for factor in factors:
-        assert_array_almost_equal(T.dot(T.transpose(factor), factor), T.tensor(np.eye(factor.shape[1])))
-    tensor = tucker_to_tensor(core, factors)
+        assert_array_almost_equal(T.dot(T.transpose(factor), factor),
+                                  T.tensor(np.eye(factor.shape[1])))
+    tensor = tucker_to_tensor((core, factors))
     reconstructed = multi_mode_dot(tensor, factors, transpose=True)
     assert_array_almost_equal(core, reconstructed)
-
-    with assert_raises(ValueError):
-        random_tucker((3, 4, 5), (3, 6, 3))
 
 
 def test_random_mps():

@@ -11,6 +11,7 @@ import warnings
 
 # License: BSD 3 clause
 
+
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
                    svd='numpy_svd', random_state=None, verbose=False, ranks=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
@@ -24,6 +25,8 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
             list of the modes on which to perform the decomposition
     ranks : None or int list
             size of the core tensor, ``(len(ranks) == len(modes))``
+    rank : None or int
+            number of components
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
@@ -39,7 +42,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     Returns
     -------
-    core : ndarray 
+    core : ndarray
             core tensor of the Tucker decomposition
     factors : ndarray list
             list of factors of the Tucker decomposition.
@@ -56,7 +59,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         warnings.warn(message, Warning)
         rank = [tl.shape(tensor)[mode] for mode in modes]
     elif isinstance(rank, int):
-        message = "Given only one int for 'rank' intead of a list of {} modes. Using this rank for all modes.".format(len(modes))
+        message = "Given only one int for 'rank' instead of a list of {} modes. Using this rank for all modes.".format(len(modes))
         warnings.warn(message, Warning)
         rank = [rank for _ in modes]
 
@@ -71,7 +74,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     if init == 'svd':
         factors = []
         for index, mode in enumerate(modes):
-            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index])
+            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
             factors.append(eigenvecs)
     else:
         rng = check_random_state(random_state)
@@ -84,7 +87,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     for iteration in range(n_iter_max):
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
-            eigenvecs, _, _ = svd_fun(unfold(core_approximation, mode), n_eigenvecs=rank[index])
+            eigenvecs, _, _ = svd_fun(unfold(core_approximation, mode), n_eigenvecs=rank[index], random_state=random_state)
             factors[index] = eigenvecs
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
@@ -95,7 +98,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
         if iteration > 1:
             if verbose:
-                print('reconsturction error={}, variation={}.'.format(
+                print('reconstruction error={}, variation={}.'.format(
                     rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
@@ -118,6 +121,8 @@ def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd',
     tensor : ndarray
     ranks : None or int list
             size of the core tensor, ``(len(ranks) == tensor.ndim)``
+    rank : None or int
+            number of components
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
@@ -164,6 +169,10 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
                  maximum number of iteration
     init : {'svd', 'random'}
     random_state : {None, int, np.random.RandomState}
+    verbose : int , optional
+                level of verbosity
+    ranks : None or int list
+            size of the core tensor
 
     Returns
     -------
@@ -177,7 +186,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
     References
     ----------
     .. [2] Yong-Deok Kim and Seungjin Choi,
-       "Nonnegative tucker decomposition",
+       "Non-negative tucker decomposition",
        IEEE Conference on Computer Vision and Pattern Recognition s(CVPR),
        pp 1-8, 2007
     """
@@ -187,12 +196,13 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         rank = ranks
 
     if rank is None:
-        rank = [tl.shape(tensor)[mode] for mode in modes]
-    elif isinstance(rank, int):
-        message = "Given only one int for 'rank' intead of a list of {} modes. Using this rank for all modes.".format(len(modes))
-        warnings.warn(message, DeprecationWarning)
-        rank = [rank for _ in modes]
+        rank = [tl.shape(tensor)[mode] for mode in range(tl.ndim(tensor))]
 
+    elif isinstance(rank, int):
+        n_mode = tl.ndim(tensor)
+        message = "Given only one int for 'rank' for decomposition a tensor of order {}. Using this rank for all modes.".format(n_mode)
+        warnings.warn(message, RuntimeWarning)
+        rank = [rank]*n_mode
 
     epsilon = 10e-12
 
@@ -208,13 +218,12 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         nn_factors = [tl.abs(f) for f in factors]
         nn_core = tl.abs(core)
 
-    n_factors = len(nn_factors)
     norm_tensor = tl.norm(tensor, 2)
     rec_errors = []
 
     for iteration in range(n_iter_max):
         for mode in range(tl.ndim(tensor)):
-            B = tucker_to_tensor(nn_core, nn_factors, skip_factor=mode)
+            B = tucker_to_tensor((nn_core, nn_factors), skip_factor=mode)
             B = tl.transpose(unfold(B, mode))
 
             numerator = tl.dot(unfold(tensor, mode), B)
@@ -223,7 +232,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
             denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
             nn_factors[mode] *= numerator / denominator
 
-        numerator = tucker_to_tensor(tensor, nn_factors, transpose_factors=True)
+        numerator = tucker_to_tensor((tensor, nn_factors), transpose_factors=True)
         numerator = tl.clip(numerator, a_min=epsilon, a_max=None)
         for i, f in enumerate(nn_factors):
             if i:
@@ -233,10 +242,10 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
         nn_core *= numerator / denominator
 
-        rec_error = tl.norm(tensor - tucker_to_tensor(nn_core, nn_factors), 2) / norm_tensor
+        rec_error = tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2) / norm_tensor
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
-            print('reconsturction error={}, variation={}.'.format(
+            print('reconstruction error={}, variation={}.'.format(
                 rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
         if iteration > 1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:

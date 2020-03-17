@@ -5,6 +5,8 @@ import numpy as np
 from ... import backend as T
 from ...base import fold, unfold
 from .._kronecker import kronecker
+from .._khatri_rao import khatri_rao
+from ...random import random_kruskal
 from ..n_mode_product import mode_dot, multi_mode_dot
 from ...testing import (assert_array_equal, assert_equal,
                         assert_array_almost_equal, assert_raises)
@@ -117,7 +119,7 @@ def test_multi_mode_dot():
     factors = [T.tensor(np.random.rand(dims[i], X.shape[i])) for i in range(T.ndim(X))]
     true_res = T.dot(T.dot(factors[0], unfold(X, 0)), T.transpose(kronecker(factors[1:])))
     n_mode_res = multi_mode_dot(X, factors)
-    assert_array_almost_equal(true_res, unfold(n_mode_res, 0))
+    assert_array_almost_equal(true_res, unfold(n_mode_res, 0), decimal=5)
     for i in range(T.ndim(X)):
         indices = [j for j in range(T.ndim(X)) if j != i]
         sub_factors = [factors[j] for j in indices]
@@ -126,8 +128,8 @@ def test_multi_mode_dot():
         temp = multi_mode_dot(X, sub_factors, modes=indices)
         res2 = T.dot(factors[i], unfold(temp, i))
         assert_equal(true_res.shape, res.shape, err_msg='shape should be {}, is {}'.format(true_res.shape, res.shape))
-        assert_array_almost_equal(true_res, res)
-        assert_array_almost_equal(true_res, res2)
+        assert_array_almost_equal(true_res, res, decimal=5)
+        assert_array_almost_equal(true_res, res2, decimal=5)
 
     # Test skipping a factor
     dims = [2, 3, 4, 5]
@@ -152,4 +154,3 @@ def test_multi_mode_dot():
         res = multi_mode_dot(X, [vecs[i] for i in modes], modes=modes)
         assert_equal(res.shape, (1,))
         assert_equal(res[0], 1)
-

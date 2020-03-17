@@ -24,6 +24,31 @@ def is_sparse(x):
 class NumpySparseBackend(Backend):
     backend_name = 'numpy.sparse'
 
+    # moveaxis and shape are temporarily redefine to fix issue #131
+    # Using the builting functionsn raises a TypeError:
+    #     no implementation found for 'numpy.shape' on types
+    #     that implement __array_function__: [<class 'sparse._coo.core.COO'>]
+    def moveaxis(self, tensor, source, target):
+        axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
+        try:
+            axes.pop(source)
+        except IndexError:
+            raise ValueError('Source should verify 0 <= source < tensor.ndim'
+                             'Got %d' % source)
+        try:
+            axes.insert(target, source)
+        except IndexError:
+            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
+                             'Got %d' % target)
+        return self.transpose(tensor, axes)
+
+    # Temporary, see moveaxis above
+    @staticmethod
+    def shape(tensor):
+        return tensor.shape
+
     @staticmethod
     def context(tensor):
         return {'dtype': tensor.dtype}
@@ -52,6 +77,10 @@ class NumpySparseBackend(Backend):
         return _py_copy(tensor)
 
     @staticmethod
+    def clip(tensor, a_min=None, a_max=None, inplace=False):
+        return np.clip(tensor, a_min, a_max)
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         # handle difference in default axis notation
         if axis == ():
@@ -71,8 +100,20 @@ class NumpySparseBackend(Backend):
             return sparse.dot(x, y)
         return np.dot(x, y)
 
+    def solve(self, A, b):
+        """
+        Compute x s.t. Ax = b
+        """
+        if is_sparse(A) or is_sparse(b):
+            A, b = A.tocsc(), b.tocsc()
+            x = sparse.COO(scipy.sparse.linalg.spsolve(A, b))
+        else:
+            x = np.linalg.solve(A, b)
+
+        return x
+
     @staticmethod
-    def partial_svd(matrix, n_eigenvecs=None):
+    def partial_svd(matrix, n_eigenvecs=None, random_state=None, **kwargs):
         # Check that matrix is... a matrix!
         if matrix.ndim != 2:
             raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
@@ -94,10 +135,14 @@ class NumpySparseBackend(Backend):
             U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
             return U, S, V
-
+        elif n_eigenvecs is None:
+            raise ValueError('n_eigenvecs cannot be none')
+        elif is_sparse(matrix) and matrix.nnz == 0:
+            # all-zeros matrix, so we should do a quick return.
+            U = sparse.eye(dim_1, n_eigenvecs, dtype=matrix.dtype)
+            S = np.zeros(n_eigenvecs, dtype=matrix.dtype)
+            V = sparse.eye(dim_2, n_eigenvecs, dtype=matrix.dtype)
         else:
-            if n_eigenvecs is None:
-                raise ValueError('n_eigenvecs cannot be none')
             if n_eigenvecs > min_dim:
                 msg = ('n_eigenvecs={} if greater than the minimum matrix '
                        'dimension ({})')
@@ -105,20 +150,40 @@ class NumpySparseBackend(Backend):
             if np.issubdtype(matrix.dtype, np.complexfloating):
                 raise NotImplementedError("Complex dtypes")
             # We can perform a partial SVD
+            # construct np.random.RandomState for sampling a starting vector
+            if random_state is None:
+                # if random_state is not specified, do not initialize a starting vector
+                v0 = None
+            elif isinstance(random_state, int):
+                rns = np.random.RandomState(random_state)
+                # initilize with [-1, 1] as in ARPACK
+                v0 = rns.uniform(-1, 1, min_dim)
+            elif isinstance(random_state, np.random.RandomState):
+                # initilize with [-1, 1] as in ARPACK
+                v0 = random_state.uniform(-1, 1, min_dim)
+
             # First choose whether to use X * X.T or X.T *X
             if dim_1 < dim_2:
                 conj = matrix.T
                 xxT = matrix.dot(conj)
                 if is_sparse(xxT):
                     xxT = xxT.to_scipy_sparse()
-                S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM')
+                if n_eigenvecs >= xxT.shape[0]:
+                    # use dense form when sparse form will fail
+                    S, U = scipy.linalg.eigh(xxT.toarray())
+                else:
+                    S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM', v0=v0)
                 S = np.sqrt(S)
                 V = conj.dot(U / S[None, :])
             else:
                 xTx = matrix.T.dot(matrix)
                 if is_sparse(xTx):
                     xTx = xTx.to_scipy_sparse()
-                S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM')
+                if n_eigenvecs >= xTx.shape[0]:
+                    # use dense form when sparse form will fail
+                    S, V = scipy.linalg.eigh(xTx.toarray())
+                else:
+                    S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM', v0=v0)
                 S = np.sqrt(S)
                 U = matrix.dot(V / S[None, :])
 
@@ -132,12 +197,13 @@ class NumpySparseBackend(Backend):
                 'truncated_svd': self.partial_svd}
 
 
-for name in ['int64', 'int32', 'float64', 'float32', 'moveaxis', 'transpose',
-             'reshape', 'ndim', 'shape', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange']:
+for name in ['int64', 'int32', 'float64', 'float32', 'transpose',
+             'reshape', 'ndim', 'max', 'min', 'all', 'mean', 'sum',
+             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
-for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye', 'ones']:
+for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye',
+             'ones', 'stack']:
     NumpySparseBackend.register_method(name, getattr(sparse, name))
 
 

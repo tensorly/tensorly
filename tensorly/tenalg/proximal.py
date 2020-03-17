@@ -16,7 +16,7 @@ def soft_thresholding(tensor, threshold):
     tensor : ndarray
     threshold : float or ndarray with shape tensor.shape
         * If float the threshold is applied to the whole tensor
-        * If ndarray, one theshold is applied per elements, 0 values are ignored
+        * If ndarray, one threshold is applied per elements, 0 values are ignored
 
     Returns
     -------

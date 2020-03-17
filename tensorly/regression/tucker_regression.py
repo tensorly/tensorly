@@ -97,7 +97,7 @@ class TuckerRegressor():
                                         self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X)),
                                       T.dot(T.transpose(phi), y)), G.shape)
 
-            weight_tensor_ = tucker_to_tensor(G, W)
+            weight_tensor_ = tucker_to_tensor((G, W))
             norm_W.append(T.norm(weight_tensor_, 2))
 
             # Convergence check
@@ -111,7 +111,7 @@ class TuckerRegressor():
 
         self.weight_tensor_ = weight_tensor_
         self.tucker_weight_ = (G, W)
-        self.vec_W_ = tucker_to_vec(G, W)
+        self.vec_W_ = tucker_to_vec((G, W))
         self.n_iterations_ = iteration + 1
         self.norm_W_ = norm_W
 

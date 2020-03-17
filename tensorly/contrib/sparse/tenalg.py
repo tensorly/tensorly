@@ -1,4 +1,5 @@
-from ...tenalg import mode_dot, multi_mode_dot, kronecker, khatri_rao, inner
+from ...tenalg import (mode_dot, multi_mode_dot, 
+                       kronecker, khatri_rao, inner)
 from .core import wrap
 
 

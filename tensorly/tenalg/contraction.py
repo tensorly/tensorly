@@ -1,6 +1,10 @@
 import numpy as np
 import tensorly as tl
 
+# Author: Jean Kossaifi
+
+# License: BSD 3 clause
+
 def contract(tensor1, modes1, tensor2, modes2):
     """Tensor contraction between two tensors on specified modes
     

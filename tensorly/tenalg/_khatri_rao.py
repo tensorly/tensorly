@@ -1,4 +1,5 @@
 from .. import backend as T
+import warnings
 
 # Author: Jean Kossaifi
 
@@ -6,7 +7,7 @@ from .. import backend as T
 
 
 
-def khatri_rao(matrices, skip_matrix=None, reverse=False):
+def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=None):
     """Khatri-Rao product of a list of matrices
 
         This can be seen as a column-wise kronecker product.
@@ -16,11 +17,15 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
 
     Parameters
     ----------
-    matrices : ndarray list
+    matrices : 2D-array list
         list of matrices with the same number of columns, i.e.::
 
             for i in len(matrices):
                 matrices[i].shape = (n_i, m)
+    
+    weights : 1D-array
+        array of weights for each rank, of length m, the number of column of the factors
+        (i.e. m == factor[i].shape[1] for any factor)
 
     skip_matrix : None or int, optional, default is None
         if not None, index of a matrix to skip
@@ -46,7 +51,7 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
 
         kr_product = np.zeros((n_rows, n_columns))
         for i in range(n_columns):
-            cum_prod = matrices[0][:, i]  # Acuumulates the khatri-rao product of the i-th columns
+            cum_prod = matrices[0][:, i]  # Accumulates the khatri-rao product of the i-th columns
             for matrix in matrices[1:]:
                 cum_prod = np.einsum('i,j->ij', cum_prod, matrix[:, i]).ravel()
             # the i-th column corresponds to the kronecker product of all the i-th columns of all matrices:
@@ -67,7 +72,13 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
     if len(matrices) == 1:
         return matrices[0]
 
-    n_columns = matrices[0].shape[1]
+    if T.ndim(matrices[0]) == 2:
+        n_columns = matrices[0].shape[1]
+    else:
+        n_columns = 1
+        matrices = [T.reshape(m, (-1, 1)) for m in matrices]
+        warnings.warn('Khatri-rao of a series of vectors instead of matrices. '
+                      'Condidering each has a matrix with 1 column.')
 
     # Optional part, testing whether the matrices have the proper size
     for i, matrix in enumerate(matrices):
@@ -83,5 +94,5 @@ def khatri_rao(matrices, skip_matrix=None, reverse=False):
     if reverse:
         matrices = matrices[::-1]
         # Note: we do NOT use .reverse() which would reverse matrices even outside this function
-
-    return T.kr(matrices)
+    
+    return T.kr(matrices, weights=weights, mask=mask)

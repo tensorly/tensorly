@@ -57,11 +57,11 @@ class PyTorchBackend(Backend):
         return tensor.dim()
 
     @staticmethod
-    def arange(start, stop=None, step=1.0):
+    def arange(start, stop=None, step=1.0, *args, **kwargs):
         if stop is None:
-            return torch.arange(start=0., end=float(start), step=float(step))
+            return torch.arange(start=0., end=float(start), step=float(step), *args, **kwargs)
         else:
-            return torch.arange(float(start), float(stop), float(step))
+            return torch.arange(float(start), float(stop), float(step), *args, **kwargs)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, inplace=False):
@@ -89,6 +89,8 @@ class PyTorchBackend(Backend):
     @staticmethod
     def moveaxis(tensor, source, target):
         axes = list(range(tensor.dim()))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
         try:
             axes.pop(source)
         except IndexError:
@@ -102,12 +104,27 @@ class PyTorchBackend(Backend):
         return tensor.permute(*axes)
 
     def solve(self, matrix1, matrix2):
+        """Solve a linear system of equation
+
+        Notes
+        -----
+
+        Previously, this was implemented as follows::
+
+            if self.ndim(matrix2) < 2:
+                # Currently, gesv doesn't support vectors for matrix2
+                # So we instead solve a least square problem...
+                solution, _ = torch.gels(matrix2, matrix1)
+            else:
+                solution, _ = torch.gesv(matrix2, matrix1)
+            return solution
+
+        """
         if self.ndim(matrix2) < 2:
-            # Currently, gesv doesn't support vectors for matrix2
-            # So we instead solve a least square problem...
-            solution, _ = torch.gels(matrix2, matrix1)
+            # Currently, solve doesn't support vectors for matrix2
+            solution, _ = torch.solve(matrix2.unsqueeze(1), matrix1)
         else:
-            solution, _ = torch.gesv(matrix2, matrix1)
+            solution, _ = torch.solve(matrix2, matrix1)
         return solution
 
     @staticmethod
@@ -158,6 +175,14 @@ class PyTorchBackend(Backend):
         return torch.stack(arrays, dim=axis)
 
     @staticmethod
+    def conj(x, *args, **kwargs):
+        """WARNING: IDENTITY FUNCTION (does nothing)
+
+            This backend currently does not support complex tensors
+        """
+        return x
+
+    @staticmethod
     def _reverse(tensor, axis=0):
         """Reverses the elements along the specified dimension
 
@@ -175,7 +200,8 @@ class PyTorchBackend(Backend):
         indices = torch.arange(tensor.shape[axis] - 1, -1, -1, dtype=torch.int64)
         return tensor.index_select(axis, indices)
 
-    def truncated_svd(self, matrix, n_eigenvecs=None):
+    @staticmethod
+    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
         """Computes a truncated SVD on `matrix` using pytorch's SVD
 
         Parameters
@@ -183,6 +209,8 @@ class PyTorchBackend(Backend):
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
@@ -211,7 +239,7 @@ class PyTorchBackend(Backend):
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         return U, S, V
 
-    def symeig_svd(self, matrix, n_eigenvecs=None):
+    def symeig_svd(self, matrix, n_eigenvecs=None, **kwargs):
         """Computes a truncated SVD on `matrix` using symeig
 
             Uses symeig on matrix.T.dot(matrix) or its transpose
@@ -221,6 +249,8 @@ class PyTorchBackend(Backend):
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
@@ -277,11 +307,23 @@ class PyTorchBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.truncated_svd,
                 'symeig_svd': self.symeig_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if axis is None:
+            tensor = tensor.flatten()
+            axis = -1
+
+        return torch.sort(tensor, dim=axis, descending = descending).values
 
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
              'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
-             'abs', 'sqrt', 'sign', 'where', 'qr']:
+             'abs', 'sqrt', 'sign', 'where', 'qr', 'diag', 'finfo']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
+
+
+
+

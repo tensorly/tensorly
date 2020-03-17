@@ -2,9 +2,9 @@ Forked from tensorly/tensorly to implement an optimization submodule, check tens
 
 # Optimization modules for tensorly
 
-The present fork implements a set of methods for deeper optimization persepctives using Tensorly. 
+The present fork implements a set of methods for deeper optimization persepctives using Tensorly.
 
-Using a Parafac class, it offers the possibility to compute constrained decompositions, fixing some parameters, easily chosing the initial parameters and so on. 
+Using a Parafac class, it offers the possibility to compute constrained decompositions, fixing some parameters, easily chosing the initial parameters and so on.
 
 As of 11/02/2019, implemented methods are projected accelerated gradient, hierarchical ALS (for nonnegativity only), multiplicative updates and plain ALS. AOADMM is on its way.
 

@@ -11,7 +11,7 @@ import warnings
 
 import numpy
 from mxnet import nd
-from mxnet.ndarray import reshape, dot, transpose
+from mxnet.ndarray import reshape, dot, transpose, stack
 
 from .core import Backend
 
@@ -49,7 +49,7 @@ class MxnetBackend(Backend):
     @staticmethod
     def ndim(tensor):
         return tensor.ndim
-      
+
     @staticmethod
     def reshape(tensor, shape):
         if not shape:
@@ -121,16 +121,17 @@ class MxnetBackend(Backend):
         return res
 
     def qr(self, matrix):
-        try:
+        s1, s2 = matrix.shape
+        if s2 < s1:
             # NOTE - should be replaced with geqrf when available
             Q, L = nd.linalg.gelqf(matrix.T)
             return Q.T, L.T
-        except AttributeError:
-            warnings.warn('This version of MXNet does not include the linear '
-                          'algebra function gelqf(). Substituting with numpy.')
-            ctx = self.context(matrix)
-            Q, R = numpy.linalg.qr(self.to_numpy(matrix))
-            return self.tensor(Q, **ctx), self.tensor(R, **ctx)
+
+        warnings.warn('This version of MXNet does not include the linear '
+                      'algebra function gelqf(). Substituting with numpy.')
+        ctx = self.context(matrix)
+        Q, R = numpy.linalg.qr(self.to_numpy(matrix))
+        return self.tensor(Q, **ctx), self.tensor(R, **ctx)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, indlace=False):
@@ -154,6 +155,30 @@ class MxnetBackend(Backend):
     @staticmethod
     def all(tensor):
         return nd.sum(tensor != 0).asscalar()
+
+    @staticmethod
+    def conj(x, *args, **kwargs):
+        """WARNING: IDENTITY FUNCTION (does nothing)
+
+            This backend currently does not support complex tensors
+        """
+        return x
+
+    def moveaxis(self, tensor, source, target):
+        axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if target < 0: target = axes[target]
+        try:
+            axes.pop(source)
+        except IndexError:
+            raise ValueError('Source should verify 0 <= source < tensor.ndim'
+                             'Got %d' % source)
+        try:
+            axes.insert(target, source)
+        except IndexError:
+            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
+                             'Got %d' % target)
+        return transpose(tensor, axes)
 
     @staticmethod
     def mean(tensor, axis=None, **kwargs):
@@ -189,12 +214,12 @@ class MxnetBackend(Backend):
     @staticmethod
     def concatenate(tensors, axis):
         return nd.concat(*tensors, dim=axis)
-    
+
     @staticmethod
     def stack(arrays, axis=0):
         return stack(*arrays, axis=axis)
 
-    def symeig_svd(self, matrix, n_eigenvecs=None):
+    def symeig_svd(self, matrix, n_eigenvecs=None, **kwargs):
         """Computes a truncated SVD on `matrix` using symeig
 
             Uses symeig on matrix.T.dot(matrix) or its transpose
@@ -204,6 +229,8 @@ class MxnetBackend(Backend):
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
@@ -258,12 +285,20 @@ class MxnetBackend(Backend):
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
                 'symeig_svd': self.symeig_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if descending:
+            is_ascend = False
+        else:
+            is_ascend = True
 
+        return mx.ndarray.sort(tensor, axis=axis, is_ascend = is_ascend)
+    
 
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))
 
-for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye',
-             'moveaxis', 'dot', 'transpose',
-             'where', 'sign', 'prod']:
+for name in ['arange', 'zeros', 'zeros_like', 'ones', 'eye', 'dot',
+             'transpose', 'where', 'sign', 'prod', 'diag']:
     MxnetBackend.register_method(name, getattr(nd, name))

@@ -92,6 +92,9 @@ For each backend, tensorly provides the following uniform functions:
     kruskal_to_tensor
     kruskal_to_unfolded
     kruskal_to_vec
+    kruskal_mode_dot
+    unfolding_dot_khatri_rao
+
 
 :mod:`tensorly.tucker_tensor`: Tensors in Tucker format
 =======================================================
@@ -109,6 +112,8 @@ For each backend, tensorly provides the following uniform functions:
     tucker_to_tensor
     tucker_to_unfolded
     tucker_to_vec
+    tucker_mode_dot
+
 
 :mod:`tensorly.mps_tensor`: Tensors in Matrix-Product-State format
 ==================================================================
@@ -126,7 +131,6 @@ For each backend, tensorly provides the following uniform functions:
     mps_to_tensor
     mps_to_unfolded
     mps_to_vec
-
 
 
 :mod:`tensorly.tenalg`: Tensor algebra
@@ -261,5 +265,25 @@ For each backend, tensorly provides the following uniform functions:
     :template: function.rst
 
     decomposition.matrix_product_state_cross
+
+Sparse tensor operations
+------------------------
+
+Enables tensor operations on sparse tensors.
+Currently, the following decomposition methods are supported (for the NumPy backend, using Sparse):
+
+.. automodule:: tensorly.contrib.sparse
+
+.. currentmodule:: tensorly.contrib
+
+.. autosummary::
+    :toctree: generated/
+
+   sparse.decomposition.tucker
+   sparse.decomposition.partial_tucker
+   sparse.decomposition.non_negative_tucker
+   sparse.decomposition.robust_pca
+   sparse.decomposition.parafac
+   sparse.decomposition.non_negative_parafac
 
 

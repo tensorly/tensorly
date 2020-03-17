@@ -26,7 +26,6 @@ def test_matrix_product_state_cross_1():
     tensor = (np.arange(n**d).reshape((n,)*d))
     tensor = tl.tensor(tensor)
 
-
     tensor_shape = tensor.shape
 
     # Find MPS decomposition of the tensor
@@ -120,7 +119,7 @@ def test_matrix_product_state_cross_4():
         return sum(X)**3
 
     maxvoleps = 1e-4
-    tol = 1e-4
+    tol = 1e-3
     n = 10
     d = 4
     rng = 1
