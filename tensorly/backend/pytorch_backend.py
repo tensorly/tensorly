@@ -57,11 +57,11 @@ class PyTorchBackend(Backend):
         return tensor.dim()
 
     @staticmethod
-    def arange(start, stop=None, step=1.0):
+    def arange(start, stop=None, step=1.0, *args, **kwargs):
         if stop is None:
-            return torch.arange(start=0., end=float(start), step=float(step))
+            return torch.arange(start=0., end=float(start), step=float(step), *args, **kwargs)
         else:
-            return torch.arange(float(start), float(stop), float(step))
+            return torch.arange(float(start), float(stop), float(step), *args, **kwargs)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, inplace=False):
@@ -307,6 +307,14 @@ class PyTorchBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.truncated_svd,
                 'symeig_svd': self.symeig_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if axis is None:
+            tensor = tensor.flatten()
+            axis = -1
+
+        return torch.sort(tensor, dim=axis, descending = descending).values
 
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
@@ -315,3 +323,7 @@ for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
+
+
+
+

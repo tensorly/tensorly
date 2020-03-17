@@ -121,21 +121,17 @@ class MxnetBackend(Backend):
         return res
 
     def qr(self, matrix):
-        # TODO: FIX THIS CASE
-        # s1, s2 = matrix.shape
-        # if s2 > s1:
-        #     Q, L = nd.linalg.gelqf(matrix[:, :s1].T)
-        #     return Q.T, L.T
-        try:
+        s1, s2 = matrix.shape
+        if s2 < s1:
             # NOTE - should be replaced with geqrf when available
             Q, L = nd.linalg.gelqf(matrix.T)
             return Q.T, L.T
-        except:
-            warnings.warn('This version of MXNet does not include the linear '
-                          'algebra function gelqf(). Substituting with numpy.')
-            ctx = self.context(matrix)
-            Q, R = numpy.linalg.qr(self.to_numpy(matrix))
-            return self.tensor(Q, **ctx), self.tensor(R, **ctx)
+
+        warnings.warn('This version of MXNet does not include the linear '
+                      'algebra function gelqf(). Substituting with numpy.')
+        ctx = self.context(matrix)
+        Q, R = numpy.linalg.qr(self.to_numpy(matrix))
+        return self.tensor(Q, **ctx), self.tensor(R, **ctx)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, indlace=False):
@@ -289,6 +285,16 @@ class MxnetBackend(Backend):
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
                 'symeig_svd': self.symeig_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if descending:
+            is_ascend = False
+        else:
+            is_ascend = True
+
+        return mx.ndarray.sort(tensor, axis=axis, is_ascend = is_ascend)
+    
 
 for name in ['float64', 'float32', 'int64', 'int32']:
     MxnetBackend.register_method(name, getattr(numpy, name))

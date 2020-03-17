@@ -53,7 +53,7 @@ def test_random_kruskal():
                 try:
                     T.shape(dot_product)
                 except:
-                    dot_product = T.tensor([dot_product])
+                    dot_product = T.tensor([dot_product], **T.context(weights))
                 assert_array_almost_equal(dot_product, T.tensor([0]))
 
     with np.testing.assert_raises(ValueError):
@@ -90,7 +90,8 @@ def test_random_tucker():
     assert_equal(core.shape, rank, err_msg='core has shape {}, expected {}.'.format(
                                      core.shape, rank))
     for factor in factors:
-        assert_array_almost_equal(T.dot(T.transpose(factor), factor), T.tensor(np.eye(factor.shape[1])))
+        assert_array_almost_equal(T.dot(T.transpose(factor), factor),
+                                  T.tensor(np.eye(factor.shape[1])))
     tensor = tucker_to_tensor((core, factors))
     reconstructed = multi_mode_dot(tensor, factors, transpose=True)
     assert_array_almost_equal(core, reconstructed)
