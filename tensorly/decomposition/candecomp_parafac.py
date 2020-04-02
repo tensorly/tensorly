@@ -173,7 +173,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
     # MGR: fixed Modes
     # Generating the mode update sequence
-    gen = (mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes)
+    modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
@@ -181,7 +181,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
         if verbose > 1:
             print("Starting iteration", iteration + 1)
-        for mode in gen:
+        for mode in modes_list:
             if verbose > 1:
                 print("Mode", mode, "of", tl.ndim(tensor))
 
