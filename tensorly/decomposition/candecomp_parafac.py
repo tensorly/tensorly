@@ -15,8 +15,9 @@ from ..tenalg import khatri_rao
 
 # License: BSD 3 clause
 
-def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
-                       non_negative=False, normalize_factors=False):
+def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
+                       non_negative=False, normalize_factors=False,
+                       input_factors=None):
     r"""Initialize factors used in `parafac`.
 
     The type of initialization is set using `init`. If `init == 'random'` then
@@ -28,7 +29,7 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     ----------
     tensor : ndarray
     rank : int
-    init : {'svd', 'random'}, optional
+    init : {'svd', 'random', 'given'}, optional
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     non_negative : bool, default is False
@@ -43,6 +44,11 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     """
     rng = check_random_state(random_state)
     eps = tl.eps(tensor.dtype)
+
+    if init == 'given':
+        if input_factors is None:
+            print('Warning: initialization method states you want to provide initial values, but no input was given.')
+        return tl.copy(input_factors)
 
     if init == 'random':
         factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
@@ -85,6 +91,7 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\
+            input_factors=None,\
             tol=1e-8, random_state=None,\
             verbose=0, return_errors=False,\
             l2_reg=0, mask=None,\
@@ -102,7 +109,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         Number of components.
     n_iter_max : int
         Maximum number of iteration
-    init : {'svd', 'random'}, optional
+    init : {'svd', 'random', 'given'}, optional
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
@@ -157,7 +164,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
     factors = initialize_factors(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
-                                 normalize_factors=normalize_factors)
+                                 normalize_factors=normalize_factors,
+                                 input_factors=input_factors)
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
     weights = tl.ones(rank, **tl.context(tensor))
