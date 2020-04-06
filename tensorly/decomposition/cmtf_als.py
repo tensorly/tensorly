@@ -68,7 +68,8 @@ def factor_match_score_3d(kruskal_tensor_3d_true, kruskal_tensor_2d_true, kruska
     xi_pred = lambda_pred + alpha_pred
 
     # take care of permutation of normalized matrices (not mentioned in paper, but necessary)
-    perm = tl.dot(A.T, A_pred) * tl.dot(B.T, B_pred) * tl.dot(C.T, C_pred)
+    perm = tl.dot(tl.transpose(A), A_pred) * tl.dot(tl.transpose(B), B_pred) * tl.dot(
+        tl.transpose(C), C_pred)
     order = tl.argmax(perm, axis=1)
     perm = perm[:, order]  # perm[r,r] now corresponds to
     # (a_r.T @ a_pred_r) / (||(a_r|| ||a_pred_r||) * (b_r.T @ b_pred_r) / (||(b_r|| ||b_pred_r||) *
@@ -156,11 +157,13 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank):
     # note that the order of the khatri rao product is reversed since tl.unfold has another order
     # than assumed in paper
     for iteration in range(10 ** 4):
-        A = solve_least_squares(tl.concatenate((khatri_rao([B, C]).T, V.T), axis=1).T,
-                                tl.concatenate((tl.unfold(X, 0), Y), axis=1).T).T
-        B = solve_least_squares(khatri_rao([A, C]), tl.unfold(X, 1).T).T
-        C = solve_least_squares(khatri_rao([A, B]), tl.unfold(X, 2).T).T
-        V = solve_least_squares(A, Y).T
+        A = tl.transpose(solve_least_squares(
+            tl.transpose(tl.concatenate((tl.transpose(khatri_rao([B, C])), tl.transpose(V)),
+                                        axis=1)),
+            tl.transpose(tl.concatenate((tl.unfold(X, 0), Y), axis=1))))
+        B = tl.transpose(solve_least_squares(khatri_rao([A, C]), tl.transpose(tl.unfold(X, 1))))
+        C = tl.transpose(solve_least_squares(khatri_rao([A, B]), tl.transpose(tl.unfold(X, 2))))
+        V = tl.transpose(solve_least_squares(A, Y))
         error_new = 1 / 2 * tl.norm(
             X - tl.kruskal_tensor.kruskal_to_tensor((None, [A, B, C]))) ** 2 + 1 / 2 * tl.norm(
             Y - tl.kruskal_tensor.kruskal_to_tensor((None, [A, V])))
