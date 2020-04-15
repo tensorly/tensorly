@@ -55,7 +55,7 @@ def factor_match_score_3d(kruskal_tensor_3d_true, kruskal_tensor_2d_true, kruska
     }
 
     Notes
-    ------
+    -----
     In a first step, the tensors are aligned. Therefore, <a_i, a_pred_j> * <b_i, b_pred_j> *
     <c_i, c_pred_j> is calculated for all i and j, not only for i=j. If the i-th vector of the
     true factor matrix belongs to the j-th vector of the predicted matrix, the result is close to
@@ -116,12 +116,14 @@ def factor_match_score_3d(kruskal_tensor_3d_true, kruskal_tensor_2d_true, kruska
 
 def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank):
     """
-    Calculates a coupled matrix and tensor factorization of 3rd order tensor and matrix which are coupled in first mode.
+    Calculates a coupled matrix and tensor factorization of 3rd order tensor and matrix which are
+    coupled in first mode.
 
-    Assume you have tensor_3d = [[A, B, C]] and matrix = [[A, V]], which are coupled in 1st mode.
-    With coupled matrix and tensor factorization (CTMF), the factor matrices A, B, C for the CP decomposition of X
-    and the matrix V are found.
-    This implementation only works for a coupling in the first mode.
+    Assume you have tensor_3d = [[lambda; A, B, C]] and matrix = [[gamma; A, V]], which are
+    coupled in 1st mode. With coupled matrix and tensor factorization (CTMF), the normalized
+    factor matrices A, B, C for the CP decomposition of X, the normalized matrix V and the
+    weights lambda_ and gamma are found. This implementation only works for a coupling in the
+    first mode.
 
     Solution is found via alternating least squares (ALS) as described in Figure 5 of
     @article{acar2011all,
@@ -130,6 +132,11 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank):
       journal={arXiv preprint arXiv:1105.3422},
       year={2011}
     }
+
+    Notes
+    -----
+    In the paper, the columns of the factor matrices are not normalized and therefore weights are
+    not included in the algorithm.
 
     Parameters
     ----------
@@ -143,7 +150,7 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank):
     Returns
     -------
     tensor_3d_pred, matrix_pred : Kruskal tensors
-        tensor_3d_pred = [[A,B,C]], matrix_pred = [[A,V]]
+        tensor_3d_pred = [[lambda; A,B,C]], matrix_pred = [[gamma; A,V]]
 
     Examples
     --------
@@ -163,43 +170,58 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank):
     if tl.is_tensor(tensor_3d):
         X = tensor_3d
     else:
-        shape, _ = tl.kruskal_tensor._validate_kruskal_tensor(
+        _, _ = tl.kruskal_tensor._validate_kruskal_tensor(
             tensor_3d)  # this will fail if it isn't a valid tuple or KruskalTensor
         X = tl.kruskal_tensor.kruskal_to_tensor(tensor_3d)
 
     if tl.is_tensor(matrix):
         Y = matrix
     else:
-        shape, _ = tl.kruskal_tensor._validate_kruskal_tensor(
+        _, _ = tl.kruskal_tensor._validate_kruskal_tensor(
             matrix)  # this will fail if it isn't a valid tuple or KruskalTensor
         Y = tl.kruskal_tensor.kruskal_to_tensor(matrix)
 
     # initialize values
     s = X.shape + (Y.shape[1],)
     A, B, C, V = random_kruskal(s, rank).factors
+    lambda_ = tl.ones(rank)
+    gamma = tl.ones(rank)
 
     # alternating least squares
-    # note that no rescaling is done since it is not guaranteed that the columns in true matrices
-    # have unit norm
     # note that the order of the khatri rao product is reversed since tl.unfold has another order
     # than assumed in paper
     for iteration in range(10 ** 4):
         A = tl.transpose(solve_least_squares(
-            tl.transpose(tl.concatenate((tl.transpose(khatri_rao([B, C])), tl.transpose(V)),
-                                        axis=1)),
+            tl.transpose(tl.concatenate((tl.dot(np.diag(lambda_), tl.transpose(khatri_rao([B, C]))),
+                                         tl.dot(np.diag(gamma), tl.transpose(V))), axis=1)),
             tl.transpose(tl.concatenate((tl.unfold(X, 0), Y), axis=1))))
-        B = tl.transpose(solve_least_squares(khatri_rao([A, C]), tl.transpose(tl.unfold(X, 1))))
-        C = tl.transpose(solve_least_squares(khatri_rao([A, B]), tl.transpose(tl.unfold(X, 2))))
-        V = tl.transpose(solve_least_squares(A, Y))
+        norm_A = tl.norm(A, axis=0)
+        A /= norm_A
+        lambda_ *= norm_A
+        gamma *= norm_A
+        B = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, C]), np.diag(lambda_)),
+                                             tl.transpose(tl.unfold(X, 1))))
+        norm_B = tl.norm(B)
+        B /= norm_B
+        lambda_ *= norm_B
+        C = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, B]), np.diag(lambda_)),
+                                             tl.transpose(tl.unfold(X, 2))))
+        norm_C = tl.norm(C)
+        C /= norm_C
+        lambda_ *= norm_C
+        V = tl.transpose(solve_least_squares(tl.dot(A, np.diag(gamma)), Y))
+        norm_V = tl.norm(V)
+        V /= norm_V
+        gamma *= norm_V
         error_new = 1 / 2 * tl.norm(
-            X - tl.kruskal_tensor.kruskal_to_tensor((None, [A, B, C]))) ** 2 + 1 / 2 * tl.norm(
-            Y - tl.kruskal_tensor.kruskal_to_tensor((None, [A, V])))
+            X - tl.kruskal_tensor.kruskal_to_tensor((lambda_, [A, B, C]))) ** 2 + 1 / 2 * tl.norm(
+            Y - tl.kruskal_tensor.kruskal_to_tensor((gamma, [A, V])))
 
         if iteration > 0 and tl.abs(error_new - error_old) / error_old <= 1e-8:
             break
         error_old = error_new
 
-    tensor_3d_pred = KruskalTensor((None, [A, B, C]))
-    matrix_pred = KruskalTensor((None, [A, V]))
+    tensor_3d_pred = KruskalTensor((lambda_, [A, B, C]))
+    matrix_pred = KruskalTensor((gamma, [A, V]))
 
     return tensor_3d_pred, matrix_pred
