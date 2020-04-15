@@ -1,9 +1,31 @@
 import numpy as np
 
 import tensorly as tl
-from ..cmtf_als import (factor_match_score_3d, coupled_matrix_tensor_3d_factorization)
+from ..cmtf_als import (align_tensors, factor_match_score_3d,
+                        coupled_matrix_tensor_3d_factorization)
 from ...kruskal_tensor import KruskalTensor
-from ...testing import assert_array_almost_equal, assert_array_less
+from ...testing import assert_array_almost_equal, assert_array_less, assert_equal
+
+
+def test_align_tensors():
+    # test for three matrices
+
+    matrix = tl.tensor([[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0.1, 0, 0, 0], [0, 0, 1, 0, 0],
+                        [0, 0, 0, 0.5, 1]])
+    order_hat = align_tensors(matrix)
+    true_order = tl.tensor([0, 1, 3, 2, 4])
+    assert_equal(order_hat, true_order)
+
+    matrix = tl.tensor([[0, 1, 0, 0], [1, 0, 0.5, 0], [0.5, 0, 1, 0.3], [0, 0, 0.2, 0.3]])
+    order_hat = align_tensors(matrix)
+    true_order = tl.tensor([1, 0, 2, 3])
+    assert_equal(order_hat, true_order)
+
+    matrix = tl.tensor([[0, 0, 1, 0, 0], [1, 0, 0, 0, 0], [0, 0, 0.3, 0, 1], [0, 0, 0, 1, 0],
+                        [0, 0, 0, 0, 0]])
+    order_hat = align_tensors(matrix)
+    true_order = tl.tensor([1, 4, 0, 3, 2])
+    assert_equal(order_hat, true_order)
 
 
 def test_factor_match_score_3d():
