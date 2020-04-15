@@ -7,4 +7,4 @@ from .candecomp_parafac import parafac, non_negative_parafac, randomised_parafac
 from ._tucker import tucker, partial_tucker, non_negative_tucker
 from .robust_decomposition import robust_pca
 from .mps_decomposition import matrix_product_state
-from .cmtf_als import factor_match_score_3d, coupled_matrix_tensor_3d_factorization
+from .cmtf_als import align_tensors, factor_match_score_3d, coupled_matrix_tensor_3d_factorization
