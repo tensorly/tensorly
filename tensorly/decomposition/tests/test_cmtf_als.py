@@ -52,7 +52,8 @@ def test_coupled_matrix_tensor_3d_factorization():
     X_true = KruskalTensor((None, [A, B, C]))
     Y_true = KruskalTensor((None, [A, V]))
     X_pred, Y_pred = coupled_matrix_tensor_3d_factorization(X_true, Y_true, R)
-    assert_array_less(0.99 ** 4, factor_match_score_3d(X_true, Y_true, X_pred, Y_pred))
+    fms = factor_match_score_3d(X_true, Y_true, X_pred, Y_pred)
+    assert_array_less(0.99 ** 4, fms)
 
     # scenario as in paper (with noise)
 
@@ -78,4 +79,5 @@ def test_coupled_matrix_tensor_3d_factorization():
     Y = Y + eta * N * tl.norm(Y) / tl.norm(N)
 
     X_pred, Y_pred = coupled_matrix_tensor_3d_factorization(X, Y, R)
-    assert_array_less(0.99 ** 4, factor_match_score_3d(X_true, Y_true, X_pred, Y_pred))
+    fms = factor_match_score_3d(X_true, Y_true, X_pred, Y_pred)
+    assert_array_less(0.99 ** 4, fms)
