@@ -6,9 +6,6 @@ except ImportError as error:
                'you must first install TensorFlow!')
     raise ImportError(message) from error
 
-#import tensorflow.contrib.eager as tfe
-#tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
-
 import numpy as np
 
 from . import Backend
@@ -26,7 +23,7 @@ class TensorflowBackend(Backend):
         if isinstance(data, tf.Tensor):
             return data
 
-        out = tf.constant(data, dtype=dtype)
+        out = tf.Variable(tf.constant(data, dtype=dtype))
         return out.gpu(device_id) if device == 'gpu' else out
 
     @staticmethod
@@ -39,6 +36,8 @@ class TensorflowBackend(Backend):
             return tensor
         elif isinstance(tensor, tf.Tensor):
             return tensor.numpy()
+        elif isinstance(tensor, tf.Variable):
+            return tf.convert_to_tensor(tensor).numpy()
         else:
             return tensor
 
@@ -175,6 +174,17 @@ class TensorflowBackend(Backend):
 
         return tf.sort(tensor, axis=axis, direction = direction)
     
+    def index_update(self, tensor, indices, values):
+        tensor = tf.Variable(tensor)
+        
+        if isinstance(values, int):
+            values = tf.constant(np.ones(self.shape(tensor[indices]))*values,
+                                 **self.context(tensor))
+        
+        tensor = tensor[indices].assign(values)
+
+        return tf.convert_to_tensor(tensor)
+
 
 _FUN_NAMES = [
     # source_fun, target_fun

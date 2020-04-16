@@ -73,7 +73,6 @@ class NumpyBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.partial_svd}
     
-    
     @staticmethod
     def sort(tensor, axis, descending = False):
         if descending:
