@@ -4,15 +4,14 @@
 .. image:: https://anaconda.org/tensorly/tensorly/badges/version.svg   
     :target: https://anaconda.org/tensorly/tensorly
 
-.. image:: https://travis-ci.org/tensorly/tensorly.svg?branch=master
-    :target: https://travis-ci.org/tensorly/tensorly
+.. image:: https://travis-ci.com/tensorly/tensorly.svg?branch=master
+    :target: https://travis-ci.com/tensorly/tensorly
 
 .. image:: https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master
     :target: https://coveralls.io/github/tensorly/tensorly?branch=master
     
 .. image:: https://badges.gitter.im/tensorly/tensorly.svg
     :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
-
 
 ========
 TensorLy
