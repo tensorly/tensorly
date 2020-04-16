@@ -23,7 +23,7 @@ class TensorflowBackend(Backend):
         if isinstance(data, tf.Tensor):
             return data
 
-        out = tf.Variable(tf.constant(data, dtype=dtype))
+        out = tf.constant(data, dtype=dtype)
         return out.gpu(device_id) if device == 'gpu' else out
 
     @staticmethod

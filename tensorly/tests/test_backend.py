@@ -556,7 +556,7 @@ def test_prod():
 def test_index_update():
     np_tensor = np.random.random((3, 5)).astype(dtype=np.float32)
     tensor = tl.tensor(np.copy(np_tensor))
-    np_insert = np.random.random((1, 2)).astype(dtype=np.float32)
+    np_insert = np.random.random((3, 2)).astype(dtype=np.float32)
     insert = tl.tensor(np.copy(np_insert))
 
     np_tensor[:, 1:3] = np_insert
