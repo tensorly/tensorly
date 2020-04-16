@@ -94,9 +94,9 @@ def _validate_kruskal_tensor(kruskal_tensor):
                                  rank, i, T.shape(factor)[1]))
         shape.append(current_mode_size)
 
-    if weights is not None and len(weights) != rank:
+    if weights is not None and T.shape(weights) != (rank, ):
         raise ValueError('Given factors for a rank-{} Kruskal tensor but len(weights)={}.'.format(
-            rank, len(weights)))
+            rank, T.shape(weights)))
         
     return tuple(shape), rank
 

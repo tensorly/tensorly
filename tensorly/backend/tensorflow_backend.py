@@ -23,12 +23,12 @@ class TensorflowBackend(Backend):
         if isinstance(data, tf.Tensor):
             return data
 
-        out = tf.constant(data, dtype=dtype)
+        out = tf.Variable(data, dtype=dtype)
         return out.gpu(device_id) if device == 'gpu' else out
 
     @staticmethod
     def is_tensor(tensor):
-        return isinstance(tensor, tf.Tensor)
+        return isinstance(tensor, tf.Tensor) or isinstance(tensor, tf.Variable)
 
     @staticmethod
     def to_numpy(tensor):
@@ -175,7 +175,11 @@ class TensorflowBackend(Backend):
         return tf.sort(tensor, axis=axis, direction = direction)
     
     def index_update(self, tensor, indices, values):
-        tensor = tf.Variable(tensor)
+        if not isinstance(tensor, tf.Variable):
+            tensor = tf.Variable(tensor)
+            to_tensor = True
+        else:
+            to_tensor = False
         
         if isinstance(values, int):
             values = tf.constant(np.ones(self.shape(tensor[indices]))*values,
@@ -183,7 +187,10 @@ class TensorflowBackend(Backend):
         
         tensor = tensor[indices].assign(values)
 
-        return tf.convert_to_tensor(tensor)
+        if to_tensor:
+            return tf.convert_to_tensor(tensor)
+        else:
+            return tensor
 
 
 _FUN_NAMES = [

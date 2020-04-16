@@ -95,7 +95,7 @@ def sparsify_tensor(tensor, card):
     -------
     ndarray of shape tensor.shape
     """
-    if card >= tl.prod(tl.tensor(tensor.shape)):
+    if card >= np.prod(tensor.shape):
         return tensor
     bound = tl.sort(tl.abs(tensor), axis = None)[-card]
     
