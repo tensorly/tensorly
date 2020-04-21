@@ -11,6 +11,13 @@ import scipy.linalg
 import scipy.sparse.linalg
 
 
+class Index():
+    __slots__ = ()
+
+    def __getitem__(self, indices):
+        return indices
+
+
 class Backend(object):
     @classmethod
     def register_method(cls, name, func):
@@ -567,6 +574,27 @@ class Backend(object):
         """
         raise NotImplementedError
 
+
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        """Return a sorted copy of an array
+
+        Parameters
+        ----------
+        tensor : tensor
+            An N-D tensor
+        axis : int or None
+            Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
+        descending : bool
+            If True, values are sorted in descending order, otherwise in ascending.
+
+        Returns
+        -------
+        sorted_tensor : tensor
+            An N-D array, sorted copy of input tensor
+        """
+        raise NotImplementedError
+
     def kron(self, a, b):
         """Kronecker product of two tensors.
 
@@ -736,3 +764,86 @@ class Backend(object):
             S = self.tensor(S, **ctx)
             V = self.tensor(V, **ctx)
         return U, S, V
+
+    def truncated_svd(self, matrix, n_eigenvecs=None, **kwargs):
+        """Computes a truncated SVD on `matrix` using pytorch's SVD
+
+        Parameters
+        ----------
+        matrix : 2D-array
+        n_eigenvecs : int, optional, default is None
+            if specified, number of eigen[vectors-values] to return
+        **kwargs : optional
+            kwargs are used to absorb the difference of parameters among the other SVD functions
+
+        Returns
+        -------
+        U : 2D-array
+            of shape (matrix.shape[0], n_eigenvecs)
+            contains the right singular vectors
+        S : 1D-array
+            of shape (n_eigenvecs, )
+            contains the singular values of `matrix`
+        V : 2D-array
+            of shape (n_eigenvecs, matrix.shape[1])
+            contains the left singular vectors
+        """
+        dim_1, dim_2 = matrix.shape
+        if dim_1 <= dim_2:
+            min_dim = dim_1
+        else:
+            min_dim = dim_2
+
+        if n_eigenvecs is None or n_eigenvecs > min_dim:
+            full_matrices = True
+        else:
+            full_matrices = False
+
+        U, S, V = self.svd(matrix)
+        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+        return U, S, V
+
+    index = Index()
+    
+    @staticmethod
+    def index_update(tensor, indices, values):
+        """Updates the value of tensors in the specified indices
+            Should be used as::
+
+                index_update(tensor, tensorly.index[:, 3:5], values)
+
+            Equivalent of::
+            
+                tensor[:, 3:5] = values
+
+        Parameters
+        ----------
+        tensor : tensorly.tensor
+            intput tensor which values to update
+        indices : tensorly.index
+            indices to update
+        values : tensorly.tensor
+            values to use to fill tensor[indices]
+        
+        Returns
+        -------
+        tensor
+            updated tensor
+
+        Example
+        -------
+        
+        >>> import tensorly as tl
+        >>> import numpy as np
+        >>> tensor = tl.tensor([[1, 2, 3], [4, 5, 6]])
+        >>> cpy = tensor.copy()
+        >>> tensor[:, 1] = 0
+        >>> tensor
+        array([[1, 0, 3],
+                [4, 0, 6]])
+        >>> tl.index_update(tensor, tl.index[:, 1], 0)
+        array([[1, 0, 3],
+               [4, 0, 6]])
+        """
+        tensor[indices] = values
+        return tensor

@@ -20,12 +20,25 @@ a {
     min-height: calc(100vh + 1rem);
 }
 /* API table */
+/*
+.field-list dl {
+    display: table-cell!important;
+}
+.field-list dt {
+      background: whitesmoke;
+  }
+*/
 td {
 	display: table-cell!important;
 }
 th {
       background: whitesmoke;
   }
+.classifier:before {
+    font-style: normal;
+    margin: 0.5em;
+    content: ":";
+}
 @media screen and (max-width: 768px) {
 	table, tbody, td, tr {
 		display: block!important; /* stack on mobile */
