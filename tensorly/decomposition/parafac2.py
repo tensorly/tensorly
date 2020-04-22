@@ -70,7 +70,8 @@ def _pad_by_zeros(tensor_slices):
     padded = T.zeros((I, J, K), **T.context(tensor_slices[0])) 
     for i, tensor_slice in enumerate(tensor_slices):
         J_i = len(tensor_slice)
-        padded[i, :J_i] = tensor_slice
+        
+        tl.index_update(padded, tl.index[i, :J_i], tensor_slice)
     
     return padded
 
@@ -85,8 +86,9 @@ def _compute_projections(tensor_slices, factors, svd_fun, out=None):
         lhs = T.dot(B, T.transpose(a_i*C))
         rhs = T.transpose(tensor_slice)
         U, S, Vh = svd_fun(T.dot(lhs, rhs), n_eigenvecs=A.shape[1])
-        projection[:] = T.transpose(T.dot(U, Vh))
-    
+
+        tl.index_update(projection, tl.index[:], T.transpose(T.dot(U, Vh)))
+
     return out
 
 
@@ -97,8 +99,9 @@ def _project_tensor_slices(tensor_slices, projections, out=None):
         num_cols = tensor_slices[0].shape[1]
         out = T.zeros((num_slices, rank, num_cols), **T.context(tensor_slices[0]))
 
-    for projected_tensor_slice, tensor_slice, projection in zip(out, tensor_slices, projections):
-        projected_tensor_slice[:] = T.dot(T.transpose(projection), tensor_slice)
+    for i, (tensor_slice, projection) in enumerate(zip(tensor_slices, projections)):
+        slice_ = T.dot(T.transpose(projection), tensor_slice)
+        tl.index_update(out, tl.index[i, :], slice_)
     return out
 
 
