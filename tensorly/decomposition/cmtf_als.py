@@ -217,7 +217,8 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank):
             X - tl.kruskal_tensor.kruskal_to_tensor((lambda_, [A, B, C]))) ** 2 + 1 / 2 * tl.norm(
             Y - tl.kruskal_tensor.kruskal_to_tensor((gamma, [A, V])))
 
-        if iteration > 0 and tl.abs(error_new - error_old) / error_old <= 1e-8:
+        if iteration > 0 and (tl.abs(error_new - error_old) / error_old <= 1e-8 or error_new <
+                              1e-5):
             break
         error_old = error_new
 
