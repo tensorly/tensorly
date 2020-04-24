@@ -30,15 +30,23 @@ def test_align_tensors():
 
 def test_factor_match_score_3d():
     # same factors
-    X_true = KruskalTensor((None, [tl.tensor([[4, 1], [0, 2]]), tl.tensor([[0, 1], [3, 5]]),
-                                   tl.tensor([[1, 1], [1, 2]])]))
-    Y_true = KruskalTensor((None, [tl.tensor([[4, 1], [0, 2]]), tl.tensor([[1, 1], [1, 2]])]))
+    X_true = KruskalTensor((tl.tensor([1, 2]), [tl.tensor([[4, 1], [0, 2]]),
+                                                tl.tensor([[0, 1], [3, 5]]),
+                                                tl.tensor([[1, 1], [1, 2]])]))
+    Y_true = KruskalTensor((tl.tensor([1, 1]), [tl.tensor([[4, 1], [0, 2]]),
+                                                tl.tensor([[1, 1], [1, 2]])]))
     assert_array_almost_equal(1, factor_match_score_3d(X_true, Y_true, X_true, Y_true))
 
-    # with permutation
-    X_pred = KruskalTensor((None, [tl.tensor([[1, 4], [2, 0]]), tl.tensor([[1, 0], [5, 3]]),
-                                   tl.tensor([[1, 1], [2, 1]])]))
-    Y_pred = KruskalTensor((None, [tl.tensor([[1, 4], [2, 0]]), tl.tensor([[1, 1], [2, 1]])]))
+    # with permutation and scaling and sign
+    X_pred = KruskalTensor((tl.tensor([2 * tl.sqrt(650), -tl.sqrt(288)]),
+                            [tl.tensor([[1 / tl.sqrt(5), -1], [2 / tl.sqrt(5), 0]]),
+                             tl.tensor([[1 / tl.sqrt(26), 0], [5 / tl.sqrt(26), 1]]),
+                             tl.tensor([[1 / tl.sqrt(5), 1 / tl.sqrt(2)],
+                                        [2 / tl.sqrt(5), 1 / tl.sqrt(2)]])]))
+    Y_pred = KruskalTensor((tl.tensor([-5, -4*tl.sqrt(2)]),
+                            [tl.tensor([[1 / tl.sqrt(5), -1], [2 / tl.sqrt(5), 0]]),
+                             tl.tensor([[-1 / tl.sqrt(5), 1 / tl.sqrt(2)],
+                                        [-2 / tl.sqrt(5), 1 / tl.sqrt(2)]])]))
     assert_array_almost_equal(1, factor_match_score_3d(X_true, Y_true, X_pred, Y_pred))
 
 
