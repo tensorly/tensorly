@@ -1,9 +1,26 @@
-import numpy as np
+import warnings
+from distutils.version import LooseVersion
+
+try:
+    import jax
+    from jax.config import config
+    config.update("jax_enable_x64", True)
+    import jax.numpy as np
+except ImportError as error:
+    message = ('Impossible to import Jax.\n'
+               'To use TensorLy with the Jax backend, '
+               'you must first install Jax!')
+    raise ImportError(message) from error
+
+import numpy
+import copy
+
 from .core import Backend
 
 
-class NumpyBackend(Backend):
-    backend_name = 'numpy'
+
+class JaxBackend(Backend):
+    backend_name = 'jax'
 
     @staticmethod
     def context(tensor):
@@ -19,7 +36,11 @@ class NumpyBackend(Backend):
 
     @staticmethod
     def to_numpy(tensor):
-        return np.copy(tensor)
+        return numpy.asarray(tensor)
+
+    @staticmethod
+    def copy(tensor):
+        return copy.copy(tensor)
 
     @staticmethod
     def shape(tensor):
@@ -28,10 +49,6 @@ class NumpyBackend(Backend):
     @staticmethod
     def ndim(tensor):
         return tensor.ndim
-
-    @staticmethod
-    def clip(tensor, a_min=None, a_max=None, inplace=False):
-        return np.clip(tensor, a_min, a_max)
 
     @staticmethod
     def dot(a, b):
@@ -71,7 +88,8 @@ class NumpyBackend(Backend):
     @property
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.partial_svd}
+                'truncated_svd': self.truncated_svd}
+    
     
     @staticmethod
     def sort(tensor, axis, descending = False):
@@ -81,14 +99,15 @@ class NumpyBackend(Backend):
             return np.sort(tensor, axis=axis)
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
-             'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
+             'where', 'transpose', 'arange', 'ones', 'zeros',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag']:
-    NumpyBackend.register_method(name, getattr(np, name))
+             'argmax', 'stack', 'conj', 'diag', 'clip']:
+    JaxBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr', 'pinv']:
-    NumpyBackend.register_method(name, getattr(np.linalg, name))
-    
-    
+for name in ['solve', 'qr', 'svd']:
+    JaxBackend.register_method(name, getattr(np.linalg, name))
+
+for name in ['index', 'index_update']:
+    JaxBackend.register_method(name, getattr(jax.ops, name))
 

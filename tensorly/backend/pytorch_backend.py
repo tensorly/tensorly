@@ -289,11 +289,13 @@ class PyTorchBackend(Backend):
             dim_1, dim_2 = dim_2, dim_1
 
         if dim_1 < dim_2:
-            S, U = torch.symeig(self.dot(matrix, self.transpose(matrix)))
+            S, U = torch.symeig(self.dot(matrix, self.transpose(matrix)),
+                                eigenvectors=True)
             S = torch.sqrt(S)
             V = self.dot(self.transpose(matrix), U / self.reshape(S, (1, -1)))
         else:
-            S, V = torch.symeig(self.dot(self.transpose(matrix), matrix))
+            S, V = torch.symeig(self.dot(self.transpose(matrix), matrix),
+                                eigenvectors=True)
             S = torch.sqrt(S)
             U = self.dot(matrix, V) / self.reshape(S, (1, -1))
 
@@ -316,6 +318,9 @@ class PyTorchBackend(Backend):
 
         return torch.sort(tensor, dim=axis, descending = descending).values
 
+    @staticmethod
+    def update_index(tensor, index, values):
+        tensor.index_put_(index, values)
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
              'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
