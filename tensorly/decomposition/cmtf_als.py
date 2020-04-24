@@ -183,7 +183,6 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd'):
         Y = tl.kruskal_tensor.kruskal_to_tensor(matrix)
 
     # initialize values
-    s = X.shape + (Y.shape[1],)
     A, B, C = initialize_factors(X.astype(float), rank, init=init)
     V = tl.transpose(solve_least_squares(A, Y))
     lambda_ = tl.ones(rank)
