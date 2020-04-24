@@ -6,6 +6,7 @@ from ..random import random_kruskal
 from ..tenalg import solve_least_squares
 from ..kruskal_tensor import kruskal_normalise
 from ..kruskal_tensor import KruskalTensor
+from .candecomp_parafac import initialize_factors
 
 
 # Authors: Isabell Lehmann <isabell.lehmann94@outlook.de>
@@ -114,7 +115,7 @@ def factor_match_score_3d(kruskal_tensor_3d_true, kruskal_tensor_2d_true, kruska
     return tl.min(FMS)
 
 
-def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank):
+def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd'):
     """
     Calculates a coupled matrix and tensor factorization of 3rd order tensor and matrix which are
     coupled in first mode.
@@ -183,7 +184,8 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank):
 
     # initialize values
     s = X.shape + (Y.shape[1],)
-    A, B, C, V = random_kruskal(s, rank).factors
+    A, B, C = initialize_factors(X.astype(float), rank, init=init)
+    V = tl.transpose(solve_least_squares(A, Y))
     lambda_ = tl.ones(rank)
     gamma = tl.ones(rank)
 
