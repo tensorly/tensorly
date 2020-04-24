@@ -95,7 +95,7 @@ def factor_match_score_3d(kruskal_tensor_3d_true, kruskal_tensor_2d_true, kruska
     # in paper, but necessary)
     product = tl.dot(tl.transpose(A), A_pred) * tl.dot(tl.transpose(B), B_pred) * tl.dot(
         tl.transpose(C), C_pred)
-    perm = product * np.sign(lambda_[:, None] @ lambda_pred[None, :])
+    perm = product * tl.sign(tl.dot(tl.reshape(lambda_, (-1, 1)), tl.reshape(lambda_pred, (1, -1))))
     order = align_tensors(perm)
 
     product = product[order, :]  # product[r,r] now corresponds to
@@ -108,7 +108,7 @@ def factor_match_score_3d(kruskal_tensor_3d_true, kruskal_tensor_2d_true, kruska
     rank = A.shape[1]
     FMS = tl.zeros(rank)
     for r in range(rank):
-        FMS[r] = (1 - tl.abs(xi[r] - xi_pred[r]) / tl.max([xi[r], xi_pred[r]])) * tl.abs(
+        FMS[r] = (1 - tl.abs(xi[r] - xi_pred[r]) / max(xi[r], xi_pred[r])) * tl.abs(
             product[r, r] * tl.dot(V[:, r], V_pred[:, r]))
 
     return tl.min(FMS)
