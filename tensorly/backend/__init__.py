@@ -12,7 +12,8 @@ _KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
                    'mxnet':'MxnetBackend', 
                    'pytorch':'PyTorchBackend', 
                    'tensorflow':'TensorflowBackend',
-                   'cupy':'CupyBackend'}
+                   'cupy':'CupyBackend',
+                   'jax': 'JaxBackend'}
 
 _LOADED_BACKENDS = {}
 _LOCAL_STATE = threading.local()
@@ -216,7 +217,8 @@ qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
 sort = dispatch(Backend.sort)
-
+# index = dispatch(Backend.index)
+index_update = dispatch(Backend.index_update)
 
 # Initialise the backend to the default one
 initialize_backend()

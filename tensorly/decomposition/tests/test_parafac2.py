@@ -48,6 +48,12 @@ def test_parafac2(normalize_factors):
         rank=rank,
         random_state=rng,
     )
+    # It is difficult to correctly identify B[i, :, r] if A[i, r] is small.
+    # This is sensible, since then B[i, :, r] contributes little to the total value of X.
+    # To test the PARAFAC2 decomposition in the precence of roundoff errors, we therefore add
+    # 0.01 to the A factor matrix.
+    random_parafac2_tensor.factors[0] = random_parafac2_tensor.factors[0] + 0.01
+
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
@@ -104,7 +110,7 @@ def test_parafac2_normalize_factors():
         rank=rank,
         random_state=rng,
     )
-    random_parafac2_tensor.weights[0] = 100
+    tl.index_update(random_parafac2_tensor.weights, tl.index[0], 100)
     slices = parafac2_to_tensor(random_parafac2_tensor)
     normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
     assert normalized_rec.weights[0] > 1
@@ -152,15 +158,15 @@ def test_parafac2_to_tensor():
     weights, factors, projections = random_parafac2(shapes=[(J, K)]*I, rank=rank, random_state=rng)
 
     constructed_tensor = parafac2_to_tensor((weights, factors, projections))
-    tensor_manual = T.zeros((I, J, K))
+    tensor_manual = T.zeros((I, J, K), **T.context(weights))
 
     for i in range(I):
         Bi = T.dot(projections[i], factors[1])
         for j in range(J):
             for k in range(K):
                 for r in range(rank):
-                    tensor_manual[i, j, k] += factors[0][i][r]*Bi[j][r]*factors[2][k][r]
+                    tl.index_update(tensor_manual, tl.index[i, j, k],  tensor_manual[i, j, k] + factors[0][i][r]*Bi[j][r]*factors[2])[k][r]
 
-    assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-8)
+    assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-6)
     
     

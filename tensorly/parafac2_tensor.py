@@ -143,9 +143,9 @@ def _validate_parafac2_tensor(parafac2_tensor):
                              'However, factors[0].shape[1]={} but factors[{}].shape[1]={}.'.format(
                                  rank, i, T.shape(factor)[1]))
 
-    if weights is not None and len(weights) != rank:
+    if weights is not None and T.shape(weights)[0]  != rank:
         raise ValueError('Given factors for a rank-{} PARAFAC2 tensor but len(weights)={}.'.format(
-            rank, len(weights)))
+            rank, T.shape(weights)[0]))
         
     return tuple(shape), rank
 
@@ -186,12 +186,12 @@ def parafac2_normalise(parafac2_tensor, copy=False):
         factors = [T.copy(f) for f in factors]
         projections = [T.copy(p) for p in projections]
         if weights is not None:
-            factors[0] *= weights
+            factors[0] = factors[0] * weights
         weights = T.ones(rank, **T.context(factors[0]))
         
     for factor in factors:
         scales = T.norm(factor, axis=0)
-        weights *= scales
+        weights = weights*scales
         scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factors[0])), scales)
         factor /= scales_non_zero
         
@@ -405,7 +405,7 @@ def parafac2_to_tensor(parafac2_tensor):
     
     tensor = T.zeros((A.shape[0], max(lengths), C.shape[0]),  **T.context(slices[0]))
     for i, (slice_, length) in enumerate(zip(slices, lengths)):
-        tensor[i, :length] = slice_
+        T.index_update(tensor, T.index[i, :length], slice_)
     return tensor
 
 
@@ -508,4 +508,3 @@ def parafac2_to_vec(parafac2_tensor):
         Full constructed tensor. Uneven slices are padded with zeros.
     """
     return tensor_to_vec(parafac2_to_tensor(parafac2_tensor))
-

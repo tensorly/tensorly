@@ -3,7 +3,8 @@ from ...mps_tensor import mps_to_tensor
 from ...random import check_random_state
 import numpy as np
 
-def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
+
+def matrix_product_state_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
     """MPS (tensor-train) decomposition via cross-approximation (TTcross) [1]
 
         Decomposes `input_tensor` into a sequence of order-3 tensors of given rank. (factors/cores)
@@ -117,8 +118,10 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-5, n_iter_max=100):
             col_idx[k_col_idx].append(newidx)
 
     # Initialize the cores of tensor-train
-    factor_old = [tl.zeros((rank[k], tensor_shape[k], rank[k + 1])) for k in range(tensor_order)]
-    factor_new = [tl.tensor(rng.random_sample((rank[k], tensor_shape[k], rank[k + 1]))) for k in range(tensor_order)]
+    factor_old = [tl.zeros((rank[k], tensor_shape[k], rank[k + 1]),
+                            **tl.context(input_tensor)) for k in range(tensor_order)]
+    factor_new = [tl.tensor(rng.random_sample((rank[k], tensor_shape[k], rank[k + 1])),
+                             **tl.context(input_tensor)) for k in range(tensor_order)]
 
     iter = 0
 
@@ -421,7 +424,8 @@ def maxvol(A):
         i = i + 1
 
     row_idx = tl.tensor(row_idx, dtype=tl.int64)
-    inverse = tl.solve(A[row_idx,:], tl.eye(tl.shape(A[row_idx,:])[0]))
+    inverse = tl.solve(A[row_idx,:],
+                 tl.eye(tl.shape(A[row_idx,:])[0], **tl.context(A)))
     row_idx = tl.to_numpy(row_idx)
 
     return row_idx, inverse

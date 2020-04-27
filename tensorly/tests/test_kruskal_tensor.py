@@ -116,7 +116,7 @@ def test_kruskal_to_tensor():
 def test_kruskal_to_tensor_with_weights():
     A = tl.reshape(tl.arange(1,5), (2,2))
     B = tl.reshape(tl.arange(5,9), (2,2))
-    weigths = tl.tensor([2,-1])
+    weigths = tl.tensor([2,-1], **tl.context(A))
 
     out = kruskal_to_tensor((weigths, [A,B]))
     expected = tl.tensor([[-2,-2], [6, 10]])  # computed by hand
