@@ -143,9 +143,9 @@ def _validate_parafac2_tensor(parafac2_tensor):
                              'However, factors[0].shape[1]={} but factors[{}].shape[1]={}.'.format(
                                  rank, i, T.shape(factor)[1]))
 
-    if weights is not None and tl.shape(weights)[0]  != rank:
+    if weights is not None and T.shape(weights)[0]  != rank:
         raise ValueError('Given factors for a rank-{} PARAFAC2 tensor but len(weights)={}.'.format(
-            rank, tl.shape(weights)[0]))
+            rank, T.shape(weights)[0]))
         
     return tuple(shape), rank
 
