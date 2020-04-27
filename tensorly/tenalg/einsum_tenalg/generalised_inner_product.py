@@ -1,4 +1,4 @@
-from .. import backend as T
+from ... import backend as T
 import numpy as np
 
 # Author: Jean Kossaifi
@@ -33,17 +33,22 @@ def inner(tensor1, tensor2, n_modes=None):
                              'However, got tensor1.shape={} and tensor2.shape={}'.format(tensor1.shape, tensor2.shape))
         return T.sum(tensor1*tensor2)
 
-    # Inner product along `n_modes` common modes
+
     shape_t1 = list(T.shape(tensor1))
     shape_t2 = list(T.shape(tensor2))
-    common_modes = shape_t1[len(shape_t1) - n_modes:]
-    common_size = int(np.prod(common_modes))
-    output_shape = shape_t1[:-n_modes] + shape_t2[n_modes:]
+    offset = len(shape_t1) - n_modes
 
-    if common_modes != shape_t2[:n_modes]:
+    if shape_t1[offset:] != shape_t2[:n_modes]:
         raise ValueError('Incorrect shapes for inner product along {} common modes.'
                          'tensor_1.shape={}, tensor_2.shape={}'.format(n_modes, shape_t1, shape_t2))
-    inner_product = T.dot(T.reshape(tensor1, (-1, common_size)),
-                          T.reshape(tensor2, (common_size, -1)))
-    return T.reshape(inner_product, output_shape)
+    
+    # Inner product along `n_modes` common modes
+    start = ord('a')
+    modes_t1 = ''.join(chr(i+start) for i in range(T.ndim(tensor1)))
+    modes_t2 = ''.join(chr(i + start + offset) for i in range(T.ndim(tensor2)))
+    output_modes = modes_t1[:offset] + modes_t2[n_modes:]
+
+    equation = f'{modes_t1},{modes_t2}->{output_modes}'
+
+    return T.einsum(equation, tensor1, tensor2)
 

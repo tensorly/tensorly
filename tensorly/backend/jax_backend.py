@@ -102,7 +102,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'transpose', 'arange', 'ones', 'zeros',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag', 'clip']:
+             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum']:
     JaxBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'svd']:

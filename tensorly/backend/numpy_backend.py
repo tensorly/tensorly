@@ -84,7 +84,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag']:
+             'argmax', 'stack', 'conj', 'diag', 'einsum']:
     NumpyBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr']:
