@@ -110,7 +110,7 @@ def test_parafac2_normalize_factors():
         rank=rank,
         random_state=rng,
     )
-    random_parafac2_tensor.weights[0] = 100
+    tl.index_update(random_parafac2_tensor.weights, tl.index[0], 100)
     slices = parafac2_to_tensor(random_parafac2_tensor)
     normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
     assert normalized_rec.weights[0] > 1
