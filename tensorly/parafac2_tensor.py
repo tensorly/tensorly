@@ -143,7 +143,7 @@ def _validate_parafac2_tensor(parafac2_tensor):
                              'However, factors[0].shape[1]={} but factors[{}].shape[1]={}.'.format(
                                  rank, i, T.shape(factor)[1]))
 
-    if weights is not None and len(weights) != rank:
+    if weights is not None and tl.shape(weights)[0]  != rank:
         raise ValueError('Given factors for a rank-{} PARAFAC2 tensor but len(weights)={}.'.format(
             rank, len(weights)))
         
@@ -508,4 +508,3 @@ def parafac2_to_vec(parafac2_tensor):
         Full constructed tensor. Uneven slices are padded with zeros.
     """
     return tensor_to_vec(parafac2_to_tensor(parafac2_tensor))
-
