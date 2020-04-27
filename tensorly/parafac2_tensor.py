@@ -186,12 +186,12 @@ def parafac2_normalise(parafac2_tensor, copy=False):
         factors = [T.copy(f) for f in factors]
         projections = [T.copy(p) for p in projections]
         if weights is not None:
-            factors[0] *= weights
+            factors[0] = factors[0] * weights
         weights = T.ones(rank, **T.context(factors[0]))
         
     for factor in factors:
         scales = T.norm(factor, axis=0)
-        weights *= scales
+        weights = weights*scales
         scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factors[0])), scales)
         factor /= scales_non_zero
         
