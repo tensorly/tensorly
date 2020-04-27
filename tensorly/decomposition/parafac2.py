@@ -225,7 +225,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     for iteration in range(n_iter_max):
         if verbose:
             print("Starting iteration", iteration)
-        factors[1] *= T.reshape(weights, (1, -1))
+        factors[1] = factors[1]*T.reshape(weights, (1, -1))
         weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
 
         projections = _compute_projections(tensor_slices, factors, svd_fun, out=projections)
