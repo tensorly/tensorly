@@ -30,7 +30,7 @@ def test_validate_parafac2_tensor():
 
     # One of the factors has the wrong rank
     for mode in range(3):
-        false_shape = (len(factors[mode]), true_rank+1)
+        false_shape = (tl.shape(factors[mode])[0], true_rank+1)
         factors[mode], copy = tl.tensor(rng.random_sample(false_shape)), factors[mode]
         with assert_raises(ValueError):
             _validate_parafac2_tensor((weights, factors, projections))
