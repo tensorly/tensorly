@@ -28,10 +28,12 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
         is of shape (tensor.shape[i], rank)
 
     """
+    context = tl.context(tensor_slices[0])
     shapes = [m.shape for m in tensor_slices]
     
     if init == 'random':
-        return random_parafac2(shapes, rank, full=False, random_state=random_state)
+        return random_parafac2(shapes, rank, full=False, random_state=random_state,
+                               **context)
     elif init == 'svd':
         try:
             svd_fun = tl.SVD_FUNS[svd]
@@ -43,7 +45,7 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
         padded_tensor = _pad_by_zeros(tensor_slices)
         A = svd_fun(unfold(padded_tensor, 0), n_eigenvecs=rank)[0]
         C = svd_fun(unfold(padded_tensor, 2), n_eigenvecs=rank)[0]
-        B = T.eye(rank, **T.context(tensor_slices[0]))
+        B = T.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
         return Parafac2Tensor((None, (A, B, C), projections))
 

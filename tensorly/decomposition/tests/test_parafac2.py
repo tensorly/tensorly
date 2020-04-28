@@ -47,6 +47,7 @@ def test_parafac2(normalize_factors):
         shapes=[(50 + rng.randint(10),60) for _ in range(40)],
         rank=rank,
         random_state=rng,
+        dtype=tl.float64,
     )
     # It is difficult to correctly identify B[i, :, r] if A[i, r] is small.
     # This is sensible, since then B[i, :, r] contributes little to the total value of X.

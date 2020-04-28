@@ -124,11 +124,11 @@ def _validate_parafac2_tensor(parafac2_tensor):
             )
 
         inner_product = T.dot(T.transpose(projection), projection)
-        if T.max(T.abs(inner_product - T.eye(rank))) > 1e-5:
+        if T.max(T.abs(inner_product - T.eye(rank, **T.context(inner_product)))) > 1e-5:
             raise ValueError(
                 'All the projection matrices must be orthonormal, that is, P.T@P = I. '
                 'However, T.norm(projection[{}].T@projection[{}] - T.eye(rank)) = {}'.format(
-                    i, i, T.norm(inner_product - T.eye(rank)) 
+                    i, i, T.norm(inner_product - T.eye(rank, **T.context(inner_product))) 
                 )
             )
         

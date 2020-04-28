@@ -68,7 +68,8 @@ def random_parafac2(shapes, rank, full=False, random_state=None,
             for shape in shapes
     ]
     weights, factors = random_kruskal(
-        [len(shapes), rank, shapes[0][1]], rank=rank, normalise_factors=False, random_state=rns
+        [len(shapes), rank, shapes[0][1]], rank=rank, normalise_factors=False, 
+        random_state=rns,  **context
     )
 
     parafac2_tensor = Parafac2Tensor((weights, factors, projection_matrices))
