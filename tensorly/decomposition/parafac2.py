@@ -82,7 +82,9 @@ def _compute_projections(tensor_slices, factors, svd_fun, out=None):
     if out is None:
         out = [T.zeros((tensor_slice.shape[0], C.shape[1]), **T.context(tensor_slice)) for tensor_slice in tensor_slices]
 
-    for projection, a_i, tensor_slice in zip(out, A, tensor_slices):
+    slice_idxes = range(T.shape(A)[0])
+    for projection, i, tensor_slice in zip(out, slice_idxes, tensor_slices):
+        a_i = A[i]
         lhs = T.dot(B, T.transpose(a_i*C))
         rhs = T.transpose(tensor_slice)
         U, S, Vh = svd_fun(T.dot(lhs, rhs), n_eigenvecs=A.shape[1])
