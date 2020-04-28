@@ -150,7 +150,7 @@ def _validate_parafac2_tensor(parafac2_tensor):
     return tuple(shape), rank
 
 
-def parafac2_normalise(parafac2_tensor, copy=False):
+def parafac2_normalise(parafac2_tensor):
     """Returns parafac2_tensor with factors normalised to unit length
 
     Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
@@ -177,23 +177,26 @@ def parafac2_normalise(parafac2_tensor, copy=False):
     _, rank = _validate_parafac2_tensor(parafac2_tensor)
     weights, factors, projections = parafac2_tensor
     
-    if (not copy) and (weights is None):
-        warnings.warn('Provided copy=False and weights=None: a new Parafac2Tensor'
-                      'with new weights and factors normalised inplace will be returned.')
-        weights = T.ones(rank, **T.context(factors[0]))
+    # if (not copy) and (weights is None):
+    #     warnings.warn('Provided copy=False and weights=None: a new Parafac2Tensor'
+    #                   'with new weights and factors normalised inplace will be returned.')
+    #     weights = T.ones(rank, **T.context(factors[0]))
     
-    if copy:
+    # The if test below was added to enable inplace edits
+    # however, TensorFlow does not support inplace edits
+    # so this is always set to True
+    if True:  
         factors = [T.copy(f) for f in factors]
         projections = [T.copy(p) for p in projections]
         if weights is not None:
             factors[0] = factors[0] * weights
         weights = T.ones(rank, **T.context(factors[0]))
         
-    for factor in factors:
+    for i, factor in enumerate(factors):
         scales = T.norm(factor, axis=0)
         weights = weights*scales
         scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factors[0])), scales)
-        factor /= scales_non_zero
+        factors[i] = factor/scales_non_zero
         
     return Parafac2Tensor((weights, factors, projections))
 

@@ -55,16 +55,17 @@ def test_validate_parafac2_tensor():
         _validate_parafac2_tensor((weights, factors, false_projections))
 
 
-
-@pytest.mark.parametrize('copy', [True, False])
-def test_parafac2_normalise(copy):
+# Disable tests for inplace edits, since that possibility is removed
+# to support TensorFlow.
+#@pytest.mark.parametrize('copy', [True, False])
+def test_parafac2_normalise():
     rng = check_random_state(12345)
     true_shape = [(4, 5)]*3
     true_rank = 2
     parafac2_tensor = random_parafac2(true_shape, rank=true_rank)
     
     
-    normalised_parafac2_tensor = parafac2_normalise(parafac2_tensor, copy=copy)
+    normalised_parafac2_tensor = parafac2_normalise(parafac2_tensor)  # , copy=copy)
     expected_norm = tl.ones(true_rank)
     for f in normalised_parafac2_tensor[1]:
         assert_array_almost_equal(tl.norm(f, axis=0), expected_norm)
