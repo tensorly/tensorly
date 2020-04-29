@@ -36,7 +36,7 @@ def best_correlation(A, B):
     
     return best_corr
 
-@pytest.mark.parametrize("normalize_factors", [False])
+@pytest.mark.parametrize("normalize_factors", [True, False])
 def test_parafac2(normalize_factors):
     rng = check_random_state(1234)
     tol_norm_2 = 10e-2
@@ -150,9 +150,9 @@ def test_parafac2_to_tensor():
     rng = check_random_state(1234)
     rank = 6
 
-    I = 50
-    J = 30
-    K = 60
+    I = 8
+    J = 9
+    K = 10
 
     weights, factors, projections = random_parafac2(shapes=[(J, K)]*I, rank=rank, random_state=rng)
 
