@@ -165,7 +165,7 @@ def rebuild(kruskal_tensor, dimensions, rank):
 
 def test_tf_sparse_cpd():
     st = generate_decomposable_sp_tensor((500,1000,500), 20, d=0.0001)
-    cpd = cp_als(st, 20, n_iter_max=50)
+    cpd = tl.tensorflow_backend.parafac(st, 20, n_iter_max=50, verbose=True)
     rebuilt = rebuild(cpd, shape, rank)
     fit_st_rebuilt = fit(st, rebuilt)
 
