@@ -408,9 +408,8 @@ def parafac2_to_tensor(parafac2_tensor):
     
     tensor = T.zeros((A.shape[0], max(lengths), C.shape[0]),  **T.context(slices[0]))
     for i, (slice_, length) in enumerate(zip(slices, lengths)):
-        T.index_update(tensor, T.index[i, :length], slice_)
+        tensor = T.index_update(tensor, T.index[i, :length], slice_)
     return tensor
-
 
 
 def parafac2_to_unfolded(parafac2_tensor, mode):

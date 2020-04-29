@@ -105,7 +105,7 @@ def _project_tensor_slices(tensor_slices, projections, out=None):
 
     for i, (tensor_slice, projection) in enumerate(zip(tensor_slices, projections)):
         slice_ = T.dot(T.transpose(projection), tensor_slice)
-        tl.index_update(out, tl.index[i, :], slice_)
+        out = tl.index_update(out, tl.index[i, :], slice_)
     return out
 
 
@@ -216,7 +216,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     that the function accept both lists of matrices and a single nd-array as input without
     any reordering of the modes.
     """
-    epsilon = 10e-12
+    epsilon = tl.eps(tensor_slices[0].dtype) #10e-12
 
     weights, factors, projections = initialize_decomposition(tensor_slices, rank, random_state=random_state)
 
@@ -241,9 +241,12 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         if normalize_factors:
             for factor in factors:
                 norms = T.norm(factor, axis=0)
-                weights *= norms
-                factor /= norms + epsilon
-        
+                # weights = weights*norms
+                # factor = factor/(norms + epsilon)
+                norms = tl.where(tl.abs(norms) <= tl.eps(factor.dtype), 
+                    tl.ones(tl.shape(norms), **tl.context(factors[0])),
+                    norms)
+                factor = factor/(tl.reshape(norms, (1, -1)))
 
         if tol:
             rec_error = _parafac2_reconstruction_error(tensor_slices, (weights, factors, projections))

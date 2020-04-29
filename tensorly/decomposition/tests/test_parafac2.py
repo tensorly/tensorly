@@ -36,8 +36,7 @@ def best_correlation(A, B):
     
     return best_corr
 
-
-@pytest.mark.parametrize("normalize_factors", [True, False])
+@pytest.mark.parametrize("normalize_factors", [False])
 def test_parafac2(normalize_factors):
     rng = check_random_state(1234)
     tol_norm_2 = 10e-2
@@ -46,8 +45,7 @@ def test_parafac2(normalize_factors):
     random_parafac2_tensor = random_parafac2(
         shapes=[(50 + rng.randint(10),60) for _ in range(40)],
         rank=rank,
-        random_state=rng,
-        dtype=tl.float64,
+        random_state=rng
     )
     # It is difficult to correctly identify B[i, :, r] if A[i, r] is small.
     # This is sensible, since then B[i, :, r] contributes little to the total value of X.
