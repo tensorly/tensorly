@@ -63,6 +63,7 @@ def fit(kt, st):
     ip = inner_product(kt, st)
     return 1 - ((normX**2 + normP**2 - 2*ip)**0.5)/normX
 
+
 def test_tf_sparse_cpd():
     print("generating tensor")
     shape = (1000, 1000, 1000)
