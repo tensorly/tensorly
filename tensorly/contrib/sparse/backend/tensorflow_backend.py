@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
-from . import Backend, KruskalTensor
+from ....kruskal_tensor import KruskalTensor
+from ....backend.core import Backend
 
 def is_sparse(x):
     return isinstance(x, tf.sparse.SparseTensor)
@@ -13,8 +14,24 @@ class TensorflowBackend(Backend):
         if isinstance(data, tf.sparse.SparseTensor):
             return data
 
+
+def norm(tensor, order=2, axis=None):
+    if axis == ():
+        axis = None
+
+    values = tensor.values.numpy()
+    if order == 'inf':
+        return np.max(values, axis=axis)
+    if order == 1:
+        return np.sum(values, axis=axis)
+    elif order == 2:
+        return np.sqrt(np.sum(values ** 2, axis=axis))
+    else:
+        return np.sum(values**order, axis=axis) ** (1 / order)
+
+
 # This function is easy to decorate with Numba '@njit(parallel=True)' directive for ~10x improvement in performance
-def mttkrp(self, values, indices, factors, n, rank, dims):
+def mttkrp(values, indices, factors, n, rank, dims):
     output = np.zeros((dims[n], rank))
     # if decorating with Numba '@njit(parallel=True)' directive, replcase range with numba.prange
     for l in range(len(values)):
@@ -22,7 +39,7 @@ def mttkrp(self, values, indices, factors, n, rank, dims):
         prod = [values[l]] * rank  # makes the value into a row
 
         for mode, cv in enumerate(cur_index):  # does elementwise row multiplications
-            if (mode != n):
+            if mode != n:
                 for r in range(rank):
                     prod[r] *= factors[mode][cv][r]
 
@@ -30,6 +47,7 @@ def mttkrp(self, values, indices, factors, n, rank, dims):
             output[cur_index[n]][r] += prod[r]
 
     return output
+
 
 def parafac(tensor, rank, n_iter_max=100, verbose=False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
@@ -95,4 +113,4 @@ def parafac(tensor, rank, n_iter_max=100, verbose=False):
 
             factors[n] = An
 
-    return KruskalTensor(weights, factors)
+    return KruskalTensor((weights[0], factors))

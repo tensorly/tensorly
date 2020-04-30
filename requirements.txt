@@ -3,3 +3,4 @@ scipy
 pytest
 nose
 pytest-cov
+tensorflow
