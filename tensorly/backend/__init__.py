@@ -59,8 +59,6 @@ def register_backend(backend_name):
                    'jax': 'tensorly.backend.jax_backend',
                    'tensorflow.sparse': 'tensorly.contrib.sparse.backend.tensorflow_backend'}
 
-
-
     if backend_name in _KNOWN_BACKENDS:
         module = importlib.import_module(module_list[backend_name])
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()

@@ -7,7 +7,7 @@ from .... import backend, base, kruskal_tensor, tucker_tensor, mps_tensor
 
 
 _KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend',
-                   'tensorflow.sparse': 'TensorflowSparseBackend'}
+                   'tensorflow': 'TensorflowSparseBackend'}
 
 _LOADED_BACKENDS = {}
 
@@ -39,7 +39,7 @@ def register_sparse_backend(backend_name):
 
     modules_list = {
         'numpy': 'tensorly.contrib.sparse.backend.numpy_backend',
-        'tensorflow.sparse': 'tensorly.contrib.sparse.backend.tensorflow_backend'
+        'tensorflow': 'tensorly.contrib.sparse.backend.tensorflow_backend'
     }
 
     if backend_name in _KNOWN_BACKENDS:

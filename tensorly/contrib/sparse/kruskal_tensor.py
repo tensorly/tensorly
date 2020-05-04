@@ -1,8 +1,6 @@
 from ...kruskal_tensor import kruskal_to_tensor, unfolding_dot_khatri_rao, kruskal_norm
 from .core import wrap
 
-from .backend import norm
-
 from numpy import zeros, multiply
 import tensorly as tl
 
@@ -46,7 +44,7 @@ def kruskal_sparse_inner_product(kt, st):
 
 
 def kruskal_sparse_fit(kt, st):
-        normX = norm(st)
+        normX = tl.norm(st)
         normP = kruskal_norm(kt)
         ip = kruskal_sparse_inner_product(kt, st)
         return 1 - ((normX ** 2 + normP ** 2 - 2 * ip) ** 0.5) / normX
