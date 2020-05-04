@@ -1,19 +1,20 @@
 from ..decomposition import parafac
 from ..tenalg import multi_mode_dot
-from ..kruskal_tensor import kruskal_to_tensor
-from ....kruskal_tensor import kruskal_norm
+from ..kruskal_tensor import kruskal_to_tensor, kruskal_sparse_inner_product
 from .... import backend as tl
 from scipy import sparse
-from ..backend import tensorflow_backend
-from ....backend import set_backend, norm
+from ..kruskal_tensor import kruskal_sparse_fit
+from ....backend import set_backend
+
+import numpy as np
+import tensorflow as tf
 
 import pytest
 if not tl.get_backend() == "numpy":
     pytest.skip("Tests for sparse only with numpy backend", allow_module_level=True)
 pytest.importorskip("sparse")
 
-import numpy as np
-import tensorflow as tf
+
 
 def test_sparse_parafac():
     """Test for sparse parafac"""
@@ -44,27 +45,6 @@ def generate_random_sp_tensor(dimensions, d=0.0001):
     return st
 
 
-def inner_product(kt, st):
-    s = 0.0
-    weights, factors = kt
-    idxs = st.indices.numpy()
-    vals = st.values.numpy()
-    for i, index in enumerate(idxs):
-        st_val = vals[i]
-        kt_val = weights
-        for fac_no, dim in enumerate(index):
-            kt_val = np.multiply(factors[fac_no][dim], kt_val)
-        s += (sum(kt_val) * st_val)
-    return s
-
-
-def fit(kt, st):
-    normX = norm(st)
-    normP = kruskal_norm(kt)
-    ip = inner_product(kt, st)
-    return 1 - ((normX**2 + normP**2 - 2*ip)**0.5)/normX
-
-
 def test_tf_sparse_cpd():
     set_backend('tensorflow.sparse')
 
@@ -77,7 +57,7 @@ def test_tf_sparse_cpd():
     print("performing decomposition")
     cpd = parafac(st, rank, n_iter_max=50, verbose=True)
     print("testing fit")
-    fit_st_rebuilt = fit(cpd, st)
+    fit_st_rebuilt = kruskal_sparse_fit(cpd, st)
 
     result_text = '''
     +--------------------------------------------
@@ -93,4 +73,5 @@ def test_tf_sparse_cpd():
     '''.format(shape, rank, density, (st.values.shape[0] / np.prod(shape)), st.values.shape[0], fit_st_rebuilt)
 
     print(result_text)
+
 

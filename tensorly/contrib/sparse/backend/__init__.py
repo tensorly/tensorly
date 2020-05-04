@@ -6,7 +6,9 @@ from ....backend import backend_context, get_backend, override_module_dispatch
 from .... import backend, base, kruskal_tensor, tucker_tensor, mps_tensor
 
 
-_KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
+_KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend',
+                   'tensorflow.sparse': 'TensorflowSparseBackend'}
+
 _LOADED_BACKENDS = {}
 
 
@@ -35,8 +37,13 @@ def register_sparse_backend(backend_name):
             in `_KNOWN_BACKEND`
     """
 
+    modules_list = {
+        'numpy': 'tensorly.contrib.sparse.backend.numpy_backend',
+        'tensorflow.sparse': 'tensorly.contrib.sparse.backend.tensorflow_backend'
+    }
+
     if backend_name in _KNOWN_BACKENDS:
-        module = importlib.import_module('tensorly.contrib.sparse.backend.{0}_backend'.format(backend_name))
+        module = importlib.import_module(modules_list[backend_name])
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
         _LOADED_BACKENDS[backend_name] = backend
     else:
