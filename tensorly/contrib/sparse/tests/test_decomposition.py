@@ -5,6 +5,7 @@ from ....kruskal_tensor import kruskal_norm
 from .... import backend as tl
 from scipy import sparse
 from ..backend import tensorflow_backend
+from ....backend import set_backend, norm
 
 import pytest
 if not tl.get_backend() == "numpy":
@@ -58,21 +59,23 @@ def inner_product(kt, st):
 
 
 def fit(kt, st):
-    normX = tensorflow_backend.norm(st)
+    normX = norm(st)
     normP = kruskal_norm(kt)
     ip = inner_product(kt, st)
     return 1 - ((normX**2 + normP**2 - 2*ip)**0.5)/normX
 
 
 def test_tf_sparse_cpd():
+    set_backend('tensorflow.sparse')
+
     print("generating tensor")
-    shape = (1000, 1000, 1000)
-    density = 0.00001
+    shape = (100, 100, 1000)
+    density = 0.001
     rank = 20
 
     st = generate_random_sp_tensor(shape, d=density)
     print("performing decomposition")
-    cpd = tensorflow_backend.parafac(st, rank, n_iter_max=50, verbose=True)
+    cpd = parafac(st, rank, n_iter_max=50, verbose=True)
     print("testing fit")
     fit_st_rebuilt = fit(cpd, st)
 
