@@ -87,7 +87,7 @@ def test_masked_parafac():
     mask_fact = parafac(tensor, rank=2, mask=mask)
     fact = parafac(tensor, rank=2)
     diff = kruskal_to_tensor(mask_fact) - kruskal_to_tensor(fact)
-    assert_(T.norm(diff) < 1.0e-6, 'norm 2 of reconstruction higher than 0.2')
+    assert_(T.norm(diff) < 0.01, 'norm 2 of reconstruction higher than 0.01')
 
 
 def test_non_negative_parafac():
