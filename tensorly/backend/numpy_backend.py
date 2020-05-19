@@ -53,7 +53,11 @@ class NumpyBackend(Backend):
             return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
 
     def kr(self, matrices, weights=None, mask=None):
-        if mask is None: mask = 1
+        if mask is None:
+            mask = 1
+        else:
+            mask = mask.reshape((-1, 1))
+
         n_columns = matrices[0].shape[1]
         n_factors = len(matrices)
 
