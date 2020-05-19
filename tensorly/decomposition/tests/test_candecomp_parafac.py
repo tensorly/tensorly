@@ -78,7 +78,7 @@ def test_parafac():
 
 def test_masked_parafac():
     """Test for the masked CANDECOMP-PARAFAC decomposition.
-    This checks that a mask of 0's is identical to the unmasked case.
+    This checks that a mask of 1's is identical to the unmasked case.
     """
     rng = check_random_state(1234)
     tensor = T.tensor(rng.random_sample((3, 3, 3)))
