@@ -82,7 +82,7 @@ def test_masked_parafac():
     """
     rng = check_random_state(1234)
     tensor = T.tensor(rng.random_sample((3, 3, 3)))
-    mask = np.ones((3, 3, 3))
+    mask = T.tensor(np.ones((3, 3, 3)))
 
     mask_fact = parafac(tensor, rank=2, mask=mask)
     fact = parafac(tensor, rank=2)
