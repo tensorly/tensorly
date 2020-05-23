@@ -239,14 +239,19 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
                              normalize_factors=False, mask=None, random_state=random_state, tol=1e-100)
 
         if normalize_factors:
+            new_factors = []
             for factor in factors:
                 norms = T.norm(factor, axis=0)
-                # weights = weights*norms
-                # factor = factor/(norms + epsilon)
                 norms = tl.where(tl.abs(norms) <= tl.eps(factor.dtype), 
                     tl.ones(tl.shape(norms), **tl.context(factors[0])),
                     norms)
-                factor = factor/(tl.reshape(norms, (1, -1)))
+
+                weights = weights*norms
+                new_factors.append(factor/(tl.reshape(norms, (1, -1))))
+
+            factors = new_factors
+
+            
 
         if tol:
             rec_error = _parafac2_reconstruction_error(tensor_slices, (weights, factors, projections))
