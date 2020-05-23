@@ -40,10 +40,10 @@ def best_correlation(A, B):
 def test_parafac2(normalize_factors):
     rng = check_random_state(1234)
     tol_norm_2 = 10e-2
-    rank = 6
+    rank = 3
 
     random_parafac2_tensor = random_parafac2(
-        shapes=[(50 + rng.randint(10),60) for _ in range(40)],
+        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
         rank=rank,
         random_state=rng
     )
@@ -81,10 +81,10 @@ def test_parafac2(normalize_factors):
 
 
 def test_parafac2_slice_and_tensor_input():
-    rank = 6
+    rank = 3
 
     random_parafac2_tensor = random_parafac2(
-        shapes=[(50, 60) for _ in range(40)],
+        shapes=[(15, 30) for _ in range(25)],
         rank=rank,
         random_state=1234
     )
@@ -102,10 +102,10 @@ def test_parafac2_slice_and_tensor_input():
 
 def test_parafac2_normalize_factors():
     rng = check_random_state(1234)
-    rank = 6
+    rank = 3
 
     random_parafac2_tensor = random_parafac2(
-        shapes=[(50 + rng.randint(10),60) for _ in range(40)],
+        shapes=[(15 + rng.randint(5),30) for _ in range(25)],
         rank=rank,
         random_state=rng,
     )
@@ -121,9 +121,9 @@ def test_parafac2_normalize_factors():
 
 def test_parafac2_init_valid():
     rng = check_random_state(1234)
-    rank = 6
+    rank = 3
 
-    random_parafac2_tensor = random_parafac2(shapes=[(30,60)]*50, rank=rank, random_state=rng)
+    random_parafac2_tensor = random_parafac2(shapes=[(15, 30)]*25, rank=rank, random_state=rng)
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     weights, (A, B, C), projections = random_parafac2_tensor
     B = T.dot(projections[0], B)
@@ -135,9 +135,9 @@ def test_parafac2_init_valid():
 
 def test_parafac2_init_error():
     rng = check_random_state(1234)
-    rank = 6
+    rank = 3
 
-    random_parafac2_tensor = random_parafac2(shapes=[(30,60)]*50, rank=rank, random_state=rng)
+    random_parafac2_tensor = random_parafac2(shapes=[(15, 30)]*25, rank=rank, random_state=rng)
     tensor = parafac2_to_tensor(random_parafac2_tensor)
 
     with np.testing.assert_raises(ValueError):
@@ -148,11 +148,11 @@ def test_parafac2_init_error():
 
 def test_parafac2_to_tensor():
     rng = check_random_state(1234)
-    rank = 6
+    rank = 3
 
-    I = 8
-    J = 9
-    K = 10
+    I = 25
+    J = 15
+    K = 30
 
     weights, factors, projections = random_parafac2(shapes=[(J, K)]*I, rank=rank, random_state=rng)
 
