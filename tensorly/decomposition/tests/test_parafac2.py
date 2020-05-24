@@ -102,22 +102,27 @@ def test_parafac2_slice_and_tensor_input():
 
 def test_parafac2_normalize_factors():
     rng = check_random_state(1234)
-    rank = 3
+    rank = 2  # Rank 2 so we only need to test rank of minimum and maximum
 
     random_parafac2_tensor = random_parafac2(
-        shapes=[(15 + rng.randint(5),30) for _ in range(25)],
+        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
         rank=rank,
         random_state=rng,
     )
-    tl.index_update(random_parafac2_tensor.weights, tl.index[0], 100)
+    random_parafac2_tensor.factors[0] = random_parafac2_tensor.factors[0] + 0.1
+    norms = np.ones(rank)
+    for factor in random_parafac2_tensor.factors:
+        norms = norms*tl.norm(factor, axis=0)
+
     slices = parafac2_to_tensor(random_parafac2_tensor)
-    normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
-    assert normalized_rec.weights[0] > 1
-    assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-5
-    
+
     unnormalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=False)
     assert unnormalized_rec.weights[0] == 1
 
+    normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True, n_iter_max=1000)
+    assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-5
+    assert abs(tl.max(norms) - tl.max(normalized_rec.weights))/tl.max(norms) < 1e-3
+    assert abs(tl.min(norms) - tl.min(normalized_rec.weights))/tl.min(norms) < 1e-3
 
 def test_parafac2_init_valid():
     rng = check_random_state(1234)
