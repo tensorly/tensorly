@@ -52,7 +52,7 @@ class Parafac2Tensor(Mapping):
         
         weights, (A, B, C) = kruskal_tensor
         Q, R = T.qr(B)
-        projections = [Q for _ in A]
+        projections = [Q for _ in range(T.shape(A)[0])]
         B = R
         return Parafac2Tensor((weights, (A, B, C), projections))
 
