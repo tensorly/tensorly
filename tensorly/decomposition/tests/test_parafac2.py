@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import tensorly as tl
+tl.set_backend('tensorflow') # or any other backend
 from ...random import check_random_state, random_parafac2
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
@@ -169,7 +170,7 @@ def test_parafac2_to_tensor():
         for j in range(J):
             for k in range(K):
                 for r in range(rank):
-                    tl.index_update(tensor_manual, tl.index[i, j, k],  tensor_manual[i, j, k] + factors[0][i][r]*Bi[j][r]*factors[2][k][r])
+                    tensor_manual = tl.index_update(tensor_manual, tl.index[i, j, k],  tensor_manual[i, j, k] + factors[0][i][r]*Bi[j][r]*factors[2][k][r])
 
     assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-6)
     
