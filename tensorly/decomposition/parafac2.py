@@ -91,7 +91,7 @@ def _compute_projections(tensor_slices, factors, svd_fun, out=None):
         rhs = T.transpose(tensor_slice)
         U, S, Vh = svd_fun(T.dot(lhs, rhs), n_eigenvecs=A.shape[1])
 
-        tl.index_update(projection, tl.index[:], T.transpose(T.dot(U, Vh)))
+        out[i] = tl.index_update(projection, tl.index[:], T.transpose(T.dot(U, Vh)))
 
     return out
 
@@ -174,8 +174,10 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
-    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
-        of shape (rank, ), which will contain the norms of the factors 
+    normalize_factors : bool (optional)
+        If True, aggregate the weights of each factor in a 1D-tensor
+        of shape (rank, ), which will contain the norms of the factors. Note that
+        there may be some inaccuracies in the component weights.
     tol : float, optional
         (Default: 1e-8) Relative reconstruction error tolerance. The
         algorithm is considered to have found the global minimum when the
