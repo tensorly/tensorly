@@ -110,7 +110,7 @@ def test_parafac2_normalize_factors():
         random_state=rng,
     )
     random_parafac2_tensor.factors[0] = random_parafac2_tensor.factors[0] + 0.1
-    norms = np.ones(rank)
+    norms = tl.ones(rank)
     for factor in random_parafac2_tensor.factors:
         norms = norms*tl.norm(factor, axis=0)
 
@@ -121,8 +121,8 @@ def test_parafac2_normalize_factors():
 
     normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True, n_iter_max=1000)
     assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-5
-    assert abs(tl.max(norms) - tl.max(normalized_rec.weights))/tl.max(norms) < 1e-3
-    assert abs(tl.min(norms) - tl.min(normalized_rec.weights))/tl.min(norms) < 1e-3
+    assert abs(tl.max(norms) - tl.max(normalized_rec.weights))/tl.max(norms) < 1e-2
+    assert abs(tl.min(norms) - tl.min(normalized_rec.weights))/tl.min(norms) < 1e-2
 
 def test_parafac2_init_valid():
     rng = check_random_state(1234)
