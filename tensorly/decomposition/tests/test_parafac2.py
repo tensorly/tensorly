@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import tensorly as tl
-tl.set_backend('tensorflow') # or any other backend
 from ...random import check_random_state, random_parafac2
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
