@@ -259,6 +259,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
 
         if tol:
             rec_error = _parafac2_reconstruction_error(tensor_slices, (weights, factors, projections))
+            rec_error /= norm_tensor
             rec_errors.append(rec_error)
 
             if iteration >= 1:
