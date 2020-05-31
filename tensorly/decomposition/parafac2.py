@@ -223,7 +223,10 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     weights, factors, projections = initialize_decomposition(tensor_slices, rank, random_state=random_state)
 
     rec_errors = []
-    norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2)**2 for tensor_slice in tensor_slices))
+    norm_tensor = tl.sqrt(tl.sum([tl.norm(tensor_slice, 2)*tl.norm(tensor_slice, 2) for tensor_slice in tensor_slices]))
+    # Above, we compute tl.norm(tensor_slice, 2)**2 by multiplying tl.norm(tensor_slice, 2) with itself
+    # since tensorflow will automatically cast a float32 to a float64 if you square it, but not if you
+    # multiply it. This fixes that bug.
     svd_fun = _get_svd(svd)
 
     projected_tensor = tl.zeros([factor.shape[0] for factor in factors], **T.context(factors[0]))
