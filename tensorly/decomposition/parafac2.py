@@ -220,8 +220,6 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     that the function accept both lists of matrices and a single nd-array as input without
     any reordering of the modes.
     """
-    epsilon = tl.eps(tensor_slices[0].dtype) #10e-12
-
     weights, factors, projections = initialize_decomposition(tensor_slices, rank, random_state=random_state)
 
     rec_errors = []
