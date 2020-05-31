@@ -11,6 +11,7 @@ import numpy.linalg as la
 import matplotlib.pyplot as plt
 import tensorly as tl
 from tensorly.decomposition import parafac2
+from scipy.optimize import linear_sum_assignment
 
 
 ##############################################################################
@@ -71,7 +72,7 @@ decomposition = None
 
 for run in range(10):
     print(f'Training model {run}...')
-    trial_decomposition, trial_errs = parafac2(tensor, true_rank, return_errors=True, tol=1e-5, n_iter_max=500, random_state=run)
+    trial_decomposition, trial_errs = parafac2(tensor, true_rank, return_errors=True, tol=1e-8, n_iter_max=500, random_state=run)
     print(f'Number of iterations: {len(trial_errs)}')
     print(f'Final error: {trial_errs[-1]}')
     if best_err > trial_errs[-1]:
@@ -147,7 +148,10 @@ B_corr = np.array(est_Bs_normalised).reshape(-1, true_rank).T@np.array(Bs_normal
 A_corr = est_A_normalised.T@A_normalised
 C_corr = est_C_normalised.T@C_normalised
 
-congruence_coefficient = np.mean(np.max(A_corr*B_corr*C_corr, axis=0))
+corr = A_corr*B_corr*C_corr
+permutation = linear_sum_assignment(-corr)  # Old versions of scipy does not support maximising, from scipy v1.4, you can pass `corr` and `maximize=True` instead of `-corr` to maximise the sum.
+
+congruence_coefficient = np.mean(corr[permutation])
 print(f'Average tucker congruence coefficient: {congruence_coefficient}')
 
 ##############################################################################
@@ -207,12 +211,13 @@ fig.legend(handles, labels, loc='upper center', ncol=2)
 loss_fig, loss_ax = plt.subplots(figsize=(9, 9/1.6))
 loss_ax.plot(range(1, len(err)), err[1:])
 loss_ax.set_xlabel('Iteration number')
-loss_ax.set_ylabel('Sum squared reconstruction error')
-loss_ax.set_title('Loss plot\n (starting after first iteration)')
+loss_ax.set_ylabel('Relative reconstruction error')
+mathematical_expression_of_loss = r"$\frac{\left|\left|\hat{\mathcal{X}}\right|\right|_F}{\left|\left|\mathcal{X}\right|\right|_F}$"
+loss_ax.set_title(f'Loss plot: {mathematical_expression_of_loss} \n (starting after first iteration)', fontsize=16)
 xticks = loss_ax.get_xticks()
 loss_ax.set_xticks([1] + list(xticks[1:]))
 loss_ax.set_xlim(1, len(err))
-
+plt.tight_layout()
 plt.show()
 
 
