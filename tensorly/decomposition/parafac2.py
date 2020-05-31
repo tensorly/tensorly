@@ -129,11 +129,11 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
 
 def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
              tol=1e-8, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5):
-    r"""PARAFAC2 decomposition [1]_ via alternating least squares (ALS)
+    r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
-    Computes a rank-`rank` PARAFAC2 decomposition of the tensor defined by `tensor_slices`. 
-    The decomposition is on the form :math:`(A [B_i] C)` such that the i-th frontal slice,
-    :math:`X_i`, of :math:`X` is given by
+    Computes a rank-`rank` PARAFAC2 decomposition of the third-order tensor defined by 
+    `tensor_slices`. The decomposition is on the form :math:`(A [B_i] C)` such that the
+     i-th frontal slice, :math:`X_i`, of :math:`X` is given by
 
     .. math::
     
@@ -166,6 +166,8 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     ----------
     tensor_slices : ndarray or list of ndarrays
         Either a third order tensor or a list of second order tensors that may have different number of rows.
+        Note that the second mode factor matrices are allowed to change over the first mode, not the
+        third mode as some other implementations use (see note below).
     rank  : int
         Number of components.
     n_iter_max : int
