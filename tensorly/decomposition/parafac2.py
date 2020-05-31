@@ -223,7 +223,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     weights, factors, projections = initialize_decomposition(tensor_slices, rank, random_state=random_state)
 
     rec_errors = []
-    norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2) for tensor_slice in tensor_slices))
+    norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2)**2 for tensor_slice in tensor_slices))
     svd_fun = _get_svd(svd)
 
     projected_tensor = tl.zeros([factor.shape[0] for factor in factors], **T.context(factors[0]))
