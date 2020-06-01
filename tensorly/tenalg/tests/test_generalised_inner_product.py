@@ -1,7 +1,7 @@
 import numpy as np
 
 from ... import backend as T
-from ..generalised_inner_product import inner
+from .. import inner
 from ...testing import assert_equal, assert_array_almost_equal, assert_raises
 
 # Author: Jean Kossaifi

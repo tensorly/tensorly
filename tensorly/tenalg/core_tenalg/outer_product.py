@@ -1,4 +1,4 @@
-from .. import backend as T
+from ... import backend as T
 
 # Author: Jean Kossaifi
 

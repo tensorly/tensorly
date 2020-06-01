@@ -57,11 +57,11 @@ class PyTorchBackend(Backend):
         return tensor.dim()
 
     @staticmethod
-    def arange(start, stop=None, step=1.0):
+    def arange(start, stop=None, step=1.0, *args, **kwargs):
         if stop is None:
-            return torch.arange(start=0., end=float(start), step=float(step))
+            return torch.arange(start=0., end=float(start), step=float(step), *args, **kwargs)
         else:
-            return torch.arange(float(start), float(stop), float(step))
+            return torch.arange(float(start), float(stop), float(step), *args, **kwargs)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, inplace=False):
@@ -289,11 +289,13 @@ class PyTorchBackend(Backend):
             dim_1, dim_2 = dim_2, dim_1
 
         if dim_1 < dim_2:
-            S, U = torch.symeig(self.dot(matrix, self.transpose(matrix)))
+            S, U = torch.symeig(self.dot(matrix, self.transpose(matrix)),
+                                eigenvectors=True)
             S = torch.sqrt(S)
             V = self.dot(self.transpose(matrix), U / self.reshape(S, (1, -1)))
         else:
-            S, V = torch.symeig(self.dot(self.transpose(matrix), matrix))
+            S, V = torch.symeig(self.dot(self.transpose(matrix), matrix),
+                                eigenvectors=True)
             S = torch.sqrt(S)
             U = self.dot(matrix, V) / self.reshape(S, (1, -1))
 
@@ -307,11 +309,26 @@ class PyTorchBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.truncated_svd,
                 'symeig_svd': self.symeig_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if axis is None:
+            tensor = tensor.flatten()
+            axis = -1
 
+        return torch.sort(tensor, dim=axis, descending = descending).values
+
+    @staticmethod
+    def update_index(tensor, index, values):
+        tensor.index_put_(index, values)
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
              'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
-             'abs', 'sqrt', 'sign', 'where', 'qr', 'diag', 'finfo']:
+             'abs', 'sqrt', 'sign', 'where', 'qr', 'diag', 'finfo', 'einsum']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
+
+
+
+

@@ -41,6 +41,18 @@ def test_parafac():
             'l2 Reconstruction error for orthogonalise=True too high')
     assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs Reconstruction error for orthogonalise=True too high')
+    
+    
+    rec_sparse, sparse_component = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=10e-5, sparsity = 0.9)
+    rec_sparse = kruskal_to_tensor(rec_sparse) + sparse_component
+    tol_norm_2 = 10e-2
+    tol_max_abs = 10e-2
+    error = T.norm(rec_sparse - tensor, 2)
+    error /= T.norm(tensor, 2)
+    assert_(error < tol_norm_2,
+            'l2 Reconstruction error for sparsity!=None too high')
+    assert_(T.max(T.abs(rec_sparse - tensor)) < tol_max_abs,
+            'abs Reconstruction error for sparsity!=None too high')
 
     # Should also converge with orthogonolise = True
     tol_norm_2 = 10e-1
@@ -62,6 +74,21 @@ def test_parafac():
     rec = kruskal_to_tensor(parafac(tensor, rank=1))
     error = T.norm(tensor - rec, 2)/T.norm(tensor)
     assert_(error < tol)
+
+
+def test_masked_parafac():
+    """Test for the masked CANDECOMP-PARAFAC decomposition.
+    This checks that a mask of 1's is identical to the unmasked case.
+    """
+    rng = check_random_state(1234)
+    tensor = T.tensor(rng.random_sample((3, 3, 3)))
+    mask = T.tensor(np.ones((3, 3, 3)))
+
+    mask_fact = parafac(tensor, rank=2, mask=mask)
+    fact = parafac(tensor, rank=2)
+    diff = kruskal_to_tensor(mask_fact) - kruskal_to_tensor(fact)
+    assert_(T.norm(diff) < 0.01, 'norm 2 of reconstruction higher than 0.01')
+
 
 def test_non_negative_parafac():
     """Test for non-negative PARAFAC

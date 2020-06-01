@@ -1,8 +1,8 @@
 import numpy as np
 
 from ... import backend as T
-from .._kronecker import kronecker
-from .._khatri_rao import khatri_rao
+from .. import kronecker
+from .. import khatri_rao
 from ...testing import assert_array_equal, assert_array_almost_equal
 
 # Author: Jean Kossaifi

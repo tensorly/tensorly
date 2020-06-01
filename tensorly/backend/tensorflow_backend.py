@@ -6,9 +6,6 @@ except ImportError as error:
                'you must first install TensorFlow!')
     raise ImportError(message) from error
 
-#import tensorflow.contrib.eager as tfe
-#tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
-
 import numpy as np
 
 from . import Backend
@@ -26,12 +23,12 @@ class TensorflowBackend(Backend):
         if isinstance(data, tf.Tensor):
             return data
 
-        out = tf.constant(data, dtype=dtype)
+        out = tf.Variable(data, dtype=dtype)
         return out.gpu(device_id) if device == 'gpu' else out
 
     @staticmethod
     def is_tensor(tensor):
-        return isinstance(tensor, tf.Tensor)
+        return isinstance(tensor, tf.Tensor) or isinstance(tensor, tf.Variable)
 
     @staticmethod
     def to_numpy(tensor):
@@ -39,6 +36,8 @@ class TensorflowBackend(Backend):
             return tensor
         elif isinstance(tensor, tf.Tensor):
             return tensor.numpy()
+        elif isinstance(tensor, tf.Variable):
+            return tf.convert_to_tensor(tensor).numpy()
         else:
             return tensor
 
@@ -90,11 +89,7 @@ class TensorflowBackend(Backend):
     def norm(tensor, order=2, axis=None):
         if order == 'inf':
             order = np.inf
-        res = tf.norm(tensor=tensor, ord=order, axis=axis)
-
-        if res.shape == ():
-            return res.numpy()
-        return res
+        return tf.norm(tensor=tensor, ord=order, axis=axis)
 
     def dot(self, tensor1, tensor2):
         return tf.tensordot(tensor1, tensor2, axes=([self.ndim(tensor1) - 1], [0]))
@@ -161,6 +156,38 @@ class TensorflowBackend(Backend):
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.truncated_svd}
+    
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if descending:
+            direction = 'DESCENDING'
+        else:
+            direction = 'ASCENDING'
+            
+        if axis is None:
+            tensor = tf.reshape(tensor, [-1])
+            axis = -1
+
+        return tf.sort(tensor, axis=axis, direction = direction)
+    
+    def index_update(self, tensor, indices, values):
+        if not isinstance(tensor, tf.Variable):
+            tensor = tf.Variable(tensor)
+            to_tensor = True
+        else:
+            to_tensor = False
+        
+        if isinstance(values, int):
+            values = tf.constant(np.ones(self.shape(tensor[indices]))*values,
+                                 **self.context(tensor))
+        
+        tensor = tensor[indices].assign(values)
+
+        if to_tensor:
+            return tf.convert_to_tensor(tensor)
+        else:
+            return tensor
+
 
 _FUN_NAMES = [
     # source_fun, target_fun
@@ -193,6 +220,7 @@ _FUN_NAMES = [
     (tf.reduce_sum, 'sum'),
     (tf.reduce_prod, 'prod'),
     (tf.reduce_all, 'all'),
+    (tf.einsum, 'einsum')
     ]
 for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)

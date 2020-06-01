@@ -13,6 +13,7 @@ then
 	echo "-- Installing dependencies"
 	conda install matplotlib Pillow sphinx
 	pip install slimit rcssmin 
+	pip install numpydoc
 
 	# cd to the doc folder and build the doc
 	echo "-- Building doc"

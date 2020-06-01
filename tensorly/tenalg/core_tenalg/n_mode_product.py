@@ -1,7 +1,7 @@
-from .. import backend as T
-from ..base import unfold, fold
+from ... import backend as T
+from ...base import unfold, fold
 
-from tensorly import unfold, fold, vec_to_tensor
+from ... import unfold, fold, vec_to_tensor
 
 def mode_dot(tensor, matrix_or_vector, mode):
         """n-mode product of a tensor and a matrix or vector at the specified mode
@@ -52,7 +52,9 @@ def mode_dot(tensor, matrix_or_vector, mode):
             if len(new_shape) > 1:
                 new_shape.pop(mode)
             else:
-                new_shape = [1]
+                # Ideally this should be (), i.e. order-0 tensors
+                # MXNet currently doesn't support this though..
+                new_shape = []
             vec = True
 
         else:
