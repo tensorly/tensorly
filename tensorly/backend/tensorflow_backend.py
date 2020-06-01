@@ -89,11 +89,7 @@ class TensorflowBackend(Backend):
     def norm(tensor, order=2, axis=None):
         if order == 'inf':
             order = np.inf
-        res = tf.norm(tensor=tensor, ord=order, axis=axis)
-
-        if res.shape == ():
-            return res.numpy()
-        return res
+        return tf.norm(tensor=tensor, ord=order, axis=axis)
 
     def dot(self, tensor1, tensor2):
         return tf.tensordot(tensor1, tensor2, axes=([self.ndim(tensor1) - 1], [0]))
@@ -224,6 +220,7 @@ _FUN_NAMES = [
     (tf.reduce_sum, 'sum'),
     (tf.reduce_prod, 'prod'),
     (tf.reduce_all, 'all'),
+    (tf.einsum, 'einsum')
     ]
 for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)

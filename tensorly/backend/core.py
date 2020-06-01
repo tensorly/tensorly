@@ -595,6 +595,24 @@ class Backend(object):
         """
         raise NotImplementedError
 
+    def einsum(subscripts, *operands):
+        """Evaluates the Einstein summation convention on the operands.
+
+        Parameters
+        ----------
+        subscripts : str
+            Specifies the subscripts for summation.
+
+        *operands : list of tensors
+            tensors for the operation
+
+        Returns
+        -------
+        output : ndarray
+            The calculation based on the Einstein summation convention
+        """
+        raise NotImplementedError
+
     def kron(self, a, b):
         """Kronecker product of two tensors.
 

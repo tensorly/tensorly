@@ -1,6 +1,8 @@
 # Automate testing etc
 BACKEND?='numpy'
 
+.PHONY: all test install clean debug
+
 all: install test
 
 install:

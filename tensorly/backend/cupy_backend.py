@@ -122,6 +122,6 @@ for name in ['float64', 'float32', 'int64', 'int32', 'reshape', 'moveaxis',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye',
              'arange', 'where', 'dot', 'kron', 'qr', 'concatenate', 'max',
              'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'stack',
-             'conj', 'diag']:
+             'conj', 'diag', 'einsum']:
     CupyBackend.register_method(name, getattr(cp, name))
 

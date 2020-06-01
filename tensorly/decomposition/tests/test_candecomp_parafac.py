@@ -75,6 +75,21 @@ def test_parafac():
     error = T.norm(tensor - rec, 2)/T.norm(tensor)
     assert_(error < tol)
 
+
+def test_masked_parafac():
+    """Test for the masked CANDECOMP-PARAFAC decomposition.
+    This checks that a mask of 1's is identical to the unmasked case.
+    """
+    rng = check_random_state(1234)
+    tensor = T.tensor(rng.random_sample((3, 3, 3)))
+    mask = T.tensor(np.ones((3, 3, 3)))
+
+    mask_fact = parafac(tensor, rank=2, mask=mask)
+    fact = parafac(tensor, rank=2)
+    diff = kruskal_to_tensor(mask_fact) - kruskal_to_tensor(fact)
+    assert_(T.norm(diff) < 0.01, 'norm 2 of reconstruction higher than 0.01')
+
+
 def test_non_negative_parafac():
     """Test for non-negative PARAFAC
 

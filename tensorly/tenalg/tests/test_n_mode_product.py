@@ -3,13 +3,15 @@ import itertools
 import numpy as np
 
 from ... import backend as T
-from ...base import fold, unfold
-from .._kronecker import kronecker
-from .._khatri_rao import khatri_rao
 from ...random import random_kruskal
-from ..n_mode_product import mode_dot, multi_mode_dot
 from ...testing import (assert_array_equal, assert_equal,
                         assert_array_almost_equal, assert_raises)
+from ...base import fold, unfold
+
+
+from .. import kronecker
+from .. import khatri_rao
+from .. import mode_dot, multi_mode_dot
 
 
 def test_mode_dot():
@@ -145,12 +147,25 @@ def test_multi_mode_dot():
     vecs = [T.ones(s) for s in shape]
     res = multi_mode_dot(X, vecs)
     # result should be a scalar
-    assert_equal(res.shape, (1,))
-    assert_equal(res[0], np.prod(shape))
+    # MXNet doesn't support order-0 tensors..
+    # FIX ME - this shouldn't have to happen...
+    if T.get_backend() == 'mxnet':
+        assert_equal(T.shape(res), (1, ))
+        assert_array_almost_equal(res[0], np.prod(shape))
+    else:
+        assert_equal(T.shape(res), ())
+        assert_array_almost_equal(res, np.prod(shape))
+
     # Average pooling each mode
     # Order should not matter
     vecs = [vecs[i]/s for i, s in enumerate(shape)]
     for modes in itertools.permutations(range(len(shape))):
         res = multi_mode_dot(X, [vecs[i] for i in modes], modes=modes)
-        assert_equal(res.shape, (1,))
-        assert_equal(res[0], 1)
+        # MXNet doesn't support order-0 tensors..
+        # FIX ME - this shouldn't have to happen...
+        if T.get_backend() == 'mxnet':
+            assert_equal(T.shape(res), (1, ))
+            assert_array_almost_equal(res[0], 1)
+        else:
+            assert_equal(T.shape(res), ())
+            assert_array_almost_equal(res, 1)
