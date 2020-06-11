@@ -1,3 +1,4 @@
+import numpy as np
 import tensorly as tl
 from .._tucker import tucker, partial_tucker, non_negative_tucker
 from ...tucker_tensor import tucker_to_tensor
@@ -81,6 +82,18 @@ def test_tucker():
     assert_(tl.max(tl.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
 
+def test_masked_tucker():
+    """Test for the masked Tucker decomposition.
+    This checks that a mask of 1's is identical to the unmasked case.
+    """
+    rng = check_random_state(1234)
+    tensor = tl.tensor(rng.random_sample((3, 3, 3)))
+    mask = tl.tensor(np.ones((3, 3, 3)))
+
+    mask_fact = tucker(tensor, rank=(2, 2, 2), mask=mask)
+    fact = tucker(tensor, rank=(2, 2, 2))
+    diff = tucker_to_tensor(mask_fact) - tucker_to_tensor(fact)
+    assert_(tl.norm(diff) < 0.001, 'norm 2 of reconstruction higher than 0.01')
 
 def test_non_negative_tucker():
     """Test for non-negative Tucker"""
