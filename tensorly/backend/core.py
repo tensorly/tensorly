@@ -18,6 +18,41 @@ class Index():
         return indices
 
 
+def svd_flip(u, v, u_based_decision=True):
+    """Sign correction to ensure deterministic output from SVD.
+    Adjusts the columns of u and the rows of v such that the loadings in the
+    columns in u that are largest in absolute value are always positive.
+
+    This function is borrowed from scikit-learn/utils/extmath.py
+
+    Parameters
+    ----------
+    u : ndarray
+        u and v are the output of `linalg.svd`
+    v : ndarray
+        u and v are the output of `linalg.svd`
+    u_based_decision : boolean, (default=True)
+        If True, use the columns of u as the basis for sign flipping.
+        Otherwise, use the rows of v. The choice of which variable to base the
+        decision on is generally algorithm dependent.
+    Returns
+    -------
+    u_adjusted, v_adjusted : arrays with the same dimensions as the input.
+    """
+    if u_based_decision:
+        # columns of u, rows of v
+        max_abs_cols = np.argmax(np.abs(u), axis=0)
+        signs = np.sign(u[max_abs_cols, range(u.shape[1])])
+    else:
+        # rows of v, columns of u
+        max_abs_rows = np.argmax(np.abs(v), axis=1)
+        signs = np.sign(v[range(v.shape[0]), max_abs_rows])
+
+    u *= signs
+    v *= signs[:, np.newaxis]
+    return u, v
+
+
 class Backend(object):
     @classmethod
     def register_method(cls, name, func):
@@ -683,7 +718,7 @@ class Backend(object):
 
         return res*m
 
-    def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
+    def partial_svd(self, matrix, n_eigenvecs=None, flip=True, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`
 
         If `n_eigenvecs` is specified, sparse eigendecomposition is used on
@@ -776,6 +811,9 @@ class Backend(object):
             # WARNING: here, V is still the transpose of what it should be
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
             V = V.T.conj()
+
+        if flip:
+            U, V = svd_flip(U, V)
 
         if not is_numpy:
             U = self.tensor(U, **ctx)
