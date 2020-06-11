@@ -812,6 +812,8 @@ class Backend(object):
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
             V = V.T.conj()
 
+        assert U.shape[1] == V.shape[0]
+
         if flip:
             U, V = svd_flip(U, V)
 
@@ -844,17 +846,6 @@ class Backend(object):
             of shape (n_eigenvecs, matrix.shape[1])
             contains the left singular vectors
         """
-        dim_1, dim_2 = matrix.shape
-        if dim_1 <= dim_2:
-            min_dim = dim_1
-        else:
-            min_dim = dim_2
-
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-
         U, S, V = self.svd(matrix)
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         return U, S, V
