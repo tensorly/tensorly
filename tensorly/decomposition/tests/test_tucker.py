@@ -109,7 +109,7 @@ def test_masked_tucker():
     mask_err = tl.norm(tucker_to_tensor(mask_fact) - tensor)
     err = tl.norm(tucker_to_tensor(fact) - tensor)
 
-    assert_(mask_err < 0.001, 'norm 2 of reconstruction higher than 0.001')
+    assert_(mask_err < 0.01, 'norm 2 of reconstruction higher than 0.01')
     assert_(mask_err < err, 'the error with masking should be less than without')
 
 def test_non_negative_tucker():
