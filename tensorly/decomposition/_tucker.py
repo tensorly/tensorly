@@ -68,6 +68,10 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         warnings.warn(message, Warning)
         rank = [rank for _ in modes]
 
+    if mask is not None and init == "svd":
+        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
+        warnings.warn(message, Warning)
+
     try:
         svd_fun = tl.SVD_FUNS[svd]
     except KeyError:
@@ -81,6 +85,9 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         for index, mode in enumerate(modes):
             eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
             factors.append(eigenvecs)
+
+        # The initial core approximation is needed here for the masking step
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
     else:
         rng = check_random_state(random_state)
         core = tl.tensor(rng.random_sample(rank), **tl.context(tensor))
@@ -90,15 +97,15 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     norm_tensor = tl.norm(tensor, 2)
 
     for iteration in range(n_iter_max):
+        if mask is not None:
+            tensor = tensor*mask + tucker_to_tensor((core, factors))*(1-mask)
+
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
             eigenvecs, _, _ = svd_fun(unfold(core_approximation, mode), n_eigenvecs=rank[index], random_state=random_state)
             factors[index] = eigenvecs
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
-
-        if mask is not None:
-            tensor = tensor*mask + tucker_to_tensor((core, factors))*(1-mask)
 
         # The factors are orthonormal and therefore do not affect the reconstructed tensor's norm
         rec_error = sqrt(abs(norm_tensor**2 - tl.norm(core, 2)**2)) / norm_tensor

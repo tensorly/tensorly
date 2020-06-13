@@ -96,19 +96,19 @@ def test_masked_tucker():
     assert_(tl.norm(diff) < 0.001, 'norm 2 of reconstruction higher than 0.001')
 
     # Mask an outlier value, and check that the decomposition ignores it
-    tensor = random_tucker((10, 10, 10), (1, 1, 1), full=True)
-    mask = tl.tensor(np.ones((10, 10, 10)))
+    tensor = random_tucker((5, 5, 5), (1, 1, 1), full=True)
+    mask = tl.tensor(np.ones((5, 5, 5)))
 
     mask_tensor = tl.tensor(tensor)
     mask_tensor[0, 0, 0] = 1.0
     mask[0, 0, 0] = 0
 
-    mask_fact = tucker(mask_tensor, rank=(1, 1, 1), mask=mask)
+    # We won't use the SVD decomposition, but check that it at least runs successfully
+    mask_fact = tucker(mask_tensor, rank=(1, 1, 1), mask=mask, init="svd")
+    mask_fact = tucker(mask_tensor, rank=(1, 1, 1), mask=mask, init="random")
     mask_err = tl.norm(tucker_to_tensor(mask_fact) - tensor)
 
-    print(mask_err)
-
-    assert_(mask_err < 0.01, 'norm 2 of reconstruction higher than 0.01')
+    assert_(mask_err < 0.001, 'norm 2 of reconstruction higher than 0.001')
 
 def test_non_negative_tucker():
     """Test for non-negative Tucker"""
