@@ -184,6 +184,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     """
     epsilon = 10e-12
 
+    if mask is not None and init == "svd":
+        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
+        warnings.warn(message, Warning)
+
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
@@ -329,6 +333,10 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
        pp 792-799, ICML, 2005
     """
     epsilon = 10e-12
+
+    if mask is not None and init == "svd":
+        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
+        warnings.warn(message, Warning)
 
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
