@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.linalg import qr
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               kruskal_normalise)
 from ..tucker_tensor import tucker_to_tensor

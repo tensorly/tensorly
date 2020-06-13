@@ -3,7 +3,7 @@ import tensorly as tl
 from .._tucker import tucker, partial_tucker, non_negative_tucker
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
-from ...random import check_random_state
+from ...random import check_random_state, random_tucker
 from ...testing import assert_equal, assert_, assert_array_equal
 
 
@@ -94,6 +94,25 @@ def test_masked_tucker():
     fact = tucker(tensor, rank=(2, 2, 2))
     diff = tucker_to_tensor(mask_fact) - tucker_to_tensor(fact)
     assert_(tl.norm(diff) < 0.001, 'norm 2 of reconstruction higher than 0.001')
+
+    # Real test
+    tensor = random_tucker((5, 5, 5), (1, 1, 1), full=True)
+    mask = tl.tensor(np.ones((5, 5, 5)))
+
+    mask_tensor = tl.tensor(tensor)
+    mask_tensor[1, 2, 3] = 1.0
+    mask[1, 2, 3] = 0
+
+    mask_fact = tucker(mask_tensor, rank=(1, 1, 1), mask=mask)
+    fact = tucker(mask_tensor, rank=(1, 1, 1))
+
+    mask_err = tl.norm(tucker_to_tensor(mask_fact) - tensor)
+    err = tl.norm(tucker_to_tensor(fact) - tensor)
+
+    print(mask_err)
+
+    assert_(mask_err < 0.001, 'norm 2 of reconstruction higher than 0.001')
+    assert_(mask_err < err, 'the error with masking should be less than without')
 
 def test_non_negative_tucker():
     """Test for non-negative Tucker"""
