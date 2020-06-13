@@ -100,8 +100,8 @@ def test_masked_tucker():
     mask = tl.tensor(np.ones((5, 5, 5)))
 
     mask_tensor = tl.tensor(tensor)
-    mask_tensor[0, 0, 0] = 1.0
-    mask[0, 0, 0] = 0
+    mask_tensor = tl.index_update(mask_tensor, tl.index[0, 0, 0], 1.0)
+    mask = tl.index_update(mask, tl.index[0, 0, 0], 0)
 
     # We won't use the SVD decomposition, but check that it at least runs successfully
     mask_fact = tucker(mask_tensor, rank=(1, 1, 1), mask=mask, init="svd")
