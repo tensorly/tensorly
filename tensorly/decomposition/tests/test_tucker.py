@@ -95,7 +95,7 @@ def test_masked_tucker():
     diff = tucker_to_tensor(mask_fact) - tucker_to_tensor(fact)
     assert_(tl.norm(diff) < 0.001, 'norm 2 of reconstruction higher than 0.001')
 
-    # Real test
+    # Mask an outlier value, and check that the decomposition ignores it
     tensor = random_tucker((5, 5, 5), (1, 1, 1), full=True)
     mask = tl.tensor(np.ones((5, 5, 5)))
 
@@ -108,8 +108,6 @@ def test_masked_tucker():
 
     mask_err = tl.norm(tucker_to_tensor(mask_fact) - tensor)
     err = tl.norm(tucker_to_tensor(fact) - tensor)
-
-    print(mask_err)
 
     assert_(mask_err < 0.001, 'norm 2 of reconstruction higher than 0.001')
     assert_(mask_err < err, 'the error with masking should be less than without')
