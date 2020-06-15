@@ -4,9 +4,7 @@ Core operations on Tucker tensors.
 
 from .base import unfold, tensor_to_vec
 from .tenalg import multi_mode_dot, mode_dot
-from .tenalg import kronecker
 from . import backend as tl
-import warnings
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 

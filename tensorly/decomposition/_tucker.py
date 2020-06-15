@@ -13,7 +13,7 @@ import warnings
 
 
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
-                   svd='numpy_svd', random_state=None, verbose=False, ranks=None):
+                   svd='numpy_svd', random_state=None, verbose=False, mask=None, ranks=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition exclusively along the provided modes.
@@ -39,6 +39,11 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         level of verbosity
+    mask : ndarray
+        array of booleans with the same shape as ``tensor`` should be 0 where
+        the values are missing and 1 everywhere else. Note:  if tensor is
+        sparse, then mask should also be sparse with a fill value of 1 (or
+        True).
 
     Returns
     -------
@@ -63,6 +68,10 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         warnings.warn(message, Warning)
         rank = [rank for _ in modes]
 
+    if mask is not None and init == "svd":
+        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
+        warnings.warn(message, Warning)
+
     try:
         svd_fun = tl.SVD_FUNS[svd]
     except KeyError:
@@ -76,6 +85,9 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         for index, mode in enumerate(modes):
             eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
             factors.append(eigenvecs)
+
+        # The initial core approximation is needed here for the masking step
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
     else:
         rng = check_random_state(random_state)
         core = tl.tensor(rng.random_sample(rank), **tl.context(tensor))
@@ -85,6 +97,9 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     norm_tensor = tl.norm(tensor, 2)
 
     for iteration in range(n_iter_max):
+        if mask is not None:
+            tensor = tensor*mask + tucker_to_tensor((core, factors))*(1-mask)
+
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
             eigenvecs, _, _ = svd_fun(unfold(core_approximation, mode), n_eigenvecs=rank[index], random_state=random_state)
@@ -110,7 +125,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
 
 def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd',
-           svd='numpy_svd', tol=10e-5, random_state=None, verbose=False):
+           svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition:
@@ -151,7 +166,7 @@ def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd',
     """
     modes = list(range(tl.ndim(tensor)))
     return partial_tucker(tensor, modes, rank=rank, ranks=ranks, n_iter_max=n_iter_max, init=init,
-                          svd=svd, tol=tol, random_state=random_state, verbose=verbose)
+                          svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
 
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
