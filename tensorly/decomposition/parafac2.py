@@ -219,7 +219,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     that the function accept both lists of matrices and a single nd-array as input without
     any reordering of the modes.
     """
-    weights, factors, projections = initialize_decomposition(tensor_slices, rank, init=init, random_state=random_state)
+    weights, factors, projections = initialize_decomposition(tensor_slices, rank, init=init, svd=svd, random_state=random_state)
 
     rec_errors = []
     norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2)**2 for tensor_slice in tensor_slices))
