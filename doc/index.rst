@@ -13,7 +13,7 @@ TensorLy: Tensor Learning in Python
    auto_examples/index
    development_guide/index
    Notebooks <https://github.com/JeanKossaifi/tensorly-notebooks>
-   authors
+   about
 
 
 .. only:: html
@@ -56,8 +56,8 @@ TensorLy: Tensor Learning in Python
               </div>
 
               <div class="tile is-parent">
-              <a class="tile is-child box" href="authors.html">
-                  <p class="title">Authors</p>
+              <a class="tile is-child box" href="about.html">
+                  <p class="title">About us</p>
                   <p class="subtitle">About the developers</p>
               </a>
               </div>
@@ -106,9 +106,10 @@ TensorLy: Tensor Learning in Python
 				   @article{tensorly, <br/>
 					&nbsp;&nbsp;&nbsp;&nbsp;author = {Jean Kossaifi and Yannis Panagakis and Anima Anandkumar and Maja Pantic}, <br/>
 					&nbsp;&nbsp;&nbsp;&nbsp;title = {TensorLy: Tensor Learning in Python}, <br/>
-					&nbsp;&nbsp;&nbsp;&nbsp;journal = {CoRR} <br/>
-               &nbsp;&nbsp;&nbsp;&nbsp;volume = {abs/1610.09555},
-					&nbsp;&nbsp;&nbsp;&nbsp;year = {2018}, <br/>
+					&nbsp;&nbsp;&nbsp;&nbsp;journal = {Journal of Machine Learning Research (JMLR)} <br/>
+               &nbsp;&nbsp;&nbsp;&nbsp;volume = {20},
+               &nbsp;&nbsp;&nbsp;&nbsp;number = {26},
+					&nbsp;&nbsp;&nbsp;&nbsp;year = {2019}, <br/>
 					} <br/>
 				</code>
 				</div>
@@ -135,7 +136,7 @@ TensorLy: Tensor Learning in Python
 			</header>
 
 			<div class="card-content">
-			Jean Kossaifi, Yannis Panagakis, Anima Anandkumar and Maja Pantic, <strong> TensorLy: Tensor Learning in Python</strong>, <br/><a href="https://arxiv.org/abs/1610.09555">https://arxiv.org/abs/1610.09555</a>.
+			Jean Kossaifi, Yannis Panagakis, Anima Anandkumar and Maja Pantic, <strong> TensorLy: Tensor Learning in Python</strong>, Journal of Machine Learning Research, 2019. <br/><a href="http://jmlr.org/papers/v20/18-277.html">http://jmlr.org/papers/v20/18-277.html</a>.
 			</div>
 
 	  </div>
