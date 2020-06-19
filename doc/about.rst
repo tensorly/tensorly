@@ -75,6 +75,14 @@ INRIA is `funding <https://jobs.inria.fr/public/classic/en/offres/2020-02715>`_ 
 
 ........  
 
+.. image:: _static/logo_athens.png
+   :width: 150pt
+   :align: center
+   :target: https://en.uoa.gr
+   :alt: National and Kapodistrian University of Athens
+
+........  
+
 
 .. _Jean Kossaifi: http://jeankossaifi.com/
 
