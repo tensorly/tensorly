@@ -39,7 +39,7 @@ def test_parafac():
     tol_fixed = 1e-16
     assert_(T.norm(rec_svd_fixed_mode_0.factors[0] - fixed_tensor.factors[0]) < tol_fixed,
             'Fixed mode 0 was modified in candecomp_parafac')
-    assert_(T.norm(rec_svd_fixed_mode_1.factors[1] - fixed_tensor.factors[1]) < tol_fixed,
+   assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1]) 
             'Fixed mode 1 was modified in candecomp_parafac')
 
     rec_orthogonal = parafac(tensor, rank=4, n_iter_max=100, init='svd', tol=10e-5, random_state=1234, orthogonalise=True, verbose=0)
