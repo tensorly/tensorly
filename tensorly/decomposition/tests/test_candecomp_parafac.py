@@ -31,6 +31,14 @@ def test_parafac():
     assert_(T.max(T.abs(rec_svd - tensor)) < tol_max_abs,
             'abs norm of reconstruction error higher than tol')
 
+    # Test fixing mode 0 or 1 with given init
+    fixed_tensor = random_kruskal((3, 4, 2), rank=2)
+    rec_svd_fixed_mode_0 = parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0])
+    rec_svd_fixed_mode_1 = parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[1])
+    # Check if modified after 2 iterations
+    assert_array_equal(rec_svd_fixed_mode_0.factors[0], fixed_tensor.factors[0], err_msg='Fixed mode 0 was modified in candecomp_parafac')
+    assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
+
     rec_orthogonal = parafac(tensor, rank=4, n_iter_max=100, init='svd', tol=10e-5, random_state=1234, orthogonalise=True, verbose=0)
     rec_orthogonal = kruskal_to_tensor(rec_orthogonal)
     tol_norm_2 = 10e-2
@@ -117,6 +125,16 @@ def test_non_negative_parafac():
     # Test the max abs difference between the reconstruction and the tensor
     assert_(T.max(T.abs(reconstructed_tensor - nn_reconstructed_tensor)) < tol_max_abs,
             'abs norm of reconstruction error higher than tol')
+
+    # Test fixing mode 0 or 1 with given init
+    fixed_tensor = random_kruskal((3, 3, 3), rank=2)
+    for factor in fixed_tensor[1]:
+        factor = T.abs(factor)
+    rec_svd_fixed_mode_0 = non_negative_parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0])
+    rec_svd_fixed_mode_1 = non_negative_parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[1])
+    # Check if modified after 2 iterations
+    assert_array_equal(rec_svd_fixed_mode_0.factors[0], fixed_tensor.factors[0], err_msg='Fixed mode 0 was modified in candecomp_parafac')
+    assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
 
     res_svd = non_negative_parafac(tensor, rank=3, n_iter_max=100,
                                        tol=10e-4, init='svd')

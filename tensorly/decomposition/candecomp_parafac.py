@@ -120,7 +120,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             non_negative=False,\
             sparsity = None,\
             l2_reg = 0,  mask=None,\
-            cvg_criterion = 'abs_rec_error'):
+            cvg_criterion = 'abs_rec_error',\
+            fixed_modes = []):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -159,6 +160,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
     sparsity : float or int
         If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+        fixed_modes : list, default is []
+            A list of modes for which the initial value is not modified.
+            The last mode cannot be fixed due to error computation.
 
     Returns
     -------
@@ -199,20 +203,25 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     weights = tl.ones(rank, **tl.context(tensor))
     Id = tl.eye(rank, **tl.context(tensor))*l2_reg
 
+    if tl.ndim(tensor)-1 in fixed_modes:
+        warnings.warn('You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()')
+        fixed_modes.remove(tl.ndim(tensor)-1)
+    modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+
     if sparsity:
         sparse_component = tl.zeros_like(tensor)
         if isinstance(sparsity, float):
             sparsity = int(sparsity * np.prod(tensor.shape))
         else:
             sparsity = int(sparsity)
-            
+
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
         if verbose > 1:
             print("Starting iteration", iteration + 1)
-        for mode in range(tl.ndim(tensor)):
+        for mode in modes_list:
             if verbose > 1:
                 print("Mode", mode, "of", tl.ndim(tensor))
 
@@ -294,7 +303,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                          tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
-                         return_errors=False, mask=None, orthogonalise=False, cvg_criterion='abs_rec_error'):
+                         return_errors=False, mask=None, orthogonalise=False, cvg_criterion='abs_rec_error',
+                         fixed_modes=[]):
     """
     Non-negative CP decomposition
 
@@ -318,6 +328,9 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         level of verbosity
+    fixed_modes : list, default is []
+        A list of modes for which the initial value is not modified.
+        The last mode cannot be fixed due to error computation.
 
     Returns
     -------
@@ -349,6 +362,11 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     norm_tensor = tl.norm(tensor, 2)
     weights = tl.ones(rank, **tl.context(tensor))
 
+    if tl.ndim(tensor)-1 in fixed_modes:
+        warnings.warn('You asked for fixing the last mode, which is not supported while tol is fixed.\n The last mode will not be fixed. Consider using tl.moveaxis()')
+        fixed_modes.remove(tl.ndim(tensor)-1)
+    modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
             for i, f in enumerate(factors):
@@ -357,7 +375,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
         if verbose > 1:
             print("Starting iteration", iteration + 1)
-        for mode in range(tl.ndim(tensor)):
+        for mode in modes_list:
             if verbose > 1:
                 print("Mode", mode, "of", tl.ndim(tensor))
 
