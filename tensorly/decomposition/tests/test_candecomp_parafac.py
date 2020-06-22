@@ -36,11 +36,8 @@ def test_parafac():
     rec_svd_fixed_mode_0 = parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0])
     rec_svd_fixed_mode_1 = parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[1])
     # Check if modified after 2 iterations
-    tol_fixed = 1e-16
-    assert_(T.norm(rec_svd_fixed_mode_0.factors[0] - fixed_tensor.factors[0]) < tol_fixed,
-            'Fixed mode 0 was modified in candecomp_parafac')
-   assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1]) 
-            'Fixed mode 1 was modified in candecomp_parafac')
+    assert_array_equal(rec_svd_fixed_mode_0.factors[0], fixed_tensor.factors[0], err_msg='Fixed mode 0 was modified in candecomp_parafac')
+    assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
 
     rec_orthogonal = parafac(tensor, rank=4, n_iter_max=100, init='svd', tol=10e-5, random_state=1234, orthogonalise=True, verbose=0)
     rec_orthogonal = kruskal_to_tensor(rec_orthogonal)
@@ -136,11 +133,8 @@ def test_non_negative_parafac():
     rec_svd_fixed_mode_0 = non_negative_parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0])
     rec_svd_fixed_mode_1 = non_negative_parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[1])
     # Check if modified after 2 iterations
-    tol_fixed = 1e-16
-    assert_(T.norm(rec_svd_fixed_mode_0.factors[0] - fixed_tensor.factors[0]) < tol_fixed,
-            'Fixed mode 0 was modified in candecomp_parafac')
-    assert_(T.norm(rec_svd_fixed_mode_1.factors[1] - fixed_tensor.factors[1]) < tol_fixed,
-            'Fixed mode 1 was modified in candecomp_parafac')
+    assert_array_equal(rec_svd_fixed_mode_0.factors[0], fixed_tensor.factors[0], err_msg='Fixed mode 0 was modified in candecomp_parafac')
+    assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
 
     res_svd = non_negative_parafac(tensor, rank=3, n_iter_max=100,
                                        tol=10e-4, init='svd')
