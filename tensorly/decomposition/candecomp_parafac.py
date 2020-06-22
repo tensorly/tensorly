@@ -7,6 +7,7 @@ from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               unfolding_dot_khatri_rao, kruskal_norm)
 from ..tenalg import khatri_rao
+from collections.abc import Mapping
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -79,6 +80,17 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
                 factor = factor / (tl.reshape(tl.norm(factor, axis=0), (1, -1)) + eps)
             factors.append(factor)
         return factors
+
+    elif isinstance(init, (tuple, list, KruskalTensor)):
+        # TODO: Test this
+        try:
+            return KruskalTensor(init).factors
+        except ValueError:
+            raise ValueError(
+                'If initialization method is a mapping, then it must '
+                'be possible to convert it to a KruskalTensor instance'
+            )
+
 
     raise ValueError('Initialization method "{}" not recognized'.format(init))
 
@@ -175,6 +187,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
     """
     epsilon = 10e-12
+
+    if mask is not None and init == "svd":
+        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
+        warnings.warn(message, Warning)
 
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
@@ -330,6 +346,10 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
        pp 792-799, ICML, 2005
     """
     epsilon = 10e-12
+
+    if mask is not None and init == "svd":
+        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
+        warnings.warn(message, Warning)
 
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
