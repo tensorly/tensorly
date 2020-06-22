@@ -186,7 +186,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
 
     """
-    epsilon = 10e-12
+    epsilon = 1e-11
 
     if mask is not None and init == "svd":
         message = "Masking occurs after initialization. Therefore, random initialization is recommended."
@@ -302,7 +302,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
-                         tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
+                         tol=1e-6, random_state=None, verbose=0, normalize_factors=False,
                          return_errors=False, mask=None, orthogonalise=False, cvg_criterion='abs_rec_error',
                          fixed_modes=[]):
     """
@@ -345,7 +345,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
        In Proceedings of the International Conference on Machine Learning (ICML),
        pp 792-799, ICML, 2005
     """
-    epsilon = 10e-12
+    epsilon = 1e-11
 
     if mask is not None and init == "svd":
         message = "Masking occurs after initialization. Therefore, random initialization is recommended."
@@ -518,7 +518,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
 
 
 def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', svd='numpy_svd',
-                       tol=10e-9, max_stagnation=20, random_state=None, verbose=1):
+                       tol=1e-8, max_stagnation=20, random_state=None, verbose=1):
     """Randomised CP decomposition via sampled ALS
 
     Parameters

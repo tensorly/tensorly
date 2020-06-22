@@ -10,8 +10,8 @@ from ...testing import assert_equal, assert_, assert_array_equal
 def test_partial_tucker():
     """Test for the Partial Tucker decomposition"""
     rng = check_random_state(1234)
-    tol_norm_2 = 10e-3
-    tol_max_abs = 10e-1
+    tol_norm_2 = 1e-2
+    tol_max_abs = 1
     tensor = tl.tensor(rng.random_sample((3, 4, 3)))
     modes = [1, 2]
     core, factors = partial_tucker(tensor, modes, rank=None, n_iter_max=200, verbose=True)
@@ -45,8 +45,8 @@ def test_tucker():
     """Test for the Tucker decomposition"""
     rng = check_random_state(1234)
 
-    tol_norm_2 = 10e-3
-    tol_max_abs = 10e-1
+    tol_norm_2 = 1e-2
+    tol_max_abs = 1
     tensor = tl.tensor(rng.random_sample((3, 4, 3)))
     core, factors = tucker(tensor, rank=None, n_iter_max=200, verbose=True)
     reconstructed_tensor = tucker_to_tensor((core, factors))
@@ -68,8 +68,8 @@ def test_tucker():
                      "expected {}".format(i, core.shape[i], rank))
 
     # Random and SVD init should converge to a similar solution
-    tol_norm_2 = 10e-1
-    tol_max_abs = 10e-1
+    tol_norm_2 = 1
+    tol_max_abs = 1
 
     core_svd, factors_svd = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, init='svd', verbose=1)
     core_random, factors_random = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, init='random', random_state=1234)
@@ -114,8 +114,8 @@ def test_non_negative_tucker():
     """Test for non-negative Tucker"""
     rng = check_random_state(1234)
 
-    tol_norm_2 = 10e-1
-    tol_max_abs = 10e-1
+    tol_norm_2 = 1
+    tol_max_abs = 1
     tensor = tl.tensor(rng.random_sample((3, 4, 3)) + 1)
     core, factors = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, verbose=1)
     nn_core, nn_factors = non_negative_tucker(tensor, rank=[3, 4, 3], n_iter_max=100)

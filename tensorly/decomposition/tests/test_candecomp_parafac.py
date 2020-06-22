@@ -16,11 +16,11 @@ def test_parafac():
     """Test for the CANDECOMP-PARAFAC decomposition
     """
     rng = check_random_state(1234)
-    tol_norm_2 = 10e-2
-    tol_max_abs = 10e-2
+    tol_norm_2 = 1e-1
+    tol_max_abs = 1e-1
     tensor = T.tensor(rng.random_sample((3, 4, 2)))
-    rec_svd = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=10e-5)
-    rec_random = parafac(tensor, rank=4, n_iter_max=200, init='random', tol=10e-5, random_state=1234, verbose=0)
+    rec_svd = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=1e-4)
+    rec_random = parafac(tensor, rank=4, n_iter_max=200, init='random', tol=1e-4, random_state=1234, verbose=0)
     rec_svd = kruskal_to_tensor(rec_svd)
     rec_random = kruskal_to_tensor(rec_random)
     error = T.norm(rec_svd - tensor, 2)
@@ -39,22 +39,22 @@ def test_parafac():
     assert_array_equal(rec_svd_fixed_mode_0.factors[0], fixed_tensor.factors[0], err_msg='Fixed mode 0 was modified in candecomp_parafac')
     assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
 
-    rec_orthogonal = parafac(tensor, rank=4, n_iter_max=100, init='svd', tol=10e-5, random_state=1234, orthogonalise=True, verbose=0)
+    rec_orthogonal = parafac(tensor, rank=4, n_iter_max=100, init='svd', tol=1e-4, random_state=1234, orthogonalise=True, verbose=0)
     rec_orthogonal = kruskal_to_tensor(rec_orthogonal)
-    tol_norm_2 = 10e-2
-    tol_max_abs = 10e-2
+    tol_norm_2 = 1e-1
+    tol_max_abs = 1e-1
     error = T.norm(rec_orthogonal - tensor, 2)
     error /= T.norm(tensor, 2)
     assert_(error < tol_norm_2,
             'l2 Reconstruction error for orthogonalise=True too high')
     assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs Reconstruction error for orthogonalise=True too high')
-    
-    
-    rec_sparse, sparse_component = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=10e-5, sparsity = 0.9)
+
+
+    rec_sparse, sparse_component = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=1e-4, sparsity = 0.9)
     rec_sparse = kruskal_to_tensor(rec_sparse) + sparse_component
-    tol_norm_2 = 10e-2
-    tol_max_abs = 10e-2
+    tol_norm_2 = 1e-1
+    tol_max_abs = 1e-1
     error = T.norm(rec_sparse - tensor, 2)
     error /= T.norm(tensor, 2)
     assert_(error < tol_norm_2,
@@ -63,8 +63,8 @@ def test_parafac():
             'abs Reconstruction error for sparsity!=None too high')
 
     # Should also converge with orthogonolise = True
-    tol_norm_2 = 10e-1
-    tol_max_abs = 10e-1
+    tol_norm_2 = 1e-0
+    tol_max_abs = 1e-0
     error = T.norm(rec_svd - rec_random, 2)
     error /= T.norm(rec_svd, 2)
     assert_(error < tol_norm_2,
@@ -77,8 +77,8 @@ def test_parafac():
         _ = initialize_factors(tensor, rank, init='bogus init type')
 
     # Test with rank-1 decomposition
-    tol = 10e-3
-    tensor = random_kruskal((3, 4, 2), rank=1, full=True) 
+    tol = 1e-2
+    tensor = random_kruskal((3, 4, 2), rank=1, full=True)
     rec = kruskal_to_tensor(parafac(tensor, rank=1))
     error = T.norm(tensor - rec, 2)/T.norm(tensor)
     assert_(error < tol)
@@ -103,12 +103,12 @@ def test_non_negative_parafac():
 
     TODO: more rigorous test
     """
-    tol_norm_2 = 10e-1
+    tol_norm_2 = 1
     tol_max_abs = 1
     rng = check_random_state(1234)
     tensor = T.tensor(rng.random_sample((3, 3, 3))+1)
     res = parafac(tensor, rank=3, n_iter_max=120)
-    nn_res = non_negative_parafac(tensor, rank=3, n_iter_max=100, tol=10e-4, init='svd', verbose=0)
+    nn_res = non_negative_parafac(tensor, rank=3, n_iter_max=100, tol=1e-3, init='svd', verbose=0)
 
     # Make sure all components are positive
     _, nn_factors = nn_res
@@ -137,8 +137,8 @@ def test_non_negative_parafac():
     assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
 
     res_svd = non_negative_parafac(tensor, rank=3, n_iter_max=100,
-                                       tol=10e-4, init='svd')
-    res_random = non_negative_parafac(tensor, rank=3, n_iter_max=100, tol=10e-4,
+                                       tol=1e-3, init='svd')
+    res_random = non_negative_parafac(tensor, rank=3, n_iter_max=100, tol=1e-3,
                                           init='random', random_state=1234, verbose=0)
     rec_svd = kruskal_to_tensor(res_svd)
     rec_random = kruskal_to_tensor(res_random)
@@ -186,7 +186,7 @@ def test_randomised_parafac():
     tensor = T.tensor(rng.random_sample(t_shape))
     rank = 4
     _, factors_svd = randomised_parafac(tensor, rank, n_samples, n_iter_max=1000,
-                                     init='svd', tol=10e-5, verbose=True)
+                                     init='svd', tol=1e-4, verbose=True)
     for i, f in enumerate(factors_svd):
         assert_(T.shape(f) == (t_shape[i], rank),
                   'Factors are of incorrect size')

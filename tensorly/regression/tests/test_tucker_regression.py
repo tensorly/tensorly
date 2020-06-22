@@ -31,7 +31,7 @@ def test_TuckerRegressor():
     y_train = y[:1000]
     y_test = y[1000:]
 
-    estimator = TuckerRegressor(weight_ranks=ranks, tol=10e-8, reg_W=1, n_iter_max=200, verbose=True)
+    estimator = TuckerRegressor(weight_ranks=ranks, tol=1e-7, reg_W=1, n_iter_max=200, verbose=True)
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
     error = RMSE(y_test, y_pred)

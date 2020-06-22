@@ -51,7 +51,7 @@ def test_matrix_product_state():
         assert(r_k<=rank[k+1]), first_error_message
 
     ## Test 3
-    tol = 10e-5
+    tol = 1e-4
     tensor = tl.tensor(rng.random_sample([3, 3, 3]))
     factors = matrix_product_state(tensor, (1, 3, 3, 1))
     reconstructed_tensor = tl.mps_to_tensor(factors)

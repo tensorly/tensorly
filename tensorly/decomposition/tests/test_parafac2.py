@@ -39,7 +39,7 @@ def best_correlation(A, B):
 @pytest.mark.parametrize("normalize_factors", [True, False])
 def test_parafac2(normalize_factors):
     rng = check_random_state(1234)
-    tol_norm_2 = 10e-2
+    tol_norm_2 = 1e-1
     rank = 3
 
     random_parafac2_tensor = random_parafac2(

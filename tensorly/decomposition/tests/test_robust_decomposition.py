@@ -21,7 +21,7 @@ def test_RPCA():
     corrupted_noise = np.copy(noise)
     clean = tl.tensor(clean)
     noise = tl.tensor(noise)
-    clean_pred, noise_pred = robust_pca(tensor, mask=None, reg_E=0.4, mu_max=10e12,
+    clean_pred, noise_pred = robust_pca(tensor, mask=None, reg_E=0.4, mu_max=1e13,
                                         learning_rate=1.2,
                                         n_iter_max=200, tol=tol, verbose=True)
     # check recovery
@@ -45,7 +45,7 @@ def test_RPCA():
     corrupted_clean = tl.tensor(corrupted_clean)
     mask = tl.tensor(mask)
     # Decompose the tensor
-    clean_pred, noise_pred = robust_pca(tensor, mask=mask, reg_E=0.4, mu_max=10e12,
+    clean_pred, noise_pred = robust_pca(tensor, mask=mask, reg_E=0.4, mu_max=1e13,
                                         learning_rate=1.2,
                                         n_iter_max=200, tol=tol, verbose=True)
     # check recovery
@@ -58,4 +58,4 @@ def test_RPCA():
     # Check for recovery of the corrupted/missing part
     mask = 1 - mask
     error = tl.norm((clean*mask - clean_pred*mask), 2)/tl.norm(clean*mask, 2)
-    assert_(error <= 10e-3)
+    assert_(error <= 1e-2)

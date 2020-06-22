@@ -31,7 +31,7 @@ class KruskalRegressor():
         level of verbosity
     """
 
-    def __init__(self, weight_rank, tol=10e-7, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
+    def __init__(self, weight_rank, tol=1e-6, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
         self.weight_rank = weight_rank
         self.tol = tol
         self.reg_W = reg_W

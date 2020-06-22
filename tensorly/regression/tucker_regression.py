@@ -32,7 +32,7 @@ class TuckerRegressor():
         level of verbosity
     """
 
-    def __init__(self, weight_ranks, tol=10e-7, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
+    def __init__(self, weight_ranks, tol=1e-6, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
         self.weight_ranks = weight_ranks
         self.tol = tol
         self.reg_W = reg_W

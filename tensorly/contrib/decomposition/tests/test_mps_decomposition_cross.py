@@ -79,7 +79,7 @@ def test_matrix_product_state_cross_3():
     rng = check_random_state(1234)
 
     ## Test 3
-    tol = 10e-5
+    tol = 1e-4
     tensor = tl.tensor(rng.random_sample([3, 3, 3]))
     factors = matrix_product_state_cross(tensor, (1, 3, 3, 1))
     reconstructed_tensor = mps_to_tensor(factors)

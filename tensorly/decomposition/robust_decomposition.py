@@ -9,8 +9,8 @@ from ..tenalg.proximal import soft_thresholding, svd_thresholding
 # License: BSD 3 clause
 
 
-def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
-               mu_init=10e-5, mu_max=10e9, learning_rate=1.1,
+def robust_pca(X, mask=None, tol=1e-6, reg_E=1, reg_J=1,
+               mu_init=1e-4, mu_max=1e10, learning_rate=1.1,
                n_iter_max=100, verbose=1):
     """Robust Tensor PCA via ALM with support for missing values
 
@@ -30,9 +30,9 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
         regularisation on the sparse part `E`
     reg_J : float, optional, default is 1
         regularisation on the low rank part `D`
-    mu_init : float, optional, default is 10e-5
+    mu_init : float, optional, default is 1e-4
         initial value for mu
-    mu_max : float, optional, default is 10e9
+    mu_max : float, optional, default is 1e10
         maximal value for mu
     learning_rate : float, optional, default is 1.1
         percentage increase of mu at each iteration

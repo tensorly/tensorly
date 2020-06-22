@@ -12,7 +12,7 @@ import warnings
 # License: BSD 3 clause
 
 
-def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
+def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=1e-4,
                    svd='numpy_svd', random_state=None, verbose=False, mask=None, ranks=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
@@ -125,7 +125,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
 
 def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd',
-           svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False):
+           svd='numpy_svd', tol=1e-4, random_state=None, mask=None, verbose=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition:
@@ -169,7 +169,7 @@ def tucker(tensor, rank=None, ranks=None, n_iter_max=100, init='svd',
                           svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
 
 
-def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
+def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=1e-4,
                         random_state=None, verbose=False, ranks=None):
     """Non-negative Tucker decomposition
 
@@ -219,7 +219,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         warnings.warn(message, RuntimeWarning)
         rank = [rank]*n_mode
 
-    epsilon = 10e-12
+    epsilon = 1e-11
 
     # Initialisation
     if init == 'svd':
