@@ -124,11 +124,12 @@ def test_parafac2_normalize_factors():
     assert abs(tl.max(norms) - tl.max(normalized_rec.weights))/tl.max(norms) < 1e-2
     assert abs(tl.min(norms) - tl.min(normalized_rec.weights))/tl.min(norms) < 1e-2
 
-def test_parafac2_init_valid():
-    rng = check_random_state(1234)
-    rank = 3
 
-    random_parafac2_tensor = random_parafac2(shapes=[(15, 30)]*25, rank=rank, random_state=rng)
+@pytest.mark.parametrize("rank", [2, 4])
+def test_parafac2_init_valid(rank):
+    rng = check_random_state(1234)
+
+    random_parafac2_tensor = random_parafac2(shapes=[(15, 30)]*3, rank=rank, random_state=rng)
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     weights, (A, B, C), projections = random_parafac2_tensor
     B = T.dot(projections[0], B)
