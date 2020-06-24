@@ -40,13 +40,12 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
             message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
                     svd, tl.get_backend(), tl.SVD_FUNS)
             raise ValueError(message)
-        
         padded_tensor = _pad_by_zeros(tensor_slices)
-        A = svd_fun(unfold(padded_tensor, 0), n_eigenvecs=rank)[0]
+        A = T.ones((padded_tensor.shape[0], rank), **context)
         C = svd_fun(unfold(padded_tensor, 2), n_eigenvecs=rank)[0]
         B = T.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
-        return Parafac2Tensor((None, (A, B, C), projections))
+        return Parafac2Tensor((None, [A, B, C], projections))
 
     elif isinstance(init, (tuple, list, Parafac2Tensor, KruskalTensor)):
         try:
