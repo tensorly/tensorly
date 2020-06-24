@@ -25,7 +25,7 @@ class NumpySparseBackend(Backend):
     backend_name = 'numpy.sparse'
 
     # moveaxis and shape are temporarily redefine to fix issue #131
-    # Using the builting functionsn raises a TypeError:
+    # Using the builting function raises a TypeError:
     #     no implementation found for 'numpy.shape' on types
     #     that implement __array_function__: [<class 'sparse._coo.core.COO'>]
     def moveaxis(self, tensor, source, target):
@@ -43,11 +43,6 @@ class NumpySparseBackend(Backend):
             raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
                              'Got %d' % target)
         return self.transpose(tensor, axes)
-
-    # Temporary, see moveaxis above
-    @staticmethod
-    def shape(tensor):
-        return tensor.shape
 
     @staticmethod
     def context(tensor):
@@ -75,10 +70,6 @@ class NumpySparseBackend(Backend):
     @staticmethod
     def copy(tensor):
         return _py_copy(tensor)
-
-    @staticmethod
-    def clip(tensor, a_min=None, a_max=None, inplace=False):
-        return np.clip(tensor, a_min, a_max)
 
     @staticmethod
     def norm(tensor, order=2, axis=None):
@@ -199,7 +190,7 @@ class NumpySparseBackend(Backend):
 
 for name in ['int64', 'int32', 'float64', 'float32', 'transpose',
              'reshape', 'ndim', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj']:
+             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj', 'shape']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
 for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye',
