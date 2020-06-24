@@ -36,8 +36,11 @@ def best_correlation(A, B):
     
     return best_corr
 
-@pytest.mark.parametrize("normalize_factors", [True, False])
-def test_parafac2(normalize_factors):
+@pytest.mark.parametrize(
+    ("normalize_factors", "init"),
+     itertools.product([True, False], ["random", "svd"])
+)
+def test_parafac2(normalize_factors, init):
     rng = check_random_state(1234)
     tol_norm_2 = 10e-2
     rank = 3
@@ -56,7 +59,14 @@ def test_parafac2(normalize_factors):
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
-    rec = parafac2(slices, rank, random_state=rng, normalize_factors=normalize_factors)
+    rec = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        init=init,
+        n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+        normalize_factors=normalize_factors
+    )
     rec_tensor = parafac2_to_tensor(rec)
 
     error = T.norm(rec_tensor - tensor, 2)
@@ -151,6 +161,14 @@ def test_parafac2_init_error():
     with np.testing.assert_raises(ValueError):
         _ = initialize_decomposition(tensor, rank, init=('another', 'bogus', 'init', 'type'))
 
+    rank = 4
+    random_parafac2_tensor = random_parafac2(shapes=[(15, 3)]*25, rank=rank, random_state=rng)
+    tensor = parafac2_to_tensor(random_parafac2_tensor)
+
+    with np.testing.assert_raises(ValueError):
+        _ = initialize_decomposition(tensor, rank, init='svd')
+
+
 def test_parafac2_to_tensor():
     rng = check_random_state(1234)
     rank = 3
@@ -172,5 +190,3 @@ def test_parafac2_to_tensor():
                     tensor_manual = tl.index_update(tensor_manual, tl.index[i, j, k],  tensor_manual[i, j, k] + factors[0][i][r]*Bi[j][r]*factors[2][k][r])
 
     assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-6)
-    
-    
