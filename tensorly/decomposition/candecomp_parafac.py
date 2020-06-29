@@ -113,6 +113,34 @@ def sparsify_tensor(tensor, card):
     
     return tl.where(tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor)
 
+
+def error_calc(tensor, weights, factors):
+    # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+    factors_norm = kruskal_norm((weights, factors))
+
+    # mttkrp and factor for the last mode. This is equivalent to the
+    # inner product <tensor, factorization>
+    mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), len(factors)-1)
+    iprod = tl.sum(tl.sum(mttkrp*factors[-1], axis=0)*weights)
+    unnorml_rec_error = tl.sqrt(tl.abs(tl.norm(tensor, 2)**2 + factors_norm**2 - 2*iprod))
+    return unnorml_rec_error
+
+
+def line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump):
+    weights_diff = weights - weights_last
+    factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
+
+    new_weights = weights_last + jump * weights_diff
+    new_factors = [factors_last[ii] + jump * factors_diff[ii] for ii in range(tl.ndim(tensor))]
+
+    if mask is not None:
+        tensor_new = tensor*mask + tl.kruskal_to_tensor((new_weights, new_factors), mask=1-mask)
+    else:
+        tensor_new = tensor
+
+    return (new_weights, new_factors), tensor_new
+
+
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\
             tol=1e-8, random_state=None,\
@@ -186,8 +214,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
 
     """
-    epsilon = 10e-12
-
     if mask is not None and init == "svd":
         message = "Masking occurs after initialization. Therefore, random initialization is recommended."
         warnings.warn(message, Warning)
@@ -219,6 +245,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         if orthogonalise and iteration <= orthogonalise:
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
+        factors_last = tl.copy(factors)
+        weights_last = tl.copy(weights)
+
+        if mask is not None:
+            tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
+
         if verbose > 1:
             print("Starting iteration", iteration + 1)
         for mode in modes_list:
@@ -230,9 +262,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 if i != mode:
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.conj(tl.transpose(factor)), factor)
             pseudo_inverse += Id
-
-            if mask is not None:
-                tensor = tensor*mask + tl.kruskal_to_tensor((None, factors), mask=1-mask)
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
             factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
@@ -247,6 +276,39 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
             factors[mode] = factor
 
+
+
+        if sparsity is None and len(fixed_modes) == 0:
+            jump = 1.2
+            total_jump = 0.0
+
+            old_rec_error = error_calc(tensor, weights, factors) / norm_tensor
+
+            while jump > 0.1:
+                # Keep stepping while we're successful.
+                # Start line search
+                newKrusk, tensor_new = line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump)
+
+                new_rec_error = error_calc(tensor_new, newKrusk[0], newKrusk[1]) / norm_tensor
+
+                if new_rec_error < old_rec_error:
+                    total_jump += jump
+                    jump = jump ** 1.2
+
+                    factors_last = factors
+                    factors = newKrusk[1]
+                    weights_last = weights
+                    weights = newKrusk[0]
+                    tensor = tensor_new
+                    old_rec_error = new_rec_error
+                else:
+                    jump /= 2.0
+
+            if verbose:
+                print("Total line search jump = {}".format(total_jump))
+
+
+
         if tol:
             if sparsity:
                 low_rank_component = kruskal_to_tensor((weights, factors))
@@ -254,13 +316,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 
                 unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
             else:
-                # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-                factors_norm = kruskal_norm((weights, factors))
-
-                # mttkrp and factor for the last mode. This is equivalent to the
-                # inner product <tensor, factorization>
-                iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
-                unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
+                unnorml_rec_error = error_calc(tensor, weights, factors)
                 
             rec_error = unnorml_rec_error / norm_tensor
             rec_errors.append(rec_error)
