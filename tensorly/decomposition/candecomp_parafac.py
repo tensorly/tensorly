@@ -126,6 +126,13 @@ def error_calc(tensor, weights, factors):
     return unnorml_rec_error
 
 
+def sparse_error_calc(tensor, weights, factors, sparsity):
+    low_rank_component = kruskal_to_tensor((weights, factors))
+    sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
+    
+    return tl.norm(tensor - low_rank_component - sparse_component, 2)
+
+
 def line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump):
     weights_diff = weights - weights_last
     factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
@@ -149,7 +156,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             sparsity = None,\
             l2_reg = 0,  mask=None,\
             cvg_criterion = 'abs_rec_error',\
-            fixed_modes = []):
+            fixed_modes = [],
+            linesearch = True):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -276,20 +284,25 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
             factors[mode] = factor
 
-
-
-        if sparsity is None and len(fixed_modes) == 0:
+        # Start line search if requested. Doesn't yet work for fixed modes.
+        if linesearch and len(fixed_modes) == 0:
             jump = 1.2
             total_jump = 0.0
 
-            old_rec_error = error_calc(tensor, weights, factors) / norm_tensor
+            if sparsity:
+                old_rec_error = sparse_error_calc(tensor, weights, factors, sparsity)
+            else:
+                old_rec_error = error_calc(tensor, weights, factors) / norm_tensor
 
             while jump > 0.1:
                 # Keep stepping while we're successful.
                 # Start line search
                 newKrusk, tensor_new = line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump)
 
-                new_rec_error = error_calc(tensor_new, newKrusk[0], newKrusk[1]) / norm_tensor
+                if sparsity:
+                    new_rec_error = sparse_error_calc(tensor_new, newKrusk[0], newKrusk[1], sparsity)
+                else:
+                    new_rec_error = error_calc(tensor_new, newKrusk[0], newKrusk[1]) / norm_tensor
 
                 if new_rec_error < old_rec_error:
                     total_jump += jump
@@ -307,14 +320,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             if verbose:
                 print("Total line search jump = {}".format(total_jump))
 
-
-
         if tol:
             if sparsity:
-                low_rank_component = kruskal_to_tensor((weights, factors))
-                sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
-                
-                unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
+                unnorml_rec_error = sparse_error_calc(tensor, weights, factors, sparsity)
             else:
                 unnorml_rec_error = error_calc(tensor, weights, factors)
                 
