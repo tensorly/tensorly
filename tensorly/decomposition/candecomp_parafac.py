@@ -290,7 +290,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             total_jump = 0.0
 
             if sparsity:
-                old_rec_error = sparse_error_calc(tensor, weights, factors, sparsity)
+                old_rec_error = sparse_error_calc(tensor, weights, factors, sparsity) / norm_tensor
             else:
                 old_rec_error = error_calc(tensor, weights, factors) / norm_tensor
 
@@ -300,7 +300,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 newKrusk, tensor_new = line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump)
 
                 if sparsity:
-                    new_rec_error = sparse_error_calc(tensor_new, newKrusk[0], newKrusk[1], sparsity)
+                    new_rec_error = sparse_error_calc(tensor_new, newKrusk[0], newKrusk[1], sparsity) / norm_tensor
                 else:
                     new_rec_error = error_calc(tensor_new, newKrusk[0], newKrusk[1]) / norm_tensor
 
