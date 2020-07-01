@@ -253,8 +253,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         if orthogonalise and iteration <= orthogonalise:
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
-        factors_last = tl.copy(factors)
-        weights_last = tl.copy(weights)
+        factors_last = factors
+        weights_last = weights
 
         if mask is not None:
             tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
