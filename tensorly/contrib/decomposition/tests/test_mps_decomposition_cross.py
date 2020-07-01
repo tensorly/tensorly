@@ -61,7 +61,7 @@ def test_matrix_product_state_cross_2():
     rank = [1, 3, 3, 4, 2, 2, 1]
     factors = matrix_product_state_cross(tensor, rank)
 
-    for k in range(6):
+    for k in range(5):
         (r_prev, n_k, r_k) = factors[k].shape
 
         first_error_message = "MPS rank " + str(k) + " is greater than the maximum allowed "
