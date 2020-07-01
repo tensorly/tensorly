@@ -3,7 +3,6 @@ import tensorly as tl
 import pytest
 import numpy as np
 import itertools
-import numpy.random as npr
 
 from ..mps_decomposition_cross import matrix_product_state_cross
 from ....mps_tensor import mps_to_tensor
@@ -20,7 +19,6 @@ skip_if_jax = pytest.mark.skipif(tl.get_backend() == "jax",
 @skip_if_tensorflow
 def test_matrix_product_state_cross_1():
     """ Test for matrix_product_state """
-    rng = check_random_state(1234)
 
     ## Test 1
 
@@ -55,13 +53,12 @@ def test_matrix_product_state_cross_2():
     ## Test 2
     # Create tensor with random elements
     tensor = tl.tensor(rng.random_sample([3, 4, 5, 6, 2, 10]))
-    tensor_shape = tensor.shape
 
     # Find MPS decomposition of the tensor
-    rank = [1, 3, 3, 4, 2, 2, 1]
+    rank = [1, 2, 2, 3, 2, 2, 1]
     factors = matrix_product_state_cross(tensor, rank)
 
-    for k in range(5):
+    for k in range(6):
         (r_prev, n_k, r_k) = factors[k].shape
 
         first_error_message = "MPS rank " + str(k) + " is greater than the maximum allowed "
@@ -125,7 +122,6 @@ def test_matrix_product_state_cross_4():
     def func (X):
         return sum(X)**3
 
-    maxvoleps = 1e-4
     tol = 1e-3
     n = 10
     d = 4
