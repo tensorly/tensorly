@@ -133,6 +133,21 @@ def sparse_error_calc(tensor, weights, factors, sparsity):
     return tl.norm(tensor - low_rank_component - sparse_component, 2)
 
 
+def line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump):
+    weights_diff = weights - weights_last
+    factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
+
+    new_weights = weights_last + jump * weights_diff
+    new_factors = [factors_last[ii] + jump * factors_diff[ii] for ii in range(tl.ndim(tensor))]
+
+    if mask is not None:
+        tensor_new = tensor*mask + tl.kruskal_to_tensor((new_weights, new_factors), mask=1-mask)
+    else:
+        tensor_new = tensor
+
+    return (new_weights, new_factors), tensor_new
+
+
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\
             tol=1e-8, random_state=None,\
@@ -279,35 +294,24 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             else:
                 old_rec_error = error_calc(tensor, weights, factors) / norm_tensor
 
-            if mask is not None:
-                tensor_diff = tl.kruskal_to_tensor((weights, factors), mask=1-mask) - tl.kruskal_to_tensor((weights_last, factors_last), mask=1-mask)
-
             while jump > 0.1:
                 # Keep stepping while we're successful.
                 # Start line search
-                factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
-
-                new_weights = weights_last + jump * (weights - weights_last)
-                new_factors = [factors_last[ii] + jump * factors_diff[ii] for ii in range(tl.ndim(tensor))]
-
-                if mask is not None:
-                    tensor_new = tensor + tensor_diff * jump
-                else:
-                    tensor_new = tensor
+                newKrusk, tensor_new = line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump)
 
                 if sparsity:
-                    new_rec_error = sparse_error_calc(tensor_new, new_weights, new_factors, sparsity) / norm_tensor
+                    new_rec_error = sparse_error_calc(tensor_new, newKrusk[0], newKrusk[1], sparsity) / norm_tensor
                 else:
-                    new_rec_error = error_calc(tensor_new, new_weights, new_factors) / norm_tensor
+                    new_rec_error = error_calc(tensor_new, newKrusk[0], newKrusk[1]) / norm_tensor
 
                 if new_rec_error < old_rec_error:
                     total_jump += jump
                     jump = jump ** 1.2
 
                     factors_last = factors
-                    factors = new_factors
+                    factors = newKrusk[1]
                     weights_last = weights
-                    weights = new_weights
+                    weights = newKrusk[0]
                     tensor = tensor_new
                     old_rec_error = new_rec_error
                 else:
