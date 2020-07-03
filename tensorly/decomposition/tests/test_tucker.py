@@ -105,7 +105,7 @@ def test_masked_tucker():
 
     # We won't use the SVD decomposition, but check that it at least runs successfully
     mask_fact = tucker(mask_tensor, rank=(1, 1, 1), mask=mask, init="svd")
-    mask_fact = tucker(mask_tensor, rank=(1, 1, 1), mask=mask, init="random")
+    mask_fact = tucker(mask_tensor, rank=(1, 1, 1), mask=mask, init="random", random_state=1234)
     mask_err = tl.norm(tucker_to_tensor(mask_fact) - tensor)
 
     assert_(mask_err < 0.001, 'norm 2 of reconstruction higher than 0.001')
