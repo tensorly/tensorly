@@ -133,19 +133,6 @@ def error_calc(tensor, weights, factors, sparsity):
     return unnorml_rec_error
 
 
-def line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump):
-    weights_diff = weights - weights_last
-    factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
-
-    new_weights = weights_last + jump * weights_diff
-    new_factors = [factors_last[ii] + jump * factors_diff[ii] for ii in range(tl.ndim(tensor))]
-
-    if mask is not None:
-        tensor = tensor*mask + tl.kruskal_to_tensor((new_weights, new_factors), mask=1-mask)
-
-    return (new_weights, new_factors), tensor
-
-
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\
             tol=1e-8, random_state=None,\
@@ -155,7 +142,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             l2_reg = 0,  mask=None,\
             cvg_criterion = 'abs_rec_error',\
             fixed_modes = [],
-            linesearch = True):
+            linesearch = False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -252,7 +239,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
         if linesearch:
-            factors_last = tl.copy(factors)
+            factors_last = [tl.copy(f) for f in factors]
             weights_last = tl.copy(weights)
 
         if mask is not None:
@@ -284,31 +271,40 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             factors[mode] = factor
 
         # Start line search if requested. Doesn't yet work for fixed modes.
-        if linesearch and len(fixed_modes) == 0:
-            jump = 1.2
+        if linesearch:
+            jump = 1.0
             total_jump = 0.0
 
             old_rec_error = error_calc(tensor, weights, factors, sparsity)
 
-            while jump > 0.1:
+            while jump > 0.01:
                 # Keep stepping while we're successful.
-                # Start line search
-                newKrusk, tensor_new = line_search_jump(tensor, weights, factors, weights_last, factors_last, mask, jump)
+                weights_diff = weights - weights_last
+                factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
 
-                new_rec_error = error_calc(tensor_new, newKrusk[0], newKrusk[1], sparsity)
+                new_weights = weights_last + jump * weights_diff
+                new_factors = [tl.copy(f) for f in factors]
+
+                for ii in modes_list:
+                    new_factors[ii] += factors_diff[ii]
+
+                if mask is not None:
+                    tensor_new = tensor*mask + tl.kruskal_to_tensor((new_weights, new_factors), mask=1-mask)
+                else:
+                    tensor_new = tensor
+
+                new_rec_error = error_calc(tensor_new, new_weights, new_factors, sparsity)
 
                 if new_rec_error < old_rec_error:
                     total_jump += jump
-                    jump = jump ** 1.2
+                    jump *= 10.0
 
-                    factors_last = factors
-                    factors = newKrusk[1]
-                    weights_last = weights
-                    weights = newKrusk[0]
+                    factors_last, weights_last = factors, weights
+                    factors, weights = new_factors, new_weights
                     tensor = tensor_new
                     old_rec_error = new_rec_error
                 else:
-                    jump /= 2.0
+                    jump /= 10.0
 
             if verbose:
                 print("Total line search jump = {}".format(total_jump))
