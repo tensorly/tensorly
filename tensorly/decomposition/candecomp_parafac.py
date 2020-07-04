@@ -115,20 +115,14 @@ def sparsify_tensor(tensor, card):
 
 
 def error_calc(tensor, weights, factors, sparsity):
-    if sparsity:
-        low_rank_component = kruskal_to_tensor((weights, factors))
-        sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
-    
-        unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
-    else:
-        # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-        factors_norm = kruskal_norm((weights, factors))
+    low_rank_component = kruskal_to_tensor((weights, factors))
 
-        # mttkrp and factor for the last mode. This is equivalent to the
-        # inner product <tensor, factorization>
-        mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), len(factors)-1)
-        iprod = tl.sum(tl.sum(mttkrp*factors[-1], axis=0)*weights)
-        unnorml_rec_error = tl.sqrt(tl.abs(tl.norm(tensor, 2)**2 + factors_norm**2 - 2*iprod))
+    if sparsity:
+        sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
+    else:
+        sparse_component = 0.0
+    
+    unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
 
     return unnorml_rec_error
 
@@ -238,7 +232,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         if orthogonalise and iteration <= orthogonalise:
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
-        if linesearch:
+        if linesearch and iteration % 2 == 0:
             factors_last = [tl.copy(f) for f in factors]
             weights_last = tl.copy(weights)
 
@@ -271,18 +265,18 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             factors[mode] = factor
 
         # Start line search if requested. Doesn't yet work for fixed modes.
-        if linesearch:
-            jump = 1.0
+        if linesearch and iteration % 2 == 0:
+            jump = 1.1
             total_jump = 0.0
 
             old_rec_error = error_calc(tensor, weights, factors, sparsity)
 
-            while jump > 0.01:
-                # Keep stepping while we're successful.
-                weights_diff = weights - weights_last
-                factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
+            weights_diff = weights - weights_last
+            factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
 
-                new_weights = weights_last + jump * weights_diff
+            while True:
+                # Keep stepping while we're successful.
+                new_weights = weights + jump * weights_diff
                 new_factors = [tl.copy(f) for f in factors]
 
                 for ii in modes_list:
@@ -297,14 +291,13 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
                 if new_rec_error < old_rec_error:
                     total_jump += jump
-                    jump *= 10.0
+                    jump = jump ** 1.1
 
-                    factors_last, weights_last = factors, weights
                     factors, weights = new_factors, new_weights
                     tensor = tensor_new
                     old_rec_error = new_rec_error
                 else:
-                    jump /= 10.0
+                    break
 
             if verbose:
                 print("Total line search jump = {}".format(total_jump))
