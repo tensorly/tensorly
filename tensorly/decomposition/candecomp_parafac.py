@@ -63,7 +63,12 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
         factors = []
         for mode in range(tl.ndim(tensor)):
-            U, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
+            U, S, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
+
+            # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
+            if mode == 0:
+                idx = min(rank, tl.shape(S)[0])
+                tl.index_update(U, tl.index[:, :idx], U[:, :idx] * S[:idx])
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
@@ -121,7 +126,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             sparsity = None,\
             l2_reg = 0,  mask=None,\
             cvg_criterion = 'abs_rec_error',\
-            fixed_modes = []):
+            fixed_modes = [],
+            svd_mask_repeats=5):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -163,6 +169,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         fixed_modes : list, default is []
             A list of modes for which the initial value is not modified.
             The last mode cannot be fixed due to error computation.
+    svd_mask_repeats: int
+        If using a tensor with masked values, this initializes using SVD multiple times to
+        remove the effect of these missing values on the initialization.
 
     Returns
     -------
@@ -186,18 +195,19 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
 
     """
-    epsilon = 10e-12
-
-    if mask is not None and init == "svd":
-        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
-        warnings.warn(message, Warning)
-
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
     factors = initialize_factors(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
                                  normalize_factors=normalize_factors)
+
+    if mask is not None and init == "svd":
+        for _ in range(svd_mask_repeats):
+            tensor = tensor*mask + tl.kruskal_to_tensor((None, factors), mask=1-mask)
+
+            factors = initialize_factors(tensor, rank, init=init, svd=svd, random_state=random_state, normalize_factors=normalize_factors)
+
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
     weights = tl.ones(rank, **tl.context(tensor))
@@ -232,7 +242,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             pseudo_inverse += Id
 
             if mask is not None:
-                tensor = tensor*mask + tl.kruskal_to_tensor((None, factors), mask=1-mask)
+                tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
             factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
