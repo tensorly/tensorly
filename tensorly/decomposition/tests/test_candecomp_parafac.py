@@ -90,13 +90,13 @@ def test_masked_parafac():
     """
     tensor = random_kruskal((4, 4, 4), rank=1, full=True)
     mask = np.ones((4, 4, 4))
-    mask[:, 3, 3] = 0
-    mask[1, 2, :] = 0
+    mask[1, :, 3] = 0
+    mask[:, 2, 3] = 0
     mask = tl.tensor(mask)
-    tensor_mask = tensor*mask - 1000.0*(1 - mask)
+    tensor_mask = tensor*mask - 10000.0*(1 - mask)
 
     fac = parafac(tensor_mask, svd_mask_repeats=0, mask=mask, n_iter_max=0, rank=1, init="svd")
-    fac_resvd = parafac(tensor_mask, svd_mask_repeats=5, mask=mask, n_iter_max=0, rank=1, init="svd")
+    fac_resvd = parafac(tensor_mask, svd_mask_repeats=10, mask=mask, n_iter_max=0, rank=1, init="svd")
     err = tl.norm(tl.kruskal_to_tensor(fac) - tensor, 2)
     err_resvd = tl.norm(tl.kruskal_to_tensor(fac_resvd) - tensor, 2)
     assert_(err_resvd < err, 'restarting SVD did not help')
