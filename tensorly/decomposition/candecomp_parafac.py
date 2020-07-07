@@ -114,17 +114,39 @@ def sparsify_tensor(tensor, card):
     return tl.where(tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor)
 
 
-def error_calc(tensor, weights, factors, sparsity):
-    low_rank_component = kruskal_to_tensor((weights, factors))
+def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None, factor=None):
+    """ Handle error calculation. """
+    # If we have to update the mask we already have to build the full tensor
+    if (mask is not None) or (mttkrp is None):
+        low_rank_component = kruskal_to_tensor((weights, factors))
 
-    if sparsity:
-        sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
-    else:
-        sparse_component = 0.0
+        # Update the tensor based on the mask
+        if mask is not None:
+            tensor = tensor*mask + low_rank_component*(1-mask)
+            norm_tensor = tl.norm(tensor, 2)
+
+        if sparsity:
+            sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
+        else:
+            sparse_component = 0.0
     
-    unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
+        unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
+    else:
+        if sparsity:
+            low_rank_component = kruskal_to_tensor((weights, factors))
+            sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
+        
+            unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
+        else:
+            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+            factors_norm = kruskal_norm((weights, factors))
 
-    return unnorml_rec_error
+            # mttkrp and factor for the last mode. This is equivalent to the
+            # inner product <tensor, factorization>
+            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
+            unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
+
+    return unnorml_rec_error, tensor, norm_tensor
 
 
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
@@ -236,9 +258,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             factors_last = [tl.copy(f) for f in factors]
             weights_last = tl.copy(weights)
 
-        if mask is not None:
-            tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
-
         if verbose > 1:
             print("Starting iteration", iteration + 1)
         for mode in modes_list:
@@ -264,47 +283,39 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
             factors[mode] = factor
 
+        # Calculate the current unnormalized error if we need it
+        if tol or (linesearch and iteration % 2 == 0):
+            unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp, factor)
+        else:
+            if mask is not None:
+                tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
+
+
         # Start line search if requested. Doesn't yet work for fixed modes.
         if linesearch and iteration % 2 == 0:
-            jump = 1.1
-            total_jump = 0.0
-
-            old_rec_error = error_calc(tensor, weights, factors, sparsity)
+            jump = iteration ** (1.0/3.0)
 
             weights_diff = weights - weights_last
             factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
 
-            while True:
-                # Keep stepping while we're successful.
-                new_weights = weights + jump * weights_diff
-                new_factors = [tl.copy(f) for f in factors]
+            # Keep stepping while we're successful.
+            new_weights = weights + jump * weights_diff
+            new_factors = [tl.copy(f) for f in factors]
 
-                for ii in modes_list:
-                    new_factors[ii] += jump * factors_diff[ii]
+            for ii in modes_list:
+                new_factors[ii] += jump * factors_diff[ii]
 
-                if mask is not None:
-                    tensor_new = tensor*mask + tl.kruskal_to_tensor((new_weights, new_factors), mask=1-mask)
-                else:
-                    tensor_new = tensor
+            new_rec_error, new_tensor, new_norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask)
 
-                new_rec_error = error_calc(tensor_new, new_weights, new_factors, sparsity)
-
-                if new_rec_error < old_rec_error:
-                    total_jump += jump
-                    jump = jump ** 1.1
-
-                    factors, weights = new_factors, new_weights
-                    tensor = tensor_new
-                    old_rec_error = new_rec_error
-                else:
-                    break
+            if new_rec_error < unnorml_rec_error:
+                factors, weights = new_factors, new_weights
+                tensor, norm_tensor = new_tensor, new_norm_tensor
+                unnorml_rec_error = new_rec_error
 
             if verbose:
-                print("Total line search jump = {}".format(total_jump))
+                print("Accepted line search jump of {}.".format(jump))
 
         if tol:
-            unnorml_rec_error = error_calc(tensor, weights, factors, sparsity)
-                
             rec_error = unnorml_rec_error / norm_tensor
             rec_errors.append(rec_error)
 
