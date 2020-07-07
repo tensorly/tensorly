@@ -6,8 +6,6 @@ from ..random import check_random_state
 from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               unfolding_dot_khatri_rao, kruskal_norm)
-from ..tenalg import khatri_rao
-from collections.abc import Mapping
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -114,8 +112,37 @@ def sparsify_tensor(tensor, card):
     return tl.where(tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor)
 
 
-def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None, factor=None):
-    """ Handle error calculation. """
+def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None):
+    r""" Perform the error calculation. Different forms are used here depending upon 
+    the available information. If `mttkrp=None` or masking is being performed, then the
+    full tensor must be constructed. Otherwise, the mttkrp is used to reduce the calculation cost.
+
+    Parameters
+    ----------
+    tensor : tensor
+    norm_tensor : float
+        The l2 norm of tensor.
+    weights : tensor
+        The current CP weights
+    factors : tensor
+        The current CP factors
+    sparsity : float or int
+        Whether we allow for a sparse component
+    mask : bool
+        Whether masking is being performed.
+    mttkrp : tensor or None
+        The mttkrp product, if available.
+
+    Returns
+    -------
+    unnorml_rec_error : float
+        The unnormalized reconstruction error.
+    tensor : tensor
+        The tensor, in case it has been updated by masking.
+    norm_tensor: float
+        The tensor norm, in case it has been updated by masking.
+    """
+
     # If we have to update the mask we already have to build the full tensor
     if (mask is not None) or (mttkrp is None):
         low_rank_component = kruskal_to_tensor((weights, factors))
@@ -143,7 +170,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
 
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
+            iprod = tl.sum(tl.sum(mttkrp*factors[-1], axis=0)*weights)
             unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
 
     return unnorml_rec_error, tensor, norm_tensor
@@ -197,9 +224,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
     sparsity : float or int
         If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
-        fixed_modes : list, default is []
-            A list of modes for which the initial value is not modified.
-            The last mode cannot be fixed due to error computation.
+    fixed_modes : list, default is []
+        A list of modes for which the initial value is not modified.
+        The last mode cannot be fixed due to error computation.
+    linesearch : bool, default is False
+        Whether to perform line search as proposed by Bro [3].
 
     Returns
     -------
@@ -221,6 +250,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
        
     .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
             Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
+
+    .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and 
+            Applications", PhD., University of Amsterdam, 1998
 
     """
     if mask is not None and init == "svd":
@@ -285,7 +317,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
         # Calculate the current unnormalized error if we need it
         if tol or (linesearch and iteration % 2 == 0):
-            unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp, factor)
+            unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
         else:
             if mask is not None:
                 tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
