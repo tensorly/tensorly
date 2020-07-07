@@ -315,36 +315,40 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
             factors[mode] = factor
 
+        # Will we be performing a line search iteration
+        if linesearch and iteration % 2 == 0 and iteration > 5:
+            line_iter = True
+        else:
+            line_iter = False
+
         # Calculate the current unnormalized error if we need it
-        if tol or (linesearch and iteration % 2 == 0):
+        if tol and line_iter is False:
             unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
         else:
             if mask is not None:
                 tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
 
-        # Start line search if requested. Doesn't yet work for fixed modes.
-        if linesearch and iteration % 2 == 0:
+        # Start line search if requested.
+        if line_iter is True:
             jump = iteration ** (1.0/3.0)
 
-            weights_diff = weights - weights_last
-            factors_diff = [factors[ii] - factors_last[ii] for ii in range(tl.ndim(tensor))]
-
-            # Keep stepping while we're successful.
-            new_weights = weights + jump * weights_diff
-            new_factors = [tl.copy(f) for f in factors]
-
-            for ii in modes_list:
-                new_factors[ii] += jump * factors_diff[ii]
+            new_weights = weights_last + (weights - weights_last) * jump
+            new_factors = [factors_last[ii] + (factors[ii] - factors_last[ii])*jump for ii in range(tl.ndim(tensor))]
 
             new_rec_error, new_tensor, new_norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask)
 
-            if new_rec_error < unnorml_rec_error:
+            if (new_rec_error / new_norm_tensor) < rec_errors[-1]:
                 factors, weights = new_factors, new_weights
                 tensor, norm_tensor = new_tensor, new_norm_tensor
                 unnorml_rec_error = new_rec_error
 
-            if verbose:
-                print("Accepted line search jump of {}.".format(jump))
+                if verbose:
+                    print("Accepted line search jump of {}.".format(jump))
+            else:
+                unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
+
+                if verbose:
+                    print("Line search failed for jump of {}.".format(jump))
 
         if tol:
             rec_error = unnorml_rec_error / norm_tensor
