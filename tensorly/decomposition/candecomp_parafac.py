@@ -280,7 +280,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 new_factors = [tl.copy(f) for f in factors]
 
                 for ii in modes_list:
-                    new_factors[ii] += factors_diff[ii]
+                    new_factors[ii] += jump * factors_diff[ii]
 
                 if mask is not None:
                     tensor_new = tensor*mask + tl.kruskal_to_tensor((new_weights, new_factors), mask=1-mask)
