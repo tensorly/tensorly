@@ -322,7 +322,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             if mask is not None:
                 tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
 
-
         # Start line search if requested. Doesn't yet work for fixed modes.
         if linesearch and iteration % 2 == 0:
             jump = iteration ** (1.0/3.0)
