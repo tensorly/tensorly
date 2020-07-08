@@ -21,7 +21,11 @@ def test_parafac(linesearch):
     tol_max_abs = 10e-2
     tensor = T.tensor(rng.random_sample((3, 4, 2)))
     rec_svd = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=10e-5, linesearch=linesearch)
-    rec_random = parafac(tensor, rank=4, n_iter_max=200, init='random', tol=10e-5, random_state=1234, verbose=0, linesearch=linesearch)
+    rec_random, errors = parafac(tensor, rank=4, n_iter_max=200, init='random', tol=10e-5, random_state=1234, verbose=0, linesearch=linesearch, return_errors=True)
+
+    # Check that the error monotonically decreases
+    assert_(np.all(np.diff(errors) <= 0.0))
+
     rec_svd = kruskal_to_tensor(rec_svd)
     rec_random = kruskal_to_tensor(rec_random)
     error = T.norm(rec_svd - tensor, 2)
