@@ -262,6 +262,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
+    if linesearch:
+        acc_pow = 2.0 # Extrapolate to the iteration^(1/acc_pow) ahead
+        acc_fail = 0 # How many times acceleration have failed
+        max_fail = 4 # Increase acc_pow with one after max_fail failure
+
     factors = initialize_factors(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
                                  normalize_factors=normalize_factors)
@@ -330,7 +335,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
         # Start line search if requested.
         if line_iter is True:
-            jump = iteration ** (1.0/3.0)
+            jump = iteration ** (1.0 / acc_pow)
 
             new_weights = weights_last + (weights - weights_last) * jump
             new_factors = [factors_last[ii] + (factors[ii] - factors_last[ii])*jump for ii in range(tl.ndim(tensor))]
@@ -341,14 +346,23 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 factors, weights = new_factors, new_weights
                 tensor, norm_tensor = new_tensor, new_norm_tensor
                 unnorml_rec_error = new_rec_error
+                acc_fail = 0
 
                 if verbose:
                     print("Accepted line search jump of {}.".format(jump))
             else:
                 unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
+                acc_fail += 1
 
                 if verbose:
                     print("Line search failed for jump of {}.".format(jump))
+
+                if acc_fail == max_fail:
+                    acc_pow += 1.0
+                    acc_fail = 0
+
+                    if verbose:
+                        print("Reducing acceleration.")
 
         if tol:
             rec_error = unnorml_rec_error / norm_tensor
@@ -358,7 +372,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
                 
                 if verbose:
-                    print("iteration {},  reconstraction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
+                    print("iteration {}, reconstruction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
 
                 if cvg_criterion == 'abs_rec_error':
                     stop_flag = abs(rec_error_decrease) < tol
