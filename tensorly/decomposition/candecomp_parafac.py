@@ -6,8 +6,6 @@ from ..random import check_random_state
 from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               unfolding_dot_khatri_rao, kruskal_norm)
-from ..tenalg import khatri_rao
-from collections.abc import Mapping
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -113,6 +111,71 @@ def sparsify_tensor(tensor, card):
     
     return tl.where(tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor)
 
+
+def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None):
+    r""" Perform the error calculation. Different forms are used here depending upon 
+    the available information. If `mttkrp=None` or masking is being performed, then the
+    full tensor must be constructed. Otherwise, the mttkrp is used to reduce the calculation cost.
+
+    Parameters
+    ----------
+    tensor : tensor
+    norm_tensor : float
+        The l2 norm of tensor.
+    weights : tensor
+        The current CP weights
+    factors : tensor
+        The current CP factors
+    sparsity : float or int
+        Whether we allow for a sparse component
+    mask : bool
+        Whether masking is being performed.
+    mttkrp : tensor or None
+        The mttkrp product, if available.
+
+    Returns
+    -------
+    unnorml_rec_error : float
+        The unnormalized reconstruction error.
+    tensor : tensor
+        The tensor, in case it has been updated by masking.
+    norm_tensor: float
+        The tensor norm, in case it has been updated by masking.
+    """
+
+    # If we have to update the mask we already have to build the full tensor
+    if (mask is not None) or (mttkrp is None):
+        low_rank_component = kruskal_to_tensor((weights, factors))
+
+        # Update the tensor based on the mask
+        if mask is not None:
+            tensor = tensor*mask + low_rank_component*(1-mask)
+            norm_tensor = tl.norm(tensor, 2)
+
+        if sparsity:
+            sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
+        else:
+            sparse_component = 0.0
+    
+        unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
+    else:
+        if sparsity:
+            low_rank_component = kruskal_to_tensor((weights, factors))
+            sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
+        
+            unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
+        else:
+            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+            factors_norm = kruskal_norm((weights, factors))
+
+            # mttkrp and factor for the last mode. This is equivalent to the
+            # inner product <tensor, factorization>
+            iprod = tl.sum(tl.sum(mttkrp*factors[-1], axis=0)*weights)
+            unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
+
+    return unnorml_rec_error, tensor, norm_tensor
+
+
 def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             normalize_factors=False, orthogonalise=False,\
             tol=1e-8, random_state=None,\
@@ -121,7 +184,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             sparsity = None,\
             l2_reg = 0,  mask=None,\
             cvg_criterion = 'abs_rec_error',\
-            fixed_modes = []):
+            fixed_modes = [],
+            linesearch = False):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -160,9 +224,11 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
     sparsity : float or int
         If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
-        fixed_modes : list, default is []
-            A list of modes for which the initial value is not modified.
-            The last mode cannot be fixed due to error computation.
+    fixed_modes : list, default is []
+        A list of modes for which the initial value is not modified.
+        The last mode cannot be fixed due to error computation.
+    linesearch : bool, default is False
+        Whether to perform line search as proposed by Bro [3].
 
     Returns
     -------
@@ -185,15 +251,21 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
             Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
 
-    """
-    epsilon = 10e-12
+    .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and 
+            Applications", PhD., University of Amsterdam, 1998
 
+    """
     if mask is not None and init == "svd":
         message = "Masking occurs after initialization. Therefore, random initialization is recommended."
         warnings.warn(message, Warning)
 
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
+
+    if linesearch:
+        acc_pow = 2.0 # Extrapolate to the iteration^(1/acc_pow) ahead
+        acc_fail = 0 # How many times acceleration have failed
+        max_fail = 4 # Increase acc_pow with one after max_fail failure
 
     factors = initialize_factors(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
@@ -219,6 +291,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         if orthogonalise and iteration <= orthogonalise:
             factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
 
+        if linesearch and iteration % 2 == 0:
+            factors_last = [tl.copy(f) for f in factors]
+            weights_last = tl.copy(weights)
+
         if verbose > 1:
             print("Starting iteration", iteration + 1)
         for mode in modes_list:
@@ -230,9 +306,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 if i != mode:
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.conj(tl.transpose(factor)), factor)
             pseudo_inverse += Id
-
-            if mask is not None:
-                tensor = tensor*mask + tl.kruskal_to_tensor((None, factors), mask=1-mask)
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
             factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
@@ -247,21 +320,51 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
             factors[mode] = factor
 
-        if tol:
-            if sparsity:
-                low_rank_component = kruskal_to_tensor((weights, factors))
-                sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
-                
-                unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
-            else:
-                # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-                factors_norm = kruskal_norm((weights, factors))
+        # Will we be performing a line search iteration
+        if linesearch and iteration % 2 == 0 and iteration > 5:
+            line_iter = True
+        else:
+            line_iter = False
 
-                # mttkrp and factor for the last mode. This is equivalent to the
-                # inner product <tensor, factorization>
-                iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
-                unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod))
-                
+        # Calculate the current unnormalized error if we need it
+        if tol and line_iter is False:
+            unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
+        else:
+            if mask is not None:
+                tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
+
+        # Start line search if requested.
+        if line_iter is True:
+            jump = iteration ** (1.0 / acc_pow)
+
+            new_weights = weights_last + (weights - weights_last) * jump
+            new_factors = [factors_last[ii] + (factors[ii] - factors_last[ii])*jump for ii in range(tl.ndim(tensor))]
+
+            new_rec_error, new_tensor, new_norm_tensor = error_calc(tensor, norm_tensor, new_weights, new_factors, sparsity, mask)
+
+            if (new_rec_error / new_norm_tensor) < rec_errors[-1]:
+                factors, weights = new_factors, new_weights
+                tensor, norm_tensor = new_tensor, new_norm_tensor
+                unnorml_rec_error = new_rec_error
+                acc_fail = 0
+
+                if verbose:
+                    print("Accepted line search jump of {}.".format(jump))
+            else:
+                unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
+                acc_fail += 1
+
+                if verbose:
+                    print("Line search failed for jump of {}.".format(jump))
+
+                if acc_fail == max_fail:
+                    acc_pow += 1.0
+                    acc_fail = 0
+
+                    if verbose:
+                        print("Reducing acceleration.")
+
+        if tol:
             rec_error = unnorml_rec_error / norm_tensor
             rec_errors.append(rec_error)
 
@@ -269,7 +372,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
                 
                 if verbose:
-                    print("iteration {},  reconstraction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
+                    print("iteration {}, reconstruction error: {}, decrease = {}, unnormalized = {}".format(iteration, rec_error, rec_error_decrease, unnorml_rec_error))
 
                 if cvg_criterion == 'abs_rec_error':
                     stop_flag = abs(rec_error_decrease) < tol
