@@ -96,7 +96,7 @@ def test_masked_tucker():
     assert_(tl.norm(diff) < 0.001, 'norm 2 of reconstruction higher than 0.001')
 
     # Mask an outlier value, and check that the decomposition ignores it
-    tensor = random_tucker((5, 5, 5), (1, 1, 1), full=True)
+    tensor = random_tucker((5, 5, 5), (1, 1, 1), full=True, random_state=1234)
     mask = tl.tensor(np.ones((5, 5, 5)))
 
     mask_tensor = tl.tensor(tensor)
