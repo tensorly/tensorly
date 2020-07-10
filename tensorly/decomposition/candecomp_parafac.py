@@ -237,8 +237,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     sparsity : float or int
         If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
     fixed_modes : list, default is []
-            A list of modes for which the initial value is not modified.
-            The last mode cannot be fixed due to error computation.
+        A list of modes for which the initial value is not modified.
+        The last mode cannot be fixed due to error computation.
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
@@ -262,10 +262,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     ----------
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-       
+
     .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
             Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
-            
+
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and 
             Applications", PhD., University of Amsterdam, 1998
     """
