@@ -32,8 +32,8 @@ def set_tenalg_backend(backend='core', local_threadsafe=False):
     if backend in _BACKENDS:
         _LOCAL_STATE.tenalg_backend = backend
         if local_threadsafe == False:
-            global _TENALG_BACKEND
-            _TENALG_BACKEND = backend
+            global _DEFAULT_TENALG_BACKEND
+            _DEFAULT_TENALG_BACKEND = backend
     else:
         raise ValueError(f'Unknown tenalg backend {backend}')
 
