@@ -16,7 +16,7 @@ from collections.abc import Mapping
 
 # License: BSD 3 clause
 
-def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
+def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
                        non_negative=False, normalize_factors=False):
     r"""Initialize factors used in `parafac`.
 
@@ -44,14 +44,19 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     """
     rng = check_random_state(random_state)
     eps = tl.eps(tensor.dtype)
+    weights = tl.ones(rank, **tl.context(tensor))
 
     if init == 'random':
         factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
         if non_negative:
             factors = [tl.abs(f) for f in factors]
-        if normalize_factors: 
-            factors = [f/(tl.reshape(tl.norm(f, axis=0), (1, -1)) + eps) for f in factors]
-        return factors
+        if normalize_factors:
+            for ii, f in enumerate(factors):
+                norm = tl.reshape(tl.norm(f, axis=0), (1, -1)) + eps
+                factors[ii] /= norm
+                weights[ii] *= norm
+
+        return KruskalTensor((weights, factors))
 
     elif init == 'svd':
         try:
@@ -82,14 +87,16 @@ def initialize_factors(tensor, rank, init='svd', svd='numpy_svd', random_state=N
             if non_negative:
                 factor = tl.abs(factor)
             if normalize_factors:
-                factor = factor / (tl.reshape(tl.norm(factor, axis=0), (1, -1)) + eps)
+                norm = tl.reshape(tl.norm(factor, axis=0), (1, -1)) + eps
+                factor /= norm
+                weights[mode] *= norm
             factors.append(factor)
-        return factors
+        return KruskalTensor((weights, factors))
 
     elif isinstance(init, (tuple, list, KruskalTensor)):
         # TODO: Test this
         try:
-            return KruskalTensor(init).factors
+            return KruskalTensor(init)
         except ValueError:
             raise ValueError(
                 'If initialization method is a mapping, then it must '
@@ -198,19 +205,18 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
-    factors = initialize_factors(tensor, rank, init=init, svd=svd,
+    weights, factors = initialize_kruskal(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
                                  normalize_factors=normalize_factors)
 
     if mask is not None and init == "svd":
         for _ in range(svd_mask_repeats):
-            tensor = tensor*mask + tl.kruskal_to_tensor((None, factors), mask=1-mask)
+            tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
 
-            factors = initialize_factors(tensor, rank, init=init, svd=svd, random_state=random_state, normalize_factors=normalize_factors)
+            weights, factors = initialize_kruskal(tensor, rank, init=init, svd=svd, random_state=random_state, normalize_factors=normalize_factors)
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
-    weights = tl.ones(rank, **tl.context(tensor))
     Id = tl.eye(rank, **tl.context(tensor))*l2_reg
 
     if tl.ndim(tensor)-1 in fixed_modes:
@@ -364,7 +370,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
-    factors = initialize_factors(tensor, rank, init=init, svd=svd,
+    weights, factors = initialize_kruskal(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
                                  non_negative=True,
                                  normalize_factors=normalize_factors)
@@ -565,7 +571,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
        "A Practical Randomized CP Tensor Decomposition",
     """
     rng = check_random_state(random_state)
-    factors = initialize_factors(tensor, rank, init=init, svd=svd, random_state=random_state)
+    weights, factors = initialize_kruskal(tensor, rank, init=init, svd=svd, random_state=random_state)
     rec_errors = []
     n_dims = tl.ndim(tensor)
     norm_tensor = tl.norm(tensor, 2)

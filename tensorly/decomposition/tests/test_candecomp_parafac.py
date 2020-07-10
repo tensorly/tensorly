@@ -3,7 +3,7 @@ import pytest
 
 import tensorly as tl
 from ..candecomp_parafac import (
-    parafac, non_negative_parafac, initialize_factors,
+    parafac, non_negative_parafac, initialize_kruskal,
     sample_khatri_rao, randomised_parafac)
 from ...kruskal_tensor import kruskal_to_tensor
 from ...random import check_random_state, random_kruskal
@@ -74,7 +74,7 @@ def test_parafac():
 
     with np.testing.assert_raises(ValueError):
         rank = 4
-        _ = initialize_factors(tensor, rank, init='bogus init type')
+        _, _ = initialize_kruskal(tensor, rank, init='bogus init type')
 
     # Test with rank-1 decomposition
     tol = 10e-3
@@ -105,7 +105,7 @@ def test_masked_parafac():
     mask_fact = parafac(tensor, rank=1, mask=mask)
     fact = parafac(tensor, rank=1)
     diff = kruskal_to_tensor(mask_fact) - kruskal_to_tensor(fact)
-    assert_(T.norm(diff) < 0.0001, 'norm 2 of reconstruction higher than 0.0001')
+    assert_(T.norm(diff) < 0.001, 'norm 2 of reconstruction higher than 0.001')
 
 
 def test_non_negative_parafac():
