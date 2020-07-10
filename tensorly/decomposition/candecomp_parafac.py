@@ -327,9 +327,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.conj(tl.transpose(factor)), factor)
             pseudo_inverse += Id
 
-            if mask is not None:
-                tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
-
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
             factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
                                     tl.transpose(mttkrp)))
