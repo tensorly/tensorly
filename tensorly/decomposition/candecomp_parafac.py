@@ -5,7 +5,8 @@ import tensorly as tl
 from ..random import check_random_state
 from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
-                              unfolding_dot_khatri_rao, kruskal_norm)
+                              unfolding_dot_khatri_rao, kruskal_norm,
+                              kruskal_normalise)
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -40,20 +41,10 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
     """
     rng = check_random_state(random_state)
-    eps = tl.eps(tensor.dtype)
-    weights = tl.ones(rank, **tl.context(tensor))
 
     if init == 'random':
         factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
-        if non_negative:
-            factors = [tl.abs(f) for f in factors]
-        if normalize_factors:
-            for ii, f in enumerate(factors):
-                norm = tl.reshape(tl.norm(f, axis=0), (1, -1)) + eps
-                factors[ii] /= norm
-                weights[ii] *= norm
-
-        return KruskalTensor((weights, factors))
+        kt = KruskalTensor((None, factors))
 
     elif init == 'svd':
         try:
@@ -79,29 +70,31 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
                 # factor[:, :tensor.shape[mode]] = U
                 random_part = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])), **tl.context(tensor))
                 U = tl.concatenate([U, random_part], axis=1)
-            
-            factor = U[:, :rank]
-            if non_negative:
-                factor = tl.abs(factor)
-            if normalize_factors:
-                norm = tl.reshape(tl.norm(factor, axis=0), (1, -1)) + eps
-                factor /= norm
-                weights[mode] *= norm
-            factors.append(factor)
-        return KruskalTensor((weights, factors))
+
+            factors.append(U[:, :rank])
+
+        kt = KruskalTensor((None, factors))
 
     elif isinstance(init, (tuple, list, KruskalTensor)):
         # TODO: Test this
         try:
-            return KruskalTensor(init)
+            kt = KruskalTensor(init)
         except ValueError:
             raise ValueError(
                 'If initialization method is a mapping, then it must '
                 'be possible to convert it to a KruskalTensor instance'
             )
+    else:
+        raise ValueError('Initialization method "{}" not recognized'.format(init))
 
+    if non_negative:
+        kt.factors = [tl.abs(f) for f in kt[1]]
 
-    raise ValueError('Initialization method "{}" not recognized'.format(init))
+    if normalize_factors:
+        kt = kruskal_normalise(kt)
+
+    return kt
+
 
 def sparsify_tensor(tensor, card):
     """Zeros out all elements in the `tensor` except `card` elements with maximum absolute values. 
@@ -269,10 +262,6 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and 
             Applications", PhD., University of Amsterdam, 1998
     """
-    if mask is not None and init == "svd":
-        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
-        warnings.warn(message, Warning)
-
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
@@ -331,14 +320,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
                                     tl.transpose(mttkrp)))
 
-            if normalize_factors:
-                weights = tl.norm(factor, order=2, axis=0)
-                weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype), 
-                                   tl.ones(tl.shape(weights), **tl.context(factors[0])),
-                                   weights)
-                factor = factor/(tl.reshape(weights, (1, -1)))
-
             factors[mode] = factor
+
+        if normalize_factors:
+            weights, factors = kruskal_normalise((weights, factors))
 
         # Will we be performing a line search iteration
         if linesearch and iteration % 2 == 0 and iteration > 5:
@@ -483,7 +468,6 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                                  normalize_factors=normalize_factors)
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
-    weights = tl.ones(rank, **tl.context(tensor))
 
     if tl.ndim(tensor)-1 in fixed_modes:
         warnings.warn('You asked for fixing the last mode, which is not supported while tol is fixed.\n The last mode will not be fixed. Consider using tl.moveaxis()')
@@ -521,15 +505,11 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             denominator = tl.dot(factors[mode], accum)
             denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
             factor = factors[mode] * numerator / denominator
-            
-            if normalize_factors:
-                weights = tl.norm(factor, order=2, axis=0)
-                weights = tl.where(tl.abs(weights) <= tl.eps(tensor.dtype), 
-                                   tl.ones(tl.shape(weights), **tl.context(factors[0])),
-                                   weights)
-                factor = factor/(tl.reshape(weights, (1, -1)))
 
             factors[mode] = factor
+
+        if normalize_factors:
+            weights, factors = kruskal_normalise((weights, factors))
 
         if tol:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
