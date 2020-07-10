@@ -35,9 +35,8 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
     Returns
     -------
-    factors : ndarray list
-        List of initialized factors of the CP decomposition where element `i`
-        is of shape (tensor.shape[i], rank)
+    factors : KruskalTensor
+        An initial kruskal tensor.
 
     """
     rng = check_random_state(random_state)
