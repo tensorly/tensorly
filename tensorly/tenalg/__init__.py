@@ -12,6 +12,8 @@ from .core_tenalg import kronecker
 from .core_tenalg import khatri_rao
 from .core_tenalg import inner, outer
 from .core_tenalg import contract
+from .core_tenalg import tensor_dot, batched_tensor_dot
+from .core_tenalg import higher_order_moment
 
 from . import core_tenalg as core
 from . import einsum_tenalg
@@ -91,3 +93,6 @@ khatri_rao = dynamically_dispatch_tenalg(khatri_rao)
 inner = dynamically_dispatch_tenalg(inner)
 contract = dynamically_dispatch_tenalg(contract)
 outer = dynamically_dispatch_tenalg(outer)
+tensor_dot = dynamically_dispatch_tenalg(tensor_dot)
+batched_tensor_dot = dynamically_dispatch_tenalg(batched_tensor_dot)
+higher_order_moment = dynamically_dispatch_tenalg(higher_order_moment)
