@@ -3,7 +3,7 @@ import pytest
 
 import tensorly as tl
 from ..candecomp_parafac import (
-    parafac, non_negative_parafac, initialize_factors,
+    parafac, non_negative_parafac, initialize_kruskal,
     sample_khatri_rao, randomised_parafac)
 from ...kruskal_tensor import kruskal_to_tensor
 from ...random import check_random_state, random_kruskal
@@ -79,7 +79,7 @@ def test_parafac(linesearch):
 
     with np.testing.assert_raises(ValueError):
         rank = 4
-        _ = initialize_factors(tensor, rank, init='bogus init type')
+        _, _ = initialize_kruskal(tensor, rank, init='bogus init type')
 
     # Test with rank-1 decomposition
     tol = 10e-3
@@ -94,13 +94,24 @@ def test_masked_parafac(linesearch):
     """Test for the masked CANDECOMP-PARAFAC decomposition.
     This checks that a mask of 1's is identical to the unmasked case.
     """
-    rng = check_random_state(1234)
-    tensor = T.tensor(rng.random_sample((3, 3, 3)))
-    mask = T.tensor(np.ones((3, 3, 3)))
+    tensor = random_kruskal((4, 4, 4), rank=1, full=True)
+    mask = np.ones((4, 4, 4))
+    mask[1, :, 3] = 0
+    mask[:, 2, 3] = 0
+    mask = tl.tensor(mask)
+    tensor_mask = tensor*mask - 10000.0*(1 - mask)
+
+    fac = parafac(tensor_mask, svd_mask_repeats=0, mask=mask, n_iter_max=0, rank=1, init="svd")
+    fac_resvd = parafac(tensor_mask, svd_mask_repeats=10, mask=mask, n_iter_max=0, rank=1, init="svd")
+    err = tl.norm(tl.kruskal_to_tensor(fac) - tensor, 2)
+    err_resvd = tl.norm(tl.kruskal_to_tensor(fac_resvd) - tensor, 2)
+    assert_(err_resvd < err, 'restarting SVD did not help')
+
+    # Check that we get roughly the same answer with the full tensor and masking
     mask_fact = parafac(tensor, rank=1, mask=mask, init='random', random_state=1234, linesearch=linesearch)
     fact = parafac(tensor, rank=1)
     diff = kruskal_to_tensor(mask_fact) - kruskal_to_tensor(fact)
-    assert_(T.norm(diff) < 0.01, 'norm 2 of reconstruction higher than 0.01')
+    assert_(T.norm(diff) < 0.001, 'norm 2 of reconstruction higher than 0.001')
 
 
 def test_parafac_linesearch():
