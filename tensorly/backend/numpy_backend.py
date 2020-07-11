@@ -30,7 +30,7 @@ class NumpyBackend(Backend):
         return tensor.ndim
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None, inplace=False):
+    def clip(tensor, a_min=None, a_max=None):
         return np.clip(tensor, a_min, a_max)
 
     @staticmethod
