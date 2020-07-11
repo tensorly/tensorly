@@ -175,6 +175,9 @@ For each backend, tensorly provides the following uniform functions:
     proximal.procrustes
     inner
     contract
+    tensor_dot
+    batched_tensor_dot
+    higher_order_moment
 
 
 :mod:`tensorly.decomposition`: Tensor Decomposition
