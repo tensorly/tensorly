@@ -185,7 +185,7 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd'):
         Y = tl.kruskal_tensor.kruskal_to_tensor(matrix)
 
     # initialize values
-    A, B, C = initialize_factors(X.astype(float), rank, init=init)
+    A, B, C = initialize_factors(tl.tensor(X, dtype=tl.float32), rank, init=init)
     V = tl.transpose(solve_least_squares(A, Y))
     lambda_ = tl.ones(rank)
     gamma = tl.ones(rank)
