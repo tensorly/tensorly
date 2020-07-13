@@ -202,16 +202,16 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd'):
         gamma *= norm_A
         B = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, C]), np.diag(lambda_)),
                                              tl.transpose(tl.unfold(X, 1))))
-        norm_B = tl.norm(B)
+        norm_B = tl.norm(B, axis=0)
         B /= norm_B
         lambda_ *= norm_B
         C = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, B]), np.diag(lambda_)),
                                              tl.transpose(tl.unfold(X, 2))))
-        norm_C = tl.norm(C)
+        norm_C = tl.norm(C, axis=0)
         C /= norm_C
         lambda_ *= norm_C
         V = tl.transpose(solve_least_squares(tl.dot(A, np.diag(gamma)), Y))
-        norm_V = tl.norm(V)
+        norm_V = tl.norm(V, axis=0)
         V /= norm_V
         gamma *= norm_V
         error_new = 1 / 2 * tl.norm(
