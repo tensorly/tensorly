@@ -25,12 +25,14 @@ def align_tensors(permutation_matrix):
     """
 
     order = tl.argmax(permutation_matrix, axis=0)
-    uniq, uniq_idx, counts = np.unique(order, return_index=True, return_counts=True)
+    uniq, _, counts = np.unique(order, return_index=True, return_counts=True)
+    uniq = tl.tensor(uniq)
+    counts = tl.tensor(counts)
     if len(uniq) < len(order):
         non_uniq = uniq[counts > 1][0]
         # idea works as long as there are only two equal values in order (non_uniq_idx has length 2)
-        non_uniq_idx = np.where(order == non_uniq)[0]
-        wrong_idx = non_uniq_idx[np.argmin(permutation_matrix[np.full_like(non_uniq_idx, non_uniq),
+        non_uniq_idx = tl.tensor(np.where(order == non_uniq)[0])
+        wrong_idx = non_uniq_idx[tl.argmin(permutation_matrix[np.full_like(non_uniq_idx, non_uniq),
                                                               non_uniq_idx])]
         order[wrong_idx] = np.setdiff1d(np.arange(len(order)), order)[0]
 
