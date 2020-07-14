@@ -574,6 +574,17 @@ class Backend(object):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def values(tensor):
+        """ Returns all the non zero values of the tensor in COO
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def indices(tensor):
+        """ Returns all the indices of non zero values of the tensor in COO
+        """
+        raise NotImplementedError
 
     @staticmethod
     def sort(tensor, axis, descending = False):

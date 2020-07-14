@@ -95,6 +95,14 @@ class NumpySparseBackend(Backend):
         else:
             return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
 
+    @staticmethod
+    def values(tensor):
+        return tensor.coords
+
+    @staticmethod
+    def indices(tensor):
+        return tensor.data
+
     def dot(self, x, y):
         if is_sparse(x) or is_sparse(y):
             return sparse.dot(x, y)

@@ -75,6 +75,9 @@ def dispatch_sparse(func):
 
     return inner
 
+
+values = dispatch_sparse(backend.values)
+indices = dispatch_sparse(backend.indices)
 tensor = dispatch_sparse(backend.tensor)
 is_tensor = dispatch_sparse(backend.is_tensor)
 context = dispatch_sparse(backend.context)

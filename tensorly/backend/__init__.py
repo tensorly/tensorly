@@ -13,8 +13,7 @@ _KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
                    'pytorch':'PyTorchBackend', 
                    'tensorflow':'TensorflowBackend',
                    'cupy':'CupyBackend',
-                   'jax': 'JaxBackend',
-                   'tensorflow.sparse': 'TensorflowSparseBackend'}
+                   'jax': 'JaxBackend'}
 
 _LOADED_BACKENDS = {}
 _LOCAL_STATE = threading.local()
@@ -51,16 +50,8 @@ def register_backend(backend_name):
         If `backend_name` does not correspond to one listed
             in `_KNOWN_BACKEND`
     """
-    module_list = {'numpy': 'tensorly.backend.numpy_backend',
-                   'mxnet': 'tensorly.backend.mxnet_backend',
-                   'pytorch': 'tensorly.backend.pytorch_backend',
-                   'tensorflow': 'tensorly.backend.tensorflow_backend',
-                   'cupy': 'tensorly.backend.cupy_backend',
-                   'jax': 'tensorly.backend.jax_backend',
-                   'tensorflow.sparse': 'tensorly.contrib.sparse.backend.tensorflow_backend'}
-
     if backend_name in _KNOWN_BACKENDS:
-        module = importlib.import_module(module_list[backend_name])
+        module = importlib.import_module('tensorly.backend.{0}_backend'.format(backend_name))
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
         _LOADED_BACKENDS[backend_name] = backend
     else:

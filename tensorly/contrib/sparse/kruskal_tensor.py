@@ -1,5 +1,6 @@
 from ...kruskal_tensor import kruskal_to_tensor, unfolding_dot_khatri_rao, kruskal_norm
 from .core import wrap
+from .backend import sparse_context
 
 from numpy import zeros, multiply
 import tensorly as tl
@@ -10,40 +11,43 @@ unfolding_dot_khatri_rao = wrap(unfolding_dot_khatri_rao)
 
 
 def sparse_mttkrp(tensor, factors, n, rank, dims):
-    values = tl.values(tensor)
-    indices = tl.indices(tensor)
-    output = zeros((dims[n], rank))
+    with sparse_context():
+        values = tl.values(tensor)
+        indices = tl.indices(tensor)
+        output = zeros((dims[n], rank))
 
-    for l in range(len(values)):
-        cur_index = indices[l]
-        prod = [values[l]] * rank  # makes the value into a row
+        for l in range(len(values)):
+            cur_index = indices[l]
+            prod = [values[l]] * rank  # makes the value into a row
 
-        for mode, cv in enumerate(cur_index):  # does elementwise row multiplications
-            if mode != n:
-                for r in range(rank):
-                    prod[r] *= factors[mode][cv][r]
+            for mode, cv in enumerate(cur_index):  # does elementwise row multiplications
+                if mode != n:
+                    for r in range(rank):
+                        prod[r] *= factors[mode][cv][r]
 
-        for r in range(rank):
-            output[cur_index[n]][r] += prod[r]
+            for r in range(rank):
+                output[cur_index[n]][r] += prod[r]
 
-    return output
+        return output
 
 
 def kruskal_sparse_inner_product(kt, st):
-    s = 0.0
-    weights, factors = kt
-    idxs = st.indices.numpy()
-    vals = st.values.numpy()
-    for i, index in enumerate(idxs):
-        st_val = vals[i]
-        kt_val = weights
-        for fac_no, dim in enumerate(index):
-            kt_val = multiply(factors[fac_no][dim], kt_val)
-        s += (sum(kt_val) * st_val)
-    return s
+    with sparse_context():
+        s = 0.0
+        weights, factors = kt
+        idxs = st.indices.numpy()
+        vals = st.values.numpy()
+        for i, index in enumerate(idxs):
+            st_val = vals[i]
+            kt_val = weights
+            for fac_no, dim in enumerate(index):
+                kt_val = multiply(factors[fac_no][dim], kt_val)
+            s += (sum(kt_val) * st_val)
+        return s
 
 
 def kruskal_sparse_fit(kt, st):
+    with sparse_context():
         normX = tl.norm(st)
         normP = kruskal_norm(kt)
         ip = kruskal_sparse_inner_product(kt, st)

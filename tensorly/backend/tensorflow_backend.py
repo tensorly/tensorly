@@ -7,7 +7,7 @@ except ImportError as error:
     raise ImportError(message) from error
 
 import numpy as np
-
+import tensorly as tl
 from . import Backend
 
 
@@ -43,11 +43,11 @@ class TensorflowBackend(Backend):
 
     @staticmethod
     def ndim(tensor):
-        return len(tensor.get_shape()._dims)
+        return len(tl.to_numpy(tensor).shape)
 
     @staticmethod
     def shape(tensor):
-        return tuple(tensor.shape.as_list())
+        return tl.to_numpy(tensor).shape
 
     @staticmethod
     def arange(start, stop=None, step=1, dtype=np.float32):

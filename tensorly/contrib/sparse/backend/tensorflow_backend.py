@@ -9,12 +9,19 @@ def is_sparse(x):
 
 
 class TensorflowSparseBackend(Backend):
-    backend_name = 'tensorflow.sparse'
+    backend_name = 'tensorflow'
 
     @staticmethod
     def tensor(data, dtype=np.float32, device=None, device_id=None):
         if isinstance(data, tf.sparse.SparseTensor):
             return data
+        elif isinstance(data, tuple):
+            if len(data) == 3:
+                if isinstance(data[0], np.ndarray):
+                    if isinstance(data[1], np.ndarray):
+                        if len(data[0]) == len(data[1]):
+                            return tf.sparse.SparseTensor(indices=data[0], values=data[1], dense_shape=data[2])
+
 
     @staticmethod
     def context(tensor):

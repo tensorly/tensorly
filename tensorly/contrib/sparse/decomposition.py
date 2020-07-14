@@ -5,7 +5,6 @@ from .core import wrap
 import numpy as np
 from .kruskal_tensor import sparse_mttkrp as mttkrp
 from ...kruskal_tensor import KruskalTensor
-from .backend.tensorflow_backend import is_sparse
 
 tucker = wrap(tucker)
 partial_tucker = wrap(partial_tucker)
@@ -82,43 +81,44 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
 
        """
-    if not is_sparse(tensor):
+    try:
+        dims = tensor.shape.as_list()
+        nd = len(dims)
+        factors = [np.random.random((d, rank)) for d in dims]
+        weights = np.ones((1, rank))
+
+        for iteration in range(n_iter_max):
+            if verbose:
+                print("finished {} iterations".format(iteration + 1), end="\r")
+            for n in range(nd):
+
+                # the following block calculates inverse of the hadamard product
+                h = np.matmul(weights.T, weights)
+                for i, f in enumerate(factors):
+                    if i != n:
+                        h *= np.matmul(f.T, f)
+                vinv = np.linalg.pinv(h)
+
+                # the following block calculates An by doing MTTKRP and multiplying it by the inverse of the hadamard
+                mk = mttkrp(tensor, factors, n, rank, dims)
+
+                wmk = np.multiply(mk, weights[0])  # multiply each column by the weights
+                An = np.matmul(wmk, vinv)  # nth factor
+
+                # the following block normalizes the columns and stored
+                weight = np.linalg.norm(An, axis=0)
+                b = np.where(weight < 1e-12, 1, weight)
+                weights[0] *= b  # avoids dividing by small weights, reduces error
+                An /= b
+
+                factors[n] = An
+
+        return KruskalTensor((weights[0], factors))
+    except NotImplementedError:
+        print("non sparse input")
         return non_sparse_parafac(tensor, rank, n_iter_max=n_iter_max,
                                   init=init, svd=svd, normalize_factors=normalize_factors,
                                   orthogonalise=orthogonalise, tol=tol, random_state=random_state,
                                   verbose=verbose, return_errors=return_errors,
-                                  non_negative=non_negative, sparsity = sparsity,
-                                  l2_reg=l2_reg,  mask=mask, cvg_criterion=cvg_criterion)
-
-    dims = tensor.shape.as_list()
-    nd = len(dims)
-    factors = [np.random.random((d, rank)) for d in dims]
-    weights = np.ones((1, rank))
-
-    for iteration in range(n_iter_max):
-        if verbose:
-            print("finished {} iterations".format(iteration + 1), end="\r")
-        for n in range(nd):
-
-            # the following block calculates inverse of the hadamard product
-            h = np.matmul(weights.T, weights)
-            for i, f in enumerate(factors):
-                if i != n:
-                    h *= np.matmul(f.T, f)
-            vinv = np.linalg.pinv(h)
-
-            # the following block calculates An by doing MTTKRP and multiplying it by the inverse of the hadamard
-            mk = mttkrp(tensor, factors, n, rank, dims)
-
-            wmk = np.multiply(mk, weights[0])  # multiply each column by the weights
-            An = np.matmul(wmk, vinv)  # nth factor
-
-            # the following block normalizes the columns and stored
-            weight = np.linalg.norm(An, axis=0)
-            b = np.where(weight < 1e-12, 1, weight)
-            weights[0] *= b  # avoids dividing by small weights, reduces error
-            An /= b
-
-            factors[n] = An
-
-    return KruskalTensor((weights[0], factors))
+                                  non_negative=non_negative, sparsity=sparsity,
+                                  l2_reg=l2_reg, mask=mask, cvg_criterion=cvg_criterion)
