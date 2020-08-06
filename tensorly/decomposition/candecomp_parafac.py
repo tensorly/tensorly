@@ -320,10 +320,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
                                     tl.transpose(mttkrp)))
 
-            factors[mode] = factor
+            if normalize_factors:
+                scales = tl.norm(factor, 2, axis=0)
+                weights = tl.where(scales==0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
+                factor = factor / tl.reshape(weights, (1, -1))
 
-        if normalize_factors:
-            weights, factors = kruskal_normalise((weights, factors))
+            factors[mode] = factor
 
         # Will we be performing a line search iteration
         if linesearch and iteration % 2 == 0 and iteration > 5:
