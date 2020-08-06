@@ -1,5 +1,5 @@
-from ..outer_product import outer
-from ...kruskal_tensor import kruskal_to_tensor
+from .. import outer
+from ... import kruskal_to_tensor
 from ...random import random_kruskal
 from ...testing import assert_array_almost_equal
 

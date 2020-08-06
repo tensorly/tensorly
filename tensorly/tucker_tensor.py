@@ -4,9 +4,7 @@ Core operations on Tucker tensors.
 
 from .base import unfold, tensor_to_vec
 from .tenalg import multi_mode_dot, mode_dot
-from .tenalg import kronecker
 from . import backend as tl
-import warnings
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -160,11 +158,6 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
         if copy:
             factors = [tl.copy(f) for f in factors]
             core = tl.copy(core)
-            #if not contract:
-            #    core = tl.copy(core)
-            #else:
-            #    warnings.warn('copy=True and keepdim=False, while contracting with a vector'
-            #                 ' will result in a new core with one less mode.')
 
         if contract:
             print('contracting mode')

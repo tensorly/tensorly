@@ -1,5 +1,5 @@
 import numpy as np
-import tensorly as tl
+from ... import backend as tl
 
 # Author: Jean Kossaifi
 

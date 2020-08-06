@@ -184,25 +184,6 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
-    def moveaxis(tensor, source, destination):
-        """Move axes of a tensor to new positions.
-
-        Parameters
-        ----------
-        tensor : tl.tensor
-        source : int or sequence of int
-            Original positions of the axes to move. These must be unique.
-        destination : int or sequence of int
-            Destination positions for each of the original axes. These must also be
-            unique.
-
-        Returns
-        -------
-        tensor
-        """
-        raise NotImplementedError
-
-    @staticmethod
     def arange(start=0, stop=None, step=None):
         """Return evenly spaced values within a given interval.
 
@@ -594,6 +575,55 @@ class Backend(object):
             An N-D array, sorted copy of input tensor
         """
         raise NotImplementedError
+
+    def einsum(subscripts, *operands):
+        """Evaluates the Einstein summation convention on the operands.
+
+        Parameters
+        ----------
+        subscripts : str
+            Specifies the subscripts for summation.
+
+        *operands : list of tensors
+            tensors for the operation
+
+        Returns
+        -------
+        output : ndarray
+            The calculation based on the Einstein summation convention
+        """
+        raise NotImplementedError
+
+    def moveaxis(self, tensor, source, destination):
+        """Move axes of a tensor to new positions.
+
+        Parameters
+        ----------
+        tensor : tl.tensor
+        source : int or sequence of int
+            Original positions of the axes to move. These must be unique.
+        destination : int or sequence of int
+            Destination positions for each of the original axes. These must also be
+            unique.
+
+        Returns
+        -------
+        tensor
+        """
+        axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if destination < 0: destination = axes[destination]
+        try:
+            axes.pop(source)
+        except IndexError:
+            raise ValueError('Source should verify 0 <= source < tensor.ndim'
+                             'Got %d' % source)
+        try:
+            axes.insert(destination, source)
+        except IndexError:
+            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
+                             'Got %d' % destination)
+        return self.transpose(tensor, axes)
 
     def kron(self, a, b):
         """Kronecker product of two tensors.

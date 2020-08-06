@@ -24,31 +24,6 @@ def is_sparse(x):
 class NumpySparseBackend(Backend):
     backend_name = 'numpy.sparse'
 
-    # moveaxis and shape are temporarily redefine to fix issue #131
-    # Using the builting functionsn raises a TypeError:
-    #     no implementation found for 'numpy.shape' on types
-    #     that implement __array_function__: [<class 'sparse._coo.core.COO'>]
-    def moveaxis(self, tensor, source, target):
-        axes = list(range(self.ndim(tensor)))
-        if source < 0: source = axes[source]
-        if target < 0: target = axes[target]
-        try:
-            axes.pop(source)
-        except IndexError:
-            raise ValueError('Source should verify 0 <= source < tensor.ndim'
-                             'Got %d' % source)
-        try:
-            axes.insert(target, source)
-        except IndexError:
-            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
-                             'Got %d' % target)
-        return self.transpose(tensor, axes)
-
-    # Temporary, see moveaxis above
-    @staticmethod
-    def shape(tensor):
-        return tensor.shape
-
     @staticmethod
     def context(tensor):
         return {'dtype': tensor.dtype}
@@ -75,10 +50,6 @@ class NumpySparseBackend(Backend):
     @staticmethod
     def copy(tensor):
         return _py_copy(tensor)
-
-    @staticmethod
-    def clip(tensor, a_min=None, a_max=None, inplace=False):
-        return np.clip(tensor, a_min, a_max)
 
     @staticmethod
     def norm(tensor, order=2, axis=None):
@@ -196,10 +167,14 @@ class NumpySparseBackend(Backend):
         return {'numpy_svd': self.partial_svd,
                 'truncated_svd': self.partial_svd}
 
-
+# moveaxis is temporarily uses the default implementation to fix issue #131
+# Using the builting function raises a TypeError:
+#     no implementation found for 'numpy.shape' on types
+#     that implement __array_function__: [<class 'sparse._coo.core.COO'>]
+#     This is fixed on sparse master
 for name in ['int64', 'int32', 'float64', 'float32', 'transpose',
              'reshape', 'ndim', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj']:
+             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj', 'shape']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
 for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye',

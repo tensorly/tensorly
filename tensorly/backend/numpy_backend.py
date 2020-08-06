@@ -30,7 +30,7 @@ class NumpyBackend(Backend):
         return tensor.ndim
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None, inplace=False):
+    def clip(tensor, a_min=None, a_max=None):
         return np.clip(tensor, a_min, a_max)
 
     @staticmethod
@@ -53,7 +53,6 @@ class NumpyBackend(Backend):
             return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
 
     def kr(self, matrices, weights=None, mask=None):
-        if mask is None: mask = 1
         n_columns = matrices[0].shape[1]
         n_factors = len(matrices)
 
@@ -66,7 +65,8 @@ class NumpyBackend(Backend):
         if weights is not None:
             matrices = [m if i else m*self.reshape(weights, (1, -1)) for i, m in enumerate(matrices)]
 
-        return np.einsum(operation, *matrices).reshape((-1, n_columns))*mask
+        m = mask.reshape((-1, 1)) if mask is not None else 1
+        return np.einsum(operation, *matrices).reshape((-1, n_columns))*m
 
     @property
     def SVD_FUNS(self):
@@ -84,7 +84,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag']:
+             'argmax', 'stack', 'conj', 'diag', 'einsum']:
     NumpyBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'pinv']:
