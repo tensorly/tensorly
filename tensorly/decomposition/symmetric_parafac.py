@@ -109,8 +109,8 @@ def symmetric_parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10,
 
     for i in range(rank):
         eigenval, eigenvec, deflated = symmetric_power_iteration(tensor, n_repeat=n_repeat, n_iteration=n_iteration, verbose=verbose)
-        factor[:, i] = eigenvec
-        weigths[i] = eigenval
+        factor = tl.index_update(factor, tl.index[:, i], eigenvec)
+        weigths = tl.index_update(weigths, tl.index[i], eigenval)
         tensor = deflated
 
     return weigths, factor
