@@ -96,3 +96,5 @@ outer = dynamically_dispatch_tenalg(outer)
 tensor_dot = dynamically_dispatch_tenalg(tensor_dot)
 batched_tensor_dot = dynamically_dispatch_tenalg(batched_tensor_dot)
 higher_order_moment = dynamically_dispatch_tenalg(higher_order_moment)
+
+set_tenalg_backend(_DEFAULT_TENALG_BACKEND, local_threadsafe=False)

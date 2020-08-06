@@ -203,6 +203,8 @@ For each backend, tensorly provides the following uniform functions:
     robust_pca
     matrix_product_state
     parafac2
+    symmetric_power_iteration
+    symmetric_parafac_power_iteration
 
 
 :mod:`tensorly.regression`: Tensor Regression
