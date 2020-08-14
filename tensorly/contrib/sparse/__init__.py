@@ -6,7 +6,7 @@ from .backend import (tensor, is_tensor, context, shape, ndim, to_numpy, copy,
                       arange, ones, zeros, zeros_like, eye,
                       clip, where, max, min, all, mean, sum,
                       prod, sign, abs, sqrt, norm, dot, kron,
-                      kr, solve, qr, partial_svd)
+                      kr, solve, qr, partial_svd, values, indices)
 
 from .core import wrap
 
