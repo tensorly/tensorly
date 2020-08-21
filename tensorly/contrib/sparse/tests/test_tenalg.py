@@ -20,9 +20,9 @@ def test_sparse_unfolding_times_kruskal():
     """
     import sparse
 
-    shape = (100, 101, 102, 100, 100, 100)
+    shape = (1000, 1000, 1000, 10)
     rank = 5
-    factors = [sparse.random((i, rank)) for i in shape]
+    factors = [sparse.random((i, rank), density=0.08) for i in shape]
     weights = np.ones(rank)
     tensor = stl.kruskal_to_tensor((weights, factors))
     
