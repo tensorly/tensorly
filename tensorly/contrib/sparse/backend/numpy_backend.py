@@ -26,7 +26,7 @@ class NumpySparseBackend(Backend):
 
     @staticmethod
     def context(tensor):
-        return {'dtype': tensor.dtype}
+        return {'dtype': tensor.dtype}#, 'density':tensor.density}
 
     @staticmethod
     def tensor(data, dtype=None):

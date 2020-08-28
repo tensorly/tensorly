@@ -104,13 +104,16 @@ def symmetric_parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10,
     if not tl.shape(tensor) == (size, )*order:
         raise ValueError('The input tensor does not have the same size along each mode.')
 
-    factor = tl.zeros((size, rank), **tl.context(tensor))
-    weigths = tl.zeros(rank, **tl.context(tensor))
+    factor = []
+    weigths = []
 
-    for i in range(rank):
+    for _ in range(rank):
         eigenval, eigenvec, deflated = symmetric_power_iteration(tensor, n_repeat=n_repeat, n_iteration=n_iteration, verbose=verbose)
-        factor = tl.index_update(factor, tl.index[:, i], eigenvec)
-        weigths = tl.index_update(weigths, tl.index[i], eigenval)
+        factor.append(eigenvec)
+        weigths.append(eigenval)
         tensor = deflated
+
+    factor = tl.stack(factor, axis=1)
+    weigths = tl.stack(weigths)
 
     return weigths, factor
