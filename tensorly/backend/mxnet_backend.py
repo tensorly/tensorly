@@ -215,9 +215,12 @@ class MxnetBackend(Backend):
     def concatenate(tensors, axis):
         return nd.concat(*tensors, dim=axis)
 
-    @staticmethod
-    def stack(arrays, axis=0):
-        return stack(*arrays, axis=axis)
+    def stack(self, arrays, axis=0):
+        res = nd.stack(*arrays, axis=axis)
+        # Ugly fix for stacking zero-order tensors that are of shape (1, ) in MXNet
+        if self.ndim(res) == 2 and self.shape(res) == (len(arrays), 1):
+            return res.squeeze()
+        return res
 
     def symeig_svd(self, matrix, n_eigenvecs=None, **kwargs):
         """Computes a truncated SVD on `matrix` using symeig
