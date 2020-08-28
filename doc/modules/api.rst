@@ -311,5 +311,6 @@ Currently, the following decomposition methods are supported (for the NumPy back
    sparse.decomposition.robust_pca
    sparse.decomposition.parafac
    sparse.decomposition.non_negative_parafac
+   sprase.decomposition.symmetric_parafac_power_iteration
 
 
