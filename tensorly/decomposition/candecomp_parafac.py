@@ -61,7 +61,7 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
             if mode == 0:
                 idx = min(rank, tl.shape(S)[0])
-                tl.index_update(U, tl.index[:, :idx], U[:, :idx] * S[:idx])
+                U = tl.index_update(U, tl.index[:, :idx], U[:, :idx] * S[:idx])
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
@@ -705,3 +705,141 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
                     break
 
     return KruskalTensor((weights, factors))
+
+
+class CP:
+    def __init__(self, rank, n_iter_max=100, tol=1e-08, 
+                 init='svd', svd='numpy_svd',
+                 l2_reg=0,
+                 linesearch=False,
+                 fixed_modes = [],
+                 normalize_factors=False, 
+                 orthogonalise=False, 
+                 non_negative=False,
+                 sparsity = None,
+                 mask=None, svd_mask_repeats = 5,
+                 cvg_criterion='abs_rec_error',
+                 random_state=None, 
+                 verbose=0):
+        """Candecomp-Parafac decomposition
+
+            Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
+
+                ``tensor = [|weights; factors[0], ..., factors[-1] |]``.
+
+            Parameters
+            ----------
+            tensor : ndarray
+            rank  : int
+                Number of components.
+            n_iter_max : int
+                Maximum number of iteration
+            init : {'svd', 'random'}, optional
+                Type of factor matrix initialization. See `initialize_factors`.
+            svd : str, default is 'numpy_svd'
+                function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+            normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+                of shape (rank, ), which will contain the norms of the factors
+            tol : float, optional
+                (Default: 1e-6) Relative reconstruction error tolerance. The
+                algorithm is considered to have found the global minimum when the
+                reconstruction error is less than `tol`.
+            random_state : {None, int, np.random.RandomState}
+            verbose : int, optional
+                Level of verbosity
+            return_errors : bool, optional
+                Activate return of iteration errors
+            mask : ndarray
+                array of booleans with the same shape as ``tensor`` should be 0 where
+                the values are missing and 1 everywhere else. Note:  if tensor is
+                sparse, then mask should also be sparse with a fill value of 1 (or
+                True). Allows for missing values [2]_
+            cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
+                Stopping criterion for ALS, works if `tol` is not None. 
+                If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
+                If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
+            sparsity : float or int
+                If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+            fixed_modes : list, default is []
+                A list of modes for which the initial value is not modified.
+                The last mode cannot be fixed due to error computation.
+            svd_mask_repeats: int
+                If using a tensor with masked values, this initializes using SVD multiple times to
+                remove the effect of these missing values on the initialization.
+            linesearch : bool, default is False
+                Whether to perform line search as proposed by Bro [3].
+
+            Returns
+            -------
+            KruskalTensor : (weight, factors)
+                * weights : 1D array of shape (rank, )
+                    all ones if normalize_factors is False (default), 
+                    weights of the (normalized) factors otherwise
+                * factors : List of factors of the CP decomposition element `i` is of shape
+                    (tensor.shape[i], rank)
+                * sparse_component : nD array of shape tensor.shape. Returns only if `sparsity` is not None.
+
+            errors : list
+                A list of reconstruction errors at each iteration of the algorithms.
+
+            References
+            ----------
+            .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+            SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+
+            .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
+                    Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
+
+            .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and 
+                    Applications", PhD., University of Amsterdam, 1998
+        """
+        self.rank = rank
+        self.n_iter_max = n_iter_max
+        self.tol = tol
+        self.l2_reg = l2_reg
+        self.init = init
+        self.linesearch = linesearch
+        self.svd = svd
+        self.normalize_factors = normalize_factors
+        self.orthogonalise = orthogonalise
+        self.mask = mask
+        self.svd_mask_repeats = svd_mask_repeats
+        self.cvg_criterion = cvg_criterion
+        self.random_state = random_state
+        self.verbose = verbose
+
+    
+    def fit_transform(self, tensor):
+        """Decompose an input tensor
+
+        Parameters
+        ----------
+        tensor : tensorly tensor
+            input tensor to decompose
+
+        Returns
+        -------
+        KruskalTensor
+            decomposed tensor
+        """
+        kruskal_tensor = parafac(tensor, rank=self.rank,
+                                 n_iter_max=self.n_iter_max,
+                                 tol=self.tol,
+                                 init=self.init,
+                                 svd=self.svd,
+                                 normalize_factors=self.normalize_factors,
+                                 orthogonalise=self.orthogonalise,
+                                 mask=self.mask,
+                                 cvg_criterion=self.cvg_criterion,
+                                 random_state=self.random_state,
+                                 verbose=self.verbose,
+                                 return_errors=True)
+        self.kruskal_tensor_ = kruskal_tensor 
+        return kruskal_tensor
+
+    def fit(self, tensor):
+        self.fit_transform(tensor)
+        return self
+
+    def __repr__(self):
+        return f'Rank-{self.rank} CP decomposition.'

@@ -81,3 +81,47 @@ def matrix_product_state(input_tensor, rank, verbose=False):
         print("MPS factor " + str(n_dim-1) + " computed with shape " + str(factors[n_dim-1].shape))
 
     return factors
+
+
+class TensorTrain:
+    def __init__(self, rank, verbose=False):
+        """MPS decomposition via recursive SVD
+
+            Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
+            -- also known as Tensor-Train decomposition [1]_.
+
+        Parameters
+        ----------
+        input_tensor : tensorly.tensor
+        rank : {int, int list}
+                maximum allowable MPS rank of the factors
+                if int, then this is the same for all the factors
+                if int list, then rank[k] is the rank of the kth factor
+        verbose : boolean, optional
+                level of verbosity
+
+        Returns
+        -------
+        factors : MPS factors
+                order-3 tensors of the MPS decomposition
+
+        References
+        ----------
+        .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
+        """
+        self.rank = rank
+        self.verbose = verbose
+
+    def fit_transform(self, tensor):
+        self.tensor_train_ = matrix_product_state(tensor, rank=self.rank, verbose=self.verbose)
+        return self.tensor_train_
+
+    def fit(self, tensor):
+        self.fit_transform(tensor)
+        return self
+
+    def __repr__(self):
+        return f'Rank-{self.rank} Tensor-Train decomposition.'
+
+
+    

@@ -3,6 +3,7 @@ from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
 from ..tucker_tensor import tucker_to_tensor
 from ..random import check_random_state
+import tensorly.tenalg as tlg
 from math import sqrt
 
 import warnings
@@ -269,3 +270,83 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
             break
 
     return nn_core, nn_factors
+
+
+
+class Tucker:
+    def __init__(self, rank=None, n_iter_max=100, 
+                 init='svd', svd='numpy_svd', tol=10e-5, 
+                 random_state=None, mask=None, verbose=False):
+        """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
+
+            Decomposes `tensor` into a Tucker decomposition:
+            ``tensor = [| core; factors[0], ...factors[-1] |]`` [1]_
+
+        Parameters
+        ----------
+        tensor : ndarray
+        ranks : None or int list
+                size of the core tensor, ``(len(ranks) == tensor.ndim)``
+        rank : None or int
+                number of components
+        n_iter_max : int
+                    maximum number of iteration
+        init : {'svd', 'random'}, optional
+        svd : str, default is 'numpy_svd'
+            function to use to compute the SVD,
+            acceptable values in tensorly.SVD_FUNS
+        tol : float, optional
+            tolerance: the algorithm stops when the variation in
+            the reconstruction error is less than the tolerance
+        random_state : {None, int, np.random.RandomState}
+        verbose : int, optional
+            level of verbosity
+
+        Returns
+        -------
+        core : ndarray of size `ranks`
+                core tensor of the Tucker decomposition
+        factors : ndarray list
+                list of factors of the Tucker decomposition.
+                Its ``i``-th element is of shape ``(tensor.shape[i], ranks[i])``
+
+        References
+        ----------
+        .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+        """
+        self.rank = rank
+        self.n_iter_max = n_iter_max
+        self.init = init
+        self.svd = svd
+        self.tol = tol
+        self.random_state = random_state
+        self.mask = mask
+        self.verbose = verbose
+
+    def fit(self, tensor):
+        self.fit_transform(tensor)
+        return self
+
+    def fit_transform(self, tensor):
+        tucker_tensor = tucker(tensor, rank=self.rank,
+                               n_iter_max=self.n_iter_max,
+                               init=self.init,
+                               svd=self.svd,
+                               tol=self.tol,
+                               random_state=self.random_state,
+                               mask=self.mask,
+                               verbose=self.verbose)
+        self.tucker_tensor_ = tucker_tensor
+        return tucker_tensor[0]
+
+    def transform(self, tensor):
+        _, factors = self.tucker_tensor_
+        return tlg.multi_mode_dot(tensor, factors, transpose=True)
+
+    def inverse_transform(self, tensor):
+        _, factors = self.tucker_tensor_
+        return tlg.multi_mode_dot(tensor, factors)
+
+    def __repr__(self):
+        return f'Rank-{self.rank} Tucker decomposition.'

@@ -560,11 +560,11 @@ def test_index_update():
     insert = tl.tensor(np.copy(np_insert))
 
     np_tensor[:, 1:3] = np_insert
-    tl.index_update(tensor, tl.index[:, 1:3], insert)
+    tensor = tl.index_update(tensor, tl.index[:, 1:3], insert)
     assert_array_equal(np_tensor, tensor)
 
     np_tensor = np.random.random((3, 5)).astype(dtype=np.float32)
     tensor = tl.tensor(np.copy(np_tensor))
     np_tensor[2, :] = 2
-    tl.index_update(tensor, tl.index[2, :], 2)
+    tensor = tl.index_update(tensor, tl.index[2, :], 2)
     assert_array_equal(np_tensor, tensor)
