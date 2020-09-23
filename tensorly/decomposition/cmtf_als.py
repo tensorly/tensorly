@@ -86,12 +86,12 @@ def factor_match_score_3d(kruskal_tensor_3d_true, kruskal_tensor_2d_true, kruska
 
     """
 
-    lambda_, [a, B, C] = kruskal_normalise(kruskal_tensor_3d_true)
-    alpha_, [A, V] = kruskal_normalise(kruskal_tensor_2d_true)
+    lambda_, [A, B, C] = kruskal_normalise(kruskal_tensor_3d_true)
+    alpha_, [a, V] = kruskal_normalise(kruskal_tensor_2d_true)
     xi = lambda_ + alpha_
 
-    lambda_pred, [a_pred, B_pred, C_pred] = kruskal_normalise(kruskal_tensor_3d_pred)
-    alpha_pred, [A_pred, V_pred] = kruskal_normalise(kruskal_tensor_2d_pred)
+    lambda_pred, [A_pred, B_pred, C_pred] = kruskal_normalise(kruskal_tensor_3d_pred)
+    alpha_pred, [a_pred, V_pred] = kruskal_normalise(kruskal_tensor_2d_pred)
     xi_pred = lambda_pred + alpha_pred
 
     # take care of permutation of normalized factor matrices and of sign of weights (not mentioned
