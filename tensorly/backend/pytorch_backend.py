@@ -50,7 +50,7 @@ class PyTorchBackend(Backend):
 
     @staticmethod
     def shape(tensor):
-        return tensor.size()
+        return tensor.shape
 
     @staticmethod
     def ndim(tensor):
