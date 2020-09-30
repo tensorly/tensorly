@@ -2,7 +2,7 @@ import numpy as np
 import warnings
 
 import tensorly as tl
-from ..random import check_random_state
+from ..random import check_random_state, random_kruskal
 from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               unfolding_dot_khatri_rao, kruskal_norm,
@@ -43,8 +43,9 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
     rng = check_random_state(random_state)
 
     if init == 'random':
-        factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
-        kt = KruskalTensor((None, factors))
+        # factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
+        # kt = KruskalTensor((None, factors))
+        return random_kruskal(tl.shape(tensor), rank, normalise_factors=False)
 
     elif init == 'svd':
         try:
@@ -315,7 +316,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.conj(tl.transpose(factor)), factor)
             pseudo_inverse += Id
 
-            mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+            if not iteration and weights is not None:
+                # Take into account init weights
+                mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
+            else:
+                mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+
             factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
                                     tl.transpose(mttkrp)))
 
@@ -333,7 +339,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             line_iter = False
 
         # Calculate the current unnormalized error if we need it
-        if tol and line_iter is False:
+        if (tol or return_errors) and line_iter is False:
             unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
         else:
             if mask is not None:
@@ -370,9 +376,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                     if verbose:
                         print("Reducing acceleration.")
 
+        rec_error = unnorml_rec_error / norm_tensor
+        rec_errors.append(rec_error)
+
         if tol:
-            rec_error = unnorml_rec_error / norm_tensor
-            rec_errors.append(rec_error)
 
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]

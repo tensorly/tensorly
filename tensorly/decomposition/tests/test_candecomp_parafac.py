@@ -44,7 +44,7 @@ def test_parafac(linesearch):
     assert_array_equal(rec_svd_fixed_mode_0.factors[0], fixed_tensor.factors[0], err_msg='Fixed mode 0 was modified in candecomp_parafac')
     assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
 
-    rec_orthogonal = parafac(tensor, rank=4, n_iter_max=100, init='svd', tol=10e-5, random_state=1234, orthogonalise=True, verbose=0, linesearch=linesearch)
+    rec_orthogonal = parafac(tensor, rank=6, n_iter_max=100, init='svd', tol=10e-5, random_state=1234, orthogonalise=True, verbose=0, linesearch=linesearch)
     rec_orthogonal = kruskal_to_tensor(rec_orthogonal)
     tol_norm_2 = 10e-2
     tol_max_abs = 10e-2
@@ -56,7 +56,7 @@ def test_parafac(linesearch):
             'abs Reconstruction error for orthogonalise=True too high')
     
     
-    rec_sparse, sparse_component = parafac(tensor, rank=4, n_iter_max=200, init='svd', tol=10e-5, sparsity = 0.9, linesearch=linesearch)
+    rec_sparse, sparse_component = parafac(tensor, rank=6, n_iter_max=200, init='svd', tol=10e-5, sparsity = 0.9, linesearch=linesearch)
     rec_sparse = kruskal_to_tensor(rec_sparse) + sparse_component
     tol_norm_2 = 10e-2
     tol_max_abs = 10e-2
@@ -117,13 +117,17 @@ def test_masked_parafac(linesearch):
 def test_parafac_linesearch():
     """ Test that we more rapidly converge to a solution with line search. """
     rng = check_random_state(1234)
+    eps = 10e-5
     tensor = T.tensor(rng.random_sample((5, 5, 5)))
-    fact = parafac(tensor, rank=2, init='random', random_state=1234, n_iter_max=10, tol=10e-9)
-    fact_ls = parafac(tensor, rank=2, init='random', random_state=1234, n_iter_max=10, tol=10e-9, linesearch=True)
+    kt = parafac(tensor, rank=5, init='random', random_state=1234, n_iter_max=10, tol=10e-9)
+    rec = tl.kruskal_to_tensor(kt)
+    kt_ls = parafac(tensor, rank=5, init='random', random_state=1234, n_iter_max=10, tol=10e-9, linesearch=True)
+    rec_ls = tl.kruskal_to_tensor(kt_ls)
 
-    diff = T.norm(tensor - kruskal_to_tensor(fact))
-    diff_ls = T.norm(tensor - kruskal_to_tensor(fact_ls))
-    assert_(diff_ls < diff, 'line search seems to have converged slower')
+    rec_error = T.norm(tensor - rec)/T.norm(tensor)
+    rec_error_ls = T.norm(tensor - rec_ls)/T.norm(tensor)
+    assert_(rec_error_ls - rec_error < eps, f'Relative reconstruction error with line-search={rec_error_ls} VS {rec_error} without.'
+                                             'CP with line-search seems to have converged more slowly.')
 
 
 def test_non_negative_parafac():
