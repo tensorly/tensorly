@@ -107,8 +107,8 @@ TensorLy: Tensor Learning in Python
 					&nbsp;&nbsp;&nbsp;&nbsp;author = {Jean Kossaifi and Yannis Panagakis and Anima Anandkumar and Maja Pantic}, <br/>
 					&nbsp;&nbsp;&nbsp;&nbsp;title = {TensorLy: Tensor Learning in Python}, <br/>
 					&nbsp;&nbsp;&nbsp;&nbsp;journal = {Journal of Machine Learning Research (JMLR)} <br/>
-               &nbsp;&nbsp;&nbsp;&nbsp;volume = {20},
-               &nbsp;&nbsp;&nbsp;&nbsp;number = {26},
+                    &nbsp;&nbsp;&nbsp;&nbsp;volume = {20},
+                    &nbsp;&nbsp;&nbsp;&nbsp;number = {26},
 					&nbsp;&nbsp;&nbsp;&nbsp;year = {2019}, <br/>
 					} <br/>
 				</code>
