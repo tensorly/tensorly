@@ -68,9 +68,9 @@ def test_tucker():
                      "expected {}".format(i, core.shape[i], rank))
 
     # try fixing the core
-    core_init = tl.copy(core)
-    core, factors = tucker(tensor, rank=ranks, init=(core, factors), fixed_core=True, n_iter_max=100, verbose=1)
-    assert_array_equal(core, core_init)
+    factors_init = [tl.copy(f) for f in factors]
+    _, factors = tucker(tensor, rank=ranks, init=(core, factors), fixed_factors=[1], n_iter_max=100, verbose=1)
+    assert_array_equal(factors[1], factors_init[1])
 
     # Random and SVD init should converge to a similar solution
     tol_norm_2 = 10e-1
