@@ -282,7 +282,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
 class Parafac2ALS:
 
     def __init__(self, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5):
+             tol=1e-8, random_state=None, verbose=False, n_iter_parafac=5):
         r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
         Computes a rank-`rank` PARAFAC2 decomposition of the third-order tensor defined by 
@@ -341,8 +341,6 @@ class Parafac2ALS:
         random_state : {None, int, np.random.RandomState}
         verbose : int, optional
             Level of verbosity
-        return_errors : bool, optional
-            Activate return of iteration errors
         n_iter_parafac: int, optional
             Number of PARAFAC iterations to perform for each PARAFAC2 iteration
 
@@ -382,11 +380,10 @@ class Parafac2ALS:
         self.tol=tol
         self.random_state=random_state
         self.verbose=verbose
-        self.return_errors=return_errors
         self.n_iter_parafac = n_iter_parafac
 
     def fit_transform(self, tensor):
-        self.decomposition_ = parafac2(tensor, rank = self.rank,
+        self.decomposition_, self.errors_ = parafac2(tensor, rank = self.rank,
                                        n_iter_max=self.n_iter_max,
                                        init=self.init,
                                        svd=self.svd,
@@ -394,7 +391,7 @@ class Parafac2ALS:
                                        tol=self.tol,
                                        random_state=self.random_state,
                                        verbose=self.verbose,
-                                       return_errors=self.return_errors,
+                                       return_errors=True,
                                        n_iter_parafac = self.n_iter_parafac)
         return self.decomposition_
 
