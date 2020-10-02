@@ -117,7 +117,7 @@ def test_masked_parafac(linesearch):
 def test_parafac_linesearch():
     """ Test that we more rapidly converge to a solution with line search. """
     rng = check_random_state(1234)
-    eps = 10e-5
+    eps = 10e-2
     tensor = T.tensor(rng.random_sample((5, 5, 5)))
     kt = parafac(tensor, rank=5, init='random', random_state=1234, n_iter_max=10, tol=10e-9)
     rec = tl.kruskal_to_tensor(kt)
