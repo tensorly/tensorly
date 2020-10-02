@@ -40,7 +40,7 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
     modes = list(range(1, order))
     
     for _ in range(n_repeat):
-        factor = tl.tensor(np.random.random_sample(size))
+        factor = tl.tensor(np.random.random_sample(size), **tl.context(tensor))
 
         for _ in range(n_iteration):
             for _ in range(order):

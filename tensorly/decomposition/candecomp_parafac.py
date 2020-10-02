@@ -714,7 +714,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
     return KruskalTensor((weights, factors))
 
 
-class CP:
+class CPALS:
     def __init__(self, rank, n_iter_max=100, tol=1e-08, 
                  init='svd', svd='numpy_svd',
                  l2_reg=0,
@@ -829,7 +829,7 @@ class CP:
         KruskalTensor
             decomposed tensor
         """
-        kruskal_tensor = parafac(tensor, rank=self.rank,
+        kruskal_tensor, errors = parafac(tensor, rank=self.rank,
                                  n_iter_max=self.n_iter_max,
                                  tol=self.tol,
                                  init=self.init,
@@ -841,7 +841,8 @@ class CP:
                                  random_state=self.random_state,
                                  verbose=self.verbose,
                                  return_errors=True)
-        self.kruskal_tensor_ = kruskal_tensor 
+        self.decomposition_ = kruskal_tensor 
+        self.errors_ = errors
         return kruskal_tensor
 
     def fit(self, tensor):

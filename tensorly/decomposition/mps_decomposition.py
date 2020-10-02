@@ -113,8 +113,8 @@ class TensorTrain:
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        self.tensor_train_ = matrix_product_state(tensor, rank=self.rank, verbose=self.verbose)
-        return self.tensor_train_
+        self.decomposition_ = matrix_product_state(tensor, rank=self.rank, verbose=self.verbose)
+        return self.decomposition_
 
     def fit(self, tensor):
         self.fit_transform(tensor)

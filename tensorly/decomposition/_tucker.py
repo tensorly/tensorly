@@ -380,16 +380,16 @@ class Tucker:
                                random_state=self.random_state,
                                mask=self.mask,
                                verbose=self.verbose)
-        self.tucker_tensor_ = tucker_tensor
+        self.decomposition_ = tucker_tensor
         return tucker_tensor[0]
 
     def transform(self, tensor):
-        _, factors = self.tucker_tensor_
+        _, factors = self.decomposition_
         return tlg.multi_mode_dot(tensor, factors, transpose=True)
 
     def inverse_transform(self, tensor):
-        _, factors = self.tucker_tensor_
+        _, factors = self.decomposition_
         return tlg.multi_mode_dot(tensor, factors)
 
     def __repr__(self):
-        return f'Rank-{self.rank} Tucker decomposition.'
+        return f'Rank-{self.rank} Tucker decomposition via HOOI.'
