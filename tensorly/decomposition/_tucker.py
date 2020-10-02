@@ -184,6 +184,7 @@ def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, in
         except:
             raise ValueError(f'Got fixed_factor={fixed_factors} but no appropriate Tucker tensor was passed for "init".')
         
+        fixed_factors = sorted(fixed_factors)
         modes_fixed, factors_fixed = zip(*[(i, f) for (i, f) in enumerate(factors) if i in fixed_factors])
         core = multi_mode_dot(core, factors_fixed, modes=modes_fixed)
         modes, factors = zip(*[(i, f) for (i, f) in enumerate(factors) if i not in fixed_factors])
