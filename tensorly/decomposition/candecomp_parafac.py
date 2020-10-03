@@ -2,6 +2,7 @@ import numpy as np
 import warnings
 
 import tensorly as tl
+from .._base_classes import DecompositionMixin
 from ..random import check_random_state, random_kruskal
 from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
@@ -629,7 +630,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
 
 
 def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', svd='numpy_svd',
-                       tol=10e-9, max_stagnation=20, random_state=None, verbose=1):
+                       tol=10e-9, max_stagnation=20, return_errors=False, random_state=None, verbose=1):
     """Randomised CP decomposition via sampled ALS
 
     Parameters
@@ -651,6 +652,8 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
                     if not zero, the maximum allowed number
                     of iterations with no decrease in fit
     random_state : {None, int, np.random.RandomState}, default is None
+    return_errors : bool, default is False
+        if True, return a list of all errors
     verbose : int, optional
         level of verbosity
 
@@ -711,10 +714,13 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
                         print('converged in {} iterations.'.format(iteration))
                     break
 
-    return KruskalTensor((weights, factors))
+    if return_errors:
+        return KruskalTensor((weights, factors)), rec_errors
+    else:
+        return KruskalTensor((weights, factors))
 
 
-class CPALS:
+class CP(DecompositionMixin):
     def __init__(self, rank, n_iter_max=100, tol=1e-08, 
                  init='svd', svd='numpy_svd',
                  l2_reg=0,
@@ -728,7 +734,7 @@ class CPALS:
                  cvg_criterion='abs_rec_error',
                  random_state=None, 
                  verbose=0):
-        """Candecomp-Parafac decomposition
+        """Candecomp-Parafac decomposition via Alternating-Least Square
 
             Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -743,6 +749,7 @@ class CPALS:
                 Maximum number of iteration
             init : {'svd', 'random'}, optional
                 Type of factor matrix initialization. See `initialize_factors`.
+            non_negative : bool, default is False
             svd : str, default is 'numpy_svd'
                 function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
             normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
@@ -806,6 +813,7 @@ class CPALS:
         self.l2_reg = l2_reg
         self.init = init
         self.linesearch = linesearch
+        self.non_negative = non_negative
         self.svd = svd
         self.normalize_factors = normalize_factors
         self.orthogonalise = orthogonalise
@@ -829,25 +837,93 @@ class CPALS:
         KruskalTensor
             decomposed tensor
         """
-        kruskal_tensor, errors = parafac(tensor, rank=self.rank,
-                                 n_iter_max=self.n_iter_max,
-                                 tol=self.tol,
-                                 init=self.init,
-                                 svd=self.svd,
-                                 normalize_factors=self.normalize_factors,
-                                 orthogonalise=self.orthogonalise,
-                                 mask=self.mask,
-                                 cvg_criterion=self.cvg_criterion,
-                                 random_state=self.random_state,
-                                 verbose=self.verbose,
-                                 return_errors=True)
+        if self.non_negative:
+            kruskal_tensor, errors = non_negative_parafac(tensor, rank=self.rank,
+                            n_iter_max=self.n_iter_max,
+                            tol=self.tol,
+                            init=self.init,
+                            svd=self.svd,
+                            normalize_factors=self.normalize_factors,
+                            orthogonalise=self.orthogonalise,
+                            mask=self.mask,
+                            cvg_criterion=self.cvg_criterion,
+                            random_state=self.random_state,
+                            verbose=self.verbose,
+                            return_errors=True)
+        else:
+            kruskal_tensor, errors = parafac(tensor, rank=self.rank,
+                            n_iter_max=self.n_iter_max,
+                            tol=self.tol,
+                            init=self.init,
+                            svd=self.svd,
+                            normalize_factors=self.normalize_factors,
+                            orthogonalise=self.orthogonalise,
+                            mask=self.mask,
+                            linesearch = self.linesearch,
+                            cvg_criterion=self.cvg_criterion,
+                            random_state=self.random_state,
+                            verbose=self.verbose,
+                            return_errors=True)
         self.decomposition_ = kruskal_tensor 
         self.errors_ = errors
-        return kruskal_tensor
-
-    def fit(self, tensor):
-        self.fit_transform(tensor)
-        return self
+        return self.decomposition_
 
     def __repr__(self):
         return f'Rank-{self.rank} CP decomposition.'
+
+
+
+class RandomisedCP(DecompositionMixin):
+    
+    def __init__(self, rank, n_samples, n_iter_max=100, init='random', svd='numpy_svd',
+                       tol=10e-9, max_stagnation=20, random_state=None, verbose=1):
+        """Randomised CP decomposition via sampled ALS
+
+        Parameters
+        ----------
+        tensor : ndarray
+        rank   : int
+                number of components
+        n_samples : int
+                    number of samples per ALS step
+        n_iter_max : int
+                    maximum number of iteration
+        init : {'svd', 'random'}, optional
+        svd : str, default is 'numpy_svd'
+            function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        tol : float, optional
+            tolerance: the algorithm stops when the variation in
+            the reconstruction error is less than the tolerance
+        max_stagnation: int, optional, default is 0
+                        if not zero, the maximum allowed number
+                        of iterations with no decrease in fit
+        random_state : {None, int, np.random.RandomState}, default is None
+        verbose : int, optional
+            level of verbosity
+
+        Returns
+        -------
+        factors : ndarray list
+                list of positive factors of the CP decomposition
+                element `i` is of shape ``(tensor.shape[i], rank)``
+
+        References
+        ----------
+        .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
+        "A Practical Randomized CP Tensor Decomposition",
+        """
+        self.rank=rank
+        self.n_samples=n_samples
+        self.n_iter_max=n_iter_max
+        self.init=init
+        self.svd=svd
+        self.tol=tol
+        self.max_stagnation=max_stagnation
+        self.random_state=random_state
+        self.verbose=verbose
+
+    def fit_transform(self, tensor):
+        self.decomposition_, self.errors_ = randomised_parafac(tensor, rank=self.rank, n_samples=self.n_samples,
+                n_iter_max=self.n_iter_max, init=self.init, svd=self.svd, tol=self.tol, return_errors=True,
+                max_stagnation=self.max_stagnation, random_state=self.random_state, verbose=self.verbose)
+        return self.decomposition_

@@ -1,4 +1,5 @@
 import tensorly as tl
+from .._base_classes import DecompositionMixin
 
 def matrix_product_state(input_tensor, rank, verbose=False):
     """MPS decomposition via recursive SVD
@@ -83,7 +84,7 @@ def matrix_product_state(input_tensor, rank, verbose=False):
     return factors
 
 
-class TensorTrain:
+class TensorTrain(DecompositionMixin):
     def __init__(self, rank, verbose=False):
         """MPS decomposition via recursive SVD
 
@@ -115,13 +116,3 @@ class TensorTrain:
     def fit_transform(self, tensor):
         self.decomposition_ = matrix_product_state(tensor, rank=self.rank, verbose=self.verbose)
         return self.decomposition_
-
-    def fit(self, tensor):
-        self.fit_transform(tensor)
-        return self
-
-    def __repr__(self):
-        return f'Rank-{self.rank} Tensor-Train decomposition.'
-
-
-    

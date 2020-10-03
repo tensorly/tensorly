@@ -1,4 +1,5 @@
 import tensorly as tl
+from .._base_classes import DecompositionMixin
 from tensorly.tenalg import outer
 from tensorly.metrics.regression import standard_deviation
 import numpy as np
@@ -113,7 +114,7 @@ def parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10, verbose=0
 
 
 
-class CPPower:
+class CPPower(DecompositionMixin):
     def __init__(self, rank, n_repeat=10, n_iteration=10, verbose=0):
         """CP Decomposition via Robust Tensor Power Iteration
 
@@ -164,10 +165,6 @@ class CPPower:
                                                  verbose=self.verbose)
         self.decomposition_ = kruskal_tensor 
         return kruskal_tensor
-
-    def fit(self, tensor):
-        self.fit_transform(tensor)
-        return self
 
     def __repr__(self):
         return f'Rank-{self.rank} CP decomposition via Robust Tensor Power Iteration.'

@@ -1,4 +1,5 @@
 import tensorly as tl
+from .._base_classes import DecompositionMixin
 from tensorly.random import random_parafac2
 from tensorly import backend as T
 from . import parafac
@@ -279,7 +280,8 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     else:
         return parafac2_tensor
 
-class Parafac2ALS:
+
+class Parafac2(DecompositionMixin):
 
     def __init__(self, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
              tol=1e-8, random_state=None, verbose=False, n_iter_parafac=5):
@@ -355,9 +357,6 @@ class Parafac2ALS:
             * projection_matrices : List of projection matrices used to create evolving
                 factors.
             
-        errors : list
-            A list of reconstruction errors at each iteration of the algorithms.
-
         References
         ----------
         .. [1] Kiers, H.A.L., ten Berge, J.M.F. and Bro, R. (1999), 
@@ -394,13 +393,3 @@ class Parafac2ALS:
                                        return_errors=True,
                                        n_iter_parafac = self.n_iter_parafac)
         return self.decomposition_
-
-    def fit(self, tensor):
-        self.fit_transform(tensor)
-        return self
-
-    def __repr__(self):
-        return f'Rank-{self.rank} PARAFAC2 decomposition.'
-
-
-    
