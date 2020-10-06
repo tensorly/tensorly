@@ -4,6 +4,7 @@ Core operations on Kruskal tensors.
 
 from . import backend as T
 from .base import fold, tensor_to_vec
+from ._factorized_tensor import FactorizedTensor
 from .tenalg import khatri_rao, multi_mode_dot, inner
 
 import warnings
@@ -13,7 +14,7 @@ from collections.abc import Mapping
 
 # License: BSD 3 clause
 
-class KruskalTensor(Mapping):
+class KruskalTensor(FactorizedTensor):
     def __init__(self, kruskal_tensor):
         super().__init__()
 
@@ -50,6 +51,91 @@ class KruskalTensor(Mapping):
     def __repr__(self):
         message = '(weights, factors) : rank-{} KruskalTensor of shape {} '.format(self.rank, self.shape)
         return message
+
+    def to_tensor(self):
+        return kruskal_to_tensor(self)
+
+    def to_vec(self):
+        return kruskal_to_vec(self)
+    
+    def to_unfolded(self, mode):
+        return kruskal_to_unfolded(self, mode)
+
+    def mode_dot(self, matrix_or_vector, mode, keep_dim=False, copy=False):
+        """n-mode product of a Kruskal tensor and a matrix or vector at the specified mode
+
+        Parameters
+        ----------
+        kruskal_tensor : tl.KruskalTensor or (core, factors)
+                        
+        matrix_or_vector : ndarray
+            1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
+            matrix or vectors to which to n-mode multiply the tensor
+        mode : int
+
+        Returns
+        -------
+        KruskalTensor = (core, factors)
+            `mode`-mode product of `tensor` by `matrix_or_vector`
+            * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
+            * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
+
+        See also
+        --------
+        kruskal_multi_mode_dot : chaining several mode_dot in one call
+        """
+        return kruskal_mode_dot(self, matrix_or_vector, mode, keep_dim=False, copy=False)
+
+    def norm(self):
+        """Returns the l2 norm of a Kruskal tensor
+
+        Parameters
+        ----------
+        kruskal_tensor : tl.KruskalTensor or (core, factors)
+
+        Returns
+        -------
+        l2-norm : int
+
+        Notes
+        -----
+        This is ||kruskal_to_tensor(factors)||^2 
+        
+        You can see this using the fact that
+        khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
+        """
+        return kruskal_norm(self)
+    
+    def normalize(self, inplace=True):
+        """Normalizes the factors to unit length
+
+        Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
+        where the columns of each `V_k` are normalized to unit Euclidean length
+        from the columns of `U_k` with the normalizing constants absorbed into
+        `weights`. In the special case of a symmetric tensor, `weights` holds the
+        eigenvalues of the tensor.
+
+        Parameters
+        ----------
+        kruskal_tensor : KruskalTensor = (weight, factors)
+            factors is list of matrices, all with the same number of columns
+            i.e.::
+                for u in U:
+                    u[i].shape == (s_i, R)
+
+            where `R` is fixed while `s_i` can vary with `i`
+
+        inplace : bool, default is True
+            if False, returns a normalized Copy
+            otherwise the tensor modifies itself and returns itself
+
+        Returns
+        -------
+        KruskalTensor = (normalisation_weights, normalised_factors)
+            returns itself if inplace is False, a normalized copy otherwise
+        """
+        self.weights, self.factors = kruskal_normalize(self)
+
 
 
 def _validate_kruskal_tensor(kruskal_tensor):
@@ -101,7 +187,7 @@ def _validate_kruskal_tensor(kruskal_tensor):
     return tuple(shape), rank
 
 
-def kruskal_normalise(kruskal_tensor):
+def kruskal_normalize(kruskal_tensor):
     """Returns kruskal_tensor with factors normalised to unit length
 
     Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,

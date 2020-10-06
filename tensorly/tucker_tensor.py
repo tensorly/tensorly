@@ -2,6 +2,7 @@
 Core operations on Tucker tensors.
 """
 
+from ._factorized_tensor import FactorizedTensor
 from .base import unfold, tensor_to_vec
 from .tenalg import multi_mode_dot, mode_dot
 from . import backend as tl
@@ -166,6 +167,69 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
         else:
             factors[mode] = tl.dot(matrix_or_vector, factors[mode])            
 
-        return core, factors
-        #return TuckerTensor(core, factors)
+        return TuckerTensor((core, factors))
+
+
+class TuckerTensor(FactorizedTensor):
+    def __init__(self, tucker_tensor):
+        super().__init__()
+
+        shape, rank = _validate_tucker_tensor(tucker_tensor)
+        core, factors = tucker_tensor
+        self.shape = tuple(shape)
+        self.rank = tuple(rank)
+        self.factors = factors
+        self.core = core
     
+    def __getitem__(self, index):
+        if index == 0:
+            return self.core
+        elif index == 1:
+            return self.factors
+        else: 
+            raise IndexError('You tried to access index {} of a Tucker tensor.\n'
+                             'You can only access index 0 and 1 of a Tucker tensor'
+                             '(corresponding respectively to core and factors)'.format(index))
+    
+    def __iter__(self):
+        yield self.core
+        yield self.factors
+        
+    def __len__(self):
+        return 2
+    
+    def __repr__(self):
+        message = 'Decomposed rank-{} TuckerTensor of shape {} '.format(self.rank, self.shape)
+        return message
+    
+    def to_tensor(self):
+        return tucker_to_tensor(self)
+    
+    def to_unfolded(self, mode):
+        return tucker_to_unfolded(self, mode)
+    
+    def to_vec(self):
+        return tucker_to_vec(self)
+
+    def mode_dot(self, matrix_or_vector, mode, keep_dim=False, copy=False):
+        """n-mode product with a matrix or vector at the specified mode
+
+        Parameters
+        ----------                        
+        matrix_or_vector : ndarray
+            1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
+            matrix or vectors to which to n-mode multiply the tensor
+        mode : int
+
+        Returns
+        -------
+        TuckerTensor = (core, factors)
+            `mode`-mode product of `tensor` by `matrix_or_vector`
+            * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
+            * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
+
+        See also
+        --------
+        tucker_multi_mode_dot : chaining several mode_dot in one call
+        """
+        return tucker_mode_dot(self, matrix_or_vector, mode, keep_dim=keep_dim, copy=copy)

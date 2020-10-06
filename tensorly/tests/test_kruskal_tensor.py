@@ -4,7 +4,7 @@ import tensorly as tl
 from ..tenalg import khatri_rao, mode_dot
 from ..kruskal_tensor import (kruskal_to_tensor, kruskal_to_unfolded, 
                               kruskal_to_vec, _validate_kruskal_tensor,
-                              kruskal_normalise, KruskalTensor,
+                              kruskal_normalize, KruskalTensor,
                               kruskal_mode_dot, unfolding_dot_khatri_rao,
                               kruskal_norm)
 from ..base import unfold, tensor_to_vec
@@ -13,11 +13,11 @@ from tensorly.testing import (assert_equal, assert_raises, assert_,
                               assert_array_equal, assert_array_almost_equal)
 
 
-def test_kruskal_normalise():
+def test_kruskal_normalize():
     shape = (3, 4, 5)
     rank = 4
     kruskal_tensor = random_kruskal(shape, rank)
-    weights, factors = kruskal_normalise(kruskal_tensor)
+    weights, factors = kruskal_normalize(kruskal_tensor)
     expected_norm = tl.ones(rank)
     for f in factors:
         assert_array_almost_equal(tl.norm(f, axis=0), expected_norm)
@@ -29,7 +29,7 @@ def test_validate_kruskal_tensor():
     true_shape = (3, 4, 5)
     true_rank = 3
     kruskal_tensor = random_kruskal(true_shape, true_rank)
-    (weights, factors) = kruskal_normalise(kruskal_tensor)
+    (weights, factors) = kruskal_normalize(kruskal_tensor)
     
     # Check correct rank and shapes are returned
     shape, rank = _validate_kruskal_tensor((weights, factors))

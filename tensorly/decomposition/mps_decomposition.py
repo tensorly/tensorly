@@ -1,5 +1,5 @@
 import tensorly as tl
-from .._base_classes import DecompositionMixin
+from ._base_decomposition import DecompositionMixin
 
 def matrix_product_state(input_tensor, rank, verbose=False):
     """MPS decomposition via recursive SVD

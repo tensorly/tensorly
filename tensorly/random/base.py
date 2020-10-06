@@ -1,8 +1,8 @@
 import numpy as np
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
-                              kruskal_normalise)
-from ..tucker_tensor import tucker_to_tensor
-from ..mps_tensor import mps_to_tensor
+                              kruskal_normalize)
+from ..tucker_tensor import tucker_to_tensor, TuckerTensor
+from ..mps_tensor import mps_to_tensor, MPSTensor
 from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor
 from .. import backend as T
 import warnings
@@ -39,6 +39,12 @@ def check_random_state(seed):
         return seed
 
     raise ValueError('Seed should be None, int or np.random.RandomState')
+
+def random_tensor(shape, random_state=None, **context):
+    """Create a random tensor
+    """
+    rns = check_random_state(random_state)
+    return T.tensor(rns.random_sample(shape), **context)
 
 def random_parafac2(shapes, rank, full=False, random_state=None,
                     normalise_factors=True, **context):
@@ -117,7 +123,7 @@ def random_kruskal(shape, rank, full=False, orthogonal=False,
     if full:
         return kruskal_to_tensor((weights, factors))
     elif normalise_factors:
-        return kruskal_normalise((weights, factors))
+        return kruskal_normalize((weights, factors))
     else:
         return KruskalTensor((weights, factors))
 
@@ -169,7 +175,7 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
     if full:
         return tucker_to_tensor((core, factors))
     else:
-        return core, factors
+        return TuckerTensor((core, factors))
 
 def random_mps(shape, rank, full=False, random_state=None, **context):
     """Generates a random MPS/ttrain tensor
@@ -222,4 +228,4 @@ def random_mps(shape, rank, full=False, random_state=None, **context):
     if full:
         return mps_to_tensor(factors)
     else:
-        return factors
+        return MPSTensor(factors)

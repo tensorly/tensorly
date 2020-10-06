@@ -2,12 +2,12 @@ import numpy as np
 import warnings
 
 import tensorly as tl
-from .._base_classes import DecompositionMixin
+from ._base_decomposition import DecompositionMixin
 from ..random import check_random_state, random_kruskal
 from ..base import unfold
 from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
                               unfolding_dot_khatri_rao, kruskal_norm,
-                              kruskal_normalise)
+                              kruskal_normalize)
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -93,7 +93,7 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
         kt.factors = [tl.abs(f) for f in kt[1]]
 
     if normalize_factors:
-        kt = kruskal_normalise(kt)
+        kt = kruskal_normalize(kt)
 
     return kt
 
@@ -518,7 +518,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             factors[mode] = factor
 
         if normalize_factors:
-            weights, factors = kruskal_normalise((weights, factors))
+            weights, factors = kruskal_normalize((weights, factors))
 
         if tol:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>

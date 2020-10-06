@@ -10,7 +10,6 @@ from .. import backend as T
 # License: BSD 3 clause
 
 
-
 class KruskalRegressor():
     """Kruskal tensor regression
 

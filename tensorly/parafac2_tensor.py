@@ -6,11 +6,10 @@
 
 from . import backend as T
 from .base import unfold, tensor_to_vec
+from ._factorized_tensor import FactorizedTensor
 import warnings
-from collections.abc import Mapping
 
-
-class Parafac2Tensor(Mapping):
+class Parafac2Tensor(FactorizedTensor):
     """A wrapper class for the PARAFAC2 decomposition.
     """
     def __init__(self, parafac2_tensor):

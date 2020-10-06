@@ -1,5 +1,5 @@
 import tensorly as tl
-from .._base_classes import DecompositionMixin
+from ._base_decomposition import DecompositionMixin
 from tensorly.random import random_parafac2
 from tensorly import backend as T
 from . import parafac

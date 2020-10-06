@@ -1,5 +1,5 @@
 import tensorly as tl
-from .._base_classes import DecompositionMixin
+from ._base_decomposition import DecompositionMixin
 from tensorly.tenalg import outer
 from tensorly.metrics.regression import standard_deviation
 import numpy as np

@@ -1,5 +1,5 @@
 import tensorly as tl
-from .._base_classes import DecompositionMixin
+from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
 from ..tucker_tensor import tucker_to_tensor

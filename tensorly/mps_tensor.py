@@ -3,7 +3,7 @@ Core operations on tensors in Matrix Product State (MPS) format, also known as T
 """
 
 import tensorly as tl
-
+from ._factorized_tensor import FactorizedTensor
 
 def _validate_mps_tensor(mps_tensor):
     factors = mps_tensor
@@ -115,3 +115,38 @@ def mps_to_vec(factors):
 
     return tl.tensor_to_vec(mps_to_tensor(factors))
 
+
+class MPSTensor(FactorizedTensor):
+    def __init__(self, factors, inplace=False):
+        super().__init__()
+        
+        # Will raise an error if invalid
+        shape, rank = _validate_mps_tensor(factors)
+
+        self.shape = tuple(shape)
+        self.rank = tuple(rank)
+        self.factors = factors
+    
+    def __getitem__(self, index):
+        return self.factors[index]
+    
+    def __iter__(self):
+        for index in range(len(self)):
+            yield self[index]
+        
+    def __len__(self):
+        return len(self.factors)
+    
+    def __repr__(self):
+        message = 'factors list : rank-{} matrix-product-state tensor of shape {} '.format(
+            self.rank, self.shape)
+        return message
+    
+    def to_tensor(self):
+        return mps_to_tensor(self)
+    
+    def to_unfolding(self, mode):
+        return mps_to_unfolded(self, mode)
+    
+    def to_vec(self):
+        return mps_to_vec(self)
