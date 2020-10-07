@@ -130,6 +130,9 @@ class MPSTensor(FactorizedTensor):
     def __getitem__(self, index):
         return self.factors[index]
     
+    def __setitem__(self, index, value):
+        self.factors[index] = value
+    
     def __iter__(self):
         for index in range(len(self)):
             yield self[index]

@@ -41,6 +41,16 @@ class KruskalTensor(FactorizedTensor):
                              'You can only access index 0 and 1 of a Kruskal tensor'
                              '(corresponding respectively to the weights and factors)'.format(index))
     
+    def __setitem__(self, index, value):
+        if index == 0:
+            self.weights = value
+        elif index == 1:
+            self.factors = value
+        else: 
+            raise IndexError('You tried to set the value at index {} of a Kruskal tensor.\n'
+                             'You can only set index 0 and 1 of a Kruskal tensor'
+                             '(corresponding respectively to the weights and factors)'.format(index))
+
     def __iter__(self):
         yield self.weights
         yield self.factors

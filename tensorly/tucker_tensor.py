@@ -190,7 +190,17 @@ class TuckerTensor(FactorizedTensor):
             raise IndexError('You tried to access index {} of a Tucker tensor.\n'
                              'You can only access index 0 and 1 of a Tucker tensor'
                              '(corresponding respectively to core and factors)'.format(index))
-    
+
+    def __setitem__(self, index, value):
+        if index == 0:
+            self.core = value
+        elif index == 1:
+            self.factors = value
+        else: 
+            raise IndexError('You tried to set index {} of a Tucker tensor.\n'
+                             'You can only set index 0 and 1 of a Tucker tensor'
+                             '(corresponding respectively to core and factors)'.format(index))
+
     def __iter__(self):
         yield self.core
         yield self.factors
