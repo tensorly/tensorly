@@ -1,5 +1,5 @@
 import tensorly as tl
-from ...random import check_random_state, random_kruskal
+from ...random import check_random_state, random_cp
 from ...testing import assert_
 
 from .._cp_power import parafac_power_iteration
@@ -13,10 +13,10 @@ def test_parafac_power_iteration():
     
     shape = (5, 3, 4)
     rank = 4
-    tensor = random_kruskal(shape, rank=rank, full=True, random_state=rng)
+    tensor = random_cp(shape, rank=rank, full=True, random_state=rng)
     ktensor = parafac_power_iteration(tensor, rank=10, n_repeat=10, n_iteration=10)
 
-    rec = tl.kruskal_to_tensor(ktensor)
+    rec = tl.cp_to_tensor(ktensor)
     error = tl.norm(rec - tensor, 2)/tl.norm(tensor, 2)
     assert_(error < tol_norm_2,
             f'Norm 2 of reconstruction error={error} higher than tol={tol_norm_2}.')

@@ -1,7 +1,7 @@
 import numpy as np
 
 import tensorly as tl
-from ...random import random_kruskal, check_random_state
+from ...random import random_cp, check_random_state
 from ..robust_decomposition import robust_pca
 from ...testing import assert_array_equal, assert_, assert_array_almost_equal
 

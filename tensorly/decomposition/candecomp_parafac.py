@@ -3,11 +3,11 @@ import warnings
 
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ..random import check_random_state, random_kruskal
+from ..random import check_random_state, random_cp
 from ..base import unfold
-from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
-                              unfolding_dot_khatri_rao, kruskal_norm,
-                              kruskal_normalize)
+from ..cp_tensor import (cp_to_tensor, CPTensor,
+                              unfolding_dot_khatri_rao, cp_norm,
+                              cp_normalize)
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -16,7 +16,7 @@ from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
 
 # License: BSD 3 clause
 
-def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
+def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
                        non_negative=False, normalize_factors=False):
     r"""Initialize factors used in `parafac`.
 
@@ -37,16 +37,16 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
     Returns
     -------
-    factors : KruskalTensor
-        An initial kruskal tensor.
+    factors : CPTensor
+        An initial cp tensor.
 
     """
     rng = check_random_state(random_state)
 
     if init == 'random':
         # factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
-        # kt = KruskalTensor((None, factors))
-        return random_kruskal(tl.shape(tensor), rank, normalise_factors=False)
+        # kt = CPTensor((None, factors))
+        return random_cp(tl.shape(tensor), rank, normalise_factors=False)
 
     elif init == 'svd':
         try:
@@ -75,16 +75,16 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
 
             factors.append(U[:, :rank])
 
-        kt = KruskalTensor((None, factors))
+        kt = CPTensor((None, factors))
 
-    elif isinstance(init, (tuple, list, KruskalTensor)):
+    elif isinstance(init, (tuple, list, CPTensor)):
         # TODO: Test this
         try:
-            kt = KruskalTensor(init)
+            kt = CPTensor(init)
         except ValueError:
             raise ValueError(
                 'If initialization method is a mapping, then it must '
-                'be possible to convert it to a KruskalTensor instance'
+                'be possible to convert it to a CPTensor instance'
             )
     else:
         raise ValueError('Initialization method "{}" not recognized'.format(init))
@@ -93,7 +93,7 @@ def initialize_kruskal(tensor, rank, init='svd', svd='numpy_svd', random_state=N
         kt.factors = [tl.abs(f) for f in kt[1]]
 
     if normalize_factors:
-        kt = kruskal_normalize(kt)
+        kt = cp_normalize(kt)
 
     return kt
 
@@ -151,7 +151,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
 
     # If we have to update the mask we already have to build the full tensor
     if (mask is not None) or (mttkrp is None):
-        low_rank_component = kruskal_to_tensor((weights, factors))
+        low_rank_component = cp_to_tensor((weights, factors))
 
         # Update the tensor based on the mask
         if mask is not None:
@@ -166,13 +166,13 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
         unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
     else:
         if sparsity:
-            low_rank_component = kruskal_to_tensor((weights, factors))
+            low_rank_component = cp_to_tensor((weights, factors))
             sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
         
             unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
         else:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-            factors_norm = kruskal_norm((weights, factors))
+            factors_norm = cp_norm((weights, factors))
 
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
@@ -229,7 +229,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
        If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
     sparsity : float or int
-        If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+        If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
     fixed_modes : list, default is []
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
@@ -241,7 +241,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
     Returns
     -------
-    KruskalTensor : (weight, factors)
+    CPTensor : (weight, factors)
         * weights : 1D array of shape (rank, )
             all ones if normalize_factors is False (default), 
             weights of the (normalized) factors otherwise
@@ -271,15 +271,15 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
         acc_fail = 0 # How many times acceleration have failed
         max_fail = 4 # Increase acc_pow with one after max_fail failure
 
-    weights, factors = initialize_kruskal(tensor, rank, init=init, svd=svd,
+    weights, factors = initialize_cp(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
                                  normalize_factors=normalize_factors)
 
     if mask is not None and init == "svd":
         for _ in range(svd_mask_repeats):
-            tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
+            tensor = tensor*mask + tl.cp_to_tensor((weights, factors), mask=1-mask)
 
-            weights, factors = initialize_kruskal(tensor, rank, init=init, svd=svd, random_state=random_state, normalize_factors=normalize_factors)
+            weights, factors = initialize_cp(tensor, rank, init=init, svd=svd, random_state=random_state, normalize_factors=normalize_factors)
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
@@ -344,7 +344,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
         else:
             if mask is not None:
-                tensor = tensor*mask + tl.kruskal_to_tensor((weights, factors), mask=1-mask)
+                tensor = tensor*mask + tl.cp_to_tensor((weights, factors), mask=1-mask)
 
         # Start line search if requested.
         if line_iter is True:
@@ -404,18 +404,18 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
 
-    kruskal_tensor = KruskalTensor((weights, factors))
+    cp_tensor = CPTensor((weights, factors))
     
     if sparsity:
         sparse_component = sparsify_tensor(tensor -\
-                                           kruskal_to_tensor((weights, factors)),\
+                                           cp_to_tensor((weights, factors)),\
                                            sparsity)
-        kruskal_tensor = (kruskal_tensor, sparse_component)
+        cp_tensor = (cp_tensor, sparse_component)
 
     if return_errors:
-        return kruskal_tensor, rec_errors
+        return cp_tensor, rec_errors
     else:
-        return kruskal_tensor
+        return cp_tensor
     
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
@@ -471,7 +471,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
 
-    weights, factors = initialize_kruskal(tensor, rank, init=init, svd=svd,
+    weights, factors = initialize_cp(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
                                  non_negative=True,
                                  normalize_factors=normalize_factors)
@@ -506,7 +506,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                     accum = tl.dot(tl.transpose(factors[e]), factors[e])
 
             if mask is not None:
-                tensor = tensor*mask + tl.kruskal_to_tensor((None, factors), mask=1-mask)
+                tensor = tensor*mask + tl.cp_to_tensor((None, factors), mask=1-mask)
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
@@ -518,11 +518,11 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             factors[mode] = factor
 
         if normalize_factors:
-            weights, factors = kruskal_normalize((weights, factors))
+            weights, factors = cp_normalize((weights, factors))
 
         if tol:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-            factors_norm = kruskal_norm((weights, factors))
+            factors_norm = cp_norm((weights, factors))
 
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
@@ -550,12 +550,12 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
 
-    kruskal_tensor = KruskalTensor((weights, factors))
+    cp_tensor = CPTensor((weights, factors))
 
     if return_errors:
-        return kruskal_tensor, rec_errors
+        return cp_tensor, rec_errors
     else:
-        return kruskal_tensor
+        return cp_tensor
 
 def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
                       return_sampled_rows=False, random_state=None):
@@ -669,7 +669,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
        "A Practical Randomized CP Tensor Decomposition",
     """
     rng = check_random_state(random_state)
-    weights, factors = initialize_kruskal(tensor, rank, init=init, svd=svd, random_state=random_state)
+    weights, factors = initialize_cp(tensor, rank, init=init, svd=svd, random_state=random_state)
     rec_errors = []
     n_dims = tl.ndim(tensor)
     norm_tensor = tl.norm(tensor, 2)
@@ -695,7 +695,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
             factors[mode] = factor
 
         if max_stagnation or tol:
-            rec_error = tl.norm(tensor - kruskal_to_tensor((weights, factors)), 2) / norm_tensor
+            rec_error = tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
             if not min_error or rec_error < min_error:
                 min_error = rec_error
                 stagnation = -1
@@ -715,9 +715,9 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
                     break
 
     if return_errors:
-        return KruskalTensor((weights, factors)), rec_errors
+        return CPTensor((weights, factors)), rec_errors
     else:
-        return KruskalTensor((weights, factors))
+        return CPTensor((weights, factors))
 
 
 class CP(DecompositionMixin):
@@ -773,7 +773,7 @@ class CP(DecompositionMixin):
                 If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
                 If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
             sparsity : float or int
-                If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = kruskal_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+                If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
             fixed_modes : list, default is []
                 A list of modes for which the initial value is not modified.
                 The last mode cannot be fixed due to error computation.
@@ -785,7 +785,7 @@ class CP(DecompositionMixin):
 
             Returns
             -------
-            KruskalTensor : (weight, factors)
+            CPTensor : (weight, factors)
                 * weights : 1D array of shape (rank, )
                     all ones if normalize_factors is False (default), 
                     weights of the (normalized) factors otherwise
@@ -834,11 +834,11 @@ class CP(DecompositionMixin):
 
         Returns
         -------
-        KruskalTensor
+        CPTensor
             decomposed tensor
         """
         if self.non_negative:
-            kruskal_tensor, errors = non_negative_parafac(tensor, rank=self.rank,
+            cp_tensor, errors = non_negative_parafac(tensor, rank=self.rank,
                             n_iter_max=self.n_iter_max,
                             tol=self.tol,
                             init=self.init,
@@ -851,7 +851,7 @@ class CP(DecompositionMixin):
                             verbose=self.verbose,
                             return_errors=True)
         else:
-            kruskal_tensor, errors = parafac(tensor, rank=self.rank,
+            cp_tensor, errors = parafac(tensor, rank=self.rank,
                             n_iter_max=self.n_iter_max,
                             tol=self.tol,
                             init=self.init,
@@ -864,7 +864,7 @@ class CP(DecompositionMixin):
                             random_state=self.random_state,
                             verbose=self.verbose,
                             return_errors=True)
-        self.decomposition_ = kruskal_tensor 
+        self.decomposition_ = cp_tensor 
         self.errors_ = errors
         return self.decomposition_
 

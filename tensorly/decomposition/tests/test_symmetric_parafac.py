@@ -15,10 +15,10 @@ def test_symmetric_parafac_power_iteration():
     rank = 4
     true_factor = tl.tensor(rng.random_sample((size, rank)))
     true_weights = tl.ones(rank)
-    tensor = tl.kruskal_to_tensor((true_weights, [true_factor]*3))
+    tensor = tl.cp_to_tensor((true_weights, [true_factor]*3))
     weights, factor = symmetric_parafac_power_iteration(tensor, rank=10, n_repeat=10, n_iteration=10)
 
-    rec = tl.kruskal_to_tensor((weights, [factor]*3))
+    rec = tl.cp_to_tensor((weights, [factor]*3))
     error = tl.norm(rec - tensor, 2)
     error /= tl.norm(tensor, 2)
     assert_(error < tol_norm_2,

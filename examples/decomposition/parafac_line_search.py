@@ -8,7 +8,7 @@ Example on how to use :func:`tensorly.decomposition.parafac` with line search to
 from time import time
 import numpy as np
 import tensorly as tl
-from tensorly.random import random_kruskal
+from tensorly.random import random_cp
 from tensorly.decomposition import parafac
 import matplotlib.pyplot as plt
 
@@ -17,11 +17,11 @@ err = np.empty_like(tol)
 err_ls = np.empty_like(tol)
 tt = np.empty_like(tol)
 tt_ls = np.empty_like(tol)
-tensor = random_kruskal((10, 10, 10), 3, random_state=1234, full=True)
+tensor = random_cp((10, 10, 10), 3, random_state=1234, full=True)
 
 # Get a high-accuracy decomposition for comparison
 fac = parafac(tensor, rank=3, n_iter_max=2000000, tol=1.0e-15, linesearch=True)
-err_min = tl.norm(tl.kruskal_to_tensor(fac) - tensor)
+err_min = tl.norm(tl.cp_to_tensor(fac) - tensor)
 
 for ii, toll in enumerate(tol):
 	# Run PARAFAC decomposition without line search and time
@@ -34,8 +34,8 @@ for ii, toll in enumerate(tol):
     tt_ls[ii] = time() - start
 
     # Calculate the error of both decompositions
-    err[ii] = tl.norm(tl.kruskal_to_tensor(fac) - tensor)
-    err_ls[ii] = tl.norm(tl.kruskal_to_tensor(fac_ls) - tensor)
+    err[ii] = tl.norm(tl.cp_to_tensor(fac) - tensor)
+    err_ls[ii] = tl.norm(tl.cp_to_tensor(fac_ls) - tensor)
 
 plt.loglog(tt, err - err_min, '.', label="No line search")
 plt.loglog(tt_ls, err_ls - err_min, '.r', label="Line search")

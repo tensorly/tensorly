@@ -4,7 +4,7 @@ from tensorly.random import random_parafac2
 from tensorly import backend as T
 from . import parafac
 from ..parafac2_tensor import parafac2_to_slice, Parafac2Tensor, _validate_parafac2_tensor
-from ..kruskal_tensor import KruskalTensor
+from ..cp_tensor import CPTensor
 from ..base import unfold
 
 # Authors: Marie Roald
@@ -18,7 +18,7 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
     ----------
     tensor_slices : Iterable of ndarray
     rank : int
-    init : {'random', 'svd', KruskalTensor, Parafac2Tensor}, optional
+    init : {'random', 'svd', CPTensor, Parafac2Tensor}, optional
     random_state : `np.random.RandomState`
 
     Returns
@@ -49,9 +49,9 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
         projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
         return Parafac2Tensor((None, (A, B, C), projections))
 
-    elif isinstance(init, (tuple, list, Parafac2Tensor, KruskalTensor)):
+    elif isinstance(init, (tuple, list, Parafac2Tensor, CPTensor)):
         try:
-            decomposition = Parafac2Tensor.from_kruskaltensor(init, parafac2_tensor_ok=True)
+            decomposition = Parafac2Tensor.from_CPTensor(init, parafac2_tensor_ok=True)
         except ValueError:
             raise ValueError(
                 'If initialization method is a mapping, then it must '
@@ -172,7 +172,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         Number of components.
     n_iter_max : int
         Maximum number of iteration
-    init : {'svd', 'random', KruskalTensor, Parafac2Tensor}
+    init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
@@ -328,7 +328,7 @@ class Parafac2(DecompositionMixin):
             Number of components.
         n_iter_max : int
             Maximum number of iteration
-        init : {'svd', 'random', KruskalTensor, Parafac2Tensor}
+        init : {'svd', 'random', CPTensor, Parafac2Tensor}
             Type of factor matrix initialization. See `initialize_factors`.
         svd : str, default is 'numpy_svd'
             function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS

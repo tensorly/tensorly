@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import functools
 
 from ....backend import backend_context, get_backend, override_module_dispatch
-from .... import backend, base, kruskal_tensor, tucker_tensor, mps_tensor
+from .... import backend, base, cp_tensor, tucker_tensor, mps_tensor
 
 
 _KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
@@ -110,9 +110,9 @@ partial_unfold = dispatch_sparse(base.partial_unfold)
 partial_fold = dispatch_sparse(base.partial_fold)
 partial_tensor_to_vec = dispatch_sparse(base.partial_tensor_to_vec)
 partial_vec_to_tensor = dispatch_sparse(base.partial_vec_to_tensor)
-kruskal_to_tensor = dispatch_sparse(kruskal_tensor.kruskal_to_tensor)
-kruskal_to_unfolded = dispatch_sparse(kruskal_tensor.kruskal_to_unfolded)
-kruskal_to_vec = dispatch_sparse(kruskal_tensor.kruskal_to_vec)
+cp_to_tensor = dispatch_sparse(cp_tensor.cp_to_tensor)
+cp_to_unfolded = dispatch_sparse(cp_tensor.cp_to_unfolded)
+cp_to_vec = dispatch_sparse(cp_tensor.cp_to_vec)
 tucker_to_tensor = dispatch_sparse(tucker_tensor.tucker_to_tensor)
 tucker_to_unfolded = dispatch_sparse(tucker_tensor.tucker_to_unfolded)
 tucker_to_vec = dispatch_sparse(tucker_tensor.tucker_to_vec)

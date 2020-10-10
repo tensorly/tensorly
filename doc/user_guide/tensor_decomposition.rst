@@ -39,9 +39,9 @@ First, let's create a second order tensor that is zero everywhere except in a sw
 
 
 We will now apply a rank-2 CANDECOMP-PARAFAC (:func:`tensorly.decomposition.parafac`) decomposition on `tensor`
-to decompose this into a kruskal tensor.
+to decompose this into a cp tensor.
 
-A Parafac decompositions expresses the tensor as a kruskal tensor that can be represented as a list of factors (matrices).
+A Parafac decompositions expresses the tensor as a cp tensor that can be represented as a list of factors (matrices).
 The :func:`parafac` function therefore returns a list of factors.
 
 .. code::
@@ -53,11 +53,11 @@ The :func:`parafac` function therefore returns a list of factors.
    >>> [f.shape for f in factors]
    [(12, 2), (12, 2)]
 
-From this **kruskal tensor** (presented as a list of matrices) you can reconstruct a full tensor:
+From this **cp tensor** (presented as a list of matrices) you can reconstruct a full tensor:
 
 .. code::
 
-   >>> print(tl.kruskal_to_tensor(factors))
+   >>> print(tl.cp_to_tensor(factors))
    [[ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]
     [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
     [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]

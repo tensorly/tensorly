@@ -2,7 +2,7 @@ import numpy as np
 from numpy.linalg import matrix_rank
 
 from ... import backend as T
-from ..base import (random_kruskal, random_tucker,
+from ..base import (random_cp, random_tucker,
                     random_mps, check_random_state)
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
@@ -28,23 +28,23 @@ def test_check_random_state():
     # only takes as seed a random state, an int or None
     assert_raises(ValueError, check_random_state, seed='bs')
 
-def test_random_kruskal():
-    """test for random.random_kruskal"""
+def test_random_cp():
+    """test for random.random_cp"""
     shape = (10, 11, 12)
     rank = 4
 
-    tensor = random_kruskal(shape, rank, full=True)
+    tensor = random_cp(shape, rank, full=True)
     for i in range(T.ndim(tensor)):
         assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
 
-    weights, factors = random_kruskal(shape, rank, full=False)
+    weights, factors = random_cp(shape, rank, full=False)
     for i, factor in enumerate(factors):
         assert_equal(factor.shape, (shape[i], rank),
                 err_msg=('{}-th factor has shape {}, expected {}'.format(
                      i, factor.shape, (shape[i], rank))))
 
     # tests that the columns of each factor matrix are indeed orthogonal
-    weights, factors = random_kruskal(shape, rank, full=False, orthogonal=True)
+    weights, factors = random_cp(shape, rank, full=False, orthogonal=True)
     for i, factor in enumerate(factors):
         for j in range(rank):
             for k in range(j):
@@ -59,7 +59,7 @@ def test_random_kruskal():
     with np.testing.assert_raises(ValueError):
         shape = (10, 11, 12)
         rank = 11
-        _ = random_kruskal(shape, rank, orthogonal=True)
+        _ = random_cp(shape, rank, orthogonal=True)
 
 def test_random_tucker():
     """test for random.random_tucker"""

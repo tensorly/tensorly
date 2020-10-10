@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..kruskal_regression import KruskalRegressor
+from ..cp_regression import KruskalRegressor
 from ...base import tensor_to_vec, partial_tensor_to_vec
 from ...metrics.regression import RMSE
 from ...random import check_random_state

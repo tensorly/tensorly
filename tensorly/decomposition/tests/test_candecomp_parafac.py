@@ -3,10 +3,10 @@ import pytest
 
 import tensorly as tl
 from ..candecomp_parafac import (
-    parafac, non_negative_parafac, initialize_kruskal,
+    parafac, non_negative_parafac, initialize_cp,
     sample_khatri_rao, randomised_parafac)
-from ...kruskal_tensor import kruskal_to_tensor
-from ...random import check_random_state, random_kruskal
+from ...cp_tensor import cp_to_tensor
+from ...random import check_random_state, random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
@@ -26,8 +26,8 @@ def test_parafac(linesearch):
     # Check that the error monotonically decreases
     assert_(np.all(np.diff(errors) <= 0.0))
 
-    rec_svd = kruskal_to_tensor(rec_svd)
-    rec_random = kruskal_to_tensor(rec_random)
+    rec_svd = cp_to_tensor(rec_svd)
+    rec_random = cp_to_tensor(rec_random)
     error = T.norm(rec_svd - tensor, 2)
     error /= T.norm(tensor, 2)
     assert_(error < tol_norm_2,
@@ -37,7 +37,7 @@ def test_parafac(linesearch):
             'abs norm of reconstruction error higher than tol')
 
     # Test fixing mode 0 or 1 with given init
-    fixed_tensor = random_kruskal((3, 4, 2), rank=2)
+    fixed_tensor = random_cp((3, 4, 2), rank=2)
     rec_svd_fixed_mode_0 = parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0], linesearch=linesearch)
     rec_svd_fixed_mode_1 = parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[1], linesearch=linesearch)
     # Check if modified after 2 iterations
@@ -45,7 +45,7 @@ def test_parafac(linesearch):
     assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
 
     rec_orthogonal = parafac(tensor, rank=6, n_iter_max=100, init='svd', tol=10e-5, random_state=1234, orthogonalise=True, verbose=0, linesearch=linesearch)
-    rec_orthogonal = kruskal_to_tensor(rec_orthogonal)
+    rec_orthogonal = cp_to_tensor(rec_orthogonal)
     tol_norm_2 = 10e-2
     tol_max_abs = 10e-2
     error = T.norm(rec_orthogonal - tensor, 2)
@@ -57,7 +57,7 @@ def test_parafac(linesearch):
     
     
     rec_sparse, sparse_component = parafac(tensor, rank=6, n_iter_max=200, init='svd', tol=10e-5, sparsity = 0.9, linesearch=linesearch)
-    rec_sparse = kruskal_to_tensor(rec_sparse) + sparse_component
+    rec_sparse = cp_to_tensor(rec_sparse) + sparse_component
     tol_norm_2 = 10e-2
     tol_max_abs = 10e-2
     error = T.norm(rec_sparse - tensor, 2)
@@ -79,12 +79,12 @@ def test_parafac(linesearch):
 
     with np.testing.assert_raises(ValueError):
         rank = 4
-        _, _ = initialize_kruskal(tensor, rank, init='bogus init type')
+        _, _ = initialize_cp(tensor, rank, init='bogus init type')
 
     # Test with rank-1 decomposition
     tol = 10e-3
-    tensor = random_kruskal((3, 4, 2), rank=1, full=True) 
-    rec = kruskal_to_tensor(parafac(tensor, rank=1))
+    tensor = random_cp((3, 4, 2), rank=1, full=True) 
+    rec = cp_to_tensor(parafac(tensor, rank=1))
     error = T.norm(tensor - rec, 2)/T.norm(tensor)
     assert_(error < tol)
 
@@ -94,7 +94,7 @@ def test_masked_parafac(linesearch):
     """Test for the masked CANDECOMP-PARAFAC decomposition.
     This checks that a mask of 1's is identical to the unmasked case.
     """
-    tensor = random_kruskal((4, 4, 4), rank=1, full=True)
+    tensor = random_cp((4, 4, 4), rank=1, full=True)
     mask = np.ones((4, 4, 4))
     mask[1, :, 3] = 0
     mask[:, 2, 3] = 0
@@ -103,14 +103,14 @@ def test_masked_parafac(linesearch):
 
     fac = parafac(tensor_mask, svd_mask_repeats=0, mask=mask, n_iter_max=0, rank=1, init="svd")
     fac_resvd = parafac(tensor_mask, svd_mask_repeats=10, mask=mask, n_iter_max=0, rank=1, init="svd")
-    err = tl.norm(tl.kruskal_to_tensor(fac) - tensor, 2)
-    err_resvd = tl.norm(tl.kruskal_to_tensor(fac_resvd) - tensor, 2)
+    err = tl.norm(tl.cp_to_tensor(fac) - tensor, 2)
+    err_resvd = tl.norm(tl.cp_to_tensor(fac_resvd) - tensor, 2)
     assert_(err_resvd < err, 'restarting SVD did not help')
 
     # Check that we get roughly the same answer with the full tensor and masking
     mask_fact = parafac(tensor, rank=1, mask=mask, init='random', random_state=1234, linesearch=linesearch)
     fact = parafac(tensor, rank=1)
-    diff = kruskal_to_tensor(mask_fact) - kruskal_to_tensor(fact)
+    diff = cp_to_tensor(mask_fact) - cp_to_tensor(fact)
     assert_(T.norm(diff) < 0.001, 'norm 2 of reconstruction higher than 0.001')
 
 
@@ -120,9 +120,9 @@ def test_parafac_linesearch():
     eps = 10e-2
     tensor = T.tensor(rng.random_sample((5, 5, 5)))
     kt = parafac(tensor, rank=5, init='random', random_state=1234, n_iter_max=10, tol=10e-9)
-    rec = tl.kruskal_to_tensor(kt)
+    rec = tl.cp_to_tensor(kt)
     kt_ls = parafac(tensor, rank=5, init='random', random_state=1234, n_iter_max=10, tol=10e-9, linesearch=True)
-    rec_ls = tl.kruskal_to_tensor(kt_ls)
+    rec_ls = tl.cp_to_tensor(kt_ls)
 
     rec_error = T.norm(tensor - rec)/T.norm(tensor)
     rec_error_ls = T.norm(tensor - rec_ls)/T.norm(tensor)
@@ -147,8 +147,8 @@ def test_non_negative_parafac():
     for factor in nn_factors:
         assert_(T.all(factor >= 0))
 
-    reconstructed_tensor = kruskal_to_tensor(res)
-    nn_reconstructed_tensor = kruskal_to_tensor(nn_res)
+    reconstructed_tensor = cp_to_tensor(res)
+    nn_reconstructed_tensor = cp_to_tensor(nn_res)
     error = T.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
     error /= T.norm(reconstructed_tensor, 2)
     assert_(error < tol_norm_2,
@@ -159,7 +159,7 @@ def test_non_negative_parafac():
             'abs norm of reconstruction error higher than tol')
 
     # Test fixing mode 0 or 1 with given init
-    fixed_tensor = random_kruskal((3, 3, 3), rank=2)
+    fixed_tensor = random_cp((3, 3, 3), rank=2)
     for factor in fixed_tensor[1]:
         factor = T.abs(factor)
     rec_svd_fixed_mode_0 = non_negative_parafac(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0])
@@ -172,8 +172,8 @@ def test_non_negative_parafac():
                                        tol=10e-4, init='svd')
     res_random = non_negative_parafac(tensor, rank=3, n_iter_max=100, tol=10e-4,
                                           init='random', random_state=1234, verbose=0)
-    rec_svd = kruskal_to_tensor(res_svd)
-    rec_random = kruskal_to_tensor(res_random)
+    rec_svd = cp_to_tensor(res_svd)
+    rec_random = cp_to_tensor(res_random)
     error = T.norm(rec_svd - rec_random, 2)
     error /= T.norm(rec_svd, 2)
     assert_(error < tol_norm_2,
@@ -225,8 +225,8 @@ def test_randomised_parafac():
 
     # test tensor reconstructed properly
     tolerance = 0.05
-    tensor = random_kruskal(shape=(10, 10, 10), rank=4, full=True)
-    kruskal_tensor = randomised_parafac(tensor, rank=5, n_samples=100, max_stagnation=20, n_iter_max=100, tol=0, verbose=0)
-    reconstruction = kruskal_to_tensor(kruskal_tensor)
+    tensor = random_cp(shape=(10, 10, 10), rank=4, full=True)
+    cp_tensor = randomised_parafac(tensor, rank=5, n_samples=100, max_stagnation=20, n_iter_max=100, tol=0, verbose=0)
+    reconstruction = cp_to_tensor(cp_tensor)
     error = float(T.norm(reconstruction - tensor, 2)/T.norm(tensor, 2))
     assert_(error < tolerance, msg='reconstruction of {} (higher than tolerance of {})'.format(error, tolerance))

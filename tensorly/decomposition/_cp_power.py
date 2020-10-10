@@ -156,15 +156,15 @@ class CPPower(DecompositionMixin):
 
         Returns
         -------
-        KruskalTensor
+        CPTensor
             decomposed tensor
         """
-        kruskal_tensor = parafac_power_iteration(tensor, rank=self.rank,
+        cp_tensor = parafac_power_iteration(tensor, rank=self.rank,
                                                  n_repeat=self.n_repeat,
                                                  n_iteration=self.n_iteration,
                                                  verbose=self.verbose)
-        self.decomposition_ = kruskal_tensor 
-        return kruskal_tensor
+        self.decomposition_ = cp_tensor 
+        return cp_tensor
 
     def __repr__(self):
         return f'Rank-{self.rank} CP decomposition via Robust Tensor Power Iteration.'
