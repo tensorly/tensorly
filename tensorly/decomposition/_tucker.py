@@ -2,7 +2,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
-from ..tucker_tensor import tucker_to_tensor
+from ..tucker_tensor import tucker_to_tensor, TuckerTensor
 from ..random import check_random_state
 import tensorly.tenalg as tlg
 from math import sqrt
@@ -134,7 +134,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
                     print('converged in {} iterations.'.format(iteration))
                 break
 
-    return core, factors
+    return TuckerTensor((core, factors))
 
 
 def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, init='svd',
@@ -200,7 +200,7 @@ def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, in
             factors.insert(e, factors_fixed[i])
         core = multi_mode_dot(core, factors_fixed, modes=modes_fixed, transpose=True)
 
-        return (core, factors)
+        return TuckerTensor((core, factors))
 
     else:
         modes = list(range(tl.ndim(tensor)))
@@ -308,7 +308,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
                 print('converged in {} iterations.'.format(iteration))
             break
 
-    return nn_core, nn_factors
+    return TuckerTensor((nn_core, nn_factors))
 
 
 class Tucker(DecompositionMixin):

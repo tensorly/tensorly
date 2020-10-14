@@ -116,7 +116,7 @@ def mps_to_vec(factors):
     return tl.tensor_to_vec(mps_to_tensor(factors))
 
 
-class MPSTensor(FactorizedTensor):
+class TTTensor(FactorizedTensor):
     def __init__(self, factors, inplace=False):
         super().__init__()
         

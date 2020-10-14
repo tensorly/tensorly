@@ -5,8 +5,9 @@ from ..tucker_tensor import tucker_to_tensor, TuckerTensor
 from ..mps_tensor import mps_to_tensor, MPSTensor
 from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor
 from .. import backend as T
-from ..utils import deprecated_by
+from ..utils import DefineDeprecated
 import warnings
+
 
 def check_random_state(seed):
     """Returns a valid RandomState
@@ -221,7 +222,5 @@ def random_mps(shape, rank, full=False, random_state=None, **context):
     else:
         return MPSTensor(factors)
 
-@deprecated_by(random_cp)
-def random_kruskal():
-    pass
 
+random_kruskal = DefineDeprecated(deprecated_name='random_kruskal', use_instead=random_cp)

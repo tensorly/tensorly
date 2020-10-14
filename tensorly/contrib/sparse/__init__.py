@@ -35,3 +35,8 @@ tucker_to_vec = wrap(tucker_tensor.tucker_to_vec)
 mps_to_tensor = wrap(mps_tensor.mps_to_tensor)
 mps_to_unfolded = wrap(mps_tensor.mps_to_unfolded)
 mps_to_vec = wrap(mps_tensor.mps_to_vec)
+
+# Deprecated
+kruskal_to_tensor = wrap(cp_tensor.kruskal_to_tensor)
+kruskal_to_unfolded = wrap(cp_tensor.kruskal_to_unfolded)
+kruskal_to_vec = wrap(cp_tensor.kruskal_to_vec)
