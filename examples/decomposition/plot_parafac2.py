@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 """
 Demonstration of PARAFAC2
 =========================
@@ -22,7 +23,7 @@ from scipy.optimize import linear_sum_assignment
 # 
 # This particular tensor,
 # :math:`\mathcal{X} \in \mathbb{R}^{I\times J \times K}`, is a shifted
-# Kruskal tensor, that is, a tensor on the form:
+# CP tensor, that is, a tensor on the form:
 # 
 # .. math::
 #    \mathcal{X}_{ijk} = \sum_{r=1}^R A_{ir} B_{\sigma_i(j) r} C_{kr},

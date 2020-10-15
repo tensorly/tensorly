@@ -1,15 +1,15 @@
 """
-Kruskal tensor regression
-=========================
+CP tensor regression
+====================
 
-Example on how to use :class:`tensorly.regression.cp_regression.KruskalRegressor` to perform tensor regression.
+Example on how to use :class:`tensorly.regression.cp_regression.CPRegressor` to perform tensor regression.
 """
 
 import matplotlib.pyplot as plt
 from tensorly.base import tensor_to_vec, partial_tensor_to_vec
 from tensorly.datasets.synthetic import gen_image
 from tensorly.random import check_random_state
-from tensorly.regression.cp_regression import KruskalRegressor
+from tensorly.regression.cp_regression import CPRegressor
 import tensorly as tl
 
 # Parameter of the experiment
@@ -50,7 +50,7 @@ for i, pattern in enumerate(patterns):
     for j, rank in enumerate(ranks):
 
         # Create a tensor Regressor estimator
-        estimator = KruskalRegressor(weight_rank=rank, tol=10e-7, n_iter_max=100, reg_W=1, verbose=0)
+        estimator = CPRegressor(weight_rank=rank, tol=10e-7, n_iter_max=100, reg_W=1, verbose=0)
 
         # Fit the estimator to the data
         estimator.fit(X, y)
@@ -62,5 +62,5 @@ for i, pattern in enumerate(patterns):
         if i == 0:
             ax.set_title('Learned\nrank = {}'.format(rank))
 
-plt.suptitle("Kruskal tensor regression")
+plt.suptitle("CP tensor regression")
 plt.show()

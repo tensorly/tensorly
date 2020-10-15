@@ -7,7 +7,7 @@ In this tutorial we will go over these decomposed forms and how to perform tenso
 Refer to [1]_ for more information on tensor decomposition.
 
 
-Kruskal form of a tensor
+CP form of a tensor
 ------------------------
 
 The idea is to express the tensor as a sum of rank one tensors. That is, a sum of outer product of vectors.

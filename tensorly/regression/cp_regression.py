@@ -4,14 +4,15 @@ from ..tenalg import  khatri_rao
 from ..cp_tensor import cp_to_tensor, cp_to_vec
 from ..random import check_random_state
 from .. import backend as T
+from ..utils import DefineDeprecated
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
 
 
-class KruskalRegressor():
-    """Kruskal tensor regression
+class CPRegressor():
+    """CP tensor regression
 
         Learns a low rank CP tensor weight
 
@@ -116,3 +117,5 @@ class KruskalRegressor():
             tensor data of shape (n_samples, N1, ..., NS)
         """
         return T.dot(partial_tensor_to_vec(X), self.vec_W_)
+
+KruskalRegressor = DefineDeprecated('KruskalRegressor', CPRegressor)
