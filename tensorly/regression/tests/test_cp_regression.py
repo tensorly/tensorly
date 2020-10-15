@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..cp_regression import KruskalRegressor
+from ..cp_regression import CPRegressor
 from ...base import tensor_to_vec, partial_tensor_to_vec
 from ...metrics.regression import RMSE
 from ...random import check_random_state
@@ -8,8 +8,8 @@ from ... import backend as T
 from ...testing import assert_
 
 
-def test_KruskalRegressor():
-    """Test for KruskalRegressor"""
+def test_CPRegressor():
+    """Test for CPRegressor"""
 
     # Parameter of the experiment
     image_height = 8
@@ -32,11 +32,11 @@ def test_KruskalRegressor():
     y_train = y[:1000]
     y_test = y[1000:]
 
-    estimator = KruskalRegressor(weight_rank=4, tol=10e-8, reg_W=1, n_iter_max=200, verbose=True)
+    estimator = CPRegressor(weight_rank=4, tol=10e-8, reg_W=1, n_iter_max=200, verbose=True)
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
     error = RMSE(y_test, y_pred)
-    assert_(error <= tol, msg='Kruskal Regressor : RMSE is too large, {} > {}'.format(error, tol))
+    assert_(error <= tol, msg='CP Regressor : RMSE is too large, {} > {}'.format(error, tol))
 
     params = estimator.get_params()
     assert_(params['weight_rank'] == 4, msg='get_params did not return the correct parameters')
