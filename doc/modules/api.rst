@@ -76,7 +76,7 @@ For each backend, tensorly provides the following uniform functions:
     partial_vec_to_tensor
 
 
-:mod:`tensorly.cp_tensor`: Tensors in the Kruskal format
+:mod:`tensorly.cp_tensor`: Tensors in the CP format
 =============================================================
 
 .. automodule:: tensorly.cp_tensor
@@ -221,7 +221,7 @@ For each backend, tensorly provides the following uniform functions:
     :template: class.rst
 
     tucker_regression.TuckerRegressor
-    cp_regression.KruskalRegressor
+    cp_regression.CPRegressor
 
 
 :mod:`tensorly.metrics`: Performance measures
@@ -290,7 +290,7 @@ For each backend, tensorly provides the following uniform functions:
     :toctree: generated/
     :template: function.rst
 
-    decomposition.matrix_product_state_cross
+    decomposition.tensor_train_cross
 
 Sparse tensor operations
 ------------------------

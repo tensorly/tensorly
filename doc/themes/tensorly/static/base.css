@@ -492,7 +492,9 @@ div.sphx-glr-download a span:last-child {
 .sphx-glr-thumbcontainer:hover {
     box-shadow: 0 0 15px #00f3cf;
 }
-
+.sphx-glr-clear {
+	clear: both;
+}
 
 /* download all buttons */
 #gallery-of-examples table{
@@ -502,7 +504,7 @@ div.sphx-glr-footer {
     text-align: center;
     margin-top: 2em;
     margin-bottom: 1em;
-	display: inline;
+	display: inline-grid;
 }
 div.sphx-glr-download {
     display: inline;

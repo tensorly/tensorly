@@ -198,7 +198,7 @@ def _validate_cp_tensor(cp_tensor):
     return tuple(shape), rank
 
 def _cp_n_param(tensor_shape, rank, weights=False):
-    """Number of parameters of a Kruskal decomposition for a given `rank` and full `tensor_shape`.
+    """Number of parameters of a CP decomposition for a given `rank` and full `tensor_shape`.
 
     Parameters
     ----------
@@ -221,7 +221,7 @@ def _cp_n_param(tensor_shape, rank, weights=False):
 
 
 def _validate_cp_rank(tensor_shape, rank='same', rounding='round'):
-    """Returns the rank of a Kruskal Decomposition
+    """Returns the rank of a CP Decomposition
 
     Parameters
     ----------

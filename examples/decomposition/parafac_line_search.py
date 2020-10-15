@@ -1,6 +1,7 @@
+
 """
 Using line search with PARAFAC
-==========================================
+==============================
 
 Example on how to use :func:`tensorly.decomposition.parafac` with line search to accelerate convergence.
 """

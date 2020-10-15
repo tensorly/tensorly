@@ -43,7 +43,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
     Generate a 5^3 tensor, and decompose it into tensor-train of 3 factors, with rank = [1,3,3,1]
     >>> tensor = tl.tensor(np.arange(5**3).reshape(5,5,5))
     >>> rank = [1, 3, 3, 1]
-    >>> factors = matrix_product_state_cross(tensor, rank)
+    >>> factors = tensor_train_cross(tensor, rank)
     print the first core:
     >>> print(factors[0])
     .[[[ 24.   0.   4.]
