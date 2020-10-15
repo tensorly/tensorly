@@ -76,23 +76,23 @@ For each backend, tensorly provides the following uniform functions:
     partial_vec_to_tensor
 
 
-:mod:`tensorly.kruskal_tensor`: Tensors in the Kruskal format
+:mod:`tensorly.cp_tensor`: Tensors in the Kruskal format
 =============================================================
 
-.. automodule:: tensorly.kruskal_tensor
+.. automodule:: tensorly.cp_tensor
     :no-members:
     :no-inherited-members:
 
-.. currentmodule:: tensorly.kruskal_tensor
+.. currentmodule:: tensorly.cp_tensor
 
 .. autosummary::
     :toctree: generated/
     :template: function.rst
 
-    kruskal_to_tensor
-    kruskal_to_unfolded
-    kruskal_to_vec
-    kruskal_mode_dot
+    cp_to_tensor
+    cp_to_unfolded
+    cp_to_vec
+    cp_mode_dot
     unfolding_dot_khatri_rao
 
 
@@ -115,22 +115,22 @@ For each backend, tensorly provides the following uniform functions:
     tucker_mode_dot
 
 
-:mod:`tensorly.mps_tensor`: Tensors in Matrix-Product-State format
+:mod:`tensorly.tt_tensor`: Tensors in Matrix-Product-State format
 ==================================================================
 
-.. automodule:: tensorly.mps_tensor
+.. automodule:: tensorly.tt_tensor
     :no-members:
     :no-inherited-members:
 
-.. currentmodule:: tensorly.mps_tensor
+.. currentmodule:: tensorly.tt_tensor
 
 .. autosummary::
     :toctree: generated/
     :template: function.rst
 
-    mps_to_tensor
-    mps_to_unfolded
-    mps_to_vec
+    tt_to_tensor
+    tt_to_unfolded
+    tt_to_vec
 
 
 :mod:`tensorly.parafac2_tensor`: Tensors in PARAFAC2 format
@@ -221,7 +221,7 @@ For each backend, tensorly provides the following uniform functions:
     :template: class.rst
 
     tucker_regression.TuckerRegressor
-    kruskal_regression.KruskalRegressor
+    cp_regression.KruskalRegressor
 
 
 :mod:`tensorly.metrics`: Performance measures
@@ -254,9 +254,9 @@ For each backend, tensorly provides the following uniform functions:
    :toctree: generated/
    :template: function.rst
 
-   random_kruskal
+   random_cp
    random_tucker
-   random_mps 
+   random_tt 
    check_random_state
 
 

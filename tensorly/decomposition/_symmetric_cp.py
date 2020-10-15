@@ -1,7 +1,10 @@
 import tensorly as tl
+from ._base_decomposition import DecompositionMixin
 from tensorly.tenalg import outer
 from tensorly.metrics.regression import standard_deviation
 import numpy as np
+from ..cp_tensor import _validate_cp_rank
+
 
 def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
     """A single Robust Symmetric Tensor Power Iteration
@@ -40,7 +43,7 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
     modes = list(range(1, order))
     
     for _ in range(n_repeat):
-        factor = tl.tensor(np.random.random_sample(size))
+        factor = tl.tensor(np.random.random_sample(size), **tl.context(tensor))
 
         for _ in range(n_iteration):
             for _ in range(order):
@@ -98,6 +101,8 @@ def symmetric_parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10,
     factor : 2-D tl.tensor of shape (size, rank)
         each column corresponds to one eigenvector
     """
+    rank = _validate_cp_rank(tl.shape(tensor), rank=rank)
+
     order = tl.ndim(tensor)
     size = tl.shape(tensor)[0]
     
@@ -117,3 +122,38 @@ def symmetric_parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10,
     weigths = tl.stack(weigths)
 
     return weigths, factor
+
+class SymmetricCP(DecompositionMixin):
+    def __init__(self, rank, n_repeat=10, n_iteration=10, verbose=False):
+        """Symmetric CP Decomposition via Robust Symmetric Tensor Power Iteration
+
+        Parameters
+        ----------
+        rank : int
+            rank of the decomposition (number of rank-1 components)
+        n_repeat : int, default is 10
+            number of initializations to be tried
+        n_iterations : int, default is 10
+            number of power iterations
+        verbose : bool
+            level of verbosity
+
+        Returns
+        -------
+        (weights, factor)
+
+        weights : 1-D tl.tensor of length `rank`
+            contains the eigenvalue of each eigenvector
+        factor : 2-D tl.tensor of shape (size, rank)
+            each column corresponds to one eigenvector
+        """
+        self.rank = rank
+        self.n_repeat = n_repeat
+        self.n_iteration = n_iteration
+        self.verbose = verbose
+
+    def fit_transform(self, tensor):
+        self.decomposition_ = symmetric_parafac_power_iteration(tensor, self.rank, n_repeat=self.n_repeat,
+                                                                n_iteration=self.n_iteration, verbose=self.verbose)
+        return self.decomposition_
+

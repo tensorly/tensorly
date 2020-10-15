@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 
 from ... import backend as T
-from ...random import random_kruskal
+from ...random import random_cp
 from ...testing import (assert_array_equal, assert_equal,
                         assert_array_almost_equal, assert_raises)
 from ...base import fold, unfold

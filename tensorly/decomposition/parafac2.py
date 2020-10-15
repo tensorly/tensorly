@@ -1,9 +1,10 @@
 import tensorly as tl
+from ._base_decomposition import DecompositionMixin
 from tensorly.random import random_parafac2
 from tensorly import backend as T
 from . import parafac
 from ..parafac2_tensor import parafac2_to_slice, Parafac2Tensor, _validate_parafac2_tensor
-from ..kruskal_tensor import KruskalTensor
+from ..cp_tensor import CPTensor
 from ..base import unfold
 
 # Authors: Marie Roald
@@ -17,7 +18,7 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
     ----------
     tensor_slices : Iterable of ndarray
     rank : int
-    init : {'random', 'svd', KruskalTensor, Parafac2Tensor}, optional
+    init : {'random', 'svd', CPTensor, Parafac2Tensor}, optional
     random_state : `np.random.RandomState`
 
     Returns
@@ -48,9 +49,9 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
         projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
         return Parafac2Tensor((None, (A, B, C), projections))
 
-    elif isinstance(init, (tuple, list, Parafac2Tensor, KruskalTensor)):
+    elif isinstance(init, (tuple, list, Parafac2Tensor, CPTensor)):
         try:
-            decomposition = Parafac2Tensor.from_kruskaltensor(init, parafac2_tensor_ok=True)
+            decomposition = Parafac2Tensor.from_CPTensor(init, parafac2_tensor_ok=True)
         except ValueError:
             raise ValueError(
                 'If initialization method is a mapping, then it must '
@@ -171,7 +172,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         Number of components.
     n_iter_max : int
         Maximum number of iteration
-    init : {'svd', 'random', KruskalTensor, Parafac2Tensor}
+    init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
@@ -278,3 +279,117 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         return parafac2_tensor, rec_errors
     else:
         return parafac2_tensor
+
+
+class Parafac2(DecompositionMixin):
+
+    def __init__(self, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
+             tol=1e-8, random_state=None, verbose=False, n_iter_parafac=5):
+        r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
+
+        Computes a rank-`rank` PARAFAC2 decomposition of the third-order tensor defined by 
+        `tensor_slices`. The decomposition is on the form :math:`(A [B_i] C)` such that the
+        i-th frontal slice, :math:`X_i`, of :math:`X` is given by
+
+        .. math::
+        
+            X_i = B_i diag(a_i) C^T,
+        
+        where :math:`diag(a_i)` is the diagonal matrix whose nonzero entries are equal to
+        the :math:`i`-th row of the :math:`I \times R` factor matrix :math:`A`, :math:`B_i` 
+        is a :math:`J_i \times R` factor matrix such that the cross product matrix :math:`B_{i_1}^T B_{i_1}`
+        is constant for all :math:`i`, and :math:`C` is a :math:`K \times R` factor matrix. 
+        To compute this decomposition, we reformulate the expression for :math:`B_i` such that
+
+        .. math::
+
+            B_i = P_i B,
+
+        where :math:`P_i` is a :math:`J_i \times R` orthogonal matrix and :math:`B` is a
+        :math:`R \times R` matrix.
+
+        An alternative formulation of the PARAFAC2 decomposition is that the tensor element
+        :math:`X_{ijk}` is given by
+
+        .. math::
+
+            X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
+        
+        with the same constraints hold for :math:`B_i` as above.
+        
+
+        Parameters
+        ----------
+        tensor_slices : ndarray or list of ndarrays
+            Either a third order tensor or a list of second order tensors that may have different number of rows.
+            Note that the second mode factor matrices are allowed to change over the first mode, not the
+            third mode as some other implementations use (see note below).
+        rank  : int
+            Number of components.
+        n_iter_max : int
+            Maximum number of iteration
+        init : {'svd', 'random', CPTensor, Parafac2Tensor}
+            Type of factor matrix initialization. See `initialize_factors`.
+        svd : str, default is 'numpy_svd'
+            function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        normalize_factors : bool (optional)
+            If True, aggregate the weights of each factor in a 1D-tensor
+            of shape (rank, ), which will contain the norms of the factors. Note that
+            there may be some inaccuracies in the component weights.
+        tol : float, optional
+            (Default: 1e-8) Relative reconstruction error tolerance. The
+            algorithm is considered to have found the global minimum when the
+            reconstruction error is less than `tol`.
+        random_state : {None, int, np.random.RandomState}
+        verbose : int, optional
+            Level of verbosity
+        n_iter_parafac: int, optional
+            Number of PARAFAC iterations to perform for each PARAFAC2 iteration
+
+        Returns
+        -------
+        Parafac2Tensor : (weight, factors, projection_matrices)
+            * weights : 1D array of shape (rank, )
+                all ones if normalize_factors is False (default), 
+                weights of the (normalized) factors otherwise
+            * factors : List of factors of the CP decomposition element `i` is of shape
+                (tensor.shape[i], rank)
+            * projection_matrices : List of projection matrices used to create evolving
+                factors.
+            
+        References
+        ----------
+        .. [1] Kiers, H.A.L., ten Berge, J.M.F. and Bro, R. (1999), 
+                PARAFAC2—Part I. A direct fitting algorithm for the PARAFAC2 model. 
+                J. Chemometrics, 13: 275-294.
+
+        Notes
+        -----
+        This formulation of the PARAFAC2 decomposition is slightly different from the one in [1]_.
+        The difference lies in that here, the second mode changes over the first mode, whereas in
+        [1]_, the second mode changes over the third mode. We made this change since that means
+        that the function accept both lists of matrices and a single nd-array as input without
+        any reordering of the modes.
+        """
+        self.rank = rank
+        self.n_iter_max=n_iter_max
+        self.init=init
+        self.svd=svd
+        self.normalize_factors=normalize_factors
+        self.tol=tol
+        self.random_state=random_state
+        self.verbose=verbose
+        self.n_iter_parafac = n_iter_parafac
+
+    def fit_transform(self, tensor):
+        self.decomposition_, self.errors_ = parafac2(tensor, rank = self.rank,
+                                       n_iter_max=self.n_iter_max,
+                                       init=self.init,
+                                       svd=self.svd,
+                                       normalize_factors=self.normalize_factors,
+                                       tol=self.tol,
+                                       random_state=self.random_state,
+                                       verbose=self.verbose,
+                                       return_errors=True,
+                                       n_iter_parafac = self.n_iter_parafac)
+        return self.decomposition_

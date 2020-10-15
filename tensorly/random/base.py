@@ -1,21 +1,13 @@
 import numpy as np
-from ..kruskal_tensor import (kruskal_to_tensor, KruskalTensor,
-                              kruskal_normalise)
-from ..tucker_tensor import tucker_to_tensor
-from ..mps_tensor import mps_to_tensor
+from ..cp_tensor import (cp_to_tensor, CPTensor,
+                         cp_normalize)
+from ..tucker_tensor import tucker_to_tensor, TuckerTensor
+from ..tt_tensor import tt_to_tensor, TTTensor
 from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor
 from .. import backend as T
+from ..utils import DefineDeprecated
 import warnings
 
-def cp_tensor(*args, **kwargs):
-    message = "'cp_tensor' is depreciated, please use 'random_kruskal' instead"
-    warnings.warn(message, DeprecationWarning)
-    return random_kruskal(*args, **kwargs)
-
-def tucker_tensor(*args, **kwargs):
-    message = "'tucker_tensor' is depreciated, please use 'tucker_tensor' instead"
-    warnings.warn(message, DeprecationWarning)
-    return random_tucker(*args, **kwargs)
 
 def check_random_state(seed):
     """Returns a valid RandomState
@@ -39,6 +31,14 @@ def check_random_state(seed):
         return seed
 
     raise ValueError('Seed should be None, int or np.random.RandomState')
+
+
+def random_tensor(shape, random_state=None, **context):
+    """Create a random tensor
+    """
+    rns = check_random_state(random_state)
+    return T.tensor(rns.random_sample(shape), **context)
+
 
 def random_parafac2(shapes, rank, full=False, random_state=None,
                     normalise_factors=True, **context):
@@ -66,7 +66,7 @@ def random_parafac2(shapes, rank, full=False, random_state=None,
         T.qr(T.tensor(rns.random_sample((shape[0], rank)), **context))[0]
             for shape in shapes
     ]
-    weights, factors = random_kruskal(
+    weights, factors = random_cp(
         [len(shapes), rank, shapes[0][1]], rank=rank, normalise_factors=False, 
         random_state=rns,  **context
     )
@@ -79,7 +79,7 @@ def random_parafac2(shapes, rank, full=False, random_state=None,
         return parafac2_tensor
 
 
-def random_kruskal(shape, rank, full=False, orthogonal=False, 
+def random_cp(shape, rank, full=False, orthogonal=False, 
                    random_state=None, normalise_factors=True, **context):
     """Generates a random CP tensor
 
@@ -100,7 +100,7 @@ def random_kruskal(shape, rank, full=False, orthogonal=False,
 
     Returns
     -------
-    random_kruskal : ND-array or 2D-array list
+    random_cp : ND-array or 2D-array list
         ND-array : full tensor if `full` is True
         2D-array list : list of factors otherwise
     """
@@ -115,11 +115,11 @@ def random_kruskal(shape, rank, full=False, orthogonal=False,
         factors = [T.qr(factor)[0] for factor in factors]
 
     if full:
-        return kruskal_to_tensor((weights, factors))
+        return cp_to_tensor((weights, factors))
     elif normalise_factors:
-        return kruskal_normalise((weights, factors))
+        return cp_normalize((weights, factors))
     else:
-        return KruskalTensor((weights, factors))
+        return CPTensor((weights, factors))
 
 def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, **context):
     """Generates a random Tucker tensor
@@ -169,17 +169,18 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
     if full:
         return tucker_to_tensor((core, factors))
     else:
-        return core, factors
+        return TuckerTensor((core, factors))
 
-def random_mps(shape, rank, full=False, random_state=None, **context):
-    """Generates a random MPS/ttrain tensor
+
+def random_tt(shape, rank, full=False, random_state=None, **context):
+    """Generates a random TT/ttrain tensor
 
     Parameters
     ----------
     shape : tuple
         shape of the tensor to generate
     rank : int
-        rank of the MPS decomposition
+        rank of the TT decomposition
         must verify rank[0] == rank[-1] ==1 (boundary conditions)
         and len(rank) == len(shape)+1
     full : bool, optional, default is False
@@ -191,7 +192,7 @@ def random_mps(shape, rank, full=False, random_state=None, **context):
 
     Returns
     -------
-    MPS_tensor : ND-array or 3D-array list
+    TT_tensor : ND-array or 3D-array list
         * ND-array : full tensor if `full` is True
         * 3D-array list : list of factors otherwise
     """
@@ -220,6 +221,10 @@ def random_mps(shape, rank, full=False, random_state=None, **context):
                for i, s in enumerate(shape)]
 
     if full:
-        return mps_to_tensor(factors)
+        return tt_to_tensor(factors)
     else:
-        return factors
+        return TTTensor(factors)
+
+
+random_kruskal = DefineDeprecated(deprecated_name='random_kruskal', use_instead=random_cp)
+random_mps = DefineDeprecated(deprecated_name='random_mps', use_instead=random_tt)

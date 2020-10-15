@@ -2,14 +2,14 @@
 Kruskal tensor regression
 =========================
 
-Example on how to use :class:`tensorly.regression.kruskal_regression.KruskalRegressor` to perform tensor regression.
+Example on how to use :class:`tensorly.regression.cp_regression.KruskalRegressor` to perform tensor regression.
 """
 
 import matplotlib.pyplot as plt
 from tensorly.base import tensor_to_vec, partial_tensor_to_vec
 from tensorly.datasets.synthetic import gen_image
 from tensorly.random import check_random_state
-from tensorly.regression.kruskal_regression import KruskalRegressor
+from tensorly.regression.cp_regression import KruskalRegressor
 import tensorly as tl
 
 # Parameter of the experiment

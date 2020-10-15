@@ -1,6 +1,6 @@
 import tensorly as tl
-from ..mps_decomposition import matrix_product_state
-from ...mps_tensor import mps_to_tensor
+from .._tt import matrix_product_state
+from ...tt_tensor import tt_to_tensor
 from ...random import check_random_state
 from ...testing import assert_
 
@@ -15,7 +15,7 @@ def test_matrix_product_state():
     tensor = tl.tensor(rng.random_sample([3, 4, 5, 6, 2, 10]))
     tensor_shape = tensor.shape
 
-    # Find MPS decomposition of the tensor
+    # Find TT decomposition of the tensor
     rank = [1, 3, 3, 4, 2, 2, 1]
     factors = matrix_product_state(tensor, rank)
 
@@ -35,18 +35,18 @@ def test_matrix_product_state():
     tensor = tl.tensor(rng.random_sample([3, 4, 5, 6, 2, 10]))
     tensor_shape = tensor.shape
 
-    # Find MPS decomposition of the tensor
+    # Find TT decomposition of the tensor
     rank = [1, 5, 4, 3, 8, 10, 1]
     factors = matrix_product_state(tensor, rank)
 
     for k in range(6):
         (r_prev, n_k, r_k) = factors[k].shape
 
-        first_error_message = "MPS rank " + str(k) + " is greater than the maximum allowed "
+        first_error_message = "TT rank " + str(k) + " is greater than the maximum allowed "
         first_error_message += str(r_prev) + " > " + str(rank[k])
         assert(r_prev<=rank[k]), first_error_message
 
-        first_error_message = "MPS rank " + str(k+1) + " is greater than the maximum allowed "
+        first_error_message = "TT rank " + str(k+1) + " is greater than the maximum allowed "
         first_error_message += str(r_k) + " > " + str(rank[k+1])
         assert(r_k<=rank[k+1]), first_error_message
 
@@ -54,7 +54,7 @@ def test_matrix_product_state():
     tol = 10e-5
     tensor = tl.tensor(rng.random_sample([3, 3, 3]))
     factors = matrix_product_state(tensor, (1, 3, 3, 1))
-    reconstructed_tensor = tl.mps_to_tensor(factors)
+    reconstructed_tensor = tl.tt_to_tensor(factors)
     error = tl.norm(reconstructed_tensor - tensor, 2)
     error /= tl.norm(tensor, 2)
     assert_(error < tol,

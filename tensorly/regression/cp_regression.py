@@ -1,14 +1,13 @@
 import numpy as np
 from ..base import partial_tensor_to_vec, partial_unfold
 from ..tenalg import  khatri_rao
-from ..kruskal_tensor import kruskal_to_tensor, kruskal_to_vec
+from ..cp_tensor import cp_to_tensor, cp_to_vec
 from ..random import check_random_state
 from .. import backend as T
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
-
 
 
 class KruskalRegressor():
@@ -87,7 +86,7 @@ class KruskalRegressor():
                 inv_term = T.dot(T.transpose(phi), phi) + self.reg_W*T.tensor(np.eye(phi.shape[1]), **T.context(X))
                 W[i] = T.reshape(T.solve(inv_term, T.dot(T.transpose(phi), y)), (X.shape[i + 1], self.weight_rank))
 
-            weight_tensor_ = kruskal_to_tensor((weights, W))
+            weight_tensor_ = cp_to_tensor((weights, W))
             norm_W.append(T.norm(weight_tensor_, 2))
 
             # Convergence check
@@ -100,9 +99,9 @@ class KruskalRegressor():
                     break
 
         self.weight_tensor_ = weight_tensor_
-        self.kruskal_weight_ = (weights, W)
+        self.cp_weight_ = (weights, W)
 
-        self.vec_W_ = kruskal_to_vec((weights, W))
+        self.vec_W_ = cp_to_vec((weights, W))
         self.n_iterations_ = iteration + 1
         self.norm_W_ = norm_W
 

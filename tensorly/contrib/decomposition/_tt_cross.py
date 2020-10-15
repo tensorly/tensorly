@@ -1,11 +1,11 @@
 import tensorly as tl
-from ...mps_tensor import mps_to_tensor
+from ...tt_tensor import tt_to_tensor
 from ...random import check_random_state
 import numpy as np
 
 
-def matrix_product_state_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
-    """MPS (tensor-train) decomposition via cross-approximation (TTcross) [1]
+def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
+    """TT (tensor-train) decomposition via cross-approximation (TTcross) [1]
 
         Decomposes `input_tensor` into a sequence of order-3 tensors of given rank. (factors/cores)
         Rather than directly decompose the whole tensor, we sample fibers based on skeleton decomposition.
@@ -24,7 +24,7 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
     input_tensor : tensorly.tensor
             The tensor to decompose.
     rank : {int, int list}
-            maximum allowable MPS rank of the factors
+            maximum allowable TT rank of the factors
             if int, then this is the same for all the factors
             if int list, then rank[k] is the rank of the kth factor
     tol : float
@@ -34,8 +34,8 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
 
     Returns
     -------
-    factors : MPS factors
-              order-3 tensors of the MPS decomposition
+    factors : TT factors
+              order-3 tensors of the TT decomposition
 
     Examples
     --------
@@ -125,8 +125,8 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
 
     iter = 0
 
-    error = tl.norm(mps_to_tensor(factor_old) - mps_to_tensor(factor_new), 2)
-    threshold = tol * tl.norm(mps_to_tensor(factor_new), 2)
+    error = tl.norm(tt_to_tensor(factor_old) - tt_to_tensor(factor_new), 2)
+    threshold = tol * tl.norm(tt_to_tensor(factor_new), 2)
     for iter in range(n_iter_max):
         if error < threshold:
             break
@@ -181,13 +181,13 @@ def matrix_product_state_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
         ################################################
 
         # check the error for while-loop
-        error = tl.norm(mps_to_tensor(factor_old) - mps_to_tensor(factor_new), 2)
-        threshold = tol * tl.norm(mps_to_tensor(factor_new), 2)
+        error = tl.norm(tt_to_tensor(factor_old) - tt_to_tensor(factor_new), 2)
+        threshold = tol * tl.norm(tt_to_tensor(factor_new), 2)
 
     # check convergence
     if iter >= n_iter_max:
         raise ValueError('Maximum number of iterations reached.')
-    if tl.norm(mps_to_tensor(factor_old) - mps_to_tensor(factor_new), 2) > tol * tl.norm(mps_to_tensor(factor_new), 2):
+    if tl.norm(tt_to_tensor(factor_old) - tt_to_tensor(factor_new), 2) > tol * tl.norm(tt_to_tensor(factor_new), 2):
         raise ValueError('Low Rank Approximation algorithm did not converge.')
 
     return factor_new

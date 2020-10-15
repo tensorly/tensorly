@@ -1,5 +1,5 @@
 from ...backend import set_backend, get_backend, override_module_dispatch
-from ... import backend, base, kruskal_tensor, tucker_tensor, mps_tensor
+from ... import backend, base, cp_tensor, tucker_tensor, tt_tensor
 
 from .backend import (tensor, is_tensor, context, shape, ndim, to_numpy, copy,
                       concatenate, reshape, moveaxis, transpose,
@@ -26,12 +26,17 @@ partial_unfold = wrap(base.partial_unfold)
 partial_fold = wrap(base.partial_fold)
 partial_tensor_to_vec = wrap(base.partial_tensor_to_vec)
 partial_vec_to_tensor = wrap(base.partial_vec_to_tensor)
-kruskal_to_tensor = wrap(kruskal_tensor.kruskal_to_tensor)
-kruskal_to_unfolded = wrap(kruskal_tensor.kruskal_to_unfolded)
-kruskal_to_vec = wrap(kruskal_tensor.kruskal_to_vec)
+cp_to_tensor = wrap(cp_tensor.cp_to_tensor)
+cp_to_unfolded = wrap(cp_tensor.cp_to_unfolded)
+cp_to_vec = wrap(cp_tensor.cp_to_vec)
 tucker_to_tensor = wrap(tucker_tensor.tucker_to_tensor)
 tucker_to_unfolded = wrap(tucker_tensor.tucker_to_unfolded)
 tucker_to_vec = wrap(tucker_tensor.tucker_to_vec)
-mps_to_tensor = wrap(mps_tensor.mps_to_tensor)
-mps_to_unfolded = wrap(mps_tensor.mps_to_unfolded)
-mps_to_vec = wrap(mps_tensor.mps_to_vec)
+tt_to_tensor = wrap(tt_tensor.tt_to_tensor)
+tt_to_unfolded = wrap(tt_tensor.tt_to_unfolded)
+tt_to_vec = wrap(tt_tensor.tt_to_vec)
+
+# Deprecated
+kruskal_to_tensor = wrap(cp_tensor.kruskal_to_tensor)
+kruskal_to_unfolded = wrap(cp_tensor.kruskal_to_unfolded)
+kruskal_to_vec = wrap(cp_tensor.kruskal_to_vec)

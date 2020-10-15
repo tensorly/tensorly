@@ -6,11 +6,10 @@
 
 from . import backend as T
 from .base import unfold, tensor_to_vec
+from ._factorized_tensor import FactorizedTensor
 import warnings
-from collections.abc import Mapping
 
-
-class Parafac2Tensor(Mapping):
+class Parafac2Tensor(FactorizedTensor):
     """A wrapper class for the PARAFAC2 decomposition.
     """
     def __init__(self, parafac2_tensor):
@@ -30,12 +29,12 @@ class Parafac2Tensor(Mapping):
         self.projections = projections
         
     @classmethod
-    def from_kruskaltensor(self, kruskal_tensor, parafac2_tensor_ok=False):
-        """Create a Parafac2Tensor from a KruskalTensor
+    def from_CPTensor(self, cp_tensor, parafac2_tensor_ok=False):
+        """Create a Parafac2Tensor from a CPTensor
 
         Parameters:
         -----------
-        kruskal_tensor: KruskalTensor or Parafac2Tensor
+        cp_tensor: CPTensor or Parafac2Tensor
             If it is a Parafac2Tensor, then the argument ``parafac2_tensor_ok`` must be True'
         parafac2_tensor: bool (optional)
             Whether or not Parafac2Tensors can be used as input.
@@ -43,14 +42,14 @@ class Parafac2Tensor(Mapping):
         Returns:
         --------
         Parafac2Tensor
-            Parafac2Tensor with factor matrices and weigths extracted from a KruskalTensor
+            Parafac2Tensor with factor matrices and weigths extracted from a CPTensor
         """
-        if parafac2_tensor_ok and len(kruskal_tensor) == 3:
-            return Parafac2Tensor(kruskal_tensor)
-        elif len(kruskal_tensor) == 3:
-            raise TypeError('Input is not a KruskalTensor. If it is a Parafac2Tensor, then the argument ``parafac2_tensor_ok`` must be True')
+        if parafac2_tensor_ok and len(cp_tensor) == 3:
+            return Parafac2Tensor(cp_tensor)
+        elif len(cp_tensor) == 3:
+            raise TypeError('Input is not a CPTensor. If it is a Parafac2Tensor, then the argument ``parafac2_tensor_ok`` must be True')
         
-        weights, (A, B, C) = kruskal_tensor
+        weights, (A, B, C) = cp_tensor
         Q, R = T.qr(B)
         projections = [Q for _ in range(T.shape(A)[0])]
         B = R

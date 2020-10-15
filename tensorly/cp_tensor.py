@@ -1,24 +1,26 @@
 """
-Core operations on Kruskal tensors.
+Core operations on CP tensors.
 """
 
 from . import backend as T
 from .base import fold, tensor_to_vec
+from ._factorized_tensor import FactorizedTensor
 from .tenalg import khatri_rao, multi_mode_dot, inner
+from .utils import DefineDeprecated
 
-import warnings
 from collections.abc import Mapping
+import numpy as np
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
 
-class KruskalTensor(Mapping):
-    def __init__(self, kruskal_tensor):
+class CPTensor(FactorizedTensor):
+    def __init__(self, cp_tensor):
         super().__init__()
 
-        shape, rank = _validate_kruskal_tensor(kruskal_tensor)
-        weights, factors = kruskal_tensor
+        shape, rank = _validate_cp_tensor(cp_tensor)
+        weights, factors = cp_tensor
 
         # Should we allow None weights?
         if weights is None:
@@ -36,10 +38,20 @@ class KruskalTensor(Mapping):
         elif index == 1:
             return self.factors
         else: 
-            raise IndexError('You tried to access index {} of a Kruskal tensor.\n'
-                             'You can only access index 0 and 1 of a Kruskal tensor'
+            raise IndexError('You tried to access index {} of a CP tensor.\n'
+                             'You can only access index 0 and 1 of a CP tensor'
                              '(corresponding respectively to the weights and factors)'.format(index))
     
+    def __setitem__(self, index, value):
+        if index == 0:
+            self.weights = value
+        elif index == 1:
+            self.factors = value
+        else: 
+            raise IndexError('You tried to set the value at index {} of a CP tensor.\n'
+                             'You can only set index 0 and 1 of a CP tensor'
+                             '(corresponding respectively to the weights and factors)'.format(index))
+
     def __iter__(self):
         yield self.weights
         yield self.factors
@@ -48,32 +60,117 @@ class KruskalTensor(Mapping):
         return 2
     
     def __repr__(self):
-        message = '(weights, factors) : rank-{} KruskalTensor of shape {} '.format(self.rank, self.shape)
+        message = '(weights, factors) : rank-{} CPTensor of shape {} '.format(self.rank, self.shape)
         return message
 
+    def to_tensor(self):
+        return cp_to_tensor(self)
 
-def _validate_kruskal_tensor(kruskal_tensor):
-    """Validates a kruskal_tensor in the form (weights, factors)
+    def to_vec(self):
+        return cp_to_vec(self)
+    
+    def to_unfolded(self, mode):
+        return cp_to_unfolded(self, mode)
+
+    def mode_dot(self, matrix_or_vector, mode, keep_dim=False, copy=True):
+        """n-mode product of a CP tensor and a matrix or vector at the specified mode
+
+        Parameters
+        ----------
+        cp_tensor : tl.CPTensor or (core, factors)
+                        
+        matrix_or_vector : ndarray
+            1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
+            matrix or vectors to which to n-mode multiply the tensor
+        mode : int
+
+        Returns
+        -------
+        CPTensor = (core, factors)
+            `mode`-mode product of `tensor` by `matrix_or_vector`
+            * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
+            * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
+
+        See also
+        --------
+        kruskal_multi_mode_dot : chaining several mode_dot in one call
+        """
+        return cp_mode_dot(self, matrix_or_vector, mode, keep_dim=keep_dim, copy=copy)
+
+    def norm(self):
+        """Returns the l2 norm of a CP tensor
+
+        Parameters
+        ----------
+        cp_tensor : tl.CPTensor or (core, factors)
+
+        Returns
+        -------
+        l2-norm : int
+
+        Notes
+        -----
+        This is ||cp_to_tensor(factors)||^2 
+        
+        You can see this using the fact that
+        khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
+        """
+        return cp_norm(self)
+    
+    def normalize(self, inplace=True):
+        """Normalizes the factors to unit length
+
+        Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
+        where the columns of each `V_k` are normalized to unit Euclidean length
+        from the columns of `U_k` with the normalizing constants absorbed into
+        `weights`. In the special case of a symmetric tensor, `weights` holds the
+        eigenvalues of the tensor.
+
+        Parameters
+        ----------
+        cp_tensor : CPTensor = (weight, factors)
+            factors is list of matrices, all with the same number of columns
+            i.e.::
+                for u in U:
+                    u[i].shape == (s_i, R)
+
+            where `R` is fixed while `s_i` can vary with `i`
+
+        inplace : bool, default is True
+            if False, returns a normalized Copy
+            otherwise the tensor modifies itself and returns itself
+
+        Returns
+        -------
+        CPTensor = (normalisation_weights, normalised_factors)
+            returns itself if inplace is False, a normalized copy otherwise
+        """
+        self.weights, self.factors = cp_normalize(self)
+
+
+
+def _validate_cp_tensor(cp_tensor):
+    """Validates a cp_tensor in the form (weights, factors)
     
         Returns the rank and shape of the validated tensor
     
     Parameters
     ----------
-    kruskal_tensor : KruskalTensor or (weights, factors)
+    cp_tensor : CPTensor or (weights, factors)
     
     Returns
     -------
     (shape, rank) : (int tuple, int)
-        size of the full tensor and rank of the Kruskal tensor
+        size of the full tensor and rank of the CP tensor
     """
-    if isinstance(kruskal_tensor, KruskalTensor):
+    if isinstance(cp_tensor, CPTensor):
         # it's already been validated at creation
-        return kruskal_tensor.shape, kruskal_tensor.rank
+        return cp_tensor.shape, cp_tensor.rank
 
-    weights, factors = kruskal_tensor
+    weights, factors = cp_tensor
             
     if len(factors) < 2:
-        raise ValueError('A Kruskal tensor should be composed of at least two factors.'
+        raise ValueError('A CP tensor should be composed of at least two factors.'
                          'However, {} factor was given.'.format(len(factors)))
 
     if T.ndim(factors[0]) == 2:
@@ -89,20 +186,78 @@ def _validate_kruskal_tensor(kruskal_tensor):
             current_mode_size, current_rank = s, 1
 
         if current_rank != rank:
-            raise ValueError('All the factors of a Kruskal tensor should have the same number of column.'
+            raise ValueError('All the factors of a CP tensor should have the same number of column.'
                              'However, factors[0].shape[1]={} but factors[{}].shape[1]={}.'.format(
                                  rank, i, T.shape(factor)[1]))
         shape.append(current_mode_size)
 
     if weights is not None and T.shape(weights) != (rank, ):
-        raise ValueError('Given factors for a rank-{} Kruskal tensor but len(weights)={}.'.format(
+        raise ValueError('Given factors for a rank-{} CP tensor but len(weights)={}.'.format(
             rank, T.shape(weights)))
         
     return tuple(shape), rank
 
+def _cp_n_param(tensor_shape, rank, weights=False):
+    """Number of parameters of a Kruskal decomposition for a given `rank` and full `tensor_shape`.
 
-def kruskal_normalise(kruskal_tensor):
-    """Returns kruskal_tensor with factors normalised to unit length
+    Parameters
+    ----------
+    tensor_shape : int tuple
+        shape of the full tensor to decompose (or approximate)
+    
+    rank : tuple
+        rank of the CP decomposition
+    
+    Returns
+    -------
+    n_params : int
+        Number of parameters of a CP decomposition of rank `rank` of a full tensor of shape `tensor_shape`
+    """
+    factors_params = rank*np.sum(tensor_shape)
+    if weights:
+        return factors_params + rank
+    else:
+        return factors_params
+
+
+def _validate_cp_rank(tensor_shape, rank='same', rounding='round'):
+    """Returns the rank of a Kruskal Decomposition
+
+    Parameters
+    ----------
+    tensor_shape : tupe
+        shape of the tensor to decompose
+    rank : {'same', float, int}, default is same
+        way to determine the rank, by default 'same'
+        if 'same': rank is computed to keep the number of parameters (at most) the same
+        if float, computes a rank so as to keep rank percent of the original number of parameters
+        if int, just returns rank
+    rounding = {'round', 'floor', 'ceil'}
+
+    Returns
+    -------
+    rank : int
+        rank of the decomposition
+    """
+    if rounding == 'ceil':
+        rounding_fun = np.ceil
+    elif rounding == 'floor':
+        rounding_fun = np.floor
+    elif rounding == 'round':
+        rounding_fun = np.round
+    else:
+        raise ValueError(f'Rounding should be of round, floor or ceil, but got {rounding}')
+    
+    if rank == 'same':
+        rank = float(1)
+
+    if isinstance(rank, float) and (0 < rank <= 1):
+        rank = int(rounding_fun(np.prod(tensor_shape)*rank/np.sum(tensor_shape)))
+    return rank
+
+
+def cp_normalize(cp_tensor):
+    """Returns cp_tensor with factors normalised to unit length
 
     Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
     where the columns of each `V_k` are normalized to unit Euclidean length
@@ -112,7 +267,7 @@ def kruskal_normalise(kruskal_tensor):
 
     Parameters
     ----------
-    kruskal_tensor : KruskalTensor = (weight, factors)
+    cp_tensor : CPTensor = (weight, factors)
         factors is list of matrices, all with the same number of columns
         i.e.::
             for u in U:
@@ -122,10 +277,10 @@ def kruskal_normalise(kruskal_tensor):
 
     Returns
     -------
-    KruskalTensor = (normalisation_weights, normalised_factors)
+    CPTensor = (normalisation_weights, normalised_factors)
     """
-    _, rank = _validate_kruskal_tensor(kruskal_tensor)
-    weights, factors = kruskal_tensor
+    _, rank = _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
     
     if weights is None:
         weights = T.ones(rank, **T.context(factors[0]))
@@ -141,10 +296,10 @@ def kruskal_normalise(kruskal_tensor):
         weights = weights*scales
         normalized_factors.append(factor / T.reshape(scales_non_zero, (1, -1)))
 
-    return KruskalTensor((weights, normalized_factors))
-    
+    return CPTensor((weights, normalized_factors))
 
-def kruskal_to_tensor(kruskal_tensor, mask=None):
+
+def cp_to_tensor(cp_tensor, mask=None):
     """Turns the Khatri-product of matrices into a full tensor
 
         ``factor_matrices = [|U_1, ... U_n|]`` becomes
@@ -152,7 +307,7 @@ def kruskal_to_tensor(kruskal_tensor, mask=None):
 
     Parameters
     ----------
-    kruskal_tensor : KruskalTensor = (weight, factors)
+    cp_tensor : CPTensor = (weight, factors)
         factors is a list of factor matrices, all with the same number of columns
         i.e. for all matrix U in factor_matrices:
         U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
@@ -175,8 +330,8 @@ def kruskal_to_tensor(kruskal_tensor, mask=None):
     summing over r and updating an outer product of vectors.
 
     """
-    shape, rank = _validate_kruskal_tensor(kruskal_tensor)
-    weights, factors = kruskal_tensor
+    shape, _ = _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
 
     if weights is None:
         weights = 1
@@ -189,7 +344,8 @@ def kruskal_to_tensor(kruskal_tensor, mask=None):
 
     return fold(full_tensor, 0, shape)
 
-def kruskal_to_unfolded(kruskal_tensor, mode):
+
+def cp_to_unfolded(cp_tensor, mode):
     """Turns the khatri-product of matrices into an unfolded tensor
 
         turns ``factors = [|U_1, ... U_n|]`` into a mode-`mode`
@@ -197,7 +353,7 @@ def kruskal_to_unfolded(kruskal_tensor, mode):
 
     Parameters
     ----------
-    kruskal_tensor : KruskalTensor = (weight, factors)
+    cp_tensor : CPTensor = (weight, factors)
         factors is a list of matrices, all with the same number of columns
         ie for all u in factor_matrices:
         u[i] has shape (s_u_i, R), where R is fixed
@@ -214,8 +370,8 @@ def kruskal_to_unfolded(kruskal_tensor, mode):
     Writing factors = [U_1, ..., U_n], we exploit the fact that
     ``U_k = U[k].dot(khatri_rao(U_1, ..., U_k-1, U_k+1, ..., U_n))``
     """
-    _validate_kruskal_tensor(kruskal_tensor)
-    weights, factors = kruskal_tensor
+    _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
 
     if weights is not None:
         return T.dot(factors[mode]*weights, T.transpose(khatri_rao(factors, skip_matrix=mode)))
@@ -223,7 +379,7 @@ def kruskal_to_unfolded(kruskal_tensor, mode):
         return T.dot(factors[mode], T.transpose(khatri_rao(factors, skip_matrix=mode)))
 
 
-def kruskal_to_vec(kruskal_tensor):
+def cp_to_vec(cp_tensor):
     """Turns the khatri-product of matrices into a vector
 
         (the tensor ``factors = [|U_1, ... U_n|]``
@@ -231,7 +387,7 @@ def kruskal_to_vec(kruskal_tensor):
 
     Parameters
     ----------
-    kruskal_tensor : KruskalTensor = (weight, factors)
+    cp_tensor : CPTensor = (weight, factors)
         factors is a list of matrices, all with the same number of columns
         i.e.::
 
@@ -245,15 +401,15 @@ def kruskal_to_vec(kruskal_tensor):
     ndarray
         vectorised tensor
     """
-    return tensor_to_vec(kruskal_to_tensor(kruskal_tensor))
+    return tensor_to_vec(cp_to_tensor(cp_tensor))
 
 
-def kruskal_mode_dot(kruskal_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
-        """n-mode product of a Kruskal tensor and a matrix or vector at the specified mode
+def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
+        """n-mode product of a CP tensor and a matrix or vector at the specified mode
 
         Parameters
         ----------
-        kruskal_tensor : tl.KruskalTensor or (core, factors)
+        cp_tensor : tl.CPTensor or (core, factors)
                         
         matrix_or_vector : ndarray
             1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
@@ -262,7 +418,7 @@ def kruskal_mode_dot(kruskal_tensor, matrix_or_vector, mode, keep_dim=False, cop
 
         Returns
         -------
-        KruskalTensor = (core, factors)
+        CPTensor = (core, factors)
             `mode`-mode product of `tensor` by `matrix_or_vector`
             * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
             * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
@@ -271,8 +427,8 @@ def kruskal_mode_dot(kruskal_tensor, matrix_or_vector, mode, keep_dim=False, cop
         --------
         kruskal_multi_mode_dot : chaining several mode_dot in one call
         """
-        shape, _ = _validate_kruskal_tensor(kruskal_tensor)
-        weights, factors = kruskal_tensor
+        shape, _ = _validate_cp_tensor(cp_tensor)
+        weights, factors = cp_tensor
         contract = False
         
         if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
@@ -306,10 +462,10 @@ def kruskal_mode_dot(kruskal_tensor, matrix_or_vector, mode, keep_dim=False, cop
         else:
              factors[mode] = T.dot(matrix_or_vector, factors[mode])
 
-        return KruskalTensor((weights, factors))
+        return CPTensor((weights, factors))
     
 
-def unfolding_dot_khatri_rao(tensor, kruskal_tensor, mode):
+def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     """mode-n unfolding times khatri-rao product of factors
     
     Parameters
@@ -373,8 +529,8 @@ def unfolding_dot_khatri_rao(tensor, kruskal_tensor, mode):
         return tl_einsum(op, tensor, *factors)
     """
     mttkrp_parts = []
-    _, rank = _validate_kruskal_tensor(kruskal_tensor)
-    weights, factors = kruskal_tensor
+    _, rank = _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
     for r in range(rank):
         component = multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode)
         mttkrp_parts.append(component)
@@ -385,12 +541,12 @@ def unfolding_dot_khatri_rao(tensor, kruskal_tensor, mode):
         return T.stack(mttkrp_parts, axis=1)*T.reshape(weights, (1, -1))
 
 
-def kruskal_norm(kruskal_tensor):
-    """Returns the l2 norm of a Kruskal tensor
+def cp_norm(cp_tensor):
+    """Returns the l2 norm of a CP tensor
 
     Parameters
     ----------
-    kruskal_tensor : tl.KruskalTensor or (core, factors)
+    cp_tensor : tl.CPTensor or (core, factors)
 
     Returns
     -------
@@ -398,13 +554,13 @@ def kruskal_norm(kruskal_tensor):
 
     Notes
     -----
-    This is ||kruskal_to_tensor(factors)||^2 
+    This is ||cp_to_tensor(factors)||^2 
     
     You can see this using the fact that
     khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
     """
-    _ = _validate_kruskal_tensor(kruskal_tensor)
-    weights, factors = kruskal_tensor
+    _ = _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
     norm = 1
     for factor in factors:
         norm *= T.dot(T.transpose(factor), factor)
@@ -416,3 +572,12 @@ def kruskal_norm(kruskal_tensor):
     # We sum even if weigths is not None
     # as e.g. MXNet would return a 1D tensor, not a 0D tensor
     return T.sqrt(T.sum(norm))
+
+
+# Deprecated classes and functions
+KruskalTensor = DefineDeprecated(deprecated_name='KruskalTensor', use_instead=CPTensor)
+kruskal_norm = DefineDeprecated(deprecated_name='kruskal_norm', use_instead=cp_norm)
+kruskal_mode_dot = DefineDeprecated(deprecated_name='kruskal_mode_dot', use_instead=cp_mode_dot)
+kruskal_to_tensor = DefineDeprecated(deprecated_name='kruskal_to_tensor', use_instead=cp_to_tensor)
+kruskal_to_unfolded = DefineDeprecated(deprecated_name='kruskal_to_unfolded', use_instead=cp_to_unfolded)
+kruskal_to_vec = DefineDeprecated(deprecated_name='kruskal_to_vec', use_instead=cp_to_vec)

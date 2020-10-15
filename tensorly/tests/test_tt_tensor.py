@@ -2,19 +2,20 @@ import numpy as np
 
 import tensorly as tl
 from ..decomposition import matrix_product_state
-from ..mps_tensor import mps_to_tensor, _validate_mps_tensor
-from ..testing import assert_array_almost_equal, assert_equal, assert_raises
-from ..random import check_random_state, random_mps
+from ..tt_tensor import tt_to_tensor, _validate_tt_tensor
+from ..tt_tensor import _validate_tt_rank, _tt_n_param
+from ..testing import assert_array_almost_equal, assert_equal, assert_raises, assert_
+from ..random import check_random_state, random_tt
 
 
-def test_validate_mps_tensor():
+def test_validate_tt_tensor():
     rng = check_random_state(12345)
     true_shape = (3, 4, 5)
     true_rank = (1, 3, 2, 1)
-    factors = random_mps(true_shape, rank=true_rank)
+    factors = random_tt(true_shape, rank=true_rank)
     
     # Check that the correct shape/rank are returned
-    shape, rank = _validate_mps_tensor(factors)
+    shape, rank = _validate_tt_tensor(factors)
     assert_equal(shape, true_shape,
                     err_msg='Returned incorrect shape (got {}, expected {})'.format(
                         shape, true_shape))
@@ -26,25 +27,25 @@ def test_validate_mps_tensor():
     # One of the factors has the wrong ndim
     factors[0] = tl.tensor(rng.random_sample((4, 4)))
     with assert_raises(ValueError):
-        _validate_mps_tensor(factors)
+        _validate_tt_tensor(factors)
     
     # Consecutive factors ranks don't match
     factors[0] = tl.tensor(rng.random_sample((1, 3, 2)))
     with assert_raises(ValueError):
-        _validate_mps_tensor(factors)
+        _validate_tt_tensor(factors)
         
     # Boundary conditions not respected
     factors[0] = tl.tensor(rng.random_sample((3, 3, 2)))
     with assert_raises(ValueError):
-        _validate_mps_tensor(factors)
+        _validate_tt_tensor(factors)
 
     # Not enough factors
     with assert_raises(ValueError):
-        _validate_mps_tensor(factors[:1])
+        _validate_tt_tensor(factors[:1])
 
 
-def test_mps_to_tensor():
-    """ Test for mps_to_tensor
+def test_tt_to_tensor():
+    """ Test for tt_to_tensor
 
         References
         ----------
@@ -67,7 +68,7 @@ def test_mps_to_tensor():
 
     tensor = tl.tensor(tensor)
 
-    # Compute ground truth MPS factors
+    # Compute ground truth TT factors
     factors = [None] * 3
 
     factors[0] = np.zeros((1, 3, 2))
@@ -90,12 +91,12 @@ def test_mps_to_tensor():
 
     factors = [tl.tensor(f) for f in factors]
 
-    # Check that MPS factors re-assemble to the original tensor
-    assert_array_almost_equal(tensor, tl.mps_to_tensor(factors))
+    # Check that TT factors re-assemble to the original tensor
+    assert_array_almost_equal(tensor, tl.tt_to_tensor(factors))
 
 
-def test_mps_to_tensor_random():
-    """ Test for mps_to_tensor
+def test_tt_to_tensor_random():
+    """ Test for tt_to_tensor
 
         Uses random tensor as input
     """
@@ -104,16 +105,42 @@ def test_mps_to_tensor_random():
     tensor = tl.tensor(np.random.rand(3, 4, 5, 6, 2, 10))
     tensor_shape = tensor.shape
 
-    # Find MPS decomposition of the tensor
+    # Find TT decomposition of the tensor
     rank = 10
     factors = matrix_product_state(tensor, rank)
 
     # Reconstruct the original tensor
-    reconstructed_tensor = tl.mps_to_tensor(factors)
+    reconstructed_tensor = tl.tt_to_tensor(factors)
+    assert_(tl.shape(reconstructed_tensor) == tensor_shape)
 
     # Check that the rank is 10
     D = len(factors)
     for k in range(D):
-        (r_prev, n_k, r_k) = factors[k].shape
-        assert(r_prev<=rank), "MPS rank with index " + str(k) + "exceeds rank"
-        assert(r_k<=rank), "MPS rank with index " + str(k+1) + "exceeds rank"
+        (r_prev, _, r_k) = factors[k].shape
+        assert(r_prev<=rank), "TT rank with index " + str(k) + "exceeds rank"
+        assert(r_k<=rank), "TT rank with index " + str(k+1) + "exceeds rank"
+
+
+def test_tt_n_param():
+    """Test for _tt_n_param"""
+    tensor_shape = (2, 3, 4, 1, 5)
+    rank = (1, 3, 2, 2, 4, 1)
+    factors = random_tt(shape=tensor_shape, rank=rank)
+    true_n_param = np.sum([np.prod(tl.shape(f)) for f in factors])
+    n_param = _tt_n_param(tensor_shape, rank)
+    assert_equal(n_param, true_n_param)
+
+def test_validate_tt_rank():
+    """Test for _validate_tt_rank with random sizes"""
+    tensor_shape = tuple(np.random.randint(1, 100, size=4))
+    n_param_tensor = np.prod(tensor_shape)
+
+    # Rounding = floor
+    rank = _validate_tt_rank(tensor_shape, rank='same', rounding='floor')
+    n_param = _tt_n_param(tensor_shape, rank)
+    assert_(n_param <= n_param_tensor)
+
+    # Rounding = ceil
+    rank = _validate_tt_rank(tensor_shape, rank='same', rounding='ceil')
+    n_param = _tt_n_param(tensor_shape, rank)
+    assert_(n_param >= n_param_tensor)

@@ -39,9 +39,9 @@ First, let's create a second order tensor that is zero everywhere except in a sw
 
 
 We will now apply a rank-2 CANDECOMP-PARAFAC (:func:`tensorly.decomposition.parafac`) decomposition on `tensor`
-to decompose this into a kruskal tensor.
+to decompose this into a cp tensor.
 
-A Parafac decompositions expresses the tensor as a kruskal tensor that can be represented as a list of factors (matrices).
+A Parafac decompositions expresses the tensor as a cp tensor that can be represented as a list of factors (matrices).
 The :func:`parafac` function therefore returns a list of factors.
 
 .. code::
@@ -53,11 +53,11 @@ The :func:`parafac` function therefore returns a list of factors.
    >>> [f.shape for f in factors]
    [(12, 2), (12, 2)]
 
-From this **kruskal tensor** (presented as a list of matrices) you can reconstruct a full tensor:
+From this **cp tensor** (presented as a list of matrices) you can reconstruct a full tensor:
 
 .. code::
 
-   >>> print(tl.kruskal_to_tensor(factors))
+   >>> print(tl.cp_to_tensor(factors))
    [[ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]
     [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
     [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
@@ -132,7 +132,7 @@ The tensor-train decomposition, also known as matrix product state in physics co
 
     A[i_1, \ldots, i_d] \approx \sum_{\alpha_1}\cdots\sum_{\alpha_{d-1}}G_1(i_1, \alpha_1)G_2(\alpha_1, i_2, \alpha_2)G_3(\alpha_2, i_3, \alpha_3)\cdots G_d(\alpha_{d-1},i_d)
 
-The advantage of the MPS/tensor-train decomposition is that both of its number of entries (storage) and computational time is linear in the number of dimensions, making high dimensional problem more easily addressable.
+The advantage of the TT/tensor-train decomposition is that both of its number of entries (storage) and computational time is linear in the number of dimensions, making high dimensional problem more easily addressable.
 
 Implementations
 +++++++++++++++
@@ -154,8 +154,8 @@ As before, we can reconstruct a full tensor from our Tensor-train  decomposition
 
 .. code:: python
 
-   >>> from tensorly import mps_to_tensor
-   >>> print(np.round(mps_to_tensor(factors), decimals=10))
+   >>> from tensorly import tt_to_tensor
+   >>> print(np.round(tt_to_tensor(factors), decimals=10))
  [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
  [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
  [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
@@ -168,7 +168,7 @@ As before, we can reconstruct a full tensor from our Tensor-train  decomposition
  [ 0.  0.  0.  0.  1.  1.  1.  1.  0.  0.  0.  0.]
  [ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]]
 
-Note that for the matrix case, MPS/tensor-train decomposition is equivalent to a the singular value decomposition. This matrix is rank 2, so it can be fully recovered with a rank-2 decomposition.
+Note that for the matrix case, TT/tensor-train decomposition is equivalent to a the singular value decomposition. This matrix is rank 2, so it can be fully recovered with a rank-2 decomposition.
 
 
 References
