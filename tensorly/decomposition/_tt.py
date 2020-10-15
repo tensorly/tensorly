@@ -1,5 +1,6 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
+from ..tt_tensor import _validate_tt_rank
 
 def matrix_product_state(input_tensor, rank, verbose=False):
     """TT decomposition via recursive SVD
@@ -26,28 +27,9 @@ def matrix_product_state(input_tensor, rank, verbose=False):
     ----------
     .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
     """
-
-    # Check user input for errors
+    rank = _validate_tt_rank(tl.shape(input_tensor), rank=rank)
     tensor_size = input_tensor.shape
     n_dim = len(tensor_size)
-
-    if isinstance(rank, int):
-        rank = [1] + [rank] * (n_dim-1) + [1]
-    elif n_dim+1 != len(rank):
-        message = 'Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}'.format(
-            len(rank), n_dim + 1)
-        raise(ValueError(message))
-
-    # Make sure it's not a tuple but a list
-    rank = list(rank)
-
-    # Initialization
-    if rank[0] != 1:
-        message = 'Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.'.format(rank[0])
-        raise ValueError(message)
-    if rank[-1] != 1:
-        message = 'Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(rank[0])
-        raise ValueError(message)
 
     unfolding = input_tensor
     factors = [None] * n_dim

@@ -8,6 +8,7 @@ from .tenalg import multi_mode_dot, mode_dot
 from . import backend as tl
 import numpy as np
 from scipy.optimize import brentq
+import warnings
 
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -326,7 +327,11 @@ def _validate_tucker_rank(tensor_shape, rank='same', rounding='round'):
         fun = lambda x : n_param_tensor*x**order + squared_dims*x - rank*n_param_tensor
         fraction_param = brentq(fun, 0.0, max(rank, 1.0))
         rank = [max(int(rounding_fun(s*fraction_param)), 1) for s in tensor_shape]
+    
+    elif isinstance(rank, int):
+        n_mode = len(tensor_shape)
+        message = "Given only one int for 'rank' for decomposition a tensor of order {}. Using this rank for all modes.".format(n_mode)
+        warnings.warn(message, RuntimeWarning)
+        rank = [rank]*n_mode
 
     return rank
-
-

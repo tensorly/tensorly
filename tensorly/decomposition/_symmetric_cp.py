@@ -3,6 +3,8 @@ from ._base_decomposition import DecompositionMixin
 from tensorly.tenalg import outer
 from tensorly.metrics.regression import standard_deviation
 import numpy as np
+from ..cp_tensor import _validate_cp_rank
+
 
 def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
     """A single Robust Symmetric Tensor Power Iteration
@@ -99,6 +101,8 @@ def symmetric_parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10,
     factor : 2-D tl.tensor of shape (size, rank)
         each column corresponds to one eigenvector
     """
+    rank = _validate_cp_rank(tl.shape(tensor), rank=rank)
+
     order = tl.ndim(tensor)
     size = tl.shape(tensor)[0]
     
