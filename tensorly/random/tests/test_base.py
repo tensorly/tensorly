@@ -3,7 +3,7 @@ from numpy.linalg import matrix_rank
 
 from ... import backend as T
 from ..base import (random_cp, random_tucker,
-                    random_mps, check_random_state)
+                    random_tt, check_random_state)
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...base import unfold
@@ -97,13 +97,13 @@ def test_random_tucker():
     assert_array_almost_equal(core, reconstructed)
 
 
-def test_random_mps():
-    """test for random.random_mps"""
+def test_random_tt():
+    """test for random.random_tt"""
     shape = (10, 11, 12)
     rank = (1, 4, 3, 1)
     true_shapes = [(1, 10, 4), (4, 11, 3), (3, 12, 1)]
 
-    factors = random_mps(shape, rank, full=False)
+    factors = random_tt(shape, rank, full=False)
     for i, (true_shape, factor) in enumerate(zip(true_shapes, factors)):
         assert_equal(factor.shape, true_shape,
                 err_msg=('{}-th factor has shape {}, expected {}'.format(
@@ -113,10 +113,10 @@ def test_random_mps():
     with np.testing.assert_raises(ValueError):
         shape = (10, 11, 12)
         rank = (1, 3, 1)
-        _ = random_mps(shape, rank)
+        _ = random_tt(shape, rank)
 
     # Not respecting the boundary rank conditions
     with np.testing.assert_raises(ValueError):
         shape = (10, 11, 12)
         rank = (1, 3, 3, 3)
-        _ = random_mps(shape, rank)
+        _ = random_tt(shape, rank)

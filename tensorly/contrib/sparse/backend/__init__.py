@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import functools
 
 from ....backend import backend_context, get_backend, override_module_dispatch
-from .... import backend, base, cp_tensor, tucker_tensor, mps_tensor
+from .... import backend, base, cp_tensor, tucker_tensor, tt_tensor
 
 
 _KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
@@ -116,6 +116,6 @@ cp_to_vec = dispatch_sparse(cp_tensor.cp_to_vec)
 tucker_to_tensor = dispatch_sparse(tucker_tensor.tucker_to_tensor)
 tucker_to_unfolded = dispatch_sparse(tucker_tensor.tucker_to_unfolded)
 tucker_to_vec = dispatch_sparse(tucker_tensor.tucker_to_vec)
-mps_to_tensor = dispatch_sparse(mps_tensor.mps_to_tensor)
-mps_to_unfolded = dispatch_sparse(mps_tensor.mps_to_unfolded)
-mps_to_vec = dispatch_sparse(mps_tensor.mps_to_vec)
+tt_to_tensor = dispatch_sparse(tt_tensor.tt_to_tensor)
+tt_to_unfolded = dispatch_sparse(tt_tensor.tt_to_unfolded)
+tt_to_vec = dispatch_sparse(tt_tensor.tt_to_vec)

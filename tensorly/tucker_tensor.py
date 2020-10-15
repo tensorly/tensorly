@@ -6,6 +6,9 @@ from ._factorized_tensor import FactorizedTensor
 from .base import unfold, tensor_to_vec
 from .tenalg import multi_mode_dot, mode_dot
 from . import backend as tl
+import numpy as np
+from scipy.optimize import brentq
+
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -243,3 +246,87 @@ class TuckerTensor(FactorizedTensor):
         tucker_multi_mode_dot : chaining several mode_dot in one call
         """
         return tucker_mode_dot(self, matrix_or_vector, mode, keep_dim=keep_dim, copy=copy)
+
+
+def _tucker_n_param(tensor_shape, rank):
+    """Number of parameters of a Tucker decomposition for a given `rank` and full `tensor_shape`.
+
+    Parameters
+    ----------
+    tensor_shape : int tuple
+        shape of the full tensor to decompose (or approximate)
+    
+    rank : tuple
+        rank of the Tucker decomposition
+    
+    Returns
+    -------
+    n_params : int
+        Number of parameters of a Tucker decomposition of rank `rank` of a full tensor of shape `tensor_shape`
+    """
+    core_params = np.prod(rank)
+    factors_params = np.sum([r*s for (r, s) in zip(rank, tensor_shape)])
+    return core_params + factors_params
+
+
+def _validate_tucker_rank(tensor_shape, rank='same', rounding='round'):
+    r"""Returns the rank of a Tucker Decomposition
+
+    Parameters
+    ----------
+    tensor_shape : tupe
+        shape of the tensor to decompose
+    rank : {'same', float, tuple, int}, default is same
+        way to determine the rank, by default 'same'
+        if 'same': rank is computed to keep the number of parameters (at most) the same
+        if float, computes a rank so as to keep rank percent of the original number of parameters
+        if int or tuple, just returns rank
+    rounding = {'round', 'floor', 'ceil'}
+
+    Returns
+    -------
+    rank : int tuple
+        rank of the decomposition
+
+    Notes
+    -----
+    For a fractional input rank, I want to find a Tucker rank such that: 
+    n_param_decomposition = rank*n_param_tensor
+
+    In particular, for an input of size I_1, ..., I_N:
+    I find a value c such that the rank will be (c I_1, ..., c I_N)
+
+    We have sn_param_tensor = I_1 x ... x I_N
+    
+    We look for a Tucker decomposition of rank (c I_1, ..., c I_N )
+    This decomposition will have the following n_params:
+    For the core : \prod_k c I_k = c^N \prod I_k = c^N n_param_tensor
+    For the factors : \sum_k c I_k^2
+
+    In other words we want to solve:
+    c^N n_param_tensor + \sum_k c I_k^2 = rank*n_param_tensor
+    """
+    if rounding == 'ceil':
+        rounding_fun = np.ceil
+    elif rounding == 'floor':
+        rounding_fun = np.floor
+    elif rounding == 'round':
+        rounding_fun = np.round
+    else:
+        raise ValueError(f'Rounding should be round, floor or ceil, but got {rounding}')
+
+    if rank == 'same':
+        rank = float(1)
+    
+    if isinstance(rank, float) and (0 < rank <= 1):
+        order = len(tensor_shape)
+        n_param_tensor = np.prod(tensor_shape)
+        squared_dims = np.sum([s**2 for s in tensor_shape])
+
+        fun = lambda x : n_param_tensor*x**order + squared_dims*x - rank*n_param_tensor
+        fraction_param = brentq(fun, 0.0, max(rank, 1.0))
+        rank = [max(int(rounding_fun(s*fraction_param)), 1) for s in tensor_shape]
+
+    return rank
+
+

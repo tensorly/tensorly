@@ -9,6 +9,7 @@ from .tenalg import khatri_rao, multi_mode_dot, inner
 from .utils import DefineDeprecated
 
 from collections.abc import Mapping
+import numpy as np
 
 # Author: Jean Kossaifi
 
@@ -196,6 +197,64 @@ def _validate_cp_tensor(cp_tensor):
         
     return tuple(shape), rank
 
+def _cp_n_param(tensor_shape, rank, weights=False):
+    """Number of parameters of a Kruskal decomposition for a given `rank` and full `tensor_shape`.
+
+    Parameters
+    ----------
+    tensor_shape : int tuple
+        shape of the full tensor to decompose (or approximate)
+    
+    rank : tuple
+        rank of the CP decomposition
+    
+    Returns
+    -------
+    n_params : int
+        Number of parameters of a CP decomposition of rank `rank` of a full tensor of shape `tensor_shape`
+    """
+    factors_params = rank*np.sum(tensor_shape)
+    if weights:
+        return factors_params + rank
+    else:
+        return factors_params
+
+
+def _validate_cp_rank(tensor_shape, rank='same', rounding='round'):
+    """Returns the rank of a Kruskal Decomposition
+
+    Parameters
+    ----------
+    tensor_shape : tupe
+        shape of the tensor to decompose
+    rank : {'same', float, int}, default is same
+        way to determine the rank, by default 'same'
+        if 'same': rank is computed to keep the number of parameters (at most) the same
+        if float, computes a rank so as to keep rank percent of the original number of parameters
+        if int, just returns rank
+    rounding = {'round', 'floor', 'ceil'}
+
+    Returns
+    -------
+    rank : int
+        rank of the decomposition
+    """
+    if rounding == 'ceil':
+        rounding_fun = np.ceil
+    elif rounding == 'floor':
+        rounding_fun = np.floor
+    elif rounding == 'round':
+        rounding_fun = np.round
+    else:
+        raise ValueError(f'Rounding should be of round, floor or ceil, but got {rounding}')
+    
+    if rank == 'same':
+        rank = float(1)
+
+    if isinstance(rank, float) and (0 < rank <= 1):
+        rank = int(rounding_fun(np.prod(tensor_shape)*rank/np.sum(tensor_shape)))
+    return rank
+
 
 def cp_normalize(cp_tensor):
     """Returns cp_tensor with factors normalised to unit length
@@ -238,7 +297,7 @@ def cp_normalize(cp_tensor):
         normalized_factors.append(factor / T.reshape(scales_non_zero, (1, -1)))
 
     return CPTensor((weights, normalized_factors))
-    
+
 
 def cp_to_tensor(cp_tensor, mask=None):
     """Turns the Khatri-product of matrices into a full tensor

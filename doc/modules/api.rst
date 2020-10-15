@@ -115,22 +115,22 @@ For each backend, tensorly provides the following uniform functions:
     tucker_mode_dot
 
 
-:mod:`tensorly.mps_tensor`: Tensors in Matrix-Product-State format
+:mod:`tensorly.tt_tensor`: Tensors in Matrix-Product-State format
 ==================================================================
 
-.. automodule:: tensorly.mps_tensor
+.. automodule:: tensorly.tt_tensor
     :no-members:
     :no-inherited-members:
 
-.. currentmodule:: tensorly.mps_tensor
+.. currentmodule:: tensorly.tt_tensor
 
 .. autosummary::
     :toctree: generated/
     :template: function.rst
 
-    mps_to_tensor
-    mps_to_unfolded
-    mps_to_vec
+    tt_to_tensor
+    tt_to_unfolded
+    tt_to_vec
 
 
 :mod:`tensorly.parafac2_tensor`: Tensors in PARAFAC2 format
@@ -256,7 +256,7 @@ For each backend, tensorly provides the following uniform functions:
 
    random_cp
    random_tucker
-   random_mps 
+   random_tt 
    check_random_state
 
 

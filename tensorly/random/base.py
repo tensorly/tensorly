@@ -1,8 +1,8 @@
 import numpy as np
 from ..cp_tensor import (cp_to_tensor, CPTensor,
-                              cp_normalize)
+                         cp_normalize)
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor
-from ..mps_tensor import mps_to_tensor, MPSTensor
+from ..tt_tensor import tt_to_tensor, TTTensor
 from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor
 from .. import backend as T
 from ..utils import DefineDeprecated
@@ -32,11 +32,13 @@ def check_random_state(seed):
 
     raise ValueError('Seed should be None, int or np.random.RandomState')
 
+
 def random_tensor(shape, random_state=None, **context):
     """Create a random tensor
     """
     rns = check_random_state(random_state)
     return T.tensor(rns.random_sample(shape), **context)
+
 
 def random_parafac2(shapes, rank, full=False, random_state=None,
                     normalise_factors=True, **context):
@@ -169,15 +171,16 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
     else:
         return TuckerTensor((core, factors))
 
-def random_mps(shape, rank, full=False, random_state=None, **context):
-    """Generates a random MPS/ttrain tensor
+
+def random_tt(shape, rank, full=False, random_state=None, **context):
+    """Generates a random TT/ttrain tensor
 
     Parameters
     ----------
     shape : tuple
         shape of the tensor to generate
     rank : int
-        rank of the MPS decomposition
+        rank of the TT decomposition
         must verify rank[0] == rank[-1] ==1 (boundary conditions)
         and len(rank) == len(shape)+1
     full : bool, optional, default is False
@@ -189,7 +192,7 @@ def random_mps(shape, rank, full=False, random_state=None, **context):
 
     Returns
     -------
-    MPS_tensor : ND-array or 3D-array list
+    TT_tensor : ND-array or 3D-array list
         * ND-array : full tensor if `full` is True
         * 3D-array list : list of factors otherwise
     """
@@ -218,9 +221,10 @@ def random_mps(shape, rank, full=False, random_state=None, **context):
                for i, s in enumerate(shape)]
 
     if full:
-        return mps_to_tensor(factors)
+        return tt_to_tensor(factors)
     else:
-        return MPSTensor(factors)
+        return TTTensor(factors)
 
 
 random_kruskal = DefineDeprecated(deprecated_name='random_kruskal', use_instead=random_cp)
+random_mps = DefineDeprecated(deprecated_name='random_mps', use_instead=random_tt)

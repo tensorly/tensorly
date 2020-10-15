@@ -134,7 +134,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
                     print('converged in {} iterations.'.format(iteration))
                 break
 
-    return TuckerTensor((core, factors))
+    return (core, factors)
 
 
 def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, init='svd',
@@ -205,9 +205,9 @@ def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, in
     else:
         modes = list(range(tl.ndim(tensor)))
 
-        return partial_tucker(tensor, modes, rank=rank, ranks=ranks, n_iter_max=n_iter_max, init=init,
+        core, factors = partial_tucker(tensor, modes, rank=rank, ranks=ranks, n_iter_max=n_iter_max, init=init,
                             svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
-
+        return TuckerTensor((core, factors))
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
                         random_state=None, verbose=False, ranks=None):

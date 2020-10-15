@@ -12,7 +12,7 @@ from .cp_tensor import (cp_to_tensor, cp_to_unfolded,
                         cp_norm, cp_mode_dot, cp_normalize)
 from .tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
                             tucker_to_vec, tucker_mode_dot)
-from .mps_tensor import mps_to_tensor, mps_to_unfolded, mps_to_vec
+from .tt_tensor import tt_to_tensor, tt_to_unfolded, tt_to_vec
 
 from .backend import (set_backend, get_backend,
                       backend_context, _get_backend_dir,

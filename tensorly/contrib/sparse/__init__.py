@@ -1,5 +1,5 @@
 from ...backend import set_backend, get_backend, override_module_dispatch
-from ... import backend, base, cp_tensor, tucker_tensor, mps_tensor
+from ... import backend, base, cp_tensor, tucker_tensor, tt_tensor
 
 from .backend import (tensor, is_tensor, context, shape, ndim, to_numpy, copy,
                       concatenate, reshape, moveaxis, transpose,
@@ -32,9 +32,9 @@ cp_to_vec = wrap(cp_tensor.cp_to_vec)
 tucker_to_tensor = wrap(tucker_tensor.tucker_to_tensor)
 tucker_to_unfolded = wrap(tucker_tensor.tucker_to_unfolded)
 tucker_to_vec = wrap(tucker_tensor.tucker_to_vec)
-mps_to_tensor = wrap(mps_tensor.mps_to_tensor)
-mps_to_unfolded = wrap(mps_tensor.mps_to_unfolded)
-mps_to_vec = wrap(mps_tensor.mps_to_vec)
+tt_to_tensor = wrap(tt_tensor.tt_to_tensor)
+tt_to_unfolded = wrap(tt_tensor.tt_to_unfolded)
+tt_to_vec = wrap(tt_tensor.tt_to_vec)
 
 # Deprecated
 kruskal_to_tensor = wrap(cp_tensor.kruskal_to_tensor)
