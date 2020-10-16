@@ -9,10 +9,12 @@ from .base import partial_tensor_to_vec, partial_vec_to_tensor
 
 from .cp_tensor import (cp_to_tensor, cp_to_unfolded,
                         cp_to_vec, unfolding_dot_khatri_rao, 
-                        cp_norm, cp_mode_dot, cp_normalize)
+                        cp_norm, cp_mode_dot, cp_normalize,
+                        validate_cp_rank)
 from .tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
-                            tucker_to_vec, tucker_mode_dot)
-from .tt_tensor import tt_to_tensor, tt_to_unfolded, tt_to_vec
+                            tucker_to_vec, tucker_mode_dot,
+                            validate_tucker_rank)
+from .tt_tensor import tt_to_tensor, tt_to_unfolded, tt_to_vec, validate_tt_rank
 
 from .backend import (set_backend, get_backend,
                       backend_context, _get_backend_dir,

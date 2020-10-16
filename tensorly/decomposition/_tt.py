@@ -1,8 +1,9 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ..tt_tensor import _validate_tt_rank
+from ..tt_tensor import validate_tt_rank
+from ..utils import DefineDeprecated
 
-def matrix_product_state(input_tensor, rank, verbose=False):
+def tensor_train(input_tensor, rank, verbose=False):
     """TT decomposition via recursive SVD
 
         Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
@@ -27,7 +28,7 @@ def matrix_product_state(input_tensor, rank, verbose=False):
     ----------
     .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
     """
-    rank = _validate_tt_rank(tl.shape(input_tensor), rank=rank)
+    rank = validate_tt_rank(tl.shape(input_tensor), rank=rank)
     tensor_size = input_tensor.shape
     n_dim = len(tensor_size)
 
@@ -96,5 +97,7 @@ class TensorTrain(DecompositionMixin):
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        self.decomposition_ = matrix_product_state(tensor, rank=self.rank, verbose=self.verbose)
+        self.decomposition_ = tensor_train(tensor, rank=self.rank, verbose=self.verbose)
         return self.decomposition_
+
+matrix_product_state = DefineDeprecated('matrix_product_state', tensor_train)

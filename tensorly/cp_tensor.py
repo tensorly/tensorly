@@ -220,7 +220,7 @@ def _cp_n_param(tensor_shape, rank, weights=False):
         return factors_params
 
 
-def _validate_cp_rank(tensor_shape, rank='same', rounding='round'):
+def validate_cp_rank(tensor_shape, rank='same', rounding='round'):
     """Returns the rank of a CP Decomposition
 
     Parameters

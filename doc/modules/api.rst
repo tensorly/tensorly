@@ -201,7 +201,7 @@ For each backend, tensorly provides the following uniform functions:
     partial_tucker
     non_negative_tucker
     robust_pca
-    matrix_product_state
+    tensor_train
     parafac2
     symmetric_power_iteration
     symmetric_parafac_power_iteration

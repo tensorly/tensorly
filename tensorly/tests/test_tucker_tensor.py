@@ -5,7 +5,7 @@ from ..base import unfold, tensor_to_vec
 from ..tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
                              tucker_to_vec, _validate_tucker_tensor,
                              tucker_mode_dot,
-                             _tucker_n_param, _validate_tucker_rank)
+                             _tucker_n_param, validate_tucker_rank)
 from ..tenalg import kronecker, mode_dot
 from ..testing import (assert_array_equal, assert_array_almost_equal, 
                        assert_equal, assert_raises, assert_)
@@ -150,17 +150,17 @@ def test_n_param_tucker():
     n_param = _tucker_n_param(tensor_shape, rank)
     assert_equal(n_param, true_n_param)
 
-def test_validate_tucker_rank():
-    """Test _validate_tucker_rank with random sizes"""
+def testvalidate_tucker_rank():
+    """Test validate_tucker_rank with random sizes"""
     tensor_shape = tuple(np.random.randint(1, 100, size=4))
     n_param_tensor = np.prod(tensor_shape)
 
     # Rounding = floor
-    rank = _validate_tucker_rank(tensor_shape, rank='same', rounding='floor')
+    rank = validate_tucker_rank(tensor_shape, rank='same', rounding='floor')
     n_param = _tucker_n_param(tensor_shape, rank)
     assert_(n_param <= n_param_tensor)
 
     # Rounding = ceil
-    rank = _validate_tucker_rank(tensor_shape, rank='same', rounding='ceil')
+    rank = validate_tucker_rank(tensor_shape, rank='same', rounding='ceil')
     n_param = _tucker_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)

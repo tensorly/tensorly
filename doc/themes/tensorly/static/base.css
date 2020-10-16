@@ -278,7 +278,9 @@ a.box:hover {
 	background: #f7f9f8;
 	box-shadow: 0 4px 5px rgba(10,10,10,0.62), 0 0 0 5px #f2f9f8;
 }
-
+.hero-discover {
+	padding-top: 2em;
+}
 
 
 /*  *******

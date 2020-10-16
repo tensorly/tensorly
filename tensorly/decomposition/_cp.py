@@ -7,7 +7,7 @@ from ..random import check_random_state, random_cp
 from ..base import unfold
 from ..cp_tensor import (cp_to_tensor, CPTensor,
                          unfolding_dot_khatri_rao, cp_norm,
-                         cp_normalize, _validate_cp_rank)
+                         cp_normalize, validate_cp_rank)
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -263,7 +263,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and 
             Applications", PhD., University of Amsterdam, 1998
     """
-    rank = _validate_cp_rank(tl.shape(tensor), rank=rank)
+    rank = validate_cp_rank(tl.shape(tensor), rank=rank)
     
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
@@ -465,7 +465,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
        pp 792-799, ICML, 2005
     """
     epsilon = 10e-12
-    rank = _validate_cp_rank(tl.shape(tensor), rank=rank)
+    rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
     if mask is not None and init == "svd":
         message = "Masking occurs after initialization. Therefore, random initialization is recommended."
@@ -671,7 +671,7 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
     .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
        "A Practical Randomized CP Tensor Decomposition",
     """
-    rank = _validate_cp_rank(tl.shape(tensor), rank=rank)
+    rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
     rng = check_random_state(random_state)
     weights, factors = initialize_cp(tensor, rank, init=init, svd=svd, random_state=random_state)

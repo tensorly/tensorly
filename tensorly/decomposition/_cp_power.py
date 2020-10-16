@@ -1,6 +1,6 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ..cp_tensor import _validate_cp_rank
+from ..cp_tensor import validate_cp_rank
 from tensorly.tenalg import outer
 from tensorly.metrics.regression import standard_deviation
 import numpy as np
@@ -97,7 +97,7 @@ def parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10, verbose=0
     factors : list of 2-D tl.tensor of shape (size, rank)
         Each column of each factor corresponds to one eigenvector
     """
-    rank = _validate_cp_rank(tl.shape(tensor), rank=rank)
+    rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
     order = tl.ndim(tensor)
     factors = []

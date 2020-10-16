@@ -3,7 +3,7 @@ import numpy as np
 import tensorly as tl
 from ..decomposition import matrix_product_state
 from ..tt_tensor import tt_to_tensor, _validate_tt_tensor
-from ..tt_tensor import _validate_tt_rank, _tt_n_param
+from ..tt_tensor import validate_tt_rank, _tt_n_param
 from ..testing import assert_array_almost_equal, assert_equal, assert_raises, assert_
 from ..random import check_random_state, random_tt
 
@@ -130,17 +130,17 @@ def test_tt_n_param():
     n_param = _tt_n_param(tensor_shape, rank)
     assert_equal(n_param, true_n_param)
 
-def test_validate_tt_rank():
-    """Test for _validate_tt_rank with random sizes"""
+def testvalidate_tt_rank():
+    """Test for validate_tt_rank with random sizes"""
     tensor_shape = tuple(np.random.randint(1, 100, size=4))
     n_param_tensor = np.prod(tensor_shape)
 
     # Rounding = floor
-    rank = _validate_tt_rank(tensor_shape, rank='same', rounding='floor')
+    rank = validate_tt_rank(tensor_shape, rank='same', rounding='floor')
     n_param = _tt_n_param(tensor_shape, rank)
     assert_(n_param <= n_param_tensor)
 
     # Rounding = ceil
-    rank = _validate_tt_rank(tensor_shape, rank='same', rounding='ceil')
+    rank = validate_tt_rank(tensor_shape, rank='same', rounding='ceil')
     n_param = _tt_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)

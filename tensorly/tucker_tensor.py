@@ -270,7 +270,7 @@ def _tucker_n_param(tensor_shape, rank):
     return core_params + factors_params
 
 
-def _validate_tucker_rank(tensor_shape, rank='same', rounding='round'):
+def validate_tucker_rank(tensor_shape, rank='same', rounding='round'):
     r"""Returns the rank of a Tucker Decomposition
 
     Parameters

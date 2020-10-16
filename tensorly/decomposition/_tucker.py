@@ -2,7 +2,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
-from ..tucker_tensor import tucker_to_tensor, TuckerTensor, _validate_tucker_rank
+from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 from ..random import check_random_state
 import tensorly.tenalg as tlg
 from math import sqrt
@@ -205,7 +205,7 @@ def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, in
     else:
         modes = list(range(tl.ndim(tensor)))
         # TO-DO validate rank for partial tucker as well
-        rank = _validate_tucker_rank(tl.shape(tensor), rank=rank)
+        rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
         core, factors = partial_tucker(tensor, modes, rank=rank, ranks=ranks, n_iter_max=n_iter_max, init=init,
                             svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
@@ -247,7 +247,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
        IEEE Conference on Computer Vision and Pattern Recognition s(CVPR),
        pp 1-8, 2007
     """
-    rank = _validate_tucker_rank(tl.shape(tensor), rank=rank)
+    rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
     epsilon = 10e-12
 

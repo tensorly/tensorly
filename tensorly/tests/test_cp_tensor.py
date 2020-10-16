@@ -7,7 +7,7 @@ from ..cp_tensor import (cp_to_tensor, cp_to_unfolded,
                               cp_normalize, CPTensor,
                               cp_mode_dot, unfolding_dot_khatri_rao,
                               cp_norm,
-                              _cp_n_param, _validate_cp_rank)
+                              _cp_n_param, validate_cp_rank)
 from ..base import unfold, tensor_to_vec
 from tensorly.random import check_random_state, random_cp
 from tensorly.testing import (assert_equal, assert_raises, assert_,
@@ -234,17 +234,17 @@ def test_cp_norm():
     res = cp_norm(cp_tensor)
     assert_(tl.abs(true_res - res) <= tol)
 
-def test_validate_cp_rank():
-    """Test _validate_cp_rank with random sizes"""
+def testvalidate_cp_rank():
+    """Test validate_cp_rank with random sizes"""
     tensor_shape = tuple(np.random.randint(1, 100, size=4))
     n_param_tensor = np.prod(tensor_shape)
 
     # Rounding = floor
-    rank = _validate_cp_rank(tensor_shape, rank='same', rounding='floor')
+    rank = validate_cp_rank(tensor_shape, rank='same', rounding='floor')
     n_param = _cp_n_param(tensor_shape, rank)
     assert_(n_param <= n_param_tensor)
 
     # Rounding = ceil
-    rank = _validate_cp_rank(tensor_shape, rank='same', rounding='ceil')
+    rank = validate_cp_rank(tensor_shape, rank='same', rounding='ceil')
     n_param = _cp_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)

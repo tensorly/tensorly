@@ -138,7 +138,7 @@ def _tt_n_param(tensor_shape, rank):
         factor_params.append(rank[i]*s*rank[i+1])
     return np.sum(factor_params)
 
-def _validate_tt_rank(tensor_shape, rank='same', rounding='round'):
+def validate_tt_rank(tensor_shape, rank='same', rounding='round'):
     """Returns the rank of a TT Decomposition
 
     Parameters
