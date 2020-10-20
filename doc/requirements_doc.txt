@@ -1,0 +1,5 @@
+sphinx
+slimit
+rcssmin
+numpydoc
+sphinx-gallery
