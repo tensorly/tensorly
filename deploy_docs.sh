@@ -29,6 +29,7 @@ then
 		git clone --quiet https://github.com/tensorly/tensorly.github.io doc_folder
 		cd doc_folder
 		git rm -r dev/*
+		mkdir -p dev
 		cp -r ../doc/_build/html/* dev/
 
 		echo "Pushinng to git"
