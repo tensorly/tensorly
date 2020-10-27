@@ -40,7 +40,7 @@ weights, factors = parafac(image, rank=cp_rank, init='random', tol=10e-6)
 cp_reconstruction = tl.cp_to_tensor((weights, factors))
 
 # Tucker decomposition
-core, tucker_factors = tucker(image, ranks=tucker_rank, init='random', tol=10e-5, random_state=random_state)
+core, tucker_factors = tucker(image, rank=tucker_rank, init='random', tol=10e-5, random_state=random_state)
 tucker_reconstruction = tl.tucker_to_tensor((core, tucker_factors))
 
 # Plotting the original and reconstruction from the decompositions
