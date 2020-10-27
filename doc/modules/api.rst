@@ -189,6 +189,26 @@ For each backend, tensorly provides the following uniform functions:
 
 .. currentmodule:: tensorly.decomposition
 
+Classes
+-------
+
+Note that these are currently experimental and may change in the future.
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    CP
+    RandomizedCP
+    CPPower
+    Tucker
+    TensorTrain
+    Parafac2
+    SymmetricCP
+
+Functions
+---------
+
 .. autosummary::
     :toctree: generated/
     :template: function.rst

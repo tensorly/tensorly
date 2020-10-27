@@ -47,60 +47,19 @@
 
         {% block document %}
         <div class="columns">
+
+            {% if not (meta is not none and 'no-toc' in meta) %}    
             {# Side navbar #}
-            <div class="column is-one-quarter is-hidden-mobile aside">
-                <div class="sidebar" id="sidebar">
-                    
-                    <div class="search">
-                        <div class="search-title">
-                            Search in TensorLy
-                        </div>
+                {%- include "sidebar.html" %}
 
-                        <script>
-                          (function() {
-                            var cx = '002285679029256671182:5tfqz3cvmm8';
-                            var gcse = document.createElement('script');
-                            gcse.type = 'text/javascript';
-                            gcse.async = true;
-                            gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
-                            var s = document.getElementsByTagName('script')[0];
-                            s.parentNode.insertBefore(gcse, s);
-                          })();
-                        </script>
-                        <gcse:searchbox-only></gcse:searchbox-only>
-                        {# overlay
-                        <script>
-                          (function() {
-                            var cx = '002285679029256671182:5tfqz3cvmm8';
-                            var gcse = document.createElement('script');
-                            gcse.type = 'text/javascript';
-                            gcse.async = true;
-                            gcse.src = 'https://cse.google.com/cse.js?cx=' + cx;
-                            var s = document.getElementsByTagName('script')[0];
-                            s.parentNode.insertBefore(gcse, s);
-                          })();
-                        </script>
-                        <gcse:search></gcse:search>
-                        #}
-                    </div>
+                {# Main content #}
+                <div class="column is-three-quarters main-column">
+            {% else %}
+                <div class="column main-column">
+            {% endif %}
 
-                    <div class="toc">
-                    {# Table Of Contents #}
-                    {% block menu %}
-                    {% set toctree = toctree(maxdepth=theme_navigation_depth|int, collapse=theme_collapse_navigation, includehidden=True) %}
-                    {% if toctree %}
-                        {{ toctree }}
-                    {% else %}
-                        {{ toc }}
-                    {% endif %}
-                    {% endblock %}
-                    </div>
-                    
-                </div>
-            </div>
 
             {# Main content #}
-            <div class="column is-three-quarters main-column">
                 <div class="content main-content">
 
                     {{ add_body() }}
