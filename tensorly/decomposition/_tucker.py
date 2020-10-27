@@ -15,7 +15,7 @@ import warnings
 
 
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
-                   svd='numpy_svd', random_state=None, verbose=False, mask=None, ranks=None):
+                   svd='numpy_svd', random_state=None, verbose=False, mask=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition exclusively along the provided modes.
@@ -25,10 +25,9 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     tensor : ndarray
     modes : int list
             list of the modes on which to perform the decomposition
-    ranks : None or int list
-            size of the core tensor, ``(len(ranks) == len(modes))``
-    rank : None or int
-            number of components
+    rank : None, int or int list
+        size of the core tensor, ``(len(ranks) == tensor.ndim)``
+        if int, the same rank is used for all modes
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, or TuckerTensor optional
@@ -57,11 +56,6 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
             with ``core.shape[i] == (tensor.shape[i], ranks[i]) for i in modes``
 
     """
-    if ranks is not None:
-        message = "'ranks' is depreciated, please use 'rank' instead"
-        warnings.warn(message, DeprecationWarning)
-        rank = ranks
-
     if rank is None:
         message = "No value given for 'rank'. The decomposition will preserve the original size."
         warnings.warn(message, Warning)
@@ -98,12 +92,6 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         core = tl.tensor(rng.random_sample(rank), **tl.context(tensor))
         factors = [tl.tensor(rng.random_sample((tl.shape(tensor)[mode], rank[index])), **tl.context(tensor)) for (index, mode) in enumerate(modes)]
     else: 
-        # init_shape, init_rank = tl.tucker_tensor._validate_tucker_tensor(init)
-        # if rank != init_rank:
-        #     raise ValueError(f'Got rank={rank} but an init Tucker tensor corresponding to rank {init_rank}.')
-        # if tl.shape(tensor) != init_shape:
-        #     raise ValueError(f'Got a tensor of shape={tl.shape(tensor)} but an init Tucker tensor corresponding to shape={init_shape}.')
-        # Not all factors have to be provided..
         (core, factors) = init
 
     rec_errors = []
@@ -137,7 +125,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     return (core, factors)
 
 
-def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, init='svd',
+def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
            svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
@@ -147,10 +135,9 @@ def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, in
     Parameters
     ----------
     tensor : ndarray
-    ranks : None or int list
-            size of the core tensor, ``(len(ranks) == tensor.ndim)``
-    rank : None or int
-            number of components
+    rank : None, int or int list
+        size of the core tensor, ``(len(ranks) == tensor.ndim)``
+        if int, the same rank is used for all modes
     fixed_factors : int list or None, default is None
         if not None, list of modes for which to keep the factors fixed.
         Only valid if a Tucker tensor is provided as init.
@@ -192,7 +179,7 @@ def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, in
         modes, factors = zip(*[(i, f) for (i, f) in enumerate(factors) if i not in fixed_factors])
         init = (core, list(factors))
 
-        core, new_factors = partial_tucker(tensor, modes, rank=rank, ranks=ranks, n_iter_max=n_iter_max, init=init,
+        core, new_factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
                              svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
 
         factors = list(new_factors)
@@ -207,12 +194,12 @@ def tucker(tensor, rank=None, ranks=None, fixed_factors=None, n_iter_max=100, in
         # TO-DO validate rank for partial tucker as well
         rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
-        core, factors = partial_tucker(tensor, modes, rank=rank, ranks=ranks, n_iter_max=n_iter_max, init=init,
+        core, factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
                             svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
         return TuckerTensor((core, factors))
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
-                        random_state=None, verbose=False, ranks=None):
+                        random_state=None, verbose=False):
     """Non-negative Tucker decomposition
 
         Iterative multiplicative update, see [2]_
@@ -220,16 +207,17 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
     Parameters
     ----------
     tensor : ``ndarray``
-    rank   : int
-            number of components
+    rank : None, int or int list
+        size of the core tensor, ``(len(ranks) == tensor.ndim)``
+        if int, the same rank is used for all modes
     n_iter_max : int
-                 maximum number of iteration
+        maximum number of iteration
     init : {'svd', 'random'}
     random_state : {None, int, np.random.RandomState}
     verbose : int , optional
-                level of verbosity
+        level of verbosity
     ranks : None or int list
-            size of the core tensor
+    size of the core tensor
 
     Returns
     -------
@@ -302,25 +290,101 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
 
 
 class Tucker(DecompositionMixin):
-    def __init__(self, rank=None, n_iter_max=100, non_negative=False,
-                 init='svd', svd='numpy_svd', tol=10e-5, 
+    def __init__(self, rank=None, n_iter_max=100,
+                 init='svd', svd='numpy_svd', tol=10e-5, fixed_factors=None,
                  random_state=None, mask=None, verbose=False):
-        """Tucker decomposition 
+        """Tucker decomposition via Higher Order Orthogonal Iteration (HOI).
 
             Decomposes `tensor` into a Tucker decomposition:
             ``tensor = [| core; factors[0], ...factors[-1] |]`` [1]_
 
-            Uses Higher Order Orthogonal Iteration (HOI) if non_negative-False
-            and iterative multiplicative update otherwise if non_negative=True.
+        Parameters
+        ----------
+        tensor : ndarray
+        rank : None, int or int list
+            size of the core tensor, ``(len(ranks) == tensor.ndim)``
+            if int, the same rank is used for all modes
+        non_negative : bool, default is False
+            if True, uses a non-negative Tucker via iterative multiplicative updates
+            otherwise, uses a Higher-Order Orthogonal Iteration.
+        fixed_factors : int list or None, default is None
+            if not None, list of modes for which to keep the factors fixed.
+            Only valid if a Tucker tensor is provided as init.
+        n_iter_max : int
+                    maximum number of iteration
+        init : {'svd', 'random'}, optional
+        svd : str, default is 'numpy_svd'
+            ignore if non_negative is True
+            function to use to compute the SVD,
+            acceptable values in tensorly.SVD_FUNS
+        tol : float, optional
+            tolerance: the algorithm stops when the variation in
+            the reconstruction error is less than the tolerance
+        random_state : {None, int, np.random.RandomState}
+        verbose : int, optional
+            level of verbosity
 
+        Returns
+        -------
+        core : ndarray of size `ranks`
+                core tensor of the Tucker decomposition
+        factors : ndarray list
+                list of factors of the Tucker decomposition.
+                Its ``i``-th element is of shape ``(tensor.shape[i], ranks[i])``
+
+        References
+        ----------
+        .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+        """
+        self.rank = rank
+        self.n_iter_max = n_iter_max
+        self.init = init
+        self.svd = svd
+        self.tol = tol
+        self.random_state = random_state
+        self.mask = mask
+        self.verbose = verbose
+
+    def fit_transform(self, tensor):
+        tucker_tensor = tucker(tensor, rank=self.rank,
+                            n_iter_max=self.n_iter_max,
+                            init=self.init,
+                            svd=self.svd,
+                            tol=self.tol,
+                            random_state=self.random_state,
+                            mask=self.mask,
+                            verbose=self.verbose)        
+        self.decomposition_ = tucker_tensor
+        return tucker_tensor
+
+    # def transform(self, tensor):
+    #     _, factors = self.decomposition_
+    #     return tlg.multi_mode_dot(tensor, factors, transpose=True)
+
+    # def inverse_transform(self, tensor):
+    #     _, factors = self.decomposition_
+    #     return tlg.multi_mode_dot(tensor, factors)
+
+    def __repr__(self):
+        return f'Rank-{self.rank} Tucker decomposition via HOOI.'
+
+
+class TuckerNN(DecompositionMixin):
+    def __init__(self, rank=None, n_iter_max=100,
+                 init='svd', svd='numpy_svd', tol=10e-5, 
+                 random_state=None, verbose=False):
+        """Non-Negative Tucker decomposition via iterative multiplicative update.
+
+            Decomposes `tensor` into a Tucker decomposition:
+            ``tensor = [| core; factors[0], ...factors[-1] |]`` [1]_
 
         Parameters
         ----------
         tensor : ndarray
-        ranks : None or int list
-                size of the core tensor, ``(len(ranks) == tensor.ndim)``
-        rank : None or int
-                number of components
+        rank : None, int or int list
+            size of the core tensor, ``(len(ranks) == tensor.ndim)``
+            if int, the same rank is used for all modes
         non_negative : bool, default is False
             if True, uses a non-negative Tucker via iterative multiplicative updates
             otherwise, uses a Higher-Order Orthogonal Iteration.
@@ -352,34 +416,20 @@ class Tucker(DecompositionMixin):
         SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
         """
         self.rank = rank
-        self.non_negative = non_negative
         self.n_iter_max = n_iter_max
         self.init = init
         self.svd = svd
         self.tol = tol
         self.random_state = random_state
-        self.mask = mask
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        if self.non_negative:
-            if self.mask is not None:
-                raise ValueError('mask is currently not suppoorted for non-negative Tucker.')
-            tucker_tensor = non_negative_tucker(tensor, rank=self.rank,
-                                n_iter_max=self.n_iter_max,
-                                init=self.init,
-                                tol=self.tol,
-                                random_state=self.random_state,
-                                verbose=self.verbose)
-        else:
-            tucker_tensor = tucker(tensor, rank=self.rank,
-                                n_iter_max=self.n_iter_max,
-                                init=self.init,
-                                svd=self.svd,
-                                tol=self.tol,
-                                random_state=self.random_state,
-                                mask=self.mask,
-                                verbose=self.verbose)        
+        tucker_tensor = non_negative_tucker(tensor, rank=self.rank,
+                            n_iter_max=self.n_iter_max,
+                            init=self.init,
+                            tol=self.tol,
+                            random_state=self.random_state,
+                            verbose=self.verbose)
         self.decomposition_ = tucker_tensor
         return tucker_tensor
 
@@ -392,4 +442,4 @@ class Tucker(DecompositionMixin):
     #     return tlg.multi_mode_dot(tensor, factors)
 
     def __repr__(self):
-        return f'Rank-{self.rank} Tucker decomposition via HOOI.'
+        return f'Rank-{self.rank} Non-Negative Tucker decomposition via multiplicative updates.'

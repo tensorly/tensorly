@@ -995,7 +995,7 @@ class CPNN(DecompositionMixin):
         return f'Rank-{self.rank} Non-Negative CP decomposition.'
 
 
-class RandomisedCP(DecompositionMixin):
+class RandomizedCP(DecompositionMixin):
     
     def __init__(self, rank, n_samples, n_iter_max=100, init='random', svd='numpy_svd',
                        tol=10e-9, max_stagnation=20, random_state=None, verbose=1):

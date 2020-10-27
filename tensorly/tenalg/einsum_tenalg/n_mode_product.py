@@ -3,6 +3,10 @@ from ...base import unfold, fold
 
 from ... import unfold, fold, vec_to_tensor
 
+# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+
+# License: BSD 3 clause
+
 
 def mode_dot(tensor, matrix_or_vector, mode):
     """n-mode product of a tensor and a matrix or vector at the specified mode

@@ -5,6 +5,10 @@ from tensorly.tenalg import outer
 from tensorly.metrics.regression import standard_deviation
 import numpy as np
 
+# Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+
+# License: BSD 3 clause
+
 def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
     """A single Robust Tensor Power Iteration
 
