@@ -1,17 +1,16 @@
-
 """
 Using line search with PARAFAC
 ==============================
 
 Example on how to use :func:`tensorly.decomposition.parafac` with line search to accelerate convergence.
 """
+import matplotlib.pyplot as plt
 
 from time import time
 import numpy as np
 import tensorly as tl
 from tensorly.random import random_cp
-from tensorly.decomposition import parafac
-import matplotlib.pyplot as plt
+from tensorly.decomposition import CP, parafac
 
 tol = np.logspace(-1, -9)
 err = np.empty_like(tol)
@@ -27,20 +26,28 @@ err_min = tl.norm(tl.cp_to_tensor(fac) - tensor)
 for ii, toll in enumerate(tol):
 	# Run PARAFAC decomposition without line search and time
     start = time()
-    fac = parafac(tensor, rank=3, n_iter_max=2000000, tol=toll)
+    cp = CP(rank=3, n_iter_max=2000000, tol=toll, linesearch=False)
+    fac = cp.fit_transform(tensor)
     tt[ii] = time() - start
-    # Run PARAFAC decomposition with line search and time
+    err[ii] = tl.norm(tl.cp_to_tensor(fac) - tensor)
+
+# Run PARAFAC decomposition with line search and time
+for ii, toll in enumerate(tol):
     start = time()
-    fac_ls = parafac(tensor, rank=3, n_iter_max=2000000, tol=toll, linesearch=True)
+    cp = CP(rank=3, n_iter_max=2000000, tol=toll, linesearch=True)
+    fac_ls = cp.fit_transform(tensor)
     tt_ls[ii] = time() - start
 
     # Calculate the error of both decompositions
-    err[ii] = tl.norm(tl.cp_to_tensor(fac) - tensor)
     err_ls[ii] = tl.norm(tl.cp_to_tensor(fac_ls) - tensor)
 
-plt.loglog(tt, err - err_min, '.', label="No line search")
-plt.loglog(tt_ls, err_ls - err_min, '.r', label="Line search")
-plt.ylabel("Time")
-plt.xlabel("Error")
-plt.legend()
+
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.loglog(tt, err - err_min, '.', label="No line search")
+ax.loglog(tt_ls, err_ls - err_min, '.r', label="Line search")
+ax.legend()
+ax.set_ylabel("Time")
+ax.set_xlabel("Error")
+
 plt.show()
