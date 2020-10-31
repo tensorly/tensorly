@@ -79,6 +79,15 @@ class Parafac2Tensor(FactorizedTensor):
         message = '(weights, factors, projections) : rank-{} Parafac2Tensor of shape {} '.format(self.rank, self.shape)
         return message
 
+    def to_tensor(self):
+        return parafac2_to_tensor(self)
+
+    def to_vec(self):
+        return parafac2_to_vec(self)
+    
+    def to_unfolded(self, mode):
+        return parafac2_to_unfolded(self, mode)
+
 
 def _validate_parafac2_tensor(parafac2_tensor):
     """Validates a parafac2_tensor in the form (weights, factors)
