@@ -6,6 +6,7 @@ import tensorly as tl
 from ._factorized_tensor import FactorizedTensor
 from .utils import DefineDeprecated
 import numpy as np
+from scipy.optimize import brentq
 
 def _validate_tt_tensor(tt_tensor):
     factors = tt_tensor
@@ -138,7 +139,8 @@ def _tt_n_param(tensor_shape, rank):
         factor_params.append(rank[i]*s*rank[i+1])
     return np.sum(factor_params)
 
-def validate_tt_rank(tensor_shape, rank='same', rounding='round'):
+
+def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='round'):
     """Returns the rank of a TT Decomposition
 
     Parameters
@@ -150,6 +152,12 @@ def validate_tt_rank(tensor_shape, rank='same', rounding='round'):
         if 'same': rank is computed to keep the number of parameters (at most) the same
         if float, computes a rank so as to keep rank percent of the original number of parameters
         if int or tuple, just returns rank
+    constant_rank : bool, default is False
+        * if True, the *same* rank will be chosen for each modes
+        * if False (default), the rank of each mode will be proportional to the corresponding tensor_shape
+
+        *used only if rank == 'same' or 0 < rank <= 1*
+
     rounding = {'round', 'floor', 'ceil'}
 
     Returns
@@ -169,7 +177,8 @@ def validate_tt_rank(tensor_shape, rank='same', rounding='round'):
     if rank == 'same':
         rank = float(1)
 
-    if isinstance(rank, float) and (0 < rank <= 1):
+    if isinstance(rank, float) and (0 < rank <= 1) and constant_rank:
+        # Choose the *same* rank for each mode
         n_param_tensor = np.prod(tensor_shape)*rank
         order = len(tensor_shape)
 
@@ -185,6 +194,22 @@ def validate_tt_rank(tensor_shape, rank='same', rounding='round'):
         # We get the non-negative solution
         solution = int(rounding_fun((- b + delta)/(2*a)))
         rank = rank=(1, ) + (solution, )*(order-1) + (1, )
+
+    elif isinstance(rank, float) and (0 < rank <= 1):
+        # Choose a rank proportional to the size of each mode
+        order = len(tensor_shape)
+        a = sum(tensor_shape[i]*tensor_shape[i+1]**2 for i in range(order - 1))
+        b = tensor_shape[0]**2 + tensor_shape[-1]**2
+        c = -np.prod(tensor_shape)
+        delta = np.sqrt(b**2 - 4*a*c)
+        print(a, b, c, delta)
+        print((- b + delta)/(2*a))
+
+        # We get the non-negative solution
+        fraction_param = (- b + delta)/(2*a)
+        print(fraction_param)
+        rank = tuple([max(int(rounding_fun(s*fraction_param)), 1) for s in tensor_shape])
+        return (1, ) + rank + (1, )
 
     else:
         # Check user input for errors
