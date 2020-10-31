@@ -462,7 +462,11 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
         else:
              factors[mode] = T.dot(matrix_or_vector, factors[mode])
 
-        return CPTensor((weights, factors))
+        if copy:
+            return CPTensor((weights, factors))
+        else:
+            cp_tensor.shape = tuple(f.shape[0] for f in factors)
+            return cp_tensor
     
 
 def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
