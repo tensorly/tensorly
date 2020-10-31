@@ -202,12 +202,9 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
         b = tensor_shape[0]**2 + tensor_shape[-1]**2
         c = -np.prod(tensor_shape)
         delta = np.sqrt(b**2 - 4*a*c)
-        print(a, b, c, delta)
-        print((- b + delta)/(2*a))
 
         # We get the non-negative solution
         fraction_param = (- b + delta)/(2*a)
-        print(fraction_param)
         rank = tuple([max(int(rounding_fun(s*fraction_param)), 1) for s in tensor_shape])
         return (1, ) + rank + (1, )
 
