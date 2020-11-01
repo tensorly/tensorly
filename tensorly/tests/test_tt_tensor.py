@@ -1,7 +1,7 @@
 import numpy as np
 
 import tensorly as tl
-from ..decomposition import matrix_product_state
+from ..decomposition import tensor_train
 from ..tt_tensor import tt_to_tensor, _validate_tt_tensor
 from ..tt_tensor import validate_tt_rank, _tt_n_param
 from ..testing import assert_array_almost_equal, assert_equal, assert_raises, assert_
@@ -107,7 +107,7 @@ def test_tt_to_tensor_random():
 
     # Find TT decomposition of the tensor
     rank = 10
-    factors = matrix_product_state(tensor, rank)
+    factors = tensor_train(tensor, rank)
 
     # Reconstruct the original tensor
     reconstructed_tensor = tl.tt_to_tensor(factors)
