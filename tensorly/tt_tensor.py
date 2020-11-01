@@ -207,7 +207,7 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
         # We get the non-negative solution
         fraction_param = (- b + delta)/(2*a)
         rank = tuple([max(int(rounding_fun(d*fraction_param)), 1) for d in avg_dim])
-        return (1, ) + rank + (1, )
+        rank = (1, ) + rank + (1, )
 
     else:
         # Check user input for errors
