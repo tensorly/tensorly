@@ -38,8 +38,8 @@
 
                         <div class="column is-8 ">
                             <figure class="image">
-                                <img src="_static/TensorLy-pyramid.png" class="logo" alt="TensorLy logo">
-                            </figure>
+                            <img src="_static/TensorLy-pyramid.png" class="logo" alt="TensorLy logo">
+                            <a href="http://tensorly.org/dev/index.html" title="TensorLy" style="position: absolute; left: 2.29%; top: 4.32%; width: 25.96%; height: 24.52%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/api.html#module-tensorly.decomposition" title="Tensor Decomposition" style="position: absolute; left: 27.25%; top: 43.16%; width: 21.94%; height: 3.86%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/api.html#module-tensorly.regression" title="Tensor Regression" style="position: absolute; left: 33.89%; top: 48.03%; width: 11.28%; height: 3.86%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/api.html#module-tensorly.tenalg" title="Tensor Algebra" style="position: absolute; left: 26.07%; top: 65.75%; width: 23.95%; height: 5.69%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/api.html#tensorly-manipulating-the-backend-with-a-unified-interface" title="TensorLy Backend" style="position: absolute; left: 26.02%; top: 83.47%; width: 24.06%; height: 5.42%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/generated/tensorly.decomposition.CP.html#tensorly.decomposition.CP" title="CP" style="position: absolute; left: 79.4%; top: 29.11%; width: 3.74%; height: 3.95%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/generated/tensorly.decomposition.Tucker.html#tensorly.decomposition.Tucker" title="Tucker" style="position: absolute; left: 83.53%; top: 29.2%; width: 7.2%; height: 3.86%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/generated/tensorly.decomposition.TensorTrain.html#tensorly.decomposition.TensorTrain" title="Tensor Train" style="position: absolute; left: 91.51%; top: 29.2%; width: 7.31%; height: 4.32%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/api.html#module-tensorly.regression" title="Tensor Regression" style="position: absolute; left: 79.45%; top: 33.98%; width: 18.48%; height: 3.58%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/generated/tensorly.base.fold.html" title="Tensor Folding" style="position: absolute; left: 80.51%; top: 52.62%; width: 7.98%; height: 4.13%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/generated/tensorly.base.unfold.html" title="Tensor Unfolding" style="position: absolute; left: 88.78%; top: 52.53%; width: 9.1%; height: 4.13%; z-index: 2;"></a><a href="http://tensorly.org/dev/modules/generated/tensorly.tenalg.mode_dot.html" title="n-mode Product" style="position: absolute; left: 79.96%; top: 57.58%; width: 15.41%; height: 3.21%; z-index: 2;"></a>                            </figure>
                         </div>
 
                         <div class="column is-4">
@@ -63,7 +63,7 @@
                                 </div>
                             </div>
                             <p class="has-text-centered">
-                            <a class="button is-large is-primary is-outlined" href="installation.html">
+                            <a class="button is-large is-dark is-primary" href="installation.html">
                                 Get started
                             </a>
                             </p>
@@ -201,15 +201,20 @@
 
             <div class="card has-text-left">
                 <header class="card-header">
-                    <p class="card-header-title">
-                        If you use TensorLy, please cite:
-                    </p>
-
-                    <a class="card-header-icon" onclick="javascrip:toggle_modal('tensorly_bibtex');" >
-                        <span class="icon" style="margin-right:0.7em">
-                        [bibtex]
-                        </span>
-                    </a>
+                    <nav class="level">
+                        <div class="level-left">
+                        <div class="level-item card-header-title">
+                            If you use TensorLy, please cite:
+                        </div></div>
+                        
+                        <div class="level-right card-header-icon"> <div class="level-item">
+                        <a onclick="javascrip:toggle_modal('tensorly_bibtex');" >
+                            <span class="icon" style="margin-right:0.7em">
+                            [bibtex]
+                            </span>
+                        </a>
+                        </div></div>
+                    </nav>
                 </header>
 
                 <div class="card-content">
