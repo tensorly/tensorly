@@ -198,14 +198,15 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
     elif isinstance(rank, float) and (0 < rank <= 1):
         # Choose a rank proportional to the size of each mode
         order = len(tensor_shape)
-        a = sum(tensor_shape[i]*tensor_shape[i+1]**2 for i in range(order - 1))
-        b = tensor_shape[0]**2 + tensor_shape[-1]**2
+        avg_dim = [(tensor_shape[i]+tensor_shape[i+1])/2 for i in range(order - 1)]
+        a = sum(avg_dim[i-1]*tensor_shape[i]*avg_dim[i] for i in range(1, order - 1))
+        b = tensor_shape[0]*avg_dim[0] + tensor_shape[-1]*avg_dim[-1]
         c = -np.prod(tensor_shape)
         delta = np.sqrt(b**2 - 4*a*c)
 
         # We get the non-negative solution
         fraction_param = (- b + delta)/(2*a)
-        rank = tuple([max(int(rounding_fun(s*fraction_param)), 1) for s in tensor_shape])
+        rank = tuple([max(int(rounding_fun(d*fraction_param)), 1) for d in avg_dim])
         return (1, ) + rank + (1, )
 
     else:
