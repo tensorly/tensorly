@@ -199,7 +199,10 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
         # Choose a rank proportional to the size of each mode
         order = len(tensor_shape)
         avg_dim = [(tensor_shape[i]+tensor_shape[i+1])/2 for i in range(order - 1)]
-        a = sum(avg_dim[i-1]*tensor_shape[i]*avg_dim[i] for i in range(1, order - 1))
+        if len(avg_dim) > 1:
+            a = sum(avg_dim[i-1]*tensor_shape[i]*avg_dim[i] for i in range(1, order - 1))
+        else:
+            a = avg_dim[0]**2*tensor_shape[0]
         b = tensor_shape[0]*avg_dim[0] + tensor_shape[-1]*avg_dim[-1]
         c = -np.prod(tensor_shape)
         delta = np.sqrt(b**2 - 4*a*c)
