@@ -7,6 +7,7 @@ from ._factorized_tensor import FactorizedTensor
 from .utils import DefineDeprecated
 import numpy as np
 from scipy.optimize import brentq
+import warnings
 
 def _validate_tt_tensor(tt_tensor):
     factors = tt_tensor
@@ -177,31 +178,40 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
     if rank == 'same':
         rank = float(1)
 
-    if isinstance(rank, float) and (0 < rank <= 1) and constant_rank:
+    if isinstance(rank, float) and constant_rank:
         # Choose the *same* rank for each mode
         n_param_tensor = np.prod(tensor_shape)*rank
         order = len(tensor_shape)
 
+        if order == 2:
+            rank = (1, n_param_tensor / (tensor_shape[0] + tensor_shape[1]), 1)
+            warnings.warn(f'Determining the tt-rank for the trivial case of a matrix (order 2 tensor) of shape {tensor.shape}, not a higher-order tensor.')
+
+        # R_k I_k R_{k+1} = R^2 I_k
+        a = np.sum(tensor_shape[1:-1])
+    
         # Border rank of 1, R_0 = R_N = 1
         # First and last factor of size I_0 R and I_N R
-        a = np.sum(tensor_shape[1:-1])
-        # R_k I_k R_{k+1} = R^2 I_k
         b = np.sum(tensor_shape[0] + tensor_shape[-1])
+
         # We want the number of params of decomp (=sum of params of factors)
         # To be equal to c = \prod_k I_k
         c = -n_param_tensor
         delta = np.sqrt(b**2 - 4*a*c)
+
         # We get the non-negative solution
         solution = int(rounding_fun((- b + delta)/(2*a)))
         rank = rank=(1, ) + (solution, )*(order-1) + (1, )
 
-    elif isinstance(rank, float) and (0 < rank <= 1):
+    elif isinstance(rank, float):
         # Choose a rank proportional to the size of each mode
+        # The method is similar to the above one for constant_rank == True
         order = len(tensor_shape)
         avg_dim = [(tensor_shape[i]+tensor_shape[i+1])/2 for i in range(order - 1)]
         if len(avg_dim) > 1:
             a = sum(avg_dim[i-1]*tensor_shape[i]*avg_dim[i] for i in range(1, order - 1))
         else:
+            warnings.warn(f'Determining the tt-rank for the trivial case of a matrix (order 2 tensor) of shape {tensor.shape}, not a higher-order tensor.')
             a = avg_dim[0]**2*tensor_shape[0]
         b = tensor_shape[0]*avg_dim[0] + tensor_shape[-1]*avg_dim[-1]
         c = -np.prod(tensor_shape)
@@ -213,7 +223,7 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
         rank = (1, ) + rank + (1, )
 
     else:
-        # Check user input for errors
+        # Check user input for potential errors
         n_dim = len(tensor_shape)
         if isinstance(rank, int):
             rank = [1] + [rank] * (n_dim-1) + [1]
