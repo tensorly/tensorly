@@ -74,7 +74,7 @@ master_doc = 'index'
 project = u'tensorly'
 from datetime import datetime
 year = datetime.now().year
-copyright = u'2016 - {}, Jean Kossaifi'.format(year)
+copyright = u'2016 - {}, TensorLy Developers'.format(year)
 author = 'Jean Kossaifi'
 
 # The version info for the project you're documenting, acts as replacement for
