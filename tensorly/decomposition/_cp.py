@@ -46,7 +46,7 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
     if init == 'random':
         # factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
         # kt = CPTensor((None, factors))
-        return random_cp(tl.shape(tensor), rank, normalise_factors=False)
+        return random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
 
     elif init == 'svd':
         try:
