@@ -139,5 +139,11 @@ xml:
 	@echo "Build finished. The XML files are in $(BUILDDIR)/xml."
 
 .PHONY: doc
-doc: html
+doc: 
+	python minify.py
+	$(SPHINXBUILD) -v -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+
+
 	open _build/html/index.html
