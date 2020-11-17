@@ -3,7 +3,7 @@ from ...base import unfold, fold
 
 from ... import unfold, fold, vec_to_tensor
 
-def mode_dot(tensor, matrix_or_vector, mode):
+def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
         """n-mode product of a tensor and a matrix or vector at the specified mode
 
         Mathematically: :math:`\\text{tensor} \\times_{\\text{mode}} \\text{matrix or vector}`
@@ -17,6 +17,8 @@ def mode_dot(tensor, matrix_or_vector, mode):
             1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
             matrix or vectors to which to n-mode multiply the tensor
         mode : int
+        transpose : bool, default is False
+            if True, the matrix is transposed
 
         Returns
         -------
@@ -35,11 +37,16 @@ def mode_dot(tensor, matrix_or_vector, mode):
 
         if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
             # Test for the validity of the operation
-            if matrix_or_vector.shape[1] != tensor.shape[mode]:
+            dim = 0 if transpose else 1
+            if matrix_or_vector.shape[dim] != tensor.shape[mode]:
                 raise ValueError(
                     'shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)'.format(
-                        tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[1]
+                        tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[dim]
                     ))
+            
+            if transpose:
+                matrix_or_vector = T.transpose(matrix_or_vector)
+
             new_shape[mode] = matrix_or_vector.shape[0]
             vec = False
 
