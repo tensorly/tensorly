@@ -150,7 +150,7 @@ def test_n_param_tucker():
     n_param = _tucker_n_param(tensor_shape, rank)
     assert_equal(n_param, true_n_param)
 
-def testvalidate_tucker_rank():
+def test_validate_tucker_rank():
     """Test validate_tucker_rank with random sizes"""
     tensor_shape = tuple(np.random.randint(1, 100, size=4))
     n_param_tensor = np.prod(tensor_shape)
@@ -164,3 +164,19 @@ def testvalidate_tucker_rank():
     rank = validate_tucker_rank(tensor_shape, rank='same', rounding='ceil')
     n_param = _tucker_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)
+
+    # With fixed modes
+    # Floor
+    fixed_modes = [0, 2]
+    rank = validate_tucker_rank(tensor_shape, rank=0.5, fixed_modes=fixed_modes, rounding='floor')
+    n_param = _tucker_n_param(tensor_shape, rank)
+    for mode in fixed_modes:
+        assert_(rank[mode] == tensor_shape[mode])
+    assert_(n_param <= n_param_tensor*0.5)
+    # Ceil
+    fixed_modes = [1, 3]
+    rank = validate_tucker_rank(tensor_shape, rank=0.5, fixed_modes=fixed_modes, rounding='ceil')
+    n_param = _tucker_n_param(tensor_shape, rank)
+    for mode in fixed_modes:
+        assert_(rank[mode] == tensor_shape[mode])
+    assert_(n_param >= n_param_tensor*0.5)

@@ -270,7 +270,7 @@ def _tucker_n_param(tensor_shape, rank):
     return core_params + factors_params
 
 
-def validate_tucker_rank(tensor_shape, rank='same', rounding='round'):
+def validate_tucker_rank(tensor_shape, rank='same', rounding='round', fixed_modes=None):
     r"""Returns the rank of a Tucker Decomposition
 
     Parameters
@@ -283,6 +283,9 @@ def validate_tucker_rank(tensor_shape, rank='same', rounding='round'):
         if float, computes a rank so as to keep rank percent of the original number of parameters
         if int or tuple, just returns rank
     rounding = {'round', 'floor', 'ceil'}
+    fixed_modes : int list or None, default is None
+        if not None, a list of modes for which the rank will be the same as the original shape
+        e.g. if i in fixed_modes, then rank[i] = tensor_shape[i]
 
     Returns
     -------
@@ -316,22 +319,44 @@ def validate_tucker_rank(tensor_shape, rank='same', rounding='round'):
     else:
         raise ValueError(f'Rounding should be round, floor or ceil, but got {rounding}')
 
+    # rank is 'same' or float: choose rank so as to preserve a fraction of the original #parameters
     if rank == 'same':
         rank = float(1)
-    
-    if isinstance(rank, float) and (0 < rank <= 1):
-        order = len(tensor_shape)
+    if isinstance(rank, float):
+        n_modes_compressed = len(tensor_shape)
         n_param_tensor = np.prod(tensor_shape)
+        
+        if fixed_modes is not None:
+            tensor_shape = list(tensor_shape)
+
+            # sorted to be careful with the order when popping and reinserting to not remove/add at wrong index.
+            # list (mode, shape) that we removed as they will be kept the same, rank[i] = 
+            fixed_modes = [(mode, tensor_shape.pop(mode)) for mode in sorted(fixed_modes, reverse=True)][::-1]
+            
+            # number of parameters coming from the fixed modes (these don't have a variable size as a fun of fraction_param)
+            n_fixed_params = np.sum([s**2 for _, s in fixed_modes]) # size of the factors
+            n_modes_compressed -= len(fixed_modes)
+        else:
+            n_fixed_params = 0
+
+        # Doesn't contain fixed_modes, those factors are accounted for in fixed_params
         squared_dims = np.sum([s**2 for s in tensor_shape])
 
-        fun = lambda x : n_param_tensor*x**order + squared_dims*x - rank*n_param_tensor
+        fun = lambda x : n_param_tensor*x**n_modes_compressed + squared_dims*x + n_fixed_params - rank*n_param_tensor
         fraction_param = brentq(fun, 0.0, max(rank, 1.0))
         rank = [max(int(rounding_fun(s*fraction_param)), 1) for s in tensor_shape]
+        
+        if fixed_modes is not None:
+            for mode, size in fixed_modes:
+                rank.insert(mode, size)
     
     elif isinstance(rank, int):
-        n_mode = len(tensor_shape)
-        message = "Given only one int for 'rank' for decomposition a tensor of order {}. Using this rank for all modes.".format(n_mode)
+        n_modes = len(tensor_shape)
+        message = "Given only one int for 'rank' for decomposition a tensor of order {}. Using this rank for all modes.".format(n_modes)
         warnings.warn(message, RuntimeWarning)
-        rank = [rank]*n_mode
+        if fixed_modes is None:
+            rank = [rank]*n_modes
+        else:
+            rank = [rank  if i not in fixed_modes else s for (i, s) in enumerate(tensor_shape)]# *n_mode
 
     return rank
