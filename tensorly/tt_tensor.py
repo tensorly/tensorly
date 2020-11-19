@@ -214,7 +214,7 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
             warnings.warn(f'Determining the tt-rank for the trivial case of a matrix (order 2 tensor) of shape {tensor.shape}, not a higher-order tensor.')
             a = avg_dim[0]**2*tensor_shape[0]
         b = tensor_shape[0]*avg_dim[0] + tensor_shape[-1]*avg_dim[-1]
-        c = -np.prod(tensor_shape)
+        c = -np.prod(tensor_shape)*rank
         delta = np.sqrt(b**2 - 4*a*c)
 
         # We get the non-negative solution
