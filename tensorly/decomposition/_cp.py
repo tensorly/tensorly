@@ -7,7 +7,7 @@ from ..random import check_random_state, random_cp
 from ..base import unfold
 from ..cp_tensor import (cp_to_tensor, CPTensor,
                          unfolding_dot_khatri_rao, cp_norm,
-                         cp_normalize, validate_cp_rank)
+                         cp_normalize, validate_cp_rank, khatri_rao)
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -191,7 +191,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             cvg_criterion = 'abs_rec_error',\
             fixed_modes = [],
             svd_mask_repeats=5,
-            linesearch = False):
+            linesearch = False,
+            banded_missing = None):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -325,8 +326,14 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
             else:
                 mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
-            factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
-                                    tl.transpose(mttkrp)))
+            if banded_missing is None:
+                factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)), tl.transpose(mttkrp)))
+            else:
+                missing = tl.mean(tl.unfold(mask, mode), axis=0)
+                unfolded = tl.unfold(tensor, mode)[:, missing > banded_missing]
+                kr = khatri_rao(factors, weights=weights, skip_matrix=mode)[missing > banded_missing, :]
+
+                factor = tl.transpose(np.linalg.lstsq(kr, tl.transpose(unfolded), rcond=None)[0])
 
             if normalize_factors:
                 scales = tl.norm(factor, 2, axis=0)

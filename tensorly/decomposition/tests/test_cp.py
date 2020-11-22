@@ -107,6 +107,13 @@ def test_masked_parafac(linesearch):
     err_resvd = tl.norm(tl.cp_to_tensor(fac_resvd) - tensor, 2)
     assert_(err_resvd < err, 'restarting SVD did not help')
 
+    # Test that banded masking helps
+    fac = parafac(tensor_mask, svd_mask_repeats=0, mask=mask, n_iter_max=4, rank=1, init="svd")
+    fac_banded = parafac(tensor_mask, svd_mask_repeats=0, mask=mask, n_iter_max=4, rank=1, init="svd", banded_missing=0.9)
+    err = tl.norm(tl.cp_to_tensor(fac) - tensor, 2)
+    err_banded = tl.norm(tl.cp_to_tensor(fac_banded) - tensor, 2)
+    assert_(err_banded < err, 'banded missingness solving did not help')
+
     # Check that we get roughly the same answer with the full tensor and masking
     mask_fact = parafac(tensor, rank=1, mask=mask, init='random', random_state=1234, linesearch=linesearch)
     fact = parafac(tensor, rank=1)
@@ -217,8 +224,7 @@ def test_randomised_parafac():
     n_samples = 8
     tensor = T.tensor(rng.random_sample(t_shape))
     rank = 4
-    _, factors_svd = randomised_parafac(tensor, rank, n_samples, n_iter_max=1000,
-                                     init='svd', tol=10e-5, verbose=True)
+    _, factors_svd = randomised_parafac(tensor, rank, n_samples, n_iter_max=1000, init='svd', tol=10e-5, verbose=0)
     for i, f in enumerate(factors_svd):
         assert_(T.shape(f) == (t_shape[i], rank),
                   'Factors are of incorrect size')
