@@ -122,31 +122,31 @@ def parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10, verbose=0
 
 
 class CPPower(DecompositionMixin):
+    """CP Decomposition via Robust Tensor Power Iteration
+
+    Parameters
+    ----------
+    tensor : tl.tensor
+        input tensor to decompose
+    rank : int
+        rank of the decomposition (number of rank-1 components)
+    n_repeat : int, default is 10
+        number of initializations to be tried
+    n_iteration : int, default is 10
+        number of power iterations
+    verbose : bool
+        level of verbosity
+
+    Returns
+    -------
+    (weights, factors)
+
+    weights : 1-D tl.tensor of length `rank`
+        contains the eigenvalue of each eigenvector
+    factors : list of 2-D tl.tensor of shape (size, rank)
+        Each column of each factor corresponds to one eigenvector
+    """
     def __init__(self, rank, n_repeat=10, n_iteration=10, verbose=0):
-        """CP Decomposition via Robust Tensor Power Iteration
-
-        Parameters
-        ----------
-        tensor : tl.tensor
-            input tensor to decompose
-        rank : int
-            rank of the decomposition (number of rank-1 components)
-        n_repeat : int, default is 10
-            number of initializations to be tried
-        n_iteration : int, default is 10
-            number of power iterations
-        verbose : bool
-            level of verbosity
-
-        Returns
-        -------
-        (weights, factors)
-
-        weights : 1-D tl.tensor of length `rank`
-            contains the eigenvalue of each eigenvector
-        factors : list of 2-D tl.tensor of shape (size, rank)
-            Each column of each factor corresponds to one eigenvector
-        """
         self.rank = rank
         self.n_repeat = n_repeat
         self.n_iteration = n_iteration

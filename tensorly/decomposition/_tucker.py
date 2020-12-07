@@ -290,10 +290,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
 
 
 class Tucker(DecompositionMixin):
-    def __init__(self, rank=None, n_iter_max=100,
-                 init='svd', svd='numpy_svd', tol=10e-5, fixed_factors=None,
-                 random_state=None, mask=None, verbose=False):
-        """Tucker decomposition via Higher Order Orthogonal Iteration (HOI).
+    """Tucker decomposition via Higher Order Orthogonal Iteration (HOI).
 
             Decomposes `tensor` into a Tucker decomposition:
             ``tensor = [| core; factors[0], ...factors[-1] |]`` [1]_
@@ -337,6 +334,9 @@ class Tucker(DecompositionMixin):
         .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
         SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
         """
+    def __init__(self, rank=None, n_iter_max=100,
+                 init='svd', svd='numpy_svd', tol=10e-5, fixed_factors=None,
+                 random_state=None, mask=None, verbose=False):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
@@ -371,50 +371,50 @@ class Tucker(DecompositionMixin):
 
 
 class TuckerNN(DecompositionMixin):
+    """Non-Negative Tucker decomposition via iterative multiplicative update.
+
+        Decomposes `tensor` into a Tucker decomposition:
+        ``tensor = [| core; factors[0], ...factors[-1] |]`` [1]_
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank : None, int or int list
+        size of the core tensor, ``(len(ranks) == tensor.ndim)``
+        if int, the same rank is used for all modes
+    non_negative : bool, default is False
+        if True, uses a non-negative Tucker via iterative multiplicative updates
+        otherwise, uses a Higher-Order Orthogonal Iteration.
+    n_iter_max : int
+                maximum number of iteration
+    init : {'svd', 'random'}, optional
+    svd : str, default is 'numpy_svd'
+        ignore if non_negative is True
+        function to use to compute the SVD,
+        acceptable values in tensorly.SVD_FUNS
+    tol : float, optional
+        tolerance: the algorithm stops when the variation in
+        the reconstruction error is less than the tolerance
+    random_state : {None, int, np.random.RandomState}
+    verbose : int, optional
+        level of verbosity
+
+    Returns
+    -------
+    core : ndarray of size `ranks`
+            core tensor of the Tucker decomposition
+    factors : ndarray list
+            list of factors of the Tucker decomposition.
+            Its ``i``-th element is of shape ``(tensor.shape[i], ranks[i])``
+
+    References
+    ----------
+    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+    SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+    """
     def __init__(self, rank=None, n_iter_max=100,
                  init='svd', svd='numpy_svd', tol=10e-5, 
                  random_state=None, verbose=False):
-        """Non-Negative Tucker decomposition via iterative multiplicative update.
-
-            Decomposes `tensor` into a Tucker decomposition:
-            ``tensor = [| core; factors[0], ...factors[-1] |]`` [1]_
-
-        Parameters
-        ----------
-        tensor : ndarray
-        rank : None, int or int list
-            size of the core tensor, ``(len(ranks) == tensor.ndim)``
-            if int, the same rank is used for all modes
-        non_negative : bool, default is False
-            if True, uses a non-negative Tucker via iterative multiplicative updates
-            otherwise, uses a Higher-Order Orthogonal Iteration.
-        n_iter_max : int
-                    maximum number of iteration
-        init : {'svd', 'random'}, optional
-        svd : str, default is 'numpy_svd'
-            ignore if non_negative is True
-            function to use to compute the SVD,
-            acceptable values in tensorly.SVD_FUNS
-        tol : float, optional
-            tolerance: the algorithm stops when the variation in
-            the reconstruction error is less than the tolerance
-        random_state : {None, int, np.random.RandomState}
-        verbose : int, optional
-            level of verbosity
-
-        Returns
-        -------
-        core : ndarray of size `ranks`
-                core tensor of the Tucker decomposition
-        factors : ndarray list
-                list of factors of the Tucker decomposition.
-                Its ``i``-th element is of shape ``(tensor.shape[i], ranks[i])``
-
-        References
-        ----------
-        .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
-        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-        """
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init

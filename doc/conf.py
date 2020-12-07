@@ -56,7 +56,7 @@ templates_path = ['templates']
 
 # generate autosummary even if no references
 autosummary_generate = True
-
+autoclass_content = 'class'
 autodoc_default_flags = ['members', 'inherited-members']
 
 # The suffix(es) of source filenames.

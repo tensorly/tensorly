@@ -107,31 +107,31 @@ def tensor_train_matrix(tensor, rank):
 
 
 class TensorTrain(DecompositionMixin):
+    """TT decomposition via recursive SVD
+
+        Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
+        -- also known as Tensor-Train decomposition [1]_.
+
+    Parameters
+    ----------
+    input_tensor : tensorly.tensor
+    rank : {int, int list}
+            maximum allowable TT rank of the factors
+            if int, then this is the same for all the factors
+            if int list, then rank[k] is the rank of the kth factor
+    verbose : boolean, optional
+            level of verbosity
+
+    Returns
+    -------
+    factors : TT factors
+            order-3 tensors of the TT decomposition
+
+    References
+    ----------
+    .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
+    """
     def __init__(self, rank, verbose=False):
-        """TT decomposition via recursive SVD
-
-            Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
-            -- also known as Tensor-Train decomposition [1]_.
-
-        Parameters
-        ----------
-        input_tensor : tensorly.tensor
-        rank : {int, int list}
-                maximum allowable TT rank of the factors
-                if int, then this is the same for all the factors
-                if int list, then rank[k] is the rank of the kth factor
-        verbose : boolean, optional
-                level of verbosity
-
-        Returns
-        -------
-        factors : TT factors
-                order-3 tensors of the TT decomposition
-
-        References
-        ----------
-        .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
-        """
         self.rank = rank
         self.verbose = verbose
 
