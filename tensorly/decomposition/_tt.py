@@ -1,6 +1,7 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ..tt_tensor import validate_tt_rank
+from ..tt_tensor import validate_tt_rank, TTTensor
+from ..tt_matrix import validate_tt_matrix_rank, TTMatrix
 from ..utils import DefineDeprecated
 
 def tensor_train(input_tensor, rank, verbose=False):
@@ -64,6 +65,44 @@ def tensor_train(input_tensor, rank, verbose=False):
     if(verbose is True):
         print("TT factor " + str(n_dim-1) + " computed with shape " + str(factors[n_dim-1].shape))
 
+    return TTTensor(factors)
+
+def tensor_train_matrix(tensor, rank):
+    """Decompose a tensor into a matrix in tt-format
+    
+    Parameters
+    ----------
+    tensor : tensorized matrix 
+        if your input matrix is of size (4, 9) and your tensorized_shape (2, 2, 3, 3)
+        then tensor should be tl.reshape(matrix, (2, 2, 3, 3))
+    rank : 'same', float or int tuple
+        - if 'same' creates a decomposition with the same number of parameters as `tensor`
+        - if float, creates a decomposition with `rank` x the number of parameters of `tensor`
+        - otherwise, the actual rank to be used, e.g. (1, rank_2, ..., 1) of size tensor.ndim//2. Note that boundary conditions dictate that the first rank = last rank = 1.
+    
+    Returns
+    -------
+    tt_matrix
+    """
+    order = tl.ndim(tensor)
+    n_input = order // 2 # (n_output = n_input)
+    
+    if tl.ndim(tensor) != n_input*2:
+        msg = 'The tensor should have as many dimensions for inputs and outputs, i.e. order should be even '
+        msg += f'but got a tensor of order tl.ndim(tensor)={order} which is odd.'
+        raise ValueError(msg)
+        
+    in_shape = tl.shape(tensor)[:n_input]
+    out_shape = tl.shape(tensor)[n_input:]
+
+    new_idx = list([idx for tuple_ in zip(range(n_input), range(n_input, 2*n_input)) for idx in tuple_])
+    new_shape = list([a*b for (a,b) in zip(in_shape, out_shape)])
+    tensor = tl.reshape(tl.transpose(tensor, new_idx), new_shape)
+    
+    factors = tensor_train(tensor, rank)
+    for i in range(len(factors)):
+        factors[i] = factors[i].reshape(factors[i].shape[0], in_shape[i], out_shape[i], -1)
+    
     return factors
 
 

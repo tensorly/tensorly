@@ -161,12 +161,12 @@ def _validate_tt_matrix(tt_tensor):
                              'However, tl.ndim(factors[{}]) = {}'.format(
                                  index, tl.ndim(factor)))
         # Consecutive factors should have matching ranks
-        if index and tl.shape(factors[index - 1])[2] != current_rank:
+        if index and tl.shape(factors[index - 1])[-1] != current_rank:
             raise ValueError('Consecutive factors should have matching ranks\n'
-                             ' -- e.g. tl.shape(factors[0])[2]) == tl.shape(factors[1])[0])\n'
-                             'However, tl.shape(factor[{}])[2] == {} but'
+                             ' -- e.g. tl.shape(factors[0])[-1]) == tl.shape(factors[1])[0])\n'
+                             'However, tl.shape(factor[{}])[-1] == {} but'
                              ' tl.shape(factor[{}])[0] == {} '.format(
-                              index - 1, tl.shape(factors[index - 1])[2], index, current_rank))
+                              index - 1, tl.shape(factors[index - 1])[-1], index, current_rank))
         # Check for boundary conditions
         if (index == 0) and current_rank != 1:
             raise ValueError('Boundary conditions dictate factor[0].shape[0] == 1.'

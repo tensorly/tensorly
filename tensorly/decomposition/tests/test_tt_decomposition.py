@@ -1,12 +1,13 @@
 import tensorly as tl
-from .._tt import matrix_product_state
+from .._tt import tensor_train, tensor_train_matrix
 from ...tt_tensor import tt_to_tensor
-from ...random import check_random_state
-from ...testing import assert_
+from ...tt_matrix import tt_matrix_to_tensor
+from ...random import check_random_state, random_tt
+from ...testing import assert_, assert_array_almost_equal
 
 
-def test_matrix_product_state():
-    """ Test for matrix_product_state """
+def test_tensor_train():
+    """ Test for tensor_train """
     rng = check_random_state(1234)
 
     ## Test 1
@@ -17,7 +18,7 @@ def test_matrix_product_state():
 
     # Find TT decomposition of the tensor
     rank = [1, 3, 3, 4, 2, 2, 1]
-    factors = matrix_product_state(tensor, rank)
+    factors = tensor_train(tensor, rank)
 
     assert(len(factors) == 6), "Number of factors should be 6, currently has " + str(len(factors))
 
@@ -37,7 +38,7 @@ def test_matrix_product_state():
 
     # Find TT decomposition of the tensor
     rank = [1, 5, 4, 3, 8, 10, 1]
-    factors = matrix_product_state(tensor, rank)
+    factors = tensor_train(tensor, rank)
 
     for k in range(6):
         (r_prev, n_k, r_k) = factors[k].shape
@@ -53,9 +54,18 @@ def test_matrix_product_state():
     ## Test 3
     tol = 10e-5
     tensor = tl.tensor(rng.random_sample([3, 3, 3]))
-    factors = matrix_product_state(tensor, (1, 3, 3, 1))
+    factors = tensor_train(tensor, (1, 3, 3, 1))
     reconstructed_tensor = tl.tt_to_tensor(factors)
     error = tl.norm(reconstructed_tensor - tensor, 2)
     error /= tl.norm(tensor, 2)
     assert_(error < tol,
               'norm 2 of reconstruction higher than tol')
+
+
+def test_tensor_train_matrix():
+    """Test for tensor_train_matrix decomposition"""
+    tensor = random_tt((2, 2, 2, 3, 3, 3), rank=2, full=True)
+    tt = tensor_train_matrix(tensor, 10)
+
+    tt_rec = tt_matrix_to_tensor(tt)
+    assert_array_almost_equal(tensor, tt_rec, decimal=4)

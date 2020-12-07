@@ -1,8 +1,9 @@
 import numpy as np
 from ..cp_tensor import (cp_to_tensor, CPTensor,
-                         cp_normalize)
-from ..tucker_tensor import tucker_to_tensor, TuckerTensor
-from ..tt_tensor import tt_to_tensor, TTTensor
+                         cp_normalize, validate_cp_rank)
+from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
+from ..tt_tensor import tt_to_tensor, TTTensor, validate_tt_rank
+from ..tt_matrix import tt_matrix_to_tensor, TTMatrix, validate_tt_matrix_rank
 from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor
 from .. import backend as T
 from ..utils import DefineDeprecated
@@ -104,6 +105,7 @@ def random_cp(shape, rank, full=False, orthogonal=False,
         ND-array : full tensor if `full` is True
         2D-array list : list of factors otherwise
     """
+    rank = validate_cp_rank(shape, rank)
     if (rank > min(shape)) and orthogonal:
         warnings.warn('Can only construct orthogonal tensors when rank <= min(shape) but got '
                       'a tensor with min(shape)={} < rank={}'.format(min(shape), rank))
@@ -147,8 +149,7 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
     """
     rns = check_random_state(random_state)
 
-    if isinstance(rank, int):
-        rank = [rank for _ in shape]
+    rank = validate_tucker_rank(shape, rank)
 
     if orthogonal:
         for i, (s, r) in enumerate(zip(shape, rank)):
@@ -173,7 +174,7 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
 
 
 def random_tt(shape, rank, full=False, random_state=None, **context):
-    """Generates a random TT/ttrain tensor
+    """Generates a random TT/MPS tensor
 
     Parameters
     ----------
@@ -198,12 +199,7 @@ def random_tt(shape, rank, full=False, random_state=None, **context):
     """
     n_dim = len(shape) 
 
-    if isinstance(rank, int):
-        rank = [1] + [rank] * (n_dim-1) + [1]
-    elif n_dim+1 != len(rank):
-        message = 'Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}'.format(
-            len(rank), n_dim + 1)
-        raise(ValueError(message))
+    rank = validate_tt_rank(shape, rank)
 
     # Make sure it's not a tuple but a list
     rank = list(rank)
@@ -224,6 +220,47 @@ def random_tt(shape, rank, full=False, random_state=None, **context):
         return tt_to_tensor(factors)
     else:
         return TTTensor(factors)
+
+
+def random_tt_matrix(shape, rank, full=False, random_state=None, **context):
+    """Generates a random tensor in TT-Matrix format
+
+    Parameters
+    ----------
+    shape : tuple
+        shape of the tensor to generate
+    rank : int
+        rank of the TT decomposition
+        must verify rank[0] == rank[-1] ==1 (boundary conditions)
+        and len(rank) == len(shape)+1
+    full : bool, optional, default is False
+        if True, a full tensor is returned
+        otherwise, the decomposed tensor is returned
+    random_state : `np.random.RandomState`
+    context : dict
+        context in which to create the tensor
+
+    Returns
+    -------
+    TT_tensor : ND-array or 3D-array list
+        * ND-array : full tensor if `full` is True
+        * 3D-array list : list of factors otherwise
+    """
+    n_dim = len(shape) // 2
+    left_shape = shape[:n_dim]
+    right_shape = shape[n_dim:]
+
+    rank = validate_tt_matrix_rank(shape, rank)
+
+    factors = []
+    for i in range(n_dim):
+         factors.append(random_tensor((rank[i], left_shape[i], right_shape[i], rank[i + 1]),
+                                             random_state=random_state, **context))
+
+    if full:
+        return tt_matrix_to_tensor(factors)
+    else:
+        return TTMatrix(factors)
 
 
 random_kruskal = DefineDeprecated(deprecated_name='random_kruskal', use_instead=random_cp)
