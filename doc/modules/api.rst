@@ -92,6 +92,8 @@ For each backend, tensorly provides the following uniform functions:
     cp_to_tensor
     cp_to_unfolded
     cp_to_vec
+    cp_normalize
+    cp_norm
     cp_mode_dot
     unfolding_dot_khatri_rao
 
@@ -131,6 +133,24 @@ For each backend, tensorly provides the following uniform functions:
     tt_to_tensor
     tt_to_unfolded
     tt_to_vec
+
+
+:mod:`tensorly.tt_matrix`: Matrices in TT format
+================================================
+
+.. automodule:: tensorly.tt_matrix
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.tt_matrix
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    tt_matrix_to_tensor
+    tt_matrix_to_unfolded
+    tt_matrix_to_vec
 
 
 :mod:`tensorly.parafac2_tensor`: Tensors in PARAFAC2 format
@@ -222,6 +242,7 @@ Functions
     non_negative_tucker
     robust_pca
     tensor_train
+    tensor_train_matrix
     parafac2
     symmetric_power_iteration
     symmetric_parafac_power_iteration
@@ -276,7 +297,9 @@ Functions
 
    random_cp
    random_tucker
-   random_tt 
+   random_tt
+   random_tt_matrix
+   random_parafac2
    check_random_state
 
 

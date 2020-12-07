@@ -22,18 +22,27 @@
 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
         <meta name="keywords" content="tensor learning, tensor decomposition, tensor operations">
-        <meta name="description" content="{% block meta_description %}TensorLy: Tensor learning in Python{% endblock meta_description %}">
+        <meta name="description" content="{% block meta_description %}An open source machine learning library for tensor learning in Python that provides a high-level API to tensor algebra, decomposition and deep tensorized architecture.{% endblock meta_description %}">
 
         {% block head %}
         <meta name="author" content="Jean Kossaifi">
-        <title>{% block title %}TensorLy: Tensor learning in Python{% endblock title %}</title>
+        <title>{% block title %}TensorLy{% endblock title %}</title>
         {% endblock head %}
 
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ pathto('_static/favicon/apple-touch-icon.png', 1)}}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ pathto('_static/favicon/favicon-32x32.png', 1)}}">
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ pathto('_static/favicon/favicon-16x16.png', 1)}}">
+        <link rel="manifest" href="{{ pathto('_static/favicon/site.webmanifest', 1)}}">
+        <link rel="mask-icon" href="{{ pathto('_static/favicon/safari-pinned-tab.svg', 1)}}" color="#5bbad5">
+        <link rel="shortcut icon" href="{{ pathto('_static/favicon/favicon.ico', 1)}}">
+        <meta name="theme-color" content="#ffffff">
+
+        <!-- <link rel="icon" type="image/png" href="{{ pathto('_static/favicon/favicon.ico', 1)}}"> -->
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
         <link rel="stylesheet" type="text/css" href="{{ pathto('_static/bulma.min.css', 1) }}" />
         <link rel="stylesheet" type="text/css" href="{{ pathto('_static/base.min.css', 1) }}" />
         <link rel="stylesheet" href="{{ pathto('_static/pygments.css', 1) }}" type="text/css" />
-
+    
         {% block head_css %}
         {% endblock head_css %}
 

@@ -74,7 +74,7 @@
                 </div>
 
                 <div class="hero-discover container has-text-centered">
-                    <p class="title">Discover TensorLy's functionalities!</p>
+                    <p class="title">Discover TensorLy's Functionalities!</p>
                 </div>
                 <div class="container has-text-centered">
                     <br/>
@@ -178,16 +178,16 @@
                 <div class="modal-background" onclick="javascrip:toggle_modal('tensorly_bibtex');"></div>
                 <div class="modal-content">
                     <div class="box">
-                    <div class="content">
+                    <div class="content has-text-left">
                     <code class="language-latex" data-lang="latex">
                     @article{tensorly, <br/>
-                        &nbsp;&nbsp;&nbsp;&nbsp;author = {Jean Kossaifi and Yannis Panagakis and Anima Anandkumar and Maja Pantic}, <br/>
-                        &nbsp;&nbsp;&nbsp;&nbsp;title = {TensorLy: Tensor Learning in Python}, <br/>
-                        &nbsp;&nbsp;&nbsp;&nbsp;journal = {Journal of Machine Learning Research (JMLR)} <br/>
-                        &nbsp;&nbsp;&nbsp;&nbsp;volume = {20},
-                        &nbsp;&nbsp;&nbsp;&nbsp;number = {26},
-                        &nbsp;&nbsp;&nbsp;&nbsp;year = {2019}, <br/>
-                        } <br/>
+                    author = {Jean Kossaifi and Yannis Panagakis and Anima Anandkumar and Maja Pantic}, <br/>
+                    title = {TensorLy: Tensor Learning in Python}, <br/>
+                    journal = {Journal of Machine Learning Research (JMLR)} <br/>
+                    volume = {20},<br/>
+                    number = {26},<br/>
+                    year = {2019}, <br/>
+                    } <br/>
                     </code>
                     </div>
                     </div>                                              
