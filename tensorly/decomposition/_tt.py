@@ -101,7 +101,7 @@ def tensor_train_matrix(tensor, rank):
     
     factors = tensor_train(tensor, rank)
     for i in range(len(factors)):
-        factors[i] = factors[i].reshape(factors[i].shape[0], in_shape[i], out_shape[i], -1)
+        factors[i] = tl.reshape(factors[i], (factors[i].shape[0], in_shape[i], out_shape[i], -1))
     
     return factors
 
