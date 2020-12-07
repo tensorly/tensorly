@@ -34,6 +34,6 @@ def tt_matrix_to_tensor(tt_matrix):
             res = tl.reshape(factor, (factor.shape[1], -1))
         else:
             res = tl.dot(tl.reshape(res, (-1, rank[i])), tl.reshape(factor, (rank[i], -1)))
-    res = res.reshape(full_shape)
+    res = tl.reshape(res, full_shape)
     
     return tl.transpose(res, order)
