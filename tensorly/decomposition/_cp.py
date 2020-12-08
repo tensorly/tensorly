@@ -7,7 +7,7 @@ from ..random import check_random_state, random_cp
 from ..base import unfold
 from ..cp_tensor import (cp_to_tensor, CPTensor,
                          unfolding_dot_khatri_rao, cp_norm,
-                         cp_normalize, validate_cp_rank, khatri_rao)
+                         cp_normalize, validate_cp_rank)
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -320,20 +320,31 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.conj(tl.transpose(factor)), factor)
             pseudo_inverse += Id
 
-            if not iteration and weights is not None:
-                # Take into account init weights
-                mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
-            else:
-                mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
-
             if banded_missing is None:
+                if not iteration and weights is not None:
+                    # Take into account init weights
+                    mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
+                else:
+                    mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+
                 factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)), tl.transpose(mttkrp)))
             else:
-                missing = tl.mean(tl.unfold(mask, mode), axis=0)
-                unfolded = tl.unfold(tensor, mode)[:, missing > banded_missing]
-                kr = khatri_rao(factors, weights=weights, skip_matrix=mode)[missing > banded_missing, :]
+                mttkrp = None
+                missing = list(np.where(mask))
+                kr_prod, indices_list = sample_khatri_rao(factors, missing, skip_matrix=mode)
+                indices_list = [i.tolist() for i in indices_list]
+                # Keep all the elements of the currently considered mode
+                indices_list.insert(mode, slice(None, None, None))
+                # MXNet will not be happy if this is a list insteaf of a tuple
+                indices_list = tuple(indices_list)
+                if mode:
+                    sampled_unfolding = tensor[indices_list]
+                else:
+                    sampled_unfolding = tl.transpose(tensor[indices_list])
 
-                factor = tl.transpose(np.linalg.lstsq(kr, tl.transpose(unfolded), rcond=None)[0])
+                pseudo_inverse = tl.dot(tl.transpose(kr_prod), kr_prod) + Id
+                factor = tl.dot(tl.transpose(kr_prod), sampled_unfolding)
+                factor = tl.transpose(tl.solve(pseudo_inverse, factor))
 
             if normalize_factors:
                 scales = tl.norm(factor, 2, axis=0)
@@ -606,7 +617,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
     indices_kr : int list
         list of length `n_samples` containing the sampled row indices
     """
-    if random_state is None or not isinstance(random_state, np.random.RandomState):
+    if (random_state is None or not isinstance(random_state, np.random.RandomState)) and isinstance(n_samples, int):
         rng = check_random_state(random_state)
         warnings.warn('You are creating a new random number generator at each call.\n'
                       'If you are calling sample_khatri_rao inside a loop this will be slow:'
@@ -621,7 +632,15 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
     sizes = [tl.shape(m)[0] for m in matrices]
 
     # For each matrix, randomly choose n_samples indices for which to compute the khatri-rao product
-    indices_list = [rng.randint(0, tl.shape(m)[0], size=n_samples, dtype=int) for m in matrices]
+    if isinstance(n_samples, int):
+        indices_list = [rng.randint(0, tl.shape(m)[0], size=n_samples, dtype=int) for m in matrices]
+    else:
+        indices_list = n_samples
+        n_samples = indices_list[0].size
+
+        if skip_matrix is not None:
+            indices_list = [indices_list[i] for i in range(len(indices_list)) if i != skip_matrix]
+
     if return_sampled_rows:
         # Compute corresponding rows of the full khatri-rao product
         indices_kr = np.zeros((n_samples), dtype=int)
