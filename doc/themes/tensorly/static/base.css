@@ -51,7 +51,6 @@ th {
 img.navbar-logo {
     margin-top: 0.5rem;
     max-height: 3rem;
-    margin-left: 2rem;
 }
 a.navbar-logo:hover{
     color: inherit;
