@@ -44,9 +44,7 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
     rng = check_random_state(random_state)
 
     if init == 'random':
-        # factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
-        # kt = CPTensor((None, factors))
-        return random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
+        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
 
     elif init == 'svd':
         try:
@@ -58,18 +56,68 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
 
         factors = []
         for mode in range(tl.ndim(tensor)):
-            U, S, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
+            U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
 
-            # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
-            if mode == 0:
-                idx = min(rank, tl.shape(S)[0])
-                U = tl.index_update(U, tl.index[:, :idx], U[:, :idx] * S[:idx])
+            if non_negative:
+                nntype = "nndsvd"
+                # NNDSVD initialization
+                W = tl.zeros_like(U)
+                H = tl.zeros_like(V)
+
+                # The leading singular triplet is non-negative
+                # so it can be used as is for initialization.
+                W = tl.index_update(W, tl.index[:, 0], tl.sqrt(S[0]) * tl.abs(U[:, 0]))
+                H = tl.index_update(H, tl.index[0, :], tl.sqrt(S[0]) * tl.abs(V[0, :]))
+
+                for j in range(1, tl.shape(U)[1]):
+                    x, y = U[:, j], V[j, :]
+
+                    # extract positive and negative parts of column vectors
+                    x_p, y_p = tl.clip(x, a_min=0.0), tl.clip(y, a_min=0.0)
+                    x_n, y_n = tl.abs(tl.clip(x, a_max=0.0)), tl.abs(tl.clip(y, a_max=0.0))
+
+                    # and their norms
+                    x_p_nrm, y_p_nrm = tl.norm(x_p), tl.norm(y_p)
+                    x_n_nrm, y_n_nrm = tl.norm(x_n), tl.norm(y_n)
+
+                    m_p, m_n = x_p_nrm * y_p_nrm, x_n_nrm * y_n_nrm
+
+                    # choose update
+                    if m_p > m_n:
+                        u = x_p / x_p_nrm
+                        v = y_p / y_p_nrm
+                        sigma = m_p
+                    else:
+                        u = x_n / x_n_nrm
+                        v = y_n / y_n_nrm
+                        sigma = m_n
+
+                    lbd = tl.sqrt(S[j] * sigma)
+                    W = tl.index_update(W, tl.index[:, j], lbd * u)
+                    H = tl.index_update(H, tl.index[j, :], lbd * v)
+
+                # After this point we no longer need H
+                idx = W < np.finfo(np.float32).eps
+
+                if nntype == "nndsvd":
+                    W = tl.index_update(W, tl.index[idx], 0.0)
+                elif nntype == "nndsvda":
+                    avg = tl.mean(tensor)
+                    W = tl.index_update(W, tl.index[idx], avg)
+                else:
+                    raise ValueError(
+                        'Invalid init parameter: got %r instead of one of %r' %
+                        (init, (None, 'nndsvd', 'nndsvda')))
+
+                U = W
+            else:
+                # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
+                if mode == 0:
+                    idx = min(rank, tl.shape(S)[0])
+                    U = tl.index_update(U, tl.index[:, :idx], U[:, :idx] * S[:idx])
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
-                # factor = tl.tensor(np.zeros((U.shape[0], rank)), **tl.context(tensor))
-                # factor[:, tensor.shape[mode]:] = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])), **tl.context(tensor))
-                # factor[:, :tensor.shape[mode]] = U
                 random_part = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])), **tl.context(tensor))
                 U = tl.concatenate([U, random_part], axis=1)
 
