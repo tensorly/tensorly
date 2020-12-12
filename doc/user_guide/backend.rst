@@ -3,14 +3,26 @@
 TensorLy's backend system
 =========================
 
+.. note::
+
+   In short, you can write your code using TensorLy and you can transparently combine it and execute with any of the backends. 
+   Currently we support NumPy PyTorch, MXNet, JAX, TensorFlow and CuPy as backends.
+
+
 Backend?
 --------
 To represent tensors and for numerical computation, TensorLy supports several backends transparently: the ubiquitous NumPy (the default), MXNet, and PyTorch.
-For the end user, the interface is exactly the same, but under the hood, a different library is used to represent multi-dimensional arrays and perform computations on these. In other words, you write your code using TensorLy and can then decide whether the computation is done using NumPy, PyTorch or MXNet.
+For the end user, the interface is exactly the same, but under the hood, a different library is used to represent multi-dimensional arrays and perform computations on these.
+
+In other words, you write your code using TensorLy and can then decide whether the computation is done using NumPy, PyTorch or MXNet.
 
 Why backends?
 -------------
-The goal of TensorLy is to make tensor methods accessible. While NumPy needs no introduction, the MXNet and PyTorch backends are especially useful as they allows to perform transparently computation on CPU or GPU. Last but not least, using MXNet or PyTorch as a backend, we are able to combine tensor methods and deep learning easily!
+The goal of TensorLy is to make tensor methods accessible.
+While NumPy needs no introduction, other backends such as MXNet and PyTorch backends are especially useful as they allows to perform transparently computation on CPU or GPU. 
+Last but not least, using MXNet or PyTorch as a backend, we are able to combine tensor methods and deep learning easily!
+
+
 
 How do I change the backend?
 ----------------------------
@@ -20,10 +32,15 @@ Alternatively during the execution, assuming you have imported TensorLy as ``imp
 .. important::
    
    NumPy is installed by default with TensorLy if you haven't already installed it. 
-   However, to keep dependencies as minimal as possible, and to not complexify installation, neither MXNet nor PyTorch are installed.  If you want to use them as backend, you will have to install them first. It is easy however, simply refer to their respective installation instructions:
+   However, to keep dependencies as minimal as possible, and to not complexify installation, neither MXNet nor PyTorch are installed.  If you want to use them as backend, you will have to install them first. 
+   It is easy however, simply refer to their respective installation instructions:
 
-   * For PyTorch: http://pytorch.org
-   * For MXNet https://mxnet.apache.org/install/index.html
+   * `PyTorch <http://pytorch.org>`_
+   * `MXNet <https://mxnet.apache.org/install/index.html>`_
+   * `JAX <https://jax.readthedocs.io/en/latest/developer.html#building-or-installing-jaxlib>`_ 
+   * `CuPy <https://docs.cupy.dev/en/stable/install.html>`_
+   * `TensorFlow <https://www.tensorflow.org/install>`_ 
+
 
 Once you change the backend, all the computation is done using that backend.
 
