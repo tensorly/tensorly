@@ -1,6 +1,6 @@
 import numpy as np
 from .. import backend as T
-from ..base import fold, unfold
+from ..base import unfold
 from ..tenalg import multi_mode_dot
 
 
@@ -68,8 +68,8 @@ def mpca(X, ranks, n_iters=5, zero_mean=True):
         But number supplied is {}'.format(len(X.shape[1:]), len(ranks))
 
     if zero_mean:
-        # first zero-mean the tensor data
-        X -= T.mean(X, axis=0, **T.context(X))
+        # first, zero-mean the tensor data
+        X = X - T.mean(X, axis=0)
 
     # the first mode is the 'sample' mode
     num_modes = len(X.shape) - 1
@@ -149,6 +149,6 @@ def compute_modek_total_scatter(X, mode, factors):
     # loop over each data point, building the mode-n total scatter matrix
     for m in range(len(X)):
         proj_but_k = unfold(multi_mode_dot(X[m], factors, transpose=True, skip=mode), mode)
-        scatter += T.dot(proj_but_k, proj_but_k.T)
+        scatter += T.dot(proj_but_k, T.transpose(proj_but_k))
 
     return scatter
