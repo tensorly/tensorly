@@ -64,19 +64,19 @@ def mpca(X, ranks, n_iters=5, zero_mean=True):
     ###############
     # check correct # of ranks have been supplied
     ###############
-    assert len(ranks) == len(X.shape[1:]), 'Expected number of ranks: {}. \
-        But number supplied is {}'.format(len(X.shape[1:]), len(ranks))
+    assert len(ranks) == len(T.shape(X)[1:]), 'Expected number of ranks: {}. \
+        But number supplied is {}'.format(len(T.shape(X)[1:]), len(ranks))
 
     if zero_mean:
         # first, zero-mean the tensor data
         X = X - T.mean(X, axis=0)
 
     # the first mode is the 'sample' mode
-    num_modes = len(X.shape) - 1
+    num_modes = len(T.shape(X)) - 1
 
     # initialise the factor matrices as 1-matrices
-    factors = [T.ones((dim, X.shape[i + 1]), **T.context(X))
-               for i, dim in enumerate(list(X.shape)[1:])]
+    factors = [T.ones((dim, T.shape(X)[i + 1]), **T.context(X))
+               for i, dim in enumerate(list(T.shape(X))[1:])]
 
     for t in range(1, n_iters + 1):
         # for each iteration compute partial projections for mode k,
@@ -136,18 +136,18 @@ def compute_modek_total_scatter(X, mode, factors):
     ###############
     # check that all factor matrices have been supplied
     ###############
-    assert len(factors) == len(X.shape[1:]), 'Expected number of factor matrices: {}. \
-        But number found is {}'.format(len(X.shape[1:]), len(factors))
+    assert len(factors) == len(T.shape(X)[1:]), 'Expected number of factor matrices: {}. \
+        But number found is {}'.format(len(T.shape(X)[1:]), len(factors))
 
     ###############
     # check that dimensions of factor matrices are compatible
     ###############
-    for i in range(len(X.shape) - 1):
-        assert X.shape[i + 1] == factors[i].shape[0], 'Incompatible dimensions for factor matrix {}. \
-            U_k must be of size ({}, P_k), but is of size ({}, P_k)'.format(i, X.shape[i + 1], factors[i].shape[0])
+    for i in range(len(T.shape(X)) - 1):
+        assert T.shape(X)[i + 1] == T.shape(factors[i])[0], 'Incompatible dimensions for factor matrix {}. \
+            U_k must be of size ({}, P_k), but is of size ({}, P_k)'.format(i, T.shape(X)[i + 1], T.shape(factors[i])[0])
 
     # loop over each data point, building the mode-n total scatter matrix
-    for m in range(len(X)):
+    for m in range(T.shape(X)[0]):
         proj_but_k = unfold(multi_mode_dot(X[m], factors, transpose=True, skip=mode), mode)
         scatter += T.dot(proj_but_k, T.transpose(proj_but_k))
 
