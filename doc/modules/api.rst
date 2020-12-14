@@ -241,6 +241,7 @@ Functions
     partial_tucker
     non_negative_tucker
     robust_pca
+    mda
     tensor_train
     tensor_train_matrix
     parafac2
