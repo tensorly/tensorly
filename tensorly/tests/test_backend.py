@@ -476,7 +476,7 @@ def test_norm():
 
 
 def test_clip():
-    """Test for tensor_to_vec"""
+    """Test that clip can work with single arguments"""
     X = T.tensor([0.0, -1.0, 1.0])
     X_low = T.tensor([0.0, 0.0, 1.0])
     X_high = T.tensor([0.0, -1.0, 0.0])
