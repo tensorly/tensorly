@@ -3,8 +3,9 @@ import pytest
 
 import tensorly as tl
 from .._cp import (
-    parafac, non_negative_parafac, initialize_cp,
+    parafac, initialize_cp,
     sample_khatri_rao, randomised_parafac)
+from .._nn_cp import non_negative_parafac
 from ...cp_tensor import cp_to_tensor
 from ...random import check_random_state, random_cp
 from ...tenalg import khatri_rao
