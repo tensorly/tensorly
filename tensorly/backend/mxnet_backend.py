@@ -140,12 +140,12 @@ class MxnetBackend(Backend):
                 nd.max(nd.min(tensor, a_max, out=tensor), a_min, out=tensor)
             else:
                 tensor = nd.maximum(nd.minimum(tensor, a_max), a_min)
-        elif min is not None:
+        elif a_min is not None:
             if indlace:
                 nd.max(tensor, a_min, out=tensor)
             else:
                 tensor = nd.maximum(tensor, a_min)
-        elif max is not None:
+        elif a_max is not None:
             if indlace:
                 nd.min(tensor, a_max, out=tensor)
             else:

@@ -475,6 +475,15 @@ def test_norm():
     assert_array_equal(row_norms_oo, T.tensor([1, 3, 5]))
 
 
+def test_clip():
+    """Test for tensor_to_vec"""
+    X = T.tensor([0.0, -1.0, 1.0])
+    X_low = T.tensor([0.0, 0.0, 1.0])
+    X_high = T.tensor([0.0, -1.0, 0.0])
+    assert_array_equal(tl.clip(X, a_min=0.0), X_low)
+    assert_array_equal(tl.clip(X, a_max=0.0), X_high)
+
+
 def test_where():
     # 1D
     shape = (2*3*4,); N = np.prod(shape)
