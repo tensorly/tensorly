@@ -55,7 +55,7 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
 
         factors = []
         for mode in range(tl.ndim(tensor)):
-            U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
+            U, S, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
 
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
             if mode == 0:
