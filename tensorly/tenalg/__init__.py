@@ -14,6 +14,7 @@ from .core_tenalg import inner, outer
 from .core_tenalg import contract
 from .core_tenalg import tensor_dot, batched_tensor_dot
 from .core_tenalg import higher_order_moment
+from .core_tenalg import _tt_matrix_to_tensor
 
 from . import core_tenalg as core
 from . import einsum_tenalg

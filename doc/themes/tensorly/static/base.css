@@ -48,6 +48,20 @@ th {
       overflow-wrap: break-word;
   }
 }
+img.navbar-logo {
+    margin-top: 0.5rem;
+    max-height: 3rem;
+}
+a.navbar-logo:hover{
+    color: inherit;
+    background-color: inherit;
+}
+/* Centered images */
+img.align-center {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+}
 
 /* ****
  * MATH

@@ -14,7 +14,7 @@ def _validate_tt_tensor(tt_tensor):
     n_factors = len(factors)
     
     if n_factors < 2:
-        raise ValueError('A Tensor-Train (MPS) tensor should be composed of at least two factors and a core.'
+        raise ValueError('A Tensor-Train (MPS) tensor should be composed of at least two factors.'
                          'However, {} factor was given.'.format(n_factors))
 
     rank = []
@@ -56,18 +56,18 @@ def _validate_tt_tensor(tt_tensor):
 def tt_to_tensor(factors):
     """Returns the full tensor whose TT decomposition is given by 'factors'
 
-        Re-assembles 'factors', which represent a tensor in TT/TT format
+        Re-assembles 'factors', which represent a tensor in TT/Matrix-Product-State format
         into the corresponding full tensor
 
     Parameters
     ----------
-    factors: list of 3D-arrays
-              TT factors (known as core in TT terminology)
+    factors : list of 3D-arrays
+              TT factors (TT-cores)
 
     Returns
     -------
-    output_tensor: ndarray
-                   tensor whose TT/TT decomposition was given by 'factors'
+    output_tensor : ndarray
+                   tensor whose TT/MPS decomposition was given by 'factors'
     """
     full_shape = [f.shape[1] for f in factors]
     full_tensor = tl.reshape(factors[0], (full_shape[0], -1))
@@ -116,7 +116,6 @@ def tt_to_vec(factors):
     1-D array
     vectorized format of tensor defined by 'factors'
     """
-
     return tl.tensor_to_vec(tt_to_tensor(factors))
 
 def _tt_n_param(tensor_shape, rank):
@@ -185,7 +184,7 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
 
         if order == 2:
             rank = (1, n_param_tensor / (tensor_shape[0] + tensor_shape[1]), 1)
-            warnings.warn(f'Determining the tt-rank for the trivial case of a matrix (order 2 tensor) of shape {tensor.shape}, not a higher-order tensor.')
+            warnings.warn(f'Determining the tt-rank for the trivial case of a matrix (order 2 tensor) of shape {tensor_shape}, not a higher-order tensor.')
 
         # R_k I_k R_{k+1} = R^2 I_k
         a = np.sum(tensor_shape[1:-1])
@@ -211,7 +210,7 @@ def validate_tt_rank(tensor_shape, rank='same', constant_rank=False, rounding='r
         if len(avg_dim) > 1:
             a = sum(avg_dim[i-1]*tensor_shape[i]*avg_dim[i] for i in range(1, order - 1))
         else:
-            warnings.warn(f'Determining the tt-rank for the trivial case of a matrix (order 2 tensor) of shape {tensor.shape}, not a higher-order tensor.')
+            warnings.warn(f'Determining the tt-rank for the trivial case of a matrix (order 2 tensor) of shape {tensor_shape}, not a higher-order tensor.')
             a = avg_dim[0]**2*tensor_shape[0]
         b = tensor_shape[0]*avg_dim[0] + tensor_shape[-1]*avg_dim[-1]
         c = -np.prod(tensor_shape)*rank

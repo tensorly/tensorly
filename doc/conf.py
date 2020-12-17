@@ -56,7 +56,7 @@ templates_path = ['templates']
 
 # generate autosummary even if no references
 autosummary_generate = True
-
+autoclass_content = 'class'
 autodoc_default_flags = ['members', 'inherited-members']
 
 # The suffix(es) of source filenames.
@@ -160,7 +160,7 @@ html_short_title = 'TensorLy'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = '_static/TensorLy_logo.png'
+html_logo = '_static/logos/logo_tensorly.png'
 
 html_add_permalinks = None
 

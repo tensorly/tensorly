@@ -39,7 +39,7 @@ Supporters
 
 The TensorLy project is and has been supported by various organizations and universities:
 
-.. image:: _static/logo_nvidia.png
+.. image:: _static/logos/logo_nvidia.png
    :width: 150pt
    :align: center
    :target: https://www.nvidia.com
@@ -47,18 +47,18 @@ The TensorLy project is and has been supported by various organizations and univ
 
 ........  
 
-.. image:: _static/logo_inria.png
+.. image:: _static/logos/logo_inria.png
    :width: 150pt
    :align: center
    :target: https://www.inria.fr/fr
    :alt: INRIA
 
-INRIA is `funding <https://jobs.inria.fr/public/classic/en/offres/2020-02715>`_ a full-time engineer to work on TensorLy.
+INRIA is funding a full-time engineer to work on TensorLy.
 
 ........  
 
 
-.. image:: _static/logo_imperial.png
+.. image:: _static/logos/logo_imperial.png
    :width: 150pt
    :align: center
    :target: https://www.imperial.ac.uk
@@ -67,7 +67,7 @@ INRIA is `funding <https://jobs.inria.fr/public/classic/en/offres/2020-02715>`_ 
 
 ........  
 
-.. image:: _static/logo_caltech.png
+.. image:: _static/logos/logo_caltech.png
    :width: 150pt
    :align: center
    :target: https://www.caltech.edu
@@ -75,12 +75,19 @@ INRIA is `funding <https://jobs.inria.fr/public/classic/en/offres/2020-02715>`_ 
 
 ........  
 
-.. image:: _static/logo_athens.png
+.. image:: _static/logos/logo_athens.png
    :width: 150pt
    :align: center
    :target: https://en.uoa.gr
    :alt: National and Kapodistrian University of Athens
 
+........  
+
+.. image:: _static/logos/logo_skoltech.png
+   :width: 150pt
+   :align: center
+   :target: https://www.skoltech.ru/en/
+   :alt: Skolkovo Institute of Science and Technology 
 ........  
 
 

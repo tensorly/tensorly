@@ -34,7 +34,7 @@ Algorithms
 - ``robust_pca``
 
 Usage
-=====
+-----
 
 The sparse sub-package in ``tensorly.contrib.sparse`` contains a mirror of the
 interfaces in the usual, dense ``tensorly`` package. For example, unfolding a
@@ -95,7 +95,7 @@ When using masks with sparse tensors, there are two important caveats:
   backend ``parafac`` will densify the array.
 
 Example
-=======
+-------
 
 In the following example, we construct a random sparse tensor that has a known
 rank (by construction), and decompose it with parafac.

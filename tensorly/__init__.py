@@ -1,4 +1,4 @@
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 
 import sys
 
@@ -15,6 +15,8 @@ from .tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
                             tucker_to_vec, tucker_mode_dot,
                             validate_tucker_rank)
 from .tt_tensor import tt_to_tensor, tt_to_unfolded, tt_to_vec, validate_tt_rank
+from .tt_matrix import (tt_matrix_to_tensor, tt_matrix_to_tensor, validate_tt_matrix_rank,
+                        tt_matrix_to_unfolded, tt_matrix_to_vec, tt_matrix_to_matrix)
 
 from .backend import (set_backend, get_backend,
                       backend_context, _get_backend_dir,
