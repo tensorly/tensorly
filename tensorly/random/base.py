@@ -25,7 +25,10 @@ def check_random_state(seed):
     -----
     Inspired by the scikit-learn eponymous function
     """
-    if seed is None or isinstance(seed, int):
+    if seed is None:
+        return np.random.mtrand._rand
+
+    elif isinstance(seed, int):
         return np.random.RandomState(seed)
 
     elif isinstance(seed, np.random.RandomState):
