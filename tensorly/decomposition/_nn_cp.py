@@ -79,7 +79,7 @@ def nnsvd(tensor, U, S, V, nntype):
     else:
         raise ValueError(
             'Invalid nntype parameter: got %r instead of one of %r' %
-            (init, ('nndsvd', 'nndsvda')))
+            (nntype, ('nndsvd', 'nndsvda')))
 
     return W
 
