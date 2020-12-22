@@ -5,6 +5,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..random import check_random_state, random_cp
 from ..base import unfold
+from ..tenalg.proximal import soft_thresholding
 from ..cp_tensor import (cp_to_tensor, CPTensor,
                          unfolding_dot_khatri_rao, cp_norm,
                          cp_normalize, validate_cp_rank)
@@ -95,13 +96,13 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
                 H = tl.index_update(H, tl.index[j, :], lbd * v)
 
             # After this point we no longer need H
-            idx = W < np.finfo(np.float32).eps
+            eps = tl.eps(tensor.dtype)
 
             if nntype == "nndsvd":
-                W = tl.index_update(W, tl.index[idx], 0.0)
+                W = soft_thresholding(W, eps)
             elif nntype == "nndsvda":
                 avg = tl.mean(tensor)
-                W = tl.index_update(W, tl.index[idx], avg)
+                W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W))*avg, W)
             else:
                 raise ValueError(
                     'Invalid nntype parameter: got %r instead of one of %r' %
@@ -140,7 +141,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
 
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                          tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
-                         return_errors=False, mask=None, orthogonalise=False, cvg_criterion='abs_rec_error',
+                         return_errors=False, mask=None, cvg_criterion='abs_rec_error',
                          fixed_modes=[]):
     """
     Non-negative CP decomposition
@@ -182,15 +183,12 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
        In Proceedings of the International Conference on Machine Learning (ICML),
        pp 792-799, ICML, 2005
     """
-    epsilon = 10e-12
+    epsilon = tl.eps(tensor.dtype)
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
     if mask is not None and init == "svd":
         message = "Masking occurs after initialization. Therefore, random initialization is recommended."
         warnings.warn(message, Warning)
-
-    if orthogonalise and not isinstance(orthogonalise, int):
-        orthogonalise = n_iter_max
 
     weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
                                  random_state=random_state,
@@ -204,11 +202,6 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
     for iteration in range(n_iter_max):
-        if orthogonalise and iteration <= orthogonalise:
-            for i, f in enumerate(factors):
-                if min(tl.shape(f)) >= rank:
-                    factors[i] = tl.abs(tl.qr(f)[0])
-
         if verbose > 1:
             print("Starting iteration", iteration + 1)
         for mode in modes_list:
@@ -356,8 +349,7 @@ class CPNN(DecompositionMixin):
                  l2_reg=0,
                  linesearch=False,
                  fixed_modes = [],
-                 normalize_factors=False, 
-                 orthogonalise=False, 
+                 normalize_factors=False,
                  sparsity = None,
                  mask=None, svd_mask_repeats = 5,
                  cvg_criterion='abs_rec_error',
@@ -371,7 +363,6 @@ class CPNN(DecompositionMixin):
         self.linesearch = linesearch
         self.svd = svd
         self.normalize_factors = normalize_factors
-        self.orthogonalise = orthogonalise
         self.mask = mask
         self.svd_mask_repeats = svd_mask_repeats
         self.cvg_criterion = cvg_criterion
@@ -398,7 +389,6 @@ class CPNN(DecompositionMixin):
                         init=self.init,
                         svd=self.svd,
                         normalize_factors=self.normalize_factors,
-                        orthogonalise=self.orthogonalise,
                         mask=self.mask,
                         cvg_criterion=self.cvg_criterion,
                         random_state=self.random_state,
