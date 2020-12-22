@@ -17,8 +17,9 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 
 # License: BSD 3 clause
 
-def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
-                       normalize_factors=False, nntype='nndsvda'):
+
+def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
+                     normalize_factors=False, nntype='nndsvda'):
     r"""Initialize factors used in `parafac`.
 
     The type of initialization is set using `init`. If `init == 'random'` then
@@ -52,7 +53,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
             svd_fun = tl.SVD_FUNS[svd]
         except KeyError:
             message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                    svd, tl.get_backend(), tl.SVD_FUNS)
+                svd, tl.get_backend(), tl.SVD_FUNS)
             raise ValueError(message)
 
         factors = []
@@ -191,8 +192,8 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
         warnings.warn(message, Warning)
 
     weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
-                                 random_state=random_state,
-                                 normalize_factors=normalize_factors)
+                                        random_state=random_state,
+                                        normalize_factors=normalize_factors)
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
 
@@ -244,21 +245,21 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             rec_errors.append(rec_error)
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
-                
+
                 if verbose:
                     print("iteration {}, reconstraction error: {}, decrease = {}".format(iteration, rec_error, rec_error_decrease))
 
                 if cvg_criterion == 'abs_rec_error':
                     stop_flag = abs(rec_error_decrease) < tol
                 elif cvg_criterion == 'rec_error':
-                    stop_flag =  rec_error_decrease < tol
+                    stop_flag = rec_error_decrease < tol
                 else:
                     raise TypeError("Unknown convergence criterion")
-                
+
                 if stop_flag:
                     if verbose:
                         print("PARAFAC converged after {} iterations".format(iteration))
-                    break 
+                    break
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
@@ -306,7 +307,7 @@ class CPNN(DecompositionMixin):
             sparse, then mask should also be sparse with a fill value of 1 (or
             True). Allows for missing values [2]_
         cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
-            Stopping criterion for ALS, works if `tol` is not None. 
+            Stopping criterion for ALS, works if `tol` is not None.
             If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
             If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
         sparsity : float or int
@@ -324,7 +325,7 @@ class CPNN(DecompositionMixin):
         -------
         CPTensor : (weight, factors)
             * weights : 1D array of shape (rank, )
-                all ones if normalize_factors is False (default), 
+                all ones if normalize_factors is False (default),
                 weights of the (normalized) factors otherwise
             * factors : List of factors of the CP decomposition element `i` is of shape
                 (tensor.shape[i], rank)
@@ -338,13 +339,14 @@ class CPNN(DecompositionMixin):
         .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
         SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
 
-        .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values." 
+        .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
                 Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
 
-        .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and 
+        .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
                 Applications", PhD., University of Amsterdam, 1998
     """
-    def __init__(self, rank, n_iter_max=100, tol=1e-08, 
+
+    def __init__(self, rank, n_iter_max=100, tol=1e-08,
                  init='svd', svd='numpy_svd',
                  l2_reg=0,
                  linesearch=False,
@@ -353,7 +355,7 @@ class CPNN(DecompositionMixin):
                  sparsity = None,
                  mask=None, svd_mask_repeats = 5,
                  cvg_criterion='abs_rec_error',
-                 random_state=None, 
+                 random_state=None,
                  verbose=0):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -369,7 +371,6 @@ class CPNN(DecompositionMixin):
         self.random_state = random_state
         self.verbose = verbose
 
-    
     def fit_transform(self, tensor):
         """Decompose an input tensor
 
@@ -384,20 +385,19 @@ class CPNN(DecompositionMixin):
             decomposed tensor
         """
         cp_tensor, errors = non_negative_parafac(tensor, rank=self.rank,
-                        n_iter_max=self.n_iter_max,
-                        tol=self.tol,
-                        init=self.init,
-                        svd=self.svd,
-                        normalize_factors=self.normalize_factors,
-                        mask=self.mask,
-                        cvg_criterion=self.cvg_criterion,
-                        random_state=self.random_state,
-                        verbose=self.verbose,
-                        return_errors=True)
-        self.decomposition_ = cp_tensor 
+                                                 n_iter_max=self.n_iter_max,
+                                                 tol=self.tol,
+                                                 init=self.init,
+                                                 svd=self.svd,
+                                                 normalize_factors=self.normalize_factors,
+                                                 mask=self.mask,
+                                                 cvg_criterion=self.cvg_criterion,
+                                                 random_state=self.random_state,
+                                                 verbose=self.verbose,
+                                                 return_errors=True)
+        self.decomposition_ = cp_tensor
         self.errors_ = errors
         return self.decomposition_
 
     def __repr__(self):
         return f'Rank-{self.rank} Non-Negative CP decomposition.'
-
