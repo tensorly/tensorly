@@ -18,6 +18,72 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 # License: BSD 3 clause
 
 
+def nnsvd(tensor, U, S, V, nntype):
+    """ Use NNDSVD method to transform SVD results into a non-negative form. This 
+    method leads to more efficient solving with NNMF [1].
+
+    Parameters
+    ----------
+    tensor : tensor being decomposed
+    U, S, V: SVD factorization results
+    nntype : {'nndsvd', 'nndsvda'}
+        Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
+
+    [1]: Boutsidis & Gallopoulos. Pattern Recognition, 41(4): 1350-1362, 2008.
+    """
+
+    # NNDSVD initialization
+    W = tl.zeros_like(U)
+    H = tl.zeros_like(V)
+
+    # The leading singular triplet is non-negative
+    # so it can be used as is for initialization.
+    W = tl.index_update(W, tl.index[:, 0], tl.sqrt(S[0]) * tl.abs(U[:, 0]))
+    H = tl.index_update(H, tl.index[0, :], tl.sqrt(S[0]) * tl.abs(V[0, :]))
+
+    for j in range(1, tl.shape(U)[1]):
+        x, y = U[:, j], V[j, :]
+
+        # extract positive and negative parts of column vectors
+        x_p, y_p = tl.clip(x, a_min=0.0), tl.clip(y, a_min=0.0)
+        x_n, y_n = tl.abs(tl.clip(x, a_max=0.0)), tl.abs(tl.clip(y, a_max=0.0))
+
+        # and their norms
+        x_p_nrm, y_p_nrm = tl.norm(x_p), tl.norm(y_p)
+        x_n_nrm, y_n_nrm = tl.norm(x_n), tl.norm(y_n)
+
+        m_p, m_n = x_p_nrm * y_p_nrm, x_n_nrm * y_n_nrm
+
+        # choose update
+        if m_p > m_n:
+            u = x_p / x_p_nrm
+            v = y_p / y_p_nrm
+            sigma = m_p
+        else:
+            u = x_n / x_n_nrm
+            v = y_n / y_n_nrm
+            sigma = m_n
+
+        lbd = tl.sqrt(S[j] * sigma)
+        W = tl.index_update(W, tl.index[:, j], lbd * u)
+        H = tl.index_update(H, tl.index[j, :], lbd * v)
+
+    # After this point we no longer need H
+    eps = tl.eps(tensor.dtype)
+
+    if nntype == "nndsvd":
+        W = soft_thresholding(W, eps)
+    elif nntype == "nndsvda":
+        avg = tl.mean(tensor)
+        W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W))*avg, W)
+    else:
+        raise ValueError(
+            'Invalid nntype parameter: got %r instead of one of %r' %
+            (init, ('nndsvd', 'nndsvda')))
+
+    return W
+
+
 def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
                      normalize_factors=False, nntype='nndsvda'):
     r"""Initialize factors used in `parafac`.
@@ -60,56 +126,8 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
         for mode in range(tl.ndim(tensor)):
             U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
 
-            # NNDSVD initialization
-            W = tl.zeros_like(U)
-            H = tl.zeros_like(V)
-
-            # The leading singular triplet is non-negative
-            # so it can be used as is for initialization.
-            W = tl.index_update(W, tl.index[:, 0], tl.sqrt(S[0]) * tl.abs(U[:, 0]))
-            H = tl.index_update(H, tl.index[0, :], tl.sqrt(S[0]) * tl.abs(V[0, :]))
-
-            for j in range(1, tl.shape(U)[1]):
-                x, y = U[:, j], V[j, :]
-
-                # extract positive and negative parts of column vectors
-                x_p, y_p = tl.clip(x, a_min=0.0), tl.clip(y, a_min=0.0)
-                x_n, y_n = tl.abs(tl.clip(x, a_max=0.0)), tl.abs(tl.clip(y, a_max=0.0))
-
-                # and their norms
-                x_p_nrm, y_p_nrm = tl.norm(x_p), tl.norm(y_p)
-                x_n_nrm, y_n_nrm = tl.norm(x_n), tl.norm(y_n)
-
-                m_p, m_n = x_p_nrm * y_p_nrm, x_n_nrm * y_n_nrm
-
-                # choose update
-                if m_p > m_n:
-                    u = x_p / x_p_nrm
-                    v = y_p / y_p_nrm
-                    sigma = m_p
-                else:
-                    u = x_n / x_n_nrm
-                    v = y_n / y_n_nrm
-                    sigma = m_n
-
-                lbd = tl.sqrt(S[j] * sigma)
-                W = tl.index_update(W, tl.index[:, j], lbd * u)
-                H = tl.index_update(H, tl.index[j, :], lbd * v)
-
-            # After this point we no longer need H
-            eps = tl.eps(tensor.dtype)
-
-            if nntype == "nndsvd":
-                W = soft_thresholding(W, eps)
-            elif nntype == "nndsvda":
-                avg = tl.mean(tensor)
-                W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W))*avg, W)
-            else:
-                raise ValueError(
-                    'Invalid nntype parameter: got %r instead of one of %r' %
-                    (init, ('nndsvd', 'nndsvda')))
-
-            U = W
+            # Apply nnsvd to make non-negative
+            U = nnsvd(tensor, U, S, V, nntype)
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
