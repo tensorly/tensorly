@@ -6,7 +6,6 @@ import itertools
 
 from .._tt_cross import tensor_train_cross
 from ....tt_tensor import tt_to_tensor
-from ....random import check_random_state
 from tensorly.testing import assert_
 
 skip_if_tensorflow = pytest.mark.skipif(tl.get_backend() == "tensorflow",
@@ -48,7 +47,7 @@ def test_tensor_train_cross_1():
 @skip_if_tensorflow
 def test_tensor_train_cross_2():
     """ Test for tensor-train """
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
 
     ## Test 2
     # Create tensor with random elements
@@ -73,7 +72,7 @@ def test_tensor_train_cross_2():
 @skip_if_tensorflow
 def test_tensor_train_cross_3():
     """ Test for tensor-train """
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
 
     ## Test 3
     tol = 10e-5

@@ -9,7 +9,7 @@ from ..cp_tensor import (cp_to_tensor, cp_to_unfolded,
                               cp_norm,
                               _cp_n_param, validate_cp_rank)
 from ..base import unfold, tensor_to_vec
-from tensorly.random import check_random_state, random_cp
+from tensorly.random import random_cp
 from tensorly.testing import (assert_equal, assert_raises, assert_,
                               assert_array_equal, assert_array_almost_equal)
 
@@ -26,7 +26,7 @@ def test_cp_normalize():
     
 
 def test_validate_cp_tensor():
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     true_shape = (3, 4, 5)
     true_rank = 3
     cp_tensor = random_cp(true_shape, true_rank)
@@ -169,7 +169,7 @@ def test_cp_mode_dot():
         with mode_dot (which operates on full tensors)
         and check that the results are the same.
     """
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     shape = (5, 4, 6)
     rank = 3
     cp_ten = random_cp(shape, rank=rank, orthogonal=True, full=False)

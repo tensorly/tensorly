@@ -3,7 +3,7 @@ import warnings
 
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ..random import check_random_state, random_cp
+from ..random import random_cp
 from ..base import unfold
 from ..cp_tensor import (cp_to_tensor, CPTensor,
                          unfolding_dot_khatri_rao, cp_norm,
@@ -41,7 +41,7 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
         An initial cp tensor.
 
     """
-    rng = check_random_state(random_state)
+    rng = tl.check_random_state(random_state)
 
     if init == 'random':
         # factors = [tl.tensor(rng.random_sample((tensor.shape[i], rank)), **tl.context(tensor)) for i in range(tl.ndim(tensor))]
@@ -600,7 +600,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
         list of length `n_samples` containing the sampled row indices
     """
     if random_state is None or not isinstance(random_state, np.random.RandomState):
-        rng = check_random_state(random_state)
+        rng = tl.check_random_state(random_state)
         warnings.warn('You are creating a new random number generator at each call.\n'
                       'If you are calling sample_khatri_rao inside a loop this will be slow:'
                       ' best to create a rng outside and pass it as argument (random_state=rng).')

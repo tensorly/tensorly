@@ -3,7 +3,6 @@ from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
-from ..random import check_random_state
 import tensorly.tenalg as tlg
 from math import sqrt
 
@@ -88,7 +87,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         # The initial core approximation is needed here for the masking step
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
     elif init == 'random':
-        rng = check_random_state(random_state)
+        rng = tl.check_random_state(random_state)
         core = tl.tensor(rng.random_sample(rank), **tl.context(tensor))
         factors = [tl.tensor(rng.random_sample((tl.shape(tensor)[mode], rank[index])), **tl.context(tensor)) for (index, mode) in enumerate(modes)]
     else: 
@@ -245,7 +244,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         nn_factors = [tl.abs(f) for f in factors]
         nn_core = tl.abs(core)
     else:
-        rng = check_random_state(random_state)
+        rng = tl.check_random_state(random_state)
         core = tl.tensor(rng.random_sample(rank) + 0.01, **tl.context(tensor))  # Check this
         factors = [tl.tensor(rng.random_sample(s), **tl.context(tensor)) for s in zip(tl.shape(tensor), rank)]
         nn_factors = [tl.abs(f) for f in factors]

@@ -22,11 +22,11 @@ from .backend import (set_backend, get_backend,
                       backend_context, _get_backend_dir,
                       _get_backend_method, override_module_dispatch)
 
-from .backend import (context, tensor, is_tensor, shape, ndim, to_numpy, copy,
-                      concatenate, reshape, transpose, moveaxis, arange, ones,
-                      zeros, zeros_like, eye, where, clip, max, min, argmax,
-                      argmin, all, mean, sum, prod, sign, abs, sqrt, norm, dot,
-                      kron, solve, qr, kr, partial_svd, stack)
+from .backend import (check_random_state, context, tensor, is_tensor, shape, ndim,
+                      to_numpy, copy, concatenate, reshape, transpose, moveaxis,
+                      arange, ones, zeros, zeros_like, eye, where, clip, max, min,
+                      argmax, argmin, all, mean, sum, prod, sign, abs, sqrt, norm,
+                      dot, kron, solve, qr, kr, partial_svd, stack)
 
 
 # Deprecated

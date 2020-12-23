@@ -1,5 +1,4 @@
 import numpy as np
-from ..random import check_random_state
 from .. import backend as T
 
 def gen_image(region='swiss', image_height=20, image_width=20,

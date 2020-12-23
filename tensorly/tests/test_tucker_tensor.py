@@ -9,11 +9,11 @@ from ..tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
 from ..tenalg import kronecker, mode_dot
 from ..testing import (assert_array_equal, assert_array_almost_equal, 
                        assert_equal, assert_raises, assert_)
-from ..random import check_random_state, random_tucker
+from ..random import random_tucker
 
 
 def test_validate_tucker_tensor():
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     true_shape = (3, 4, 5)
     true_rank = (3, 2, 4)
     core, factors = random_tucker(true_shape, rank=true_rank)
@@ -111,7 +111,7 @@ def test_tucker_mode_dot():
         with mode_dot (which operates on full tensors)
         and check that the results are the same.
     """
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     shape = (5, 4, 6)
     rank = (3, 2, 4)
     tucker_ten = random_tucker(shape, rank=rank, full=False, random_state=rng)
