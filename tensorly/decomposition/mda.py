@@ -42,57 +42,6 @@ def mda(X, y, ranks, n_iters=5):
       factors = mda(X_train, y_train, ranks, n)
       Z = tl.tenalg.multi_mode_dot(X_train, factors, modes=[1, 2], transpose=True)
 
-
-    The so-called **scatter ratio objective function** (a higher-order extension of the Fisher criterion) for each mode n is maximised. Concretely, both the mode-n between- and within-class scatter matrices are computed. First a global mean tensor :math:`\\mathcal{M}` (the higher-order analogue of the mean vector :math:`\\mathbf{m}` in the standard LDA setting), and a set of class-specific mean tensors :math:`\\mathcal{M}_i` for :math:`i=1,\\dots, c` are computed. The class-specific mean tensors are computed as
-
-    .. math::
-       :nowrap:
-
-        \\begin{equation*}
-        \\begin{aligned}
-            \\mathcal{M}_i= \\frac{1}{n_i} \\sum_{j=1}^{n_i} \\mathcal{X}_{ij},
-        \\end{aligned}
-        \\end{equation*}
-
-    and the global mean tensor is computed as
-
-    .. math::
-       :nowrap:
-
-        \\begin{equation*}
-        \\begin{aligned}
-            \\mathcal{M}= \\frac{1}{N} \\sum_{i=1}^{c} \\sum_{j=1}^{n_i} \\mathcal{X}_{ij}.
-        \\end{aligned}
-        \\end{equation*}
-
-    Following this, the mode-n between- and within-class scatter matrices are computed (following [1]) as:
-
-    .. math::
-       :nowrap:
-
-        \\begin{equation*}
-        \\begin{aligned}
-            \\mathbf{B}_n^{\\bar{n}}
-                = \\sum_{i=1}^{c} n_i \\left[ \\left(\\mathcal{M}_i - \\mathcal{M}\\right) \\prod_{\\substack{k=1 \\\\ k\\neq n}}^{N} \\times_k {\\mathbf{U}^{(k)}}^\\top \\right]_{[n]}
-                \\left[ \\left(\\mathcal{M}_i - \\mathcal{M}\\right) \\prod_{\\substack{k=1 \\\\ k\\neq n}}^{N} \\times_k {\\mathbf{U}^{(k)}}^\\top \\right]_{[n]}^\\top,
-        \\end{aligned}
-        \\end{equation*}
-
-    for the **between-class scatter**, and
-
-    .. math::
-       :nowrap:
-
-        \\begin{equation*}
-        \\begin{aligned}
-            \\mathbf{W}_n^{\\bar{n}}
-                = \\sum_{i=1}^{c} \\sum_{j=1}^{n_i} \\left[ \\left(\\mathcal{X}_{ij} - \\mathcal{M}_i\\right) \\prod_{\\substack{k=1 \\\\ k\\neq n}}^{N} \\times_k {\\mathbf{U}^{(k)}}^\\top \\right]_{[n]}
-                \\left[ \\left(\\mathcal{X}_{ij} - \\mathcal{M}_i\\right) \\prod_{\\substack{k=1 \\\\ k\\neq n}}^{N} \\times_k {\\mathbf{U}^{(k)}}^\\top \\right]_{[n]}^\\top,
-        \\end{aligned}
-        \\end{equation*}
-
-    for the **within-class scatter**, with :math:`\\mathbf{X}_{[n]}` denoting the mode-n unfolding of tensor :math:`\\mathcal{X}`.
-
     - [1] Q. Li and D. Schonfeld, "Multilinear Discriminant Analysis for Higher-Order Tensor Data Classification," in IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 36, no. 12, pp. 2524-2537, 1 Dec. 2014, doi: 10.1109/TPAMI.2014.2342214.
 
     """
@@ -177,29 +126,7 @@ def compute_modek_wb_scatters(X, mode, factors, global_mean, class_means, class_
 
     Notes
     -----
-    For the computation of the mode-n between- and within-class scatter matrices, first a global mean tensor :math:`\\mathcal{M}` (the higher-order analogue of the mean vector :math:`\\mathbf{m}` in the standard LDA setting), and a set of class-specific mean tensors :math:`\\mathcal{M}_i` for :math:`i=1,\\dots, c` are computed. The class-specific mean tensors are computed as
-
-    .. math::
-       :nowrap:
-
-        \\begin{equation*}
-        \\begin{aligned}
-            \\mathcal{M}_i= \\frac{1}{n_i} \\sum_{j=1}^{n_i} \\mathcal{X}_{ij},
-        \\end{aligned}
-        \\end{equation*}
-
-    and the global mean tensor is computed as
-
-    .. math::
-       :nowrap:
-
-        \\begin{equation*}
-        \\begin{aligned}
-            \\mathcal{M}= \\frac{1}{N} \\sum_{i=1}^{c} \\sum_{j=1}^{n_i} \\mathcal{X}_{ij}.
-        \\end{aligned}
-        \\end{equation*}
-
-    Following this, the mode-n between- and within-class scatter matrices are computed (following [1]) as:
+    For the computation of the mode-n between- and within-class scatter matrices, first a global mean tensor :math:`\\mathcal{M}` (the higher-order analogue of the mean vector :math:`\\mathbf{m}` in the standard LDA setting), and a set of class-specific mean tensors :math:`\\mathcal{M}_i` for :math:`i=1,\\dots, c` are first computed. Following this, the mode-n between- and within-class scatter matrices are computed (following [1]) as:
 
     .. math::
        :nowrap:
