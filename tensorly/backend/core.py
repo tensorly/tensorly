@@ -780,24 +780,16 @@ class Backend(object):
                                'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
                 n_eigenvecs = max_dim
             if n_eigenvecs > min_dim:
-                full_matrices=True
+                full_matrices = True
             else:
-                full_matrices=False
+                full_matrices = False
             U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
             # We can perform a partial SVD
-            # construct np.random.RandomState for sampling a starting vector
-            if random_state is None:
-                # if random_state is not specified, do not initialize a starting vector
-                v0 = None
-            elif isinstance(random_state, int):
-                rns = np.random.RandomState(random_state)
-                # initilize with [-1, 1] as in ARPACK
-                v0 = rns.uniform(-1, 1, min_dim)
-            elif isinstance(random_state, np.random.RandomState):
-                # initilize with [-1, 1] as in ARPACK
-                v0 = random_state.uniform(-1, 1, min_dim)
+            rng = self.check_random_state(random_state)
+            # initilize with [-1, 1] as in ARPACK
+            v0 = rng.uniform(-1, 1, min_dim)
 
             # First choose whether to use X * X.T or X.T *X
             if dim_1 < dim_2:
