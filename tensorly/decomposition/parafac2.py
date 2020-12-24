@@ -77,7 +77,7 @@ def _pad_by_zeros(tensor_slices):
     for i, tensor_slice in enumerate(tensor_slices):
         J_i = len(tensor_slice)
         
-        tl.index_update(padded, tl.index[i, :J_i], tensor_slice)
+        padded = tl.index_update(padded, tl.index[i, :J_i], tensor_slice)
     
     return padded
 
@@ -256,8 +256,6 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
                 new_factors.append(factor/(tl.reshape(norms, (1, -1))))
 
             factors = new_factors
-
-            
 
         if tol:
             rec_error = _parafac2_reconstruction_error(tensor_slices, (weights, factors, projections))

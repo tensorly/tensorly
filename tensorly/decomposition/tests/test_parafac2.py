@@ -7,7 +7,7 @@ import tensorly as tl
 from ...random import check_random_state, random_parafac2
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
-from ..parafac2 import parafac2, initialize_decomposition
+from ..parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
 from ...parafac2_tensor import parafac2_to_tensor, parafac2_to_slices
 
 
@@ -190,3 +190,21 @@ def test_parafac2_to_tensor():
                     tensor_manual = tl.index_update(tensor_manual, tl.index[i, j, k],  tensor_manual[i, j, k] + factors[0][i][r]*Bi[j][r]*factors[2][k][r])
 
     assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-6)
+
+
+def test_pad_by_zeros():
+    """Test that if we pad a tensor by zeros, then it doesn't change.
+
+    This failed for TensorFlow at some point.
+    """
+    rng = check_random_state(1234)
+    rank = 3
+
+    I = 25
+    J = 15
+    K = 30
+
+    weights, factors, projections = random_parafac2(shapes=[(J, K)]*I, rank=rank, random_state=rng)
+    constructed_tensor = parafac2_to_tensor((weights, factors, projections))
+    padded_tensor = _pad_by_zeros(constructed_tensor)
+    assert_(tl.max(tl.abs(constructed_tensor - padded_tensor)) < 1e-10)
