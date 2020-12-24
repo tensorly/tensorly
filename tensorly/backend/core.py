@@ -48,10 +48,6 @@ class Backend(object):
     def float32(self):
         raise NotImplementedError
 
-    @property
-    def SVD_FUNS(self):
-        raise NotImplementedError
-
     @staticmethod
     def context(tensor):
         """Returns the context of a tensor
@@ -576,7 +572,7 @@ class Backend(object):
         """
         raise NotImplementedError
 
-    def einsum(subscripts, *operands):
+    def einsum(self, subscripts, *operands):
         """Evaluates the Einstein summation convention on the operands.
 
         Parameters
@@ -644,56 +640,20 @@ class Backend(object):
         return self.reshape(a * b, (s1 * s3, s2 * s4))
 
     def kr(self, matrices, weights=None, mask=None):
-        """Khatri-Rao product of a list of matrices
+        n_columns = matrices[0].shape[1]
+        n_factors = len(matrices)
 
-        This can be seen as a column-wise kronecker product.
+        start = ord('a')
+        common_dim = 'z'
+        target = ''.join(chr(start + i) for i in range(n_factors))
+        source = ','.join(i + common_dim for i in target)
+        operation = source + '->' + target + common_dim
 
-        Parameters
-        ----------
-        matrices : list of tensors
-            List of 2D tensors with the same number of columns, i.e.::
+        if weights is not None:
+            matrices = [m if i else m*self.reshape(weights, (1, -1)) for i, m in enumerate(matrices)]
 
-                for i in len(matrices):
-                    matrices[i].shape = (n_i, m)
-
-        Returns
-        -------
-        khatri_rao_product : tensor of shape ``(prod(n_i), m)``
-            Where ``prod(n_i) = prod([m.shape[0] for m in matrices])`` (i.e. the
-            product of the number of rows of all the matrices in the product.)
-
-        Notes
-        -----
-        Mathematically:
-
-        .. math::
-            \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
-            \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\\\
-            text{ is of size } (\\prod_{k=1}^n I_k \\times R)
-        """
-        if len(matrices) < 2:
-            raise ValueError('kr requires a list of at least 2 matrices, but {} '
-                            'given.'.format(len(matrices)))
-
-        n_col = self.shape(matrices[0])[1]
-        for i, e in enumerate(matrices[1:]):
-            if not i:
-                if weights is None:
-                    res = matrices[0]
-                else:
-                    res = matrices[0]*self.reshape(weights, (1, -1))
-            s1, s2 = self.shape(res)
-            s3, s4 = self.shape(e)
-            if not s2 == s4 == n_col:
-                raise ValueError('All matrices should have the same number of columns.')
-
-            a = self.reshape(res, (s1, 1, s2))
-            b = self.reshape(e, (1, s3, s4))
-            res = self.reshape(a * b, (-1, n_col))
-
-        m = self.reshape(mask, (-1, 1)) if mask is not None else 1
-
-        return res*m
+        m = mask.reshape((-1, 1)) if mask is not None else 1
+        return self.reshape(self.einsum(operation, *matrices), (-1, n_columns))*m
 
     def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`
@@ -729,11 +689,8 @@ class Backend(object):
         ctx = self.context(matrix)
         is_numpy = isinstance(matrix, np.ndarray)
 
-        if not is_numpy:
-            matrix = self.to_numpy(matrix)
-
         # Choose what to do depending on the params
-        dim_1, dim_2 = matrix.shape
+        dim_1, dim_2 = self.shape(matrix)
         if dim_1 <= dim_2:
             min_dim = dim_1
             max_dim = dim_2
@@ -741,53 +698,43 @@ class Backend(object):
             min_dim = dim_2
             max_dim = dim_1
 
-        if n_eigenvecs is None:
-            # Default on standard SVD
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=True)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        elif min_dim <= n_eigenvecs:
-            if max_dim < n_eigenvecs:
-                warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
-                               'is larger than max(matrix.shape)={1}. Setting '
-                               'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
-                n_eigenvecs = max_dim
-            if n_eigenvecs > min_dim:
-                full_matrices=True
-            else:
-                full_matrices=False
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+        # Default on standard SVD
+        if (n_eigenvecs is None) or (min_dim <= n_eigenvecs):
+            return self.truncated_svd(matrix, n_eigenvecs=n_eigenvecs)
+
+        if not is_numpy:
+            matrix = self.to_numpy(matrix)
+
+        # We can perform a partial SVD
+        # construct np.random.RandomState for sampling a starting vector
+        if random_state is None:
+            # if random_state is not specified, do not initialize a starting vector
+            v0 = None
+        elif isinstance(random_state, int):
+            rns = np.random.RandomState(random_state)
+            # initilize with [-1, 1] as in ARPACK
+            v0 = rns.uniform(-1, 1, min_dim)
+        elif isinstance(random_state, np.random.RandomState):
+            # initilize with [-1, 1] as in ARPACK
+            v0 = random_state.uniform(-1, 1, min_dim)
+
+        # First choose whether to use X * X.T or X.T *X
+        if dim_1 < dim_2:
+            S, U = scipy.sparse.linalg.eigsh(
+                np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
+            )
+            S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+            V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
         else:
-            # We can perform a partial SVD
-            # construct np.random.RandomState for sampling a starting vector
-            if random_state is None:
-                # if random_state is not specified, do not initialize a starting vector
-                v0 = None
-            elif isinstance(random_state, int):
-                rns = np.random.RandomState(random_state)
-                # initilize with [-1, 1] as in ARPACK
-                v0 = rns.uniform(-1, 1, min_dim)
-            elif isinstance(random_state, np.random.RandomState):
-                # initilize with [-1, 1] as in ARPACK
-                v0 = random_state.uniform(-1, 1, min_dim)
+            S, V = scipy.sparse.linalg.eigsh(
+                np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
+            )
+            S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+            U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
 
-            # First choose whether to use X * X.T or X.T *X
-            if dim_1 < dim_2:
-                S, U = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
-                )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-                V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
-            else:
-                S, V = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
-                )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-                U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
-
-            # WARNING: here, V is still the transpose of what it should be
-            U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-            V = V.T.conj()
+        # WARNING: here, V is still the transpose of what it should be
+        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+        V = V.T.conj()
 
         if not is_numpy:
             U = self.tensor(U, **ctx)
@@ -795,16 +742,14 @@ class Backend(object):
             V = self.tensor(V, **ctx)
         return U, S, V
 
-    def truncated_svd(self, matrix, n_eigenvecs=None, **kwargs):
-        """Computes a truncated SVD on `matrix` using pytorch's SVD
+    def truncated_svd(self, matrix, n_eigenvecs=None):
+        """Computes a truncated SVD on `matrix` using the backends's standard SVD
 
         Parameters
         ----------
         matrix : 2D-array
         n_eigenvecs : int, optional, default is None
             if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
 
         Returns
         -------
@@ -818,22 +763,32 @@ class Backend(object):
             of shape (n_eigenvecs, matrix.shape[1])
             contains the left singular vectors
         """
-        dim_1, dim_2 = matrix.shape
+        dim_1, dim_2 = self.shape(matrix)
         if dim_1 <= dim_2:
             min_dim = dim_1
+            max_dim = dim_2
         else:
             min_dim = dim_2
+            max_dim = dim_1
 
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
+        if max_dim < n_eigenvecs:
+            warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
+                           'is larger than max(matrix.shape)={1}. Setting '
+                           'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
+            n_eigenvecs = max_dim
 
-        U, S, V = self.svd(matrix)
+        full_matrices = (n_eigenvecs is None) or (n_eigenvecs > min_dim)
+
+        U, S, V = self.svd(matrix, full_matrices=full_matrices)
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         return U, S, V
 
     index = Index()
+
+    @property
+    def SVD_FUNS(self):
+        return {'numpy_svd': self.partial_svd,
+                'truncated_svd': self.truncated_svd}
     
     @staticmethod
     def index_update(tensor, indices, values):

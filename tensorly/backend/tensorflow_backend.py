@@ -114,50 +114,6 @@ class TensorflowBackend(Backend):
         return res
 
     @staticmethod
-    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
-        """Computes an SVD on `matrix`
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        dim_1, dim_2 = matrix.shape
-        if dim_1 <= dim_2:
-            min_dim = dim_1
-        else:
-            min_dim = dim_2
-
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-
-        S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], tf.transpose(a=V)[:n_eigenvecs, :]
-        return U, S, V
-
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.truncated_svd}
-    
-    @staticmethod
     def sort(tensor, axis, descending = False):
         if descending:
             direction = 'DESCENDING'
@@ -207,7 +163,7 @@ _FUN_NAMES = [
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
     (tf.linalg.qr, 'qr'),
-    #(tf.linalg.solve, 'solve'),
+    (tf.linalg.svd, 'svd'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),

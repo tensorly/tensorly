@@ -57,11 +57,19 @@ class MxnetBackend(Backend):
         return nd.reshape(tensor, shape)
 
     def solve(self, matrix1, matrix2):
+        # TODO: Replace this as soon as mxnet.np is stable.
         ctx = self.context(matrix1)
         matrix1 = self.to_numpy(matrix1)
         matrix2 = self.to_numpy(matrix2)
         res = numpy.linalg.solve(matrix1, matrix2)
         return self.tensor(res, **ctx)
+
+    def svd(self, matrix, full_matrices):
+        # TODO: Replace this as soon as mxnet.np is stable.
+        ctx = self.context(matrix)
+        matrix = self.to_numpy(matrix)
+        U, S, V = numpy.linalg.svd(matrix, full_matrices=full_matrices)
+        return self.tensor(U, **ctx), self.tensor(S, **ctx), self.tensor(V, **ctx)
 
     @staticmethod
     def min(tensor, *args, **kwargs):
@@ -297,6 +305,59 @@ class MxnetBackend(Backend):
             is_ascend = True
 
         return mx.ndarray.sort(tensor, axis=axis, is_ascend = is_ascend)
+
+    def kr(self, matrices, weights=None, mask=None):
+        """Khatri-Rao product of a list of matrices
+
+        This can be seen as a column-wise kronecker product.
+
+        Parameters
+        ----------
+        matrices : list of tensors
+            List of 2D tensors with the same number of columns, i.e.::
+
+                for i in len(matrices):
+                    matrices[i].shape = (n_i, m)
+
+        Returns
+        -------
+        khatri_rao_product : tensor of shape ``(prod(n_i), m)``
+            Where ``prod(n_i) = prod([m.shape[0] for m in matrices])`` (i.e. the
+            product of the number of rows of all the matrices in the product.)
+
+        Notes
+        -----
+        Mathematically:
+
+        .. math::
+            \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
+            \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\\\
+            text{ is of size } (\\prod_{k=1}^n I_k \\times R)
+        """
+        # TODO: Remove this once mxnet.np is stable (as it provides einsum)
+        if len(matrices) < 2:
+            raise ValueError('kr requires a list of at least 2 matrices, but {} '
+                            'given.'.format(len(matrices)))
+
+        n_col = self.shape(matrices[0])[1]
+        for i, e in enumerate(matrices[1:]):
+            if not i:
+                if weights is None:
+                    res = matrices[0]
+                else:
+                    res = matrices[0]*self.reshape(weights, (1, -1))
+            s1, s2 = self.shape(res)
+            s3, s4 = self.shape(e)
+            if not s2 == s4 == n_col:
+                raise ValueError('All matrices should have the same number of columns.')
+
+            a = self.reshape(res, (s1, 1, s2))
+            b = self.reshape(e, (1, s3, s4))
+            res = self.reshape(a * b, (-1, n_col))
+
+        m = self.reshape(mask, (-1, 1)) if mask is not None else 1
+
+        return res*m
     
 
 for name in ['float64', 'float32', 'int64', 'int32']:

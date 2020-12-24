@@ -13,6 +13,7 @@ from .core import Backend
 
 
 class CupyBackend(Backend):
+    backend_name = 'cupy'
 
     @staticmethod
     def context(tensor):
@@ -73,55 +74,13 @@ class CupyBackend(Backend):
             res = np.linalg.solve(matrix1, matrix2)
             return self.tensor(res, **ctx)
 
-    @staticmethod
-    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
-        """Computes a truncated SVD on `matrix`
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        dim_1, dim_2 = matrix.shape
-        if dim_1 <= dim_2:
-            min_dim = dim_1
-        else:
-            min_dim = dim_2
-
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-
-        U, S, V = cp.linalg.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        return U, S, V
-
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.truncated_svd}
-
 
 for name in ['float64', 'float32', 'int64', 'int32', 'reshape', 'moveaxis',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye',
-             'arange', 'where', 'dot', 'kron', 'qr', 'concatenate', 'max',
+             'arange', 'where', 'dot', 'kron', 'concatenate', 'max',
              'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'stack',
              'conj', 'diag', 'einsum']:
     CupyBackend.register_method(name, getattr(cp, name))
 
+for name in ['svd', 'qr']:
+    CupyBackend.register_method(name, getattr(cp.linalg, name))
