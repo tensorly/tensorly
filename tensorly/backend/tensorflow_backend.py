@@ -126,6 +126,11 @@ class TensorflowBackend(Backend):
 
         return tf.sort(tensor, axis=axis, direction = direction)
     
+    def svd(self, matrix, full_matrices):
+        """ Correct for the atypical return order of tf.linalg.svd. """
+        S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
+        return U, S, tf.transpose(a=V)
+    
     def index_update(self, tensor, indices, values):
         if not isinstance(tensor, tf.Variable):
             tensor = tf.Variable(tensor)
@@ -163,7 +168,6 @@ _FUN_NAMES = [
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
     (tf.linalg.qr, 'qr'),
-    (tf.linalg.svd, 'svd'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),
