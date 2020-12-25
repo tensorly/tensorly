@@ -572,7 +572,8 @@ class Backend(object):
         """
         raise NotImplementedError
 
-    def einsum(self, subscripts, *operands):
+    @staticmethod
+    def einsum(subscripts, *operands):
         """Evaluates the Einstein summation convention on the operands.
 
         Parameters
@@ -640,20 +641,56 @@ class Backend(object):
         return self.reshape(a * b, (s1 * s3, s2 * s4))
 
     def kr(self, matrices, weights=None, mask=None):
-        n_columns = matrices[0].shape[1]
-        n_factors = len(matrices)
+        """Khatri-Rao product of a list of matrices
 
-        start = ord('a')
-        common_dim = 'z'
-        target = ''.join(chr(start + i) for i in range(n_factors))
-        source = ','.join(i + common_dim for i in target)
-        operation = source + '->' + target + common_dim
+        This can be seen as a column-wise kronecker product.
 
-        if weights is not None:
-            matrices = [m if i else m*self.reshape(weights, (1, -1)) for i, m in enumerate(matrices)]
+        Parameters
+        ----------
+        matrices : list of tensors
+            List of 2D tensors with the same number of columns, i.e.::
 
-        m = mask.reshape((-1, 1)) if mask is not None else 1
-        return self.reshape(self.einsum(operation, *matrices), (-1, n_columns))*m
+                for i in len(matrices):
+                    matrices[i].shape = (n_i, m)
+
+        Returns
+        -------
+        khatri_rao_product : tensor of shape ``(prod(n_i), m)``
+            Where ``prod(n_i) = prod([m.shape[0] for m in matrices])`` (i.e. the
+            product of the number of rows of all the matrices in the product.)
+
+        Notes
+        -----
+        Mathematically:
+
+        .. math::
+            \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
+            \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\\\
+            text{ is of size } (\\prod_{k=1}^n I_k \\times R)
+        """
+        if len(matrices) < 2:
+            raise ValueError('kr requires a list of at least 2 matrices, but {} '
+                            'given.'.format(len(matrices)))
+
+        n_col = self.shape(matrices[0])[1]
+        for i, e in enumerate(matrices[1:]):
+            if not i:
+                if weights is None:
+                    res = matrices[0]
+                else:
+                    res = matrices[0]*self.reshape(weights, (1, -1))
+            s1, s2 = self.shape(res)
+            s3, s4 = self.shape(e)
+            if not s2 == s4 == n_col:
+                raise ValueError('All matrices should have the same number of columns.')
+
+            a = self.reshape(res, (s1, 1, s2))
+            b = self.reshape(e, (1, s3, s4))
+            res = self.reshape(a * b, (-1, n_col))
+
+        m = self.reshape(mask, (-1, 1)) if mask is not None else 1
+
+        return res*m
 
     def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`
