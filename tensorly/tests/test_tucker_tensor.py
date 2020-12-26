@@ -154,7 +154,7 @@ def test_validate_tucker_rank():
     """Test validate_tucker_rank with random sizes"""
     tol = 0.01
 
-    tensor_shape = tuple(np.random.randint(1, 100, size=4))
+    tensor_shape = tuple(np.random.randint(1, 100, size=5))
     n_param_tensor = np.prod(tensor_shape)
 
     # Rounding = floor
