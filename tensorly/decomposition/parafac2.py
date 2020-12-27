@@ -41,13 +41,18 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
             message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
                     svd, tl.get_backend(), tl.SVD_FUNS)
             raise ValueError(message)
-        
         padded_tensor = _pad_by_zeros(tensor_slices)
-        A = svd_fun(unfold(padded_tensor, 0), n_eigenvecs=rank)[0]
+        A = T.ones((padded_tensor.shape[0], rank), **context)
+
+        unfolded_mode_2 = unfold(padded_tensor, 2)
+        if T.shape(unfolded_mode_2)[0] < rank:
+            raise ValueError("Cannot perform SVD init if rank ({}) is greater than the number of columns in each tensor slice ({})".format(
+                    rank, T.shape(unfolded_mode_2)[0]
+        ))
         C = svd_fun(unfold(padded_tensor, 2), n_eigenvecs=rank)[0]
         B = T.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
-        return Parafac2Tensor((None, (A, B, C), projections))
+        return Parafac2Tensor((None, [A, B, C], projections))
 
     elif isinstance(init, (tuple, list, Parafac2Tensor, CPTensor)):
         try:
@@ -73,7 +78,7 @@ def _pad_by_zeros(tensor_slices):
     for i, tensor_slice in enumerate(tensor_slices):
         J_i = len(tensor_slice)
         
-        tl.index_update(padded, tl.index[i, :J_i], tensor_slice)
+        padded = tl.index_update(padded, tl.index[i, :J_i], tensor_slice)
     
     return padded
 
@@ -252,8 +257,6 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
                 new_factors.append(factor/(tl.reshape(norms, (1, -1))))
 
             factors = new_factors
-
-            
 
         if tol:
             rec_error = _parafac2_reconstruction_error(tensor_slices, (weights, factors, projections))
