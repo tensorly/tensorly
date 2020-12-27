@@ -45,7 +45,7 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
 
         unfolded_mode_2 = unfold(padded_tensor, 2)
         if T.shape(unfolded_mode_2)[0] < rank:
-            raise ValueError("Cannot perform SVD init if rank ({}) is less than the number of columns in each tensor slice ({})".format(
+            raise ValueError("Cannot perform SVD init if rank ({}) is greater than the number of columns in each tensor slice ({})".format(
                     rank, T.shape(unfolded_mode_2)[0]
         ))
         C = svd_fun(unfold(padded_tensor, 2), n_eigenvecs=rank)[0]
