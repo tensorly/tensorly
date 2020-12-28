@@ -14,6 +14,7 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 #          Chris Swierczewski <csw@amazon.com>
 #          Sam Schneider <samjohnschneider@gmail.com>
 #          Aaron Meurer <asmeurer@gmail.com>
+#          Aaron Meyer <tensorly@ameyer.me>
 
 # License: BSD 3 clause
 
