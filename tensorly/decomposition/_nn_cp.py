@@ -336,8 +336,6 @@ class CPNN(DecompositionMixin):
         svd_mask_repeats: int
             If using a tensor with masked values, this initializes using SVD multiple times to
             remove the effect of these missing values on the initialization.
-        linesearch : bool, default is False
-            Whether to perform line search as proposed by Bro [3].
 
         Returns
         -------
@@ -367,7 +365,6 @@ class CPNN(DecompositionMixin):
     def __init__(self, rank, n_iter_max=100, tol=1e-08,
                  init='svd', svd='numpy_svd',
                  l2_reg=0,
-                 linesearch=False,
                  fixed_modes = [],
                  normalize_factors=False,
                  sparsity = None,
@@ -380,7 +377,6 @@ class CPNN(DecompositionMixin):
         self.tol = tol
         self.l2_reg = l2_reg
         self.init = init
-        self.linesearch = linesearch
         self.svd = svd
         self.normalize_factors = normalize_factors
         self.mask = mask
