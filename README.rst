@@ -7,9 +7,9 @@
 .. image:: https://github.com/tensorly/tensorly/workflows/Test%20TensorLy/badge.svg
     :target: https://github.com/tensorly/tensorly/actions?query=workflow%3A%22Test+TensorLy%22
 
-.. image:: https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master
-    :target: https://coveralls.io/github/tensorly/tensorly?branch=master
-    
+.. image:: https://codecov.io/gh/tensorly/tensorly/branch/master/graph/badge.svg?token=mnZ234sGSA
+:target: https://codecov.io/gh/tensorly/tensorly
+
 .. image:: https://badges.gitter.im/tensorly/tensorly.svg
     :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
 
