@@ -5,6 +5,7 @@
     :target: https://anaconda.org/tensorly/tensorly
 
 .. image:: https://github.com/tensorly/tensorly/workflows/Test%20TensorLy/badge.svg
+    :target: https://github.com/tensorly/tensorly/actions?query=workflow%3A%22Test+TensorLy%22
 
 .. image:: https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master
     :target: https://coveralls.io/github/tensorly/tensorly?branch=master
