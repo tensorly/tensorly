@@ -8,7 +8,7 @@
     :target: https://github.com/tensorly/tensorly/actions?query=workflow%3A%22Test+TensorLy%22
 
 .. image:: https://codecov.io/gh/tensorly/tensorly/branch/master/graph/badge.svg?token=mnZ234sGSA
-:target: https://codecov.io/gh/tensorly/tensorly
+    :target: https://codecov.io/gh/tensorly/tensorly
 
 .. image:: https://badges.gitter.im/tensorly/tensorly.svg
     :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
