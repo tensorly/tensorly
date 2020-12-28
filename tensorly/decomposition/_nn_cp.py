@@ -18,7 +18,7 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 # License: BSD 3 clause
 
 
-def nnsvd(tensor, U, S, V, nntype):
+def make_svd_non_negative(tensor, U, S, V, nntype):
     """ Use NNDSVD method to transform SVD results into a non-negative form. This 
     method leads to more efficient solving with NNMF [1].
 
@@ -127,7 +127,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
             U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
 
             # Apply nnsvd to make non-negative
-            U = nnsvd(tensor, U, S, V, nntype)
+            U = make_svd_non_negative(tensor, U, S, V, nntype)
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
