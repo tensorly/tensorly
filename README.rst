@@ -4,8 +4,7 @@
 .. image:: https://anaconda.org/tensorly/tensorly/badges/version.svg   
     :target: https://anaconda.org/tensorly/tensorly
 
-.. image:: https://travis-ci.com/tensorly/tensorly.svg?branch=master
-    :target: https://travis-ci.com/tensorly/tensorly
+.. image:: https://github.com/tensorly/tensorly/workflows/Test%20TensorLy/badge.svg
 
 .. image:: https://coveralls.io/repos/github/tensorly/tensorly/badge.svg?branch=master
     :target: https://coveralls.io/github/tensorly/tensorly?branch=master
