@@ -7,7 +7,7 @@ import tensorly as tl
 from ...random import check_random_state, random_parafac2
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
-from ..parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
+from .._parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
 from ...parafac2_tensor import parafac2_to_tensor, parafac2_to_slices
 
 
