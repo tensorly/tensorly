@@ -31,15 +31,27 @@ jobs:
           python minify.py
           make html
           cd ..
-      - name: Push docs
+      - name: Push doc to website
+        if: success()
         run: |
+          # Add deploy key and clone through ssh
+          eval "$(ssh-agent -s)"
+          mkdir ~/.ssh
+          echo "${{ secrets.DEPLOY_DOC_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -t rsa github.com
+          echo 'Documentation was successfully built, updating the website.'
           # See https://github.community/t/github-actions-bot-email-address/17204/5
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions"
-          git fetch origin gh-pages
-          git checkout gh-pages
+          git clone "git@github.com:tensorly/tensorly.github.io.git" doc_folder
+          echo "-- Updating the content"
+          cd doc_folder
           git rm -r dev/*
-          cp -r doc/_build/html/* dev
+          mkdir -p dev
+          echo "Copying to folder"
+          cp -r ../doc/_build/html/* dev/
+          echo "Pushing to git"
           git add dev
-          git commit -m "Deployed to GitHub Pages"
-          git push --force origin gh-pages
+          git commit -m "Github action: auto-update."
+          git push --force origin master
