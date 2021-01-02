@@ -21,8 +21,8 @@ def test_parafac(linesearch, orthogonalise, rank, init):
     """Test for the CANDECOMP-PARAFAC decomposition
     """
     rng = check_random_state(1234)
-    tol_norm_2 = 10e-2
-    tol_max_abs = 10e-2
+    tol_norm_2 = 0.01
+    tol_max_abs = 0.05
     tensor = random_cp((6, 8, 4), rank=rank, orthogonal=orthogonalise, full=True, random_state=rng)
     fac, errors = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=10e-5, random_state=rng, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
 
@@ -35,10 +35,10 @@ def test_parafac(linesearch, orthogonalise, rank, init):
     error = T.norm(rec - tensor, 2)
     error /= T.norm(tensor, 2)
     assert_(error < tol_norm_2,
-            'norm 2 of reconstruction higher than tol')
+            f'norm 2 of reconstruction higher = {error} than tolerance={tol_norm_2}')
     # Test the max abs difference between the reconstruction and the tensor
     assert_(T.max(T.abs(rec - tensor)) < tol_max_abs,
-            'abs norm of reconstruction error higher than tol')
+            f'abs norm of reconstruction error = {T.max(T.abs(rec - tensor))} higher than tolerance={tol_max_abs}')
 
     # Test fixing mode 0 or 1 with given init
     fixed_tensor = random_cp((6, 8, 4), rank=rank, normalise_factors=False)
