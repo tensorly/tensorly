@@ -1,0 +1,45 @@
+name: Build documentation
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r doc/requirements_doc.txt
+      - name: Install package
+        run: |
+          python -m pip install -e .
+      - name: Make doc
+        run: |
+          cd doc
+          python minify.py
+          make html
+          cd ..
+      - name: Push docs
+        run: |
+          # See https://github.community/t/github-actions-bot-email-address/17204/5
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions"
+          git fetch origin gh-pages
+          git checkout gh-pages
+          git rm -r dev/*
+          cp -r doc/_build/html/* dev
+          git add dev
+          git commit -m "Deployed to GitHub Pages"
+          git push --force origin gh-pages
