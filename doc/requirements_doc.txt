@@ -3,3 +3,4 @@ slimit
 rcssmin
 numpydoc
 sphinx-gallery
+matplotlib
