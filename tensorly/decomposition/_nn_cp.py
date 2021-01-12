@@ -1,6 +1,6 @@
 import numpy as np
 import warnings
-
+import time
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..random import random_cp
@@ -291,6 +291,142 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
         return cp_tensor
 
 
+def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-7,
+                              sparsity_coefficients=[], fixed_modes=[],
+                              verbose=False, return_errors=False):
+    """
+    Non-negative CP decomposition
+
+    Uses HALS which updates each factor columnwise, fixing every other columns, see [1]_
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank   : int
+            number of components
+    n_iter_max : int
+                 maximum number of iteration
+    init : {'svd', 'random'}, optional
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    tol : float, optional
+          tolerance: the algorithm stops when the variation in
+          the reconstruction error is less than the tolerance
+        Default: 1e-8
+    sparsity_coefficients: array of float (as much as the number of modes)
+        The sparsity coefficients on U and V respectively.
+        If set to None, the algorithm is computed without sparsity
+        Default: [],
+    fixed_modes: array of integers (between 0 and the number of modes)
+        Has to be set not to update a factor, 0 and 1 for U and V respectively
+        Default: []
+    verbose: boolean
+        Indicates whether the algorithm prints the successive
+        reconstruction errors or not
+        Default: False
+    return_errors: boolean
+        Indicates whether the algorithm should return all reconstruction errors
+        and computation time of each iteration or not
+        Default: False
+
+    Returns
+    -------
+    factors : ndarray list
+            list of positive factors of the CP decomposition
+            element `i` is of shape ``(tensor.shape[i], rank)``
+    errors: list
+        A list of reconstruction errors at each iteration of the algorithm.
+    toc: list
+        A list with accumulated time at each iterations
+
+   fixed_modes = [], normalize = [False, False, False],
+               verbose = True, return_errors = False)
+
+    References
+    ----------
+    [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+    Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
+    Neural Computation 24 (4): 1085-1105, 2012.
+    """
+
+    weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
+                                     random_state=None,
+                                     normalize_factors=False)
+
+    norm_tensor = tl.norm(tensor, 2)
+
+    # set init if problem
+    nb_modes = len(tensor.shape)
+    if sparsity_coefficients == None or len(sparsity_coefficients) != nb_modes:
+        print(
+            "Irrelevant number of sparsity coefficient (different from the number of modes), they have been set to None.")
+        sparsity_coefficients = [None for i in range(nb_modes)]
+    if fixed_modes == None:
+        fixed_modes = []
+
+    # Avoiding errors
+    for fixed_value in fixed_modes:
+        sparsity_coefficients[fixed_value] = None
+
+    # Generating the mode update sequence
+    modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+
+    # initialisation - declare local varaibles
+    rec_errors = []
+    toc = []
+
+    # Iterate over one step of NTF
+    for iteration in range(n_iter_max):
+        # One pass of least squares on each updated mode
+        for mode in modes_list:
+
+            # Computing Hadamard of cross-products
+            pseude_inverse = tl.tensor(tl.ones((rank, rank)), **tl.context(tensor))
+            for i, factor in enumerate(factors):
+                if i != mode:
+                    pseude_inverse *= tl.dot(tl.transpose(factor), factor)
+
+            if not iteration and weights is not None:
+                # Take into account init weights
+                mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
+            else:
+                mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+
+
+            # Call the hals resolution with nnls, optimizing the current mode
+
+            factors[mode] = tl.transpose(
+                hals_nnls_acc(tl.transpose(mttkrp), pseude_inverse, tl.transpose(factors[mode]),
+                             maxiter=100,sparsity_coefficient=sparsity_coefficients[mode])[0])
+
+            factors_norm = tl.sum(tl.sum(pseude_inverse * tl.dot(tl.conj(tl.transpose(factors[mode])), factors[mode])))
+            rec_error = norm_tensor ** 2 + factors_norm - 2 * tl.dot(tl.tensor_to_vec(factors[mode]),
+                                                                     tl.tensor_to_vec(mttkrp))
+            rec_error = rec_error ** (1 / 2) / norm_tensor
+
+        if tol:
+            rec_errors.append(rec_error)
+
+            if iteration > 1:
+                if verbose:
+                    print('reconstruction error={}, variation={}.'.format(
+                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                    if verbose:
+                        print('converged in {} iterations.'.format(iteration))
+                    break
+
+    cp_tensor = CPTensor((weights, factors))
+    if return_errors:
+        return cp_tensor, rec_errors
+    else:
+        return cp_tensor
+
+
+
+
+
 class CPNN(DecompositionMixin):
     """Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
 
@@ -399,6 +535,7 @@ class CPNN(DecompositionMixin):
         CPTensor
             decomposed tensor
         """
+
         cp_tensor, errors = non_negative_parafac(tensor, rank=self.rank,
                                                  n_iter_max=self.n_iter_max,
                                                  tol=self.tol,
@@ -410,9 +547,140 @@ class CPNN(DecompositionMixin):
                                                  random_state=self.random_state,
                                                  verbose=self.verbose,
                                                  return_errors=True)
+
+
         self.decomposition_ = cp_tensor
         self.errors_ = errors
         return self.decomposition_
+    def __repr__(self):
+        return f'Rank-{self.rank} Non-Negative CP decomposition.'
+
+
+
+class CPNN_Hals(DecompositionMixin):
+    """Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
+
+        Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
+
+            ``tensor = [|weights; factors[0], ..., factors[-1] |]``.
+
+        Parameters
+        ----------
+        tensor : ndarray
+        rank  : int
+            Number of components.
+        n_iter_max : int
+            Maximum number of iteration
+        init : {'svd', 'random'}, optional
+            Type of factor matrix initialization. See `initialize_factors`.
+        svd : str, default is 'numpy_svd'
+            function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+            of shape (rank, ), which will contain the norms of the factors
+        tol : float, optional
+            (Default: 1e-6) Relative reconstruction error tolerance. The
+            algorithm is considered to have found the global minimum when the
+            reconstruction error is less than `tol`.
+        random_state : {None, int, np.random.RandomState}
+        verbose : int, optional
+            Level of verbosity
+        return_errors : bool, optional
+            Activate return of iteration errors
+        mask : ndarray
+            array of booleans with the same shape as ``tensor`` should be 0 where
+            the values are missing and 1 everywhere else. Note:  if tensor is
+            sparse, then mask should also be sparse with a fill value of 1 (or
+            True). Allows for missing values [2]_
+        cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
+            Stopping criterion for ALS, works if `tol` is not None.
+            If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
+            If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
+        sparsity : float or int
+            If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+        fixed_modes : list, default is []
+            A list of modes for which the initial value is not modified.
+            The last mode cannot be fixed due to error computation.
+        svd_mask_repeats: int
+            If using a tensor with masked values, this initializes using SVD multiple times to
+            remove the effect of these missing values on the initialization.
+
+        Returns
+        -------
+        CPTensor : (weight, factors)
+            * weights : 1D array of shape (rank, )
+                all ones if normalize_factors is False (default),
+                weights of the (normalized) factors otherwise
+            * factors : List of factors of the CP decomposition element `i` is of shape
+                (tensor.shape[i], rank)
+            * sparse_component : nD array of shape tensor.shape. Returns only if `sparsity` is not None.
+
+        errors : list
+            A list of reconstruction errors at each iteration of the algorithms.
+
+        References
+        ----------
+        .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+
+        .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
+                Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
+
+        .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
+                Applications", PhD., University of Amsterdam, 1998
+    """
+
+    def __init__(self, rank, n_iter_max=100, tol=1e-08,
+                 init='svd', svd='numpy_svd',
+                 l2_reg=0,
+                 fixed_modes=[],
+                 normalize_factors=False,
+                 sparsity=None,
+                 mask=None, svd_mask_repeats=5,
+                 cvg_criterion='abs_rec_error',
+                 random_state=None,
+                 verbose=0):
+        self.rank = rank
+        self.n_iter_max = n_iter_max
+        self.tol = tol
+        self.l2_reg = l2_reg
+        self.init = init
+        self.svd = svd
+        self.normalize_factors = normalize_factors
+        self.mask = mask
+        self.svd_mask_repeats = svd_mask_repeats
+        self.cvg_criterion = cvg_criterion
+        self.random_state = random_state
+        self.verbose = verbose
+
+    def fit_transform(self, tensor):
+        """Decompose an input tensor
+
+        Parameters
+        ----------
+        tensor : tensorly tensor
+            input tensor to decompose
+
+        Returns
+        -------
+        CPTensor
+            decomposed tensor
+        """
+
+        cp_tensor, errors = non_negative_parafac_hals(tensor, rank=self.rank,
+                                                      n_iter_max=self.n_iter_max,
+                                                      tol=self.tol,
+                                                      init=self.init,
+                                                      svd=self.svd,
+                                                      verbose=self.verbose,
+                                                      return_errors=True)
+
+        self.decomposition_ = cp_tensor
+        self.errors_ = errors
+        return self.decomposition_
+    def cp_to_tensor(self):
+        """
+        """
+        return tl.cp_to_tensor(self.decomposition_)
 
     def __repr__(self):
         return f'Rank-{self.rank} Non-Negative CP decomposition.'
