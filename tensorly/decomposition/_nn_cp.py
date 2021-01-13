@@ -5,7 +5,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..random import random_cp
 from ..base import unfold
-from ..tenalg.proximal import soft_thresholding
+from ..tenalg.proximal import soft_thresholding,hals_nnls_acc
 from ..cp_tensor import (cp_to_tensor, CPTensor,
                          unfolding_dot_khatri_rao, cp_norm,
                          cp_normalize, validate_cp_rank)
