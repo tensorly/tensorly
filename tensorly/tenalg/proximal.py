@@ -207,10 +207,8 @@ def hals_nnls_acc(UtM, UtU, in_V, maxiter=500,
     cnt = 1
     eps = 1
     delta=0.01
-    alpha=0.5
-    # Start timer
-    tic = time.time()
-    while eps >= delta * eps0 and cnt <= 1 + alpha * rho and cnt <= maxiter:
+
+    while eps >= delta * eps0 and cnt <= 1 + 0.5* rho and cnt <= maxiter:
         nodelta = 0
         for k in range(r):
 
@@ -244,12 +242,8 @@ def hals_nnls_acc(UtM, UtU, in_V, maxiter=500,
                     V[k,:] = [sqrt_n for i in range(n)]
         if cnt == 1:
             eps0 = nodelta
-            # End timer for one iteration
-            #btime = max(time.time() - tic, 10e-7) # Avoid division by 0
-            #if atime:  # atime is provided
-                # Number of loops authorized
-            #    rho = atime/btime
-        rho_up=np.count_nonzero(V)+tl.shape(V)[1]*r
+
+        rho_up=tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*r
         rho_down=tl.shape(V)[0]*r+tl.shape(V)[0]
         rho=1+(rho_up/rho_down)
         eps = nodelta
