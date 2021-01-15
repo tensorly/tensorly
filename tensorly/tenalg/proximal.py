@@ -90,7 +90,7 @@ def procrustes(matrix):
     """
     U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
-def hals_nnls_acc(UtM, UtU, in_V, maxiter=500,
+def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,
                   sparsity_coefficient=None, normalize = False,nonzero=False):
     ## Author : Axel Marmoret, based on Jeremy Cohen version's of Nicolas Gillis Matlab's code for HALS
 
@@ -150,14 +150,6 @@ def hals_nnls_acc(UtM, UtU, in_V, maxiter=500,
     maxiter: Postivie integer
         Upper bound on the number of iterations
         Default: 500
-    alpha: Positive float
-        Ratio between outer computations and inner loops, typically set to 0.5 or 1.
-        Default: 0.5
-    delta : float in [0,1]
-        early stop criterion, while err_k > delta*err_0. Set small for
-        almost exact nnls solution, or larger (e.g. 1e-2) for inner loops
-        of a PARAFAC computation.
-        Default: 0.01
     sparsity_coefficient: float or None
         The coefficient controling the sparisty level in the objective function.
         If set to None, the problem is solved unconstrained.
@@ -250,4 +242,109 @@ def hals_nnls_acc(UtM, UtU, in_V, maxiter=500,
         cnt += 1
 
     return V, eps, cnt, rho
+def hals_nnls_exact(UtM, UtU, in_V, maxiter):
+    ## Author : Axel Marmoret, based on Jeremy Cohen version's of Nicolas Gillis Matlab's code for HALS
+
+    """
+    =================================
+    Non Negative Least Squares (NNLS)
+    =================================
+
+    Computes an exact solution of a nonnegative least
+    squares problem (NNLS) with an exact block-coordinate descent scheme.
+    M is m by n, U is m by r, V is r by n.
+    All matrices are nonnegative componentwise.
+
+    The NNLS unconstrained problem, as defined in [1], solve the following problem:
+
+            min_{V >= 0} ||M-UV||_F^2
+
+    The matrix V is updated linewise.
+
+    The update rule of the k-th line of V (V[k,:]) for this resolution is:
+
+            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:] V_(j))/UtU[k,k]
+
+    with j the update iteration.
+
+
+    This function is made for being used repetively inside an
+    outer-loop alternating algorithm, for instance for computing nonnegative
+    matrix Factorization or tensor factorization.
+
+    Parameters
+    ----------
+    UtM: r-by-n array
+        Pre-computed product of the transposed of U and M, used in the update rule
+    UtU: r-by-r array
+        Pre-computed product of the transposed of U and U, used in the update rule
+    in_V: r-by-n initialization matrix (mutable)
+        Initialized V array
+        By default, is initialized with one non-zero entry per column
+        corresponding to the closest column of U of the corresponding column of M.
+    maxiter: Postivie integer
+        Upper bound on the number of iterations
+        Default: 500
+
+
+    Returns
+    -------
+    V: array
+        a r-by-n nonnegative matrix \approx argmin_{V >= 0} ||M-UV||_F^2
+    eps: float
+        number of loops authorized by the error stop criterion
+    cnt: integer
+        final number of update iteration performed
+
+
+    References
+    ----------
+    [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+    Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
+    Neural Computation 24 (4): 1085-1105, 2012.
+
+    [2] J. Eggert, and E. Korner. "Sparse coding and NMF."
+    2004 IEEE International Joint Conference on Neural Networks
+    (IEEE Cat. No. 04CH37541). Vol. 4. IEEE, 2004.
+
+    """
+
+    r, n = tl.shape(UtM)
+    if not in_V.size:  # checks if V is empty
+        V = tl.solve(UtU, UtM)  # Least squares np.linalg.linalg.solve=> tl.solve
+
+        V[V < 0] = 0
+        # Scaling
+        scale = tl.sum(UtM * V) / tl.sum(
+            UtU * tl.dot(V, tl.transpose(V)))
+        V = tl.dot(scale, V)
+    else:
+        V = in_V.copy()
+
+    eps0 = 0
+    cnt = 1
+    eps = 1
+    delta=10e-24
+    while eps >= delta * eps0 and cnt <= maxiter:
+        nodelta = 0
+        for k in range(r):
+
+            if UtU[k, k] != 0:
+
+                deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
+                                        -V[k, :]],axis=0)  # Element wise maximum -> good idea ?
+
+                V[k, :] = V[k, :] + deltaV
+
+                nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
+
+
+        if cnt == 1:
+            eps0 = nodelta
+
+        eps = nodelta
+        cnt += 1
+
+    return V, eps, cnt
+
 

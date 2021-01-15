@@ -5,7 +5,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..random import random_cp
 from ..base import unfold
-from ..tenalg.proximal import soft_thresholding,hals_nnls_acc
+from ..tenalg.proximal import soft_thresholding,hals_nnls_approx,hals_nnls_exact
 from ..cp_tensor import (cp_to_tensor, CPTensor,
                          unfolding_dot_khatri_rao, cp_norm,
                          cp_normalize, validate_cp_rank)
@@ -292,7 +292,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
 
 def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-7,
-                              sparsity_coefficients=[], fixed_modes=[],
+                              sparsity_coefficients=[], fixed_modes=[],hals='approx',
                               verbose=False, return_errors=False):
     """
     Non-negative CP decomposition
@@ -394,11 +394,14 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
 
             # Call the hals resolution with nnls, optimizing the current mode
-
-            factors[mode] = tl.transpose(
-                hals_nnls_acc(tl.transpose(mttkrp), pseude_inverse, tl.transpose(factors[mode]),
+            if hals=='approx':
+                factors[mode] = tl.transpose(
+                      hals_nnls_approx(tl.transpose(mttkrp), pseude_inverse, tl.transpose(factors[mode]),
                              maxiter=100,sparsity_coefficient=sparsity_coefficients[mode])[0])
-
+            elif hals=='exact':
+                factors[mode] = tl.transpose(
+                    hals_nnls_exact(tl.transpose(mttkrp), pseude_inverse, tl.transpose(factors[mode]),
+                                     maxiter=5000)[0])
             factors_norm = tl.sum(tl.sum(pseude_inverse * tl.dot(tl.conj(tl.transpose(factors[mode])), factors[mode])))
             rec_error = norm_tensor ** 2 + factors_norm - 2 * tl.dot(tl.tensor_to_vec(factors[mode]),
                                                                      tl.tensor_to_vec(mttkrp))
@@ -635,10 +638,12 @@ class CPNN_Hals(DecompositionMixin):
                  fixed_modes=[],
                  normalize_factors=False,
                  sparsity=None,
+                 hals='approx',
                  mask=None, svd_mask_repeats=5,
                  cvg_criterion='abs_rec_error',
                  random_state=None,
                  verbose=0):
+        self.hals=hals
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.tol = tol
@@ -671,6 +676,7 @@ class CPNN_Hals(DecompositionMixin):
                                                       tol=self.tol,
                                                       init=self.init,
                                                       svd=self.svd,
+                                                      hals=self.hals,
                                                       verbose=self.verbose,
                                                       return_errors=True)
 
