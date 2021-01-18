@@ -90,9 +90,8 @@ def procrustes(matrix):
     """
     U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
-def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,
+def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
                   sparsity_coefficient=None, normalize = False,nonzero=False):
-    ## Author : Axel Marmoret, based on Jeremy Cohen version's of Nicolas Gillis Matlab's code for HALS
 
     """
     =================================
@@ -150,6 +149,11 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,
     maxiter: Postivie integer
         Upper bound on the number of iterations
         Default: 500
+    delta : float in [0,1]
+        early stop criterion, while err_k > delta*err_0. Set small for
+        almost exact nnls solution, or larger (e.g. 1e-2) for inner loops
+        of a PARAFAC computation.
+        Default: 10e-8
     sparsity_coefficient: float or None
         The coefficient controling the sparisty level in the objective function.
         If set to None, the problem is solved unconstrained.
@@ -198,7 +202,7 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,
     eps0 = 0
     cnt = 1
     eps = 1
-    delta=0.01
+
 
     while eps >= delta * eps0 and cnt <= 1 + 0.5* rho and cnt <= maxiter:
         nodelta = 0
@@ -208,11 +212,11 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,
                 if sparsity_coefficient != None: # Modifying the objective function for sparsification
 
                     deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
-                                        -V[k, :]],axis=0)  # np.maximum => tl.max
+                                        -V[k, :]],axis=0)
                     V[k, :] = V[k, :] + deltaV
                 else:  # without sparsity
                     deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                                        -V[k, :]],axis=0)  # Element wise maximum -> good idea ?
+                                        -V[k, :]],axis=0)
 
                     V[k, :] = V[k, :] + deltaV
 
@@ -242,8 +246,7 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,
         cnt += 1
 
     return V, eps, cnt, rho
-def hals_nnls_exact(UtM, UtU, in_V, maxiter):
-    ## Author : Axel Marmoret, based on Jeremy Cohen version's of Nicolas Gillis Matlab's code for HALS
+def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=None):
 
     """
     =================================
@@ -285,7 +288,15 @@ def hals_nnls_exact(UtM, UtU, in_V, maxiter):
     maxiter: Postivie integer
         Upper bound on the number of iterations
         Default: 500
-
+    delta : float in [0,1]
+        early stop criterion, while err_k > delta*err_0. Set small for
+        almost exact nnls solution, or larger (e.g. 1e-2) for inner loops
+        of a PARAFAC computation.
+        Default: 10e-12
+    sparsity_coefficient: float or None
+        The coefficient controling the sparisty level in the objective function.
+        If set to None, the problem is solved unconstrained.
+        Default: None
 
     Returns
     -------
@@ -324,15 +335,20 @@ def hals_nnls_exact(UtM, UtU, in_V, maxiter):
     eps0 = 0
     cnt = 1
     eps = 1
-    delta=10e-24
+    delta=10e-12
     while eps >= delta * eps0 and cnt <= maxiter:
         nodelta = 0
         for k in range(r):
 
             if UtU[k, k] != 0:
+                if sparsity_coefficient != None:  # Modifying the objective function for sparsification
 
-                deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                                        -V[k, :]],axis=0)  # Element wise maximum -> good idea ?
+                    deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
+                                     -V[k, :]], axis=0)
+                    V[k, :] = V[k, :] + deltaV
+                else:  # without sparsity
+                    deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
+                                     -V[k, :]], axis=0)
 
                 V[k, :] = V[k, :] + deltaV
 
