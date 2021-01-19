@@ -355,7 +355,6 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
     norm_tensor = tl.norm(tensor, 2)
 
-    # set init if problem
     nb_modes = len(tensor.shape)
     if sparsity_coefficients == None or len(sparsity_coefficients) != nb_modes:
         print(
@@ -373,18 +372,17 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
     # initialisation - declare local varaibles
     rec_errors = []
-    toc = []
 
-    # Iterate over one step of NTF
+    # Iteratation
     for iteration in range(n_iter_max):
         # One pass of least squares on each updated mode
         for mode in modes_list:
 
             # Computing Hadamard of cross-products
-            pseude_inverse = tl.tensor(tl.ones((rank, rank)), **tl.context(tensor))
+            pseudo_inverse = tl.tensor(tl.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseude_inverse *= tl.dot(tl.transpose(factor), factor)
+                    pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
 
             if not iteration and weights is not None:
                 # Take into account init weights
@@ -396,7 +394,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             # Call the hals resolution with nnls, optimizing the current mode
             if hals=='approx':
                 factors[mode] = tl.transpose(
-                      hals_nnls_approx(tl.transpose(mttkrp), pseude_inverse, tl.transpose(factors[mode]),
+                      hals_nnls_approx(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
                              maxiter=100,sparsity_coefficient=sparsity_coefficients[mode])[0])
             elif hals=='exact':
                 factors[mode] = tl.transpose(
