@@ -398,14 +398,13 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
                              maxiter=100,sparsity_coefficient=sparsity_coefficients[mode])[0])
             elif hals=='exact':
                 factors[mode] = tl.transpose(
-                    hals_nnls_exact(tl.transpose(mttkrp), pseude_inverse, tl.transpose(factors[mode]),
+                    hals_nnls_exact(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
                                      maxiter=5000)[0])
-            factors_norm = tl.sum(tl.sum(pseude_inverse * tl.dot(tl.conj(tl.transpose(factors[mode])), factors[mode])))
-            rec_error = norm_tensor ** 2 + factors_norm - 2 * tl.dot(tl.tensor_to_vec(factors[mode]),
-                                                                     tl.tensor_to_vec(mttkrp))
-            rec_error = rec_error ** (1 / 2) / norm_tensor
-
+ 
         if tol:
+            factors_norm = cp_norm((weights, factors))
+            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
+            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod)) / norm_tensor
             rec_errors.append(rec_error)
 
             if iteration > 1:

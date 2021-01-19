@@ -187,7 +187,7 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
     """
 
     r, n = tl.shape(UtM)
-    if not in_V.size:  # checks if V is empty
+    if in_V is None:  # checks if V is empty
         V = tl.solve(UtU, UtM)
 
         V[V < 0] = 0
@@ -196,7 +196,7 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
             UtU * tl.dot(V, tl.transpose(V)))
         V = tl.dot(scale, V)
     else:
-        V = in_V.copy()
+        V = in_V
 
     rho = 100000
     eps0 = 0
@@ -322,7 +322,7 @@ def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=No
 
     r, n = tl.shape(UtM)
     if not in_V.size:  # checks if V is empty
-        V = tl.solve(UtU, UtM)  
+        V = tl.solve(UtU, UtM)
 
         V[V < 0] = 0
         # Scaling
