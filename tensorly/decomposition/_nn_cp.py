@@ -400,7 +400,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
                 factors[mode] = tl.transpose(
                     hals_nnls_exact(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
                                      maxiter=5000)[0])
- 
+
         if tol:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
