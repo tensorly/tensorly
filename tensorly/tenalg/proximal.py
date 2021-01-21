@@ -91,7 +91,7 @@ def procrustes(matrix):
     U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
 def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
-                  sparsity_coefficient=None, normalize = False,nonzero=False):
+                  sparsity_coefficient=None, normalize = False,nonzero_row=False):
 
     """
     =================================
@@ -158,7 +158,7 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
         The coefficient controling the sparisty level in the objective function.
         If set to None, the problem is solved unconstrained.
         Default: None
-    nonzero: boolean
+    nonzero_row: boolean
         True if the lines of the V matrix can't be zero,
         False if they can be zero
         Default: False
@@ -403,5 +403,3 @@ def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=No
         cnt += 1
 
     return V, eps, cnt
-
-
