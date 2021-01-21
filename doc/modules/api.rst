@@ -2,14 +2,23 @@
 API reference
 =============
 
-:mod:`tensorly`: Manipulating the backend with a unified interface
-==================================================================
+:mod:`tensorly`: A unified backend interface
+============================================
 
-For each backend, tensorly provides the following uniform functions:
+There are several libraries for multi-dimensional array computation, including NumPy, PyTorch, MXNet, TensorFlow, JAX and CuPy.
+They all have strenghs and weaknesses, e.g. some are better on CPU, some better on GPU etc. 
+Therefore, in TensorLy we enable you to use our algorithm (and any code you write using the library), with any of these libraries.
+
+However, while they all loosely follow the API introduced and popularized by NumPy, there are differences. To make switching from one backend to another completely transparent, in TensorLy, we provide a thin wrapper to these libraries.
+So instead of using PyTorch or NumPy functions (``pytorch.tensor`` or ``numpy.array`` for instance), 
+you should only use functions through the backend (:func:`tensorly.tensor` in this case).
 
 .. automodule:: tensorly
     :no-members:
     :no-inherited-members:
+
+Setting the backend
+-------------------
 
 .. autosummary::
     :toctree: generated
@@ -17,6 +26,17 @@ For each backend, tensorly provides the following uniform functions:
 
     set_backend
     get_backend
+    backend_context
+
+Available backend functions
+---------------------------
+
+For each backend, tensorly provides the following uniform functions:
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
     context
     tensor
     is_tensor
@@ -76,8 +96,8 @@ For each backend, tensorly provides the following uniform functions:
     partial_vec_to_tensor
 
 
-:mod:`tensorly.cp_tensor`: Tensors in the CP format
-=============================================================
+:mod:`tensorly.cp_tensor`: Tensors in CP form
+=============================================
 
 .. automodule:: tensorly.cp_tensor
     :no-members:
@@ -98,8 +118,8 @@ For each backend, tensorly provides the following uniform functions:
     unfolding_dot_khatri_rao
 
 
-:mod:`tensorly.tucker_tensor`: Tensors in Tucker format
-=======================================================
+:mod:`tensorly.tucker_tensor`: Tensors in Tucker form
+=====================================================
 
 .. automodule:: tensorly.tucker_tensor
     :no-members:
@@ -117,8 +137,8 @@ For each backend, tensorly provides the following uniform functions:
     tucker_mode_dot
 
 
-:mod:`tensorly.tt_tensor`: Tensors in Matrix-Product-State format
-==================================================================
+:mod:`tensorly.tt_tensor`: Tensors in Tensor-Train (MPS) form
+=============================================================
 
 .. automodule:: tensorly.tt_tensor
     :no-members:
@@ -135,8 +155,8 @@ For each backend, tensorly provides the following uniform functions:
     tt_to_vec
 
 
-:mod:`tensorly.tt_matrix`: Matrices in TT format
-================================================
+:mod:`tensorly.tt_matrix`: Matrices in TT form
+==============================================
 
 .. automodule:: tensorly.tt_matrix
     :no-members:
@@ -153,8 +173,8 @@ For each backend, tensorly provides the following uniform functions:
     tt_matrix_to_vec
 
 
-:mod:`tensorly.parafac2_tensor`: Tensors in PARAFAC2 format
-===========================================================
+:mod:`tensorly.parafac2_tensor`: Tensors in PARAFAC2 form
+=========================================================
 
 .. automodule:: tensorly.parafac2_tensor
     :no-members:
@@ -173,8 +193,13 @@ For each backend, tensorly provides the following uniform functions:
     parafac2_to_vec
 
 
-:mod:`tensorly.tenalg`: Tensor algebra
+:mod:`tensorly.tenalg`: Tensor Algebra
 ======================================
+
+Available functions
+-------------------
+
+TensorLy provides you with all the tensor algebra functions you need:
 
 .. automodule:: tensorly.tenalg
     :no-members:
@@ -198,6 +223,22 @@ For each backend, tensorly provides the following uniform functions:
     tensor_dot
     batched_tensor_dot
     higher_order_moment
+
+Tensor Algebra Backend
+----------------------
+
+For advanced users, you may want to dispatch all the computation to `einsum` (if available)
+instead of using our manually optimized functions. 
+In TensorLy, we enable this very easily through our tensor algebra backend.
+If you have your own library implementing tensor algebraic functions, you could even use it that way!
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    set_tenalg_backend
+    get_tenalg_backend
+    tenalg_backend_context
 
 
 :mod:`tensorly.decomposition`: Tensor Decomposition
@@ -282,8 +323,8 @@ Functions
     regression.RMSE
 
 
-:mod:`tensorly.random`: Sampling random tensors
-===============================================
+:mod:`tensorly.random`: Sampling tensors
+========================================
 
 .. automodule:: tensorly.random
    :no-members:
@@ -304,8 +345,8 @@ Functions
 
 
 
-:mod:`tensorly.datasets`: Creating and loading data
-====================================================
+:mod:`tensorly.datasets`: Datasets
+==================================
 
 .. automodule:: tensorly.datasets
     :no-members:
@@ -335,10 +376,10 @@ Functions
 
     decomposition.tensor_train_cross
 
-Sparse tensor operations
-------------------------
+Sparse tensors
+--------------
 
-Enables tensor operations on sparse tensors.
+The :mod:`tensorly.contrib.sparse` module enables tensor operations on sparse tensors.
 Currently, the following decomposition methods are supported (for the NumPy backend, using Sparse):
 
 .. automodule:: tensorly.contrib.sparse

@@ -138,7 +138,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
 
     Computes a rank-`rank` PARAFAC2 decomposition of the third-order tensor defined by 
     `tensor_slices`. The decomposition is on the form :math:`(A [B_i] C)` such that the
-     i-th frontal slice, :math:`X_i`, of :math:`X` is given by
+    i-th frontal slice, :math:`X_i`, of :math:`X` is given by
 
     .. math::
     
@@ -360,8 +360,8 @@ class Parafac2(DecompositionMixin):
     References
     ----------
     .. [1] Kiers, H.A.L., ten Berge, J.M.F. and Bro, R. (1999),
-            PARAFAC2—Part I. A direct fitting algorithm for the PARAFAC2 model. 
-            J. Chemometrics, 13: 275-294.
+           PARAFAC2—Part I. A direct fitting algorithm for the PARAFAC2 model. 
+           J. Chemometrics, 13: 275-294.
 
     Notes
     -----
