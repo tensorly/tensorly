@@ -198,7 +198,7 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
     else:
         V = in_V
 
-    rho = 100000
+    rho = 1
     eps0 = 0
     cnt = 1
     eps = 1
@@ -355,7 +355,7 @@ def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=No
     eps0 = 0
     cnt = 1
     eps = 1
-    delta=10e-12
+
     while eps >= delta * eps0 and cnt <= maxiter:
         nodelta = 0
         for k in range(r):

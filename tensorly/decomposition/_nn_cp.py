@@ -20,7 +20,7 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 
 
 def make_svd_non_negative(tensor, U, S, V, nntype):
-    """ Use NNDSVD method to transform SVD results into a non-negative form. This 
+    """ Use NNDSVD method to transform SVD results into a non-negative form. This
     method leads to more efficient solving with NNMF [1].
 
     Parameters
@@ -313,8 +313,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
         Default: 1e-8
-    sparsity_coefficients: array of float (as much as the number of modes)
-        The sparsity coefficients on U and V respectively.
+    sparsity_coefficients: array of float (of length the number of modes)
+        The sparsity coefficients on each factor.
         If set to None, the algorithm is computed without sparsity
         Default: [],
     fixed_modes: array of integers (between 0 and the number of modes)
@@ -681,7 +681,27 @@ class CPNN_Hals(DecompositionMixin):
         self.errors_ = errors
         return self.decomposition_
     def cp_to_tensor(self):
-        """
+        """Turns the Khatri-product of matrices into a full tensor
+
+            ``factor_matrices = [|U_1, ... U_n|]`` becomes
+            a tensor shape ``(U[1].shape[0], U[2].shape[0], ... U[-1].shape[0])``
+
+        Parameters
+        ----------
+        cp_tensor : CPTensor = (weight, factors)
+            factors is a list of factor matrices, all with the same number of columns
+            i.e. for all matrix U in factor_matrices:
+            U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
+
+        mask : ndarray a mask to be applied to the final tensor. It should be
+            broadcastable to the shape of the final tensor, that is
+            ``(U[1].shape[0], ... U[-1].shape[0])``.
+
+        Returns
+        -------
+        ndarray
+            full tensor of shape ``(U[1].shape[0], ... U[-1].shape[0])``
+
         """
         return tl.cp_to_tensor(self.decomposition_)
 
