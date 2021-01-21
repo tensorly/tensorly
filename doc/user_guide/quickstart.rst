@@ -9,7 +9,7 @@ Organization of TensorLy
 TensorLy is organized in several submodule:
 
 ================================= ================================
-module                             Description
+Module                             Description
 ================================= ================================
 :mod:`tensorly`                   Core operations,  includes regular array manipulation and tensor specific ones. 
 :mod:`tensorly.tucker_tensor`     Manipulate tensors in decomposed Tucker form
@@ -117,7 +117,7 @@ Generally you can manipulate decomposed tensors using the corresponding submodul
 :mod:`tensorly.tucker_tensor`,
 :mod:`tensorly.cp_tensor`,
 :mod:`tensorly.tt_tensor`,
-:mod:`tensorly.tt_matrix_tensor`, 
+:mod:`tensorly.tt_matrix`, 
 :mod:`tensorly.parafac2_tensor`.
 
 
