@@ -357,8 +357,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
     nb_modes = len(tensor.shape)
     if sparsity_coefficients == None or len(sparsity_coefficients) != nb_modes:
-        print(
-            "Irrelevant number of sparsity coefficient (different from the number of modes), they have been set to None.")
+        #print(
+        #    "Irrelevant number of sparsity coefficient (different from the number of modes), they have been set to None.")
         sparsity_coefficients = [None for i in range(nb_modes)]
     if fixed_modes == None:
         fixed_modes = []
