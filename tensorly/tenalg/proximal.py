@@ -243,10 +243,10 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
                 nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
 
                 # Safety procedure, if columns aren't allow to be zero
-                if nonzero and (V[k, :] == 0).all():
+                if nonzero_row and (V[k, :] == 0).all():
                     V[k, :] = 1e-16 * tl.max(V)
 
-            elif nonzero:
+            elif nonzero_row:
                 raise ValueError("Column " + str(k) + " of U is zero with nonzero condition")
 
             if normalize:
