@@ -210,10 +210,20 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
 
             if UtU[k, k] != 0:
                 if sparsity_coefficient != None: # Modifying the objective function for sparsification
-
-                    deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
+                    if tl.get_backend() == 'pytorch':
+                        import torch
+                        deltaV = torch.maximum((UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
+                                        -V[k, :])
+                    else:
+                        deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
                                         -V[k, :]],axis=0)
-                    V[k, :] = V[k, :] + deltaV
+                    if tl.get_backend()=='tensorflow':
+                        import tensorflow as tf
+                        V=tf.Variable(V,dtype='float')
+                        V[k, :].assign(V[k, :] + deltaV)
+                    else:
+                        V[k, :] = V[k, :] + deltaV
+
                 else:  # without sparsity
 
                     if tl.get_backend() == 'pytorch':
@@ -352,15 +362,36 @@ def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=No
 
             if UtU[k, k] != 0:
                 if sparsity_coefficient != None:  # Modifying the objective function for sparsification
+                    if tl.get_backend() == 'pytorch':
+                        import torch
+                        deltaV = torch.maximum(
+                            (UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
+                            -V[k, :])
+                    else:
+                        deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
+                                         -V[k, :]], axis=0)
+                    if tl.get_backend() == 'tensorflow':
+                        import tensorflow as tf
+                        V = tf.Variable(V, dtype='float')
+                        V[k, :].assign(V[k, :] + deltaV)
+                    else:
+                        V[k, :] = V[k, :] + deltaV
 
-                    deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
-                                     -V[k, :]], axis=0)
-                    V[k, :] = V[k, :] + deltaV
                 else:  # without sparsity
-                    deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                                     -V[k, :]], axis=0)
 
-                V[k, :] = V[k, :] + deltaV
+                    if tl.get_backend() == 'pytorch':
+                        import torch
+                        deltaV = torch.maximum((UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
+                                               -V[k, :])
+                    else:
+                        deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
+                                         -V[k, :]], axis=0)
+                    if tl.get_backend() == 'tensorflow':
+                        import tensorflow as tf
+                        V = tf.Variable(V, dtype='float')
+                        V[k, :].assign(V[k, :] + deltaV)
+                    else:
+                        V[k, :] = V[k, :] + deltaV
 
                 nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
 
