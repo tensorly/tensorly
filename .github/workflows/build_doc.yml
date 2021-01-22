@@ -3,7 +3,7 @@ name: Build documentation
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -54,4 +54,4 @@ jobs:
           echo "Pushing to git"
           git add dev
           git commit -m "Github action: auto-update."
-          git push --force origin master
+          git push --force origin main
