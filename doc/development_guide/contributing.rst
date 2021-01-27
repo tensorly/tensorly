@@ -21,9 +21,25 @@ Check the existing code for examples, and don't hesitate to contact the develope
 Backend compatibility
 ---------------------
 
-We want algorithms to run transparently with NumPy, MXNet, PyTorch and any other backend added later on!
+To contribute code to the TensorLy code-base, you must ensure compatibility with all the backends.
 
-To do so, we **only use** functions wrapped in :py:mod:`tensorly.backend`, such as :py:mod:`tensorly.backend.partial_svd`, etc. If the function you need doesn't exist, either try using other existing ones, or, if you cannot do otherwise, add the required function to all backends.
+.. important::
+
+   We want algorithms to run transparently with all the TensorLy backends 
+   (NumPy, MXNet, PyTorch, TensorLy, JAX, CuPy) and any other backend added later on!
+
+   This means you should only use TensorLy functions, never directly a function from the backend
+   e.g. use ``tl.mean``, **not** ``numpy.mean`` or ``torch.mean``.
+
+To do so, we **only use** functions wrapped in :py:mod:`tensorly.backend`, such as :py:mod:`tensorly.backend.partial_svd`, etc.
+If the function you need doesn't exist, either try using other existing ones,
+or, if you cannot do otherwise, add the required function to all backends.
+
+.. important::
+
+   In general, you should **not** use backend specific code, by testing for the backend. 
+   e.g. Do not include statements such as ``if tensorly.get_backend() == 'pytorch'`` in your code.
+
 
 In practice
 ~~~~~~~~~~~
@@ -60,3 +76,16 @@ An other aspect, when developing a new function or algorithm, is to make sure yo
    new_tensor = tl.tensor(tensor + 2, **context)
 
 Check-out the page on :doc:`../user_guide/backend` for more on this.
+
+
+Index assignment ("NumPy style")
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In NumPy, PyTorch and MXNet, you can combined indexing and assignment in a convenient way, 
+e.g. if you have a tensor `t`, you can update its values for given indices using the expression
+``t[indices] = values``.
+
+Unfortunately, this is not supported by TensorFlow or JAX. As a result, if you want to do this,
+you should use :func:`tensorly.index_update` and :func:`tensorly.index`.
+For instance, the previous statement becomes, in TensorLy: 
+``t = tensorly.index_update(t, tensorly.index[indices], values)``.
+

@@ -28,35 +28,81 @@ Setting the backend
     get_backend
     backend_context
 
+Context of a tensor
+-------------------
+
+In TensorLy, we provide some convenient functions to manipulate backend specific 
+information on the tensors (the *context* of that tensor),
+including dtype (e.g. `float32`, `float64`, etc), 
+its *device* (e.g. CPU and GPU) where applicable, etc. 
+We also provide functions to check if a tensor is on the current backend, convert to NumPy, etc.
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+
+   context
+   is_tensor
+   to_numpy
+   eps
+   finfo
+
+Index assignement ("NumPy style")
+---------------------------------
+
+While in some backends (e.g. NumPy), you can directly combine indexing and assignement,
+not all backends support this. Instead of 
+``tensor[indices] = values``, you should use 
+``tensor = tensorly.index_update(tensor, tensorly.index, values)``.
+
+.. autosummary::
+   :toctree: generated
+   :template: function.rst
+
+    index_update
+    index
+
 Available backend functions
 ---------------------------
 
 For each backend, tensorly provides the following uniform functions:
 
+Array creation
+++++++++++++++
+
 .. autosummary::
     :toctree: generated
     :template: function.rst
 
-    context
     tensor
-    is_tensor
-    shape
-    ndim
-    to_numpy
-    copy
-    concatenate
-    reshape
-    transpose
-    moveaxis
-    arange
     ones
     zeros
     zeros_like
     eye
+    diag
+
+Array manipulation
+++++++++++++++++++
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
+    shape
+    ndim
+    copy
+    concatenate
+    conj
+    reshape
+    transpose
+    moveaxis
+    arange
     where
     clip
     max
     min
+    argmax
+    argmin
     all
     mean
     sum
@@ -65,6 +111,16 @@ For each backend, tensorly provides the following uniform functions:
     abs
     sqrt
     norm
+    stack
+    sort
+
+Algebraic operations
+++++++++++++++++++++
+
+.. autosummary::
+    :toctree: generated
+    :template: function.rst
+
     dot
     kron
     solve
