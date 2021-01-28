@@ -297,7 +297,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     """
     Non-negative CP decomposition via HALS
 
-    Uses HALS which updates each factor columnwise, fixing every other columns, see [1]_
+    Uses Hierarchical ALS (Alternating Least Squares) which updates each factor column-wise (one column at a time while keeping all other columns fixed), see [1]_
 
     Parameters
     ----------
