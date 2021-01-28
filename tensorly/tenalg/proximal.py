@@ -283,7 +283,7 @@ def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=No
 
     The matrix V is updated linewise.
 
-    The update rule of the k-th line of V (V[k,:]) for this resolution is:
+    The update rule of the k-th line of V (V[k,:]) for this resolution is::
 
             V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:] V_(j))/UtU[k,k]
 
