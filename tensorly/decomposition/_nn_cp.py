@@ -295,7 +295,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
                               sparsity_coefficients=[], fixed_modes=[],hals='approx',
                               verbose=False, return_errors=False):
     """
-    Non-negative CP decomposition
+    Non-negative CP decomposition via HALS
 
     Uses HALS which updates each factor columnwise, fixing every other columns, see [1]_
 
