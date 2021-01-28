@@ -90,13 +90,11 @@ def procrustes(matrix):
     """
     U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
-def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
-                  sparsity_coefficient=None, normalize = False,nonzero_row=False):
+def hals_nnls_approx(UtM, UtU, V, n_iter_max=500,delta=10e-8,
+                  sparsity_coefficient=None, normalize = False,nonzero_rows=False):
 
     """
-    =================================
     Non Negative Least Squares (NNLS)
-    =================================
 
     Computes an approximate solution of a nonnegative least
     squares problem (NNLS) with an exact block-coordinate descent scheme.
@@ -186,8 +184,8 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
 
     """
 
-    r, n = tl.shape(UtM)
-    if in_V is None:  # checks if V is empty
+    rank, n_col_M = tl.shape(UtM)
+    if V is None:  # checks if V is empty
         V = tl.solve(UtU, UtM)
 
         V[V < 0] = 0
@@ -206,16 +204,16 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
 
     while eps >= delta * eps0 and cnt <= 1 + 0.5* rho and cnt <= maxiter:
         nodelta = 0
-        for k in range(r):
+        for k in range(rank):
 
             if UtU[k, k]:
                 if sparsity_coefficient is not None: # Modifying the objective function for sparsification
                     if tl.get_backend() == 'pytorch':
                         import torch
-                        deltaV = torch.maximum((UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
+                        deltaV = torch.maximum((UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n_col_M)) / UtU[k, k],
                                         -V[k, :])
                     else:
-                        deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
+                        deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n_col_M)) / UtU[k, k],
                                         -V[k, :]],axis=0)
                     if tl.get_backend()=='tensorflow':
                         import tensorflow as tf
@@ -246,7 +244,7 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
                 if nonzero_row and (V[k, :] == 0).all():
                     V[k, :] = 1e-16 * tl.max(V)
 
-            elif nonzero_row:
+            elif nonzero_rows:
                 raise ValueError("Column " + str(k) + " of U is zero with nonzero condition")
 
             if normalize:
@@ -254,13 +252,13 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
                 if norm != 0:
                     V[k,:] /= norm
                 else:
-                    sqrt_n = 1/n ** (1/2)
-                    V[k,:] = [sqrt_n for i in range(n)]
+                    sqrt_n = 1/n_col_M ** (1/2)
+                    V[k,:] = [sqrt_n for i in range(n_col_M)]
         if cnt == 1:
             eps0 = nodelta
 
-        rho_up=tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*r
-        rho_down=tl.shape(V)[0]*r+tl.shape(V)[0]
+        rho_up=tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*rank
+        rho_down=tl.shape(V)[0]*rank+tl.shape(V)[0]
         rho=1+(rho_up/rho_down)
         eps = nodelta
         cnt += 1
@@ -268,9 +266,7 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
     return V, eps, cnt, rho
 def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=None):
     """
-    =================================
     Non Negative Least Squares (NNLS)
-    =================================
 
     Computes an exact solution of a nonnegative least
     squares problem (NNLS) with an exact block-coordinate descent scheme.
