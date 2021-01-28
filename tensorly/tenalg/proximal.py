@@ -90,8 +90,8 @@ def procrustes(matrix):
     """
     U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
-def hals_nnls_approx(UtM, UtU, V, n_iter_max=500,delta=10e-8,
-                  sparsity_coefficient=None, normalize = False,nonzero_rows=False):
+def hals_nnls(UtM, UtU, V=None, n_iter_max=500,delta=10e-8,
+                  sparsity_coefficient=None, normalize = False,nonzero_rows=False,exact=False):
 
     """
     Non Negative Least Squares (NNLS)
@@ -140,7 +140,7 @@ def hals_nnls_approx(UtM, UtU, V, n_iter_max=500,delta=10e-8,
         Pre-computed product of the transposed of U and M, used in the update rule
     UtU: r-by-r array
         Pre-computed product of the transposed of U and U, used in the update rule
-    in_V: r-by-n initialization matrix (mutable)
+    V: r-by-n initialization matrix (mutable)
         Initialized V array
         By default, is initialized with one non-zero entry per column
         corresponding to the closest column of U of the corresponding column of M.
@@ -156,7 +156,7 @@ def hals_nnls_approx(UtM, UtU, V, n_iter_max=500,delta=10e-8,
         The coefficient controling the sparisty level in the objective function.
         If set to None, the problem is solved unconstrained.
         Default: None
-    nonzero_row: boolean
+    nonzero_rows: boolean
         True if the lines of the V matrix can't be zero,
         False if they can be zero
         Default: False
@@ -188,60 +188,40 @@ def hals_nnls_approx(UtM, UtU, V, n_iter_max=500,delta=10e-8,
     if V is None:  # checks if V is empty
         V = tl.solve(UtU, UtM)
 
-        V[V < 0] = 0
+        V=tl.clip(V,a_min=0,a_max=None)
         # Scaling
         scale = tl.sum(UtM * V) / tl.sum(
             UtU * tl.dot(V, tl.transpose(V)))
         V = tl.dot(scale, V)
-    else:
-        V = in_V
+    if exact:
+        n_iter_max=5000
+        delta = 10e-12
 
     rho = 1
     eps0 = 0
-    cnt = 1
     eps = 1
 
-
-    while eps >= delta * eps0 and cnt <= 1 + 0.5* rho and cnt <= maxiter:
+    for iteration in range(n_iter_max):
         nodelta = 0
         for k in range(rank):
 
             if UtU[k, k]:
                 if sparsity_coefficient is not None: # Modifying the objective function for sparsification
-                    if tl.get_backend() == 'pytorch':
-                        import torch
-                        deltaV = torch.maximum((UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n_col_M)) / UtU[k, k],
-                                        -V[k, :])
-                    else:
-                        deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n_col_M)) / UtU[k, k],
+
+                    deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n_col_M)) / UtU[k, k],
                                         -V[k, :]],axis=0)
-                    if tl.get_backend()=='tensorflow':
-                        import tensorflow as tf
-                        V=tf.Variable(V,dtype='float')
-                        V[k, :].assign(V[k, :] + deltaV)
-                    else:
-                        V[k, :] = V[k, :] + deltaV
+                    tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
 
                 else:  # without sparsity
 
-                    if tl.get_backend() == 'pytorch':
-                        import torch
-                        deltaV = torch.maximum((UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                                         -V[k, :])
-                    else:
-                        deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
+                    deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
                                          -V[k, :]], axis=0)
-                    if tl.get_backend()=='tensorflow':
-                        import tensorflow as tf
-                        V=tf.Variable(V,dtype='float')
-                        V[k, :].assign(V[k, :] + deltaV)
-                    else:
-                        V[k, :] = V[k, :] + deltaV
+                    tl.index_update(V,tl.index[k, :],V[k, :] + deltaV)
 
                 nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
 
                 # Safety procedure, if columns aren't allow to be zero
-                if nonzero_row and (V[k, :] == 0).all():
+                if nonzero_rows and tl.all(V[k, :] == 0):
                     V[k, :] = 1e-16 * tl.max(V)
 
             elif nonzero_rows:
@@ -254,147 +234,18 @@ def hals_nnls_approx(UtM, UtU, V, n_iter_max=500,delta=10e-8,
                 else:
                     sqrt_n = 1/n_col_M ** (1/2)
                     V[k,:] = [sqrt_n for i in range(n_col_M)]
-        if cnt == 1:
+        if iteration == 1:
             eps0 = nodelta
 
         rho_up=tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*rank
         rho_down=tl.shape(V)[0]*rank+tl.shape(V)[0]
         rho=1+(rho_up/rho_down)
         eps = nodelta
-        cnt += 1
+        if exact:
+           if eps < delta * eps0:
+               break
+        else:
+           if eps < delta * eps0 or iteration > 1 + 0.5 * rho:
+                break
 
-    return V, eps, cnt, rho
-def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=None):
-    """
-    Non Negative Least Squares (NNLS)
-
-    Computes an exact solution of a nonnegative least
-    squares problem (NNLS) with an exact block-coordinate descent scheme.
-    M is m by n, U is m by r, V is r by n.
-    All matrices are nonnegative componentwise.
-
-    The NNLS unconstrained problem, as defined in [1], solve the following problem:
-
-            min_{V >= 0} ||M-UV||_F^2
-
-    The matrix V is updated linewise.
-
-    The update rule of the k-th line of V (V[k,:]) for this resolution is::
-
-            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:] V_(j))/UtU[k,k]
-
-    with j the update iteration.
-
-
-    This function is made for being used repetively inside an
-    outer-loop alternating algorithm, for instance for computing nonnegative
-    matrix Factorization or tensor factorization.
-
-    Parameters
-    ----------
-    UtM: r-by-n array
-        Pre-computed product of the transposed of U and M, used in the update rule
-    UtU: r-by-r array
-        Pre-computed product of the transposed of U and U, used in the update rule
-    in_V: r-by-n initialization matrix (mutable)
-        Initialized V array
-        By default, is initialized with one non-zero entry per column
-        corresponding to the closest column of U of the corresponding column of M.
-    maxiter: Postivie integer
-        Upper bound on the number of iterations
-        Default: 500
-    delta : float in [0,1]
-        early stop criterion, while err_k > delta*err_0. Set small for
-        almost exact nnls solution, or larger (e.g. 1e-2) for inner loops
-        of a PARAFAC computation.
-        Default: 10e-12
-    sparsity_coefficient: float or None
-        The coefficient controling the sparisty level in the objective function.
-        If set to None, the problem is solved unconstrained.
-        Default: None
-
-    Returns
-    -------
-    V: array
-        a r-by-n nonnegative matrix \approx argmin_{V >= 0} ||M-UV||_F^2
-    eps: float
-        number of loops authorized by the error stop criterion
-    cnt: integer
-        final number of update iteration performed
-
-
-    References
-    ----------
-    [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
-    Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
-    Neural Computation 24 (4): 1085-1105, 2012.
-
-    [2] J. Eggert, and E. Korner. "Sparse coding and NMF."
-    2004 IEEE International Joint Conference on Neural Networks
-    (IEEE Cat. No. 04CH37541). Vol. 4. IEEE, 2004.
-
-    """
-
-    r, n = tl.shape(UtM)
-    if not in_V.size:  # checks if V is empty
-        V = tl.solve(UtU, UtM)
-
-        V[V < 0] = 0
-        # Scaling
-        scale = tl.sum(UtM * V) / tl.sum(
-            UtU * tl.dot(V, tl.transpose(V)))
-        V = tl.dot(scale, V)
-    else:
-        V = in_V.copy()
-
-    eps0 = 0
-    cnt = 1
-    eps = 1
-
-    while eps >= delta * eps0 and cnt <= maxiter:
-        nodelta = 0
-        for k in range(r):
-
-            if UtU[k, k] != 0:
-                if sparsity_coefficient != None:  # Modifying the objective function for sparsification
-                    if tl.get_backend() == 'pytorch':
-                        import torch
-                        deltaV = torch.maximum(
-                            (UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
-                            -V[k, :])
-                    else:
-                        deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
-                                         -V[k, :]], axis=0)
-                    if tl.get_backend() == 'tensorflow':
-                        import tensorflow as tf
-                        V = tf.Variable(V, dtype='float')
-                        V[k, :].assign(V[k, :] + deltaV)
-                    else:
-                        V[k, :] = V[k, :] + deltaV
-
-                else:  # without sparsity
-
-                    if tl.get_backend() == 'pytorch':
-                        import torch
-                        deltaV = torch.maximum((UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                                               -V[k, :])
-                    else:
-                        deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                                         -V[k, :]], axis=0)
-                    if tl.get_backend() == 'tensorflow':
-                        import tensorflow as tf
-                        V = tf.Variable(V, dtype='float')
-                        V[k, :].assign(V[k, :] + deltaV)
-                    else:
-                        V[k, :] = V[k, :] + deltaV
-
-                nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
-
-
-        if cnt == 1:
-            eps0 = nodelta
-
-        eps = nodelta
-        cnt += 1
-
-    return V, eps, cnt
+    return V, eps, iteration, rho

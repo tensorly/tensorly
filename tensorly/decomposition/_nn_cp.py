@@ -5,7 +5,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..random import random_cp
 from ..base import unfold
-from ..tenalg.proximal import soft_thresholding,hals_nnls_approx,hals_nnls_exact
+from ..tenalg.proximal import soft_thresholding,hals_nnls
 from ..cp_tensor import (cp_to_tensor, CPTensor,
                          unfolding_dot_khatri_rao, cp_norm,
                          cp_normalize, validate_cp_rank)
@@ -292,7 +292,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
 
 def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-7,
-                              sparsity_coefficients=[], fixed_modes=[],hals='approx',
+                              sparsity_coefficients=None, fixed_modes=None,exact=False,
                               verbose=False, return_errors=False):
     """
     Non-negative CP decomposition via HALS
@@ -339,9 +339,6 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     toc: list
         A list with accumulated time at each iterations
 
-   fixed_modes = [], normalize = [False, False, False],
-               verbose = True, return_errors = False)
-
     References
     ----------
     [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
@@ -356,9 +353,9 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     norm_tensor = tl.norm(tensor, 2)
 
     n_modes = tl.ndim(tensor)
-    if sparsity_coefficients is None or isinstance(sparsity_coefficients, float):
-       sparsity_coefficients = [sparsity_coefficients]*n_modes
-    
+    if sparsity_coefficients == None or len(sparsity_coefficients) != n_modes:
+        sparsity_coefficients = [None for i in range(n_modes)]
+
     if fixed_modes is None:
         fixed_modes = []
 
@@ -389,16 +386,10 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             else:
                 mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
-
             # Call the hals resolution with nnls, optimizing the current mode
-            if hals=='approx':
-                factors[mode] = tl.transpose(
-                      hals_nnls_approx(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
-                             n_iter_max=100,sparsity_coefficient=sparsity_coefficients[mode])[0])
-            elif hals=='exact':
-                factors[mode] = tl.transpose(
-                    hals_nnls_exact(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
-                                     n_iter_max=5000)[0])
+            factors[mode] = tl.transpose(
+                      hals_nnls(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
+                             n_iter_max=100,sparsity_coefficient=sparsity_coefficients[mode],exact=exact)[0])
 
         if tol:
             factors_norm = cp_norm((weights, factors))
@@ -557,7 +548,7 @@ class CPNN(DecompositionMixin):
 
 
 
-class CPNN_Hals(DecompositionMixin):
+class CPNN_HALS(DecompositionMixin):
     """Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
 
         Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
@@ -635,12 +626,12 @@ class CPNN_Hals(DecompositionMixin):
                  fixed_modes=[],
                  normalize_factors=False,
                  sparsity=None,
-                 hals='approx',
+                 exact=False,
                  mask=None, svd_mask_repeats=5,
                  cvg_criterion='abs_rec_error',
                  random_state=None,
                  verbose=0):
-        self.hals=hals
+        self.exact=exact
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.tol = tol
@@ -673,7 +664,7 @@ class CPNN_Hals(DecompositionMixin):
                                                       tol=self.tol,
                                                       init=self.init,
                                                       svd=self.svd,
-                                                      hals=self.hals,
+                                                      exact=self.exact,
                                                       verbose=self.verbose,
                                                       return_errors=True)
 
