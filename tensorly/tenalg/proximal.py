@@ -208,8 +208,8 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
         nodelta = 0
         for k in range(r):
 
-            if UtU[k, k] != 0:
-                if sparsity_coefficient != None: # Modifying the objective function for sparsification
+            if UtU[k, k]:
+                if sparsity_coefficient is not None: # Modifying the objective function for sparsification
                     if tl.get_backend() == 'pytorch':
                         import torch
                         deltaV = torch.maximum((UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n)) / UtU[k, k],
@@ -267,7 +267,6 @@ def hals_nnls_approx(UtM, UtU, in_V, maxiter=500,delta=10e-8,
 
     return V, eps, cnt, rho
 def hals_nnls_exact(UtM, UtU, in_V, maxiter,delta=10e-12,sparsity_coefficient=None):
-
     """
     =================================
     Non Negative Least Squares (NNLS)

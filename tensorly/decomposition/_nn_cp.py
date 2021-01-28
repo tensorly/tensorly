@@ -360,7 +360,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
         #print(
         #    "Irrelevant number of sparsity coefficient (different from the number of modes), they have been set to None.")
         sparsity_coefficients = [None for i in range(nb_modes)]
-    if fixed_modes == None:
+    if fixed_modes is None:
         fixed_modes = []
 
     # Avoiding errors
@@ -368,7 +368,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
         sparsity_coefficients[fixed_value] = None
 
     # Generating the mode update sequence
-    modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+    modes = [mode for mode in range(n_modes) if mode not in fixed_modes]
 
     # initialisation - declare local varaibles
     rec_errors = []
@@ -552,6 +552,7 @@ class CPNN(DecompositionMixin):
         self.decomposition_ = cp_tensor
         self.errors_ = errors
         return self.decomposition_
+
     def __repr__(self):
         return f'Rank-{self.rank} Non-Negative CP decomposition.'
 
@@ -680,6 +681,7 @@ class CPNN_Hals(DecompositionMixin):
         self.decomposition_ = cp_tensor
         self.errors_ = errors
         return self.decomposition_
+
     def cp_to_tensor(self):
         """Turns the Khatri-product of matrices into a full tensor
 
