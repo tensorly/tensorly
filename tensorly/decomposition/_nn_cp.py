@@ -356,10 +356,9 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     norm_tensor = tl.norm(tensor, 2)
 
     n_modes = tl.ndim(tensor)
-    if sparsity_coefficients == None or len(sparsity_coefficients) != nb_modes:
-        #print(
-        #    "Irrelevant number of sparsity coefficient (different from the number of modes), they have been set to None.")
-        sparsity_coefficients = [None for i in range(nb_modes)]
+    if sparsity_coefficient is None or isinstance(sparsity_coefficient, float):
+       sparsity_coefficient = [sparsity_coefficient]*n_modes
+    
     if fixed_modes is None:
         fixed_modes = []
 
@@ -376,7 +375,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     # Iteratation
     for iteration in range(n_iter_max):
         # One pass of least squares on each updated mode
-        for mode in modes_list:
+        for mode in modes:
 
             # Computing Hadamard of cross-products
             pseudo_inverse = tl.tensor(tl.ones((rank, rank)), **tl.context(tensor))
@@ -395,11 +394,11 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             if hals=='approx':
                 factors[mode] = tl.transpose(
                       hals_nnls_approx(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
-                             maxiter=100,sparsity_coefficient=sparsity_coefficients[mode])[0])
+                             n_iter_max=100,sparsity_coefficient=sparsity_coefficients[mode])[0])
             elif hals=='exact':
                 factors[mode] = tl.transpose(
                     hals_nnls_exact(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
-                                     maxiter=5000)[0])
+                                     n_iter_max=5000)[0])
 
         if tol:
             factors_norm = cp_norm((weights, factors))
@@ -681,31 +680,6 @@ class CPNN_Hals(DecompositionMixin):
         self.decomposition_ = cp_tensor
         self.errors_ = errors
         return self.decomposition_
-
-    def cp_to_tensor(self):
-        """Turns the Khatri-product of matrices into a full tensor
-
-            ``factor_matrices = [|U_1, ... U_n|]`` becomes
-            a tensor shape ``(U[1].shape[0], U[2].shape[0], ... U[-1].shape[0])``
-
-        Parameters
-        ----------
-        cp_tensor : CPTensor = (weight, factors)
-            factors is a list of factor matrices, all with the same number of columns
-            i.e. for all matrix U in factor_matrices:
-            U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
-
-        mask : ndarray a mask to be applied to the final tensor. It should be
-            broadcastable to the shape of the final tensor, that is
-            ``(U[1].shape[0], ... U[-1].shape[0])``.
-
-        Returns
-        -------
-        ndarray
-            full tensor of shape ``(U[1].shape[0], ... U[-1].shape[0])``
-
-        """
-        return tl.cp_to_tensor(self.decomposition_)
 
     def __repr__(self):
         return f'Rank-{self.rank} Non-Negative CP decomposition.'
