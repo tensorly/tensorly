@@ -291,9 +291,9 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
         return cp_tensor
 
 
-def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-7,
+def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
                               sparsity_coefficients=None, fixed_modes=None,exact=False,
-                              verbose=False, return_errors=False):
+                              verbose=False, return_errors=False,cvg_criterion='abs_rec_error'):
     """
     Non-negative CP decomposition via HALS
 
@@ -396,16 +396,26 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
             rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod)) / norm_tensor
             rec_errors.append(rec_error)
+            if iteration >= 1:
+                rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
-            if iteration > 1:
                 if verbose:
-                    print('reconstruction error={}, variation={}.'.format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+                    print("iteration {}, reconstruction error: {}, decrease = {}".format(iteration, rec_error, rec_error_decrease))
 
-                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                if cvg_criterion == 'abs_rec_error':
+                    stop_flag = abs(rec_error_decrease) < tol
+                elif cvg_criterion == 'rec_error':
+                    stop_flag = rec_error_decrease < tol
+                else:
+                    raise TypeError("Unknown convergence criterion")
+
+                if stop_flag:
                     if verbose:
-                        print('converged in {} iterations.'.format(iteration))
+                        print("PARAFAC converged after {} iterations".format(iteration))
                     break
+            else:
+                if verbose:
+                    print('reconstruction error={}'.format(rec_errors[-1]))
 
     cp_tensor = CPTensor((weights, factors))
     if return_errors:

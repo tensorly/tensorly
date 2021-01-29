@@ -90,7 +90,7 @@ def procrustes(matrix):
     """
     U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
-def hals_nnls(UtM, UtU, V=None, n_iter_max=500,delta=10e-8,
+def hals_nnls(UtM, UtU, V=None, n_iter_max=500,tol=10e-8,
                   sparsity_coefficient=None, normalize = False,nonzero_rows=False,exact=False):
 
     """
@@ -144,10 +144,10 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500,delta=10e-8,
         Initialized V array
         By default, is initialized with one non-zero entry per column
         corresponding to the closest column of U of the corresponding column of M.
-    maxiter: Postivie integer
+    n_iter_max: Postivie integer
         Upper bound on the number of iterations
         Default: 500
-    delta : float in [0,1]
+    tol : float in [0,1]
         early stop criterion, while err_k > delta*err_0. Set small for
         almost exact nnls solution, or larger (e.g. 1e-2) for inner loops
         of a PARAFAC computation.
@@ -165,9 +165,9 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500,delta=10e-8,
     -------
     V: array
         a r-by-n nonnegative matrix \approx argmin_{V >= 0} ||M-UV||_F^2
-    eps: float
+    rec_error: float
         number of loops authorized by the error stop criterion
-    cnt: integer
+    iteration: integer
         final number of update iteration performed
     rho: float
         number of loops authorized by the time stop criterion
@@ -195,14 +195,11 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500,delta=10e-8,
         V = tl.dot(scale, V)
     if exact:
         n_iter_max=5000
-        delta = 10e-12
-
-    rho = 1
-    eps0 = 0
-    eps = 1
+        tol = 10e-12
 
     for iteration in range(n_iter_max):
-        nodelta = 0
+        rec_error= 0
+        rec_error0=0
         for k in range(rank):
 
             if UtU[k, k]:
@@ -216,9 +213,9 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500,delta=10e-8,
 
                     deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
                                          -V[k, :]], axis=0)
-                    tl.index_update(V,tl.index[k, :],V[k, :] + deltaV)
+                    V=tl.index_update(V,tl.index[k, :],V[k, :] + deltaV)
 
-                nodelta = nodelta + tl.dot(deltaV, tl.transpose(deltaV))
+                rec_error = rec_error + tl.dot(deltaV, tl.transpose(deltaV))
 
                 # Safety procedure, if columns aren't allow to be zero
                 if nonzero_rows and tl.all(V[k, :] == 0):
@@ -235,17 +232,16 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500,delta=10e-8,
                     sqrt_n = 1/n_col_M ** (1/2)
                     V[k,:] = [sqrt_n for i in range(n_col_M)]
         if iteration == 1:
-            eps0 = nodelta
+            rec_error0 = rec_error
 
         rho_up=tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*rank
         rho_down=tl.shape(V)[0]*rank+tl.shape(V)[0]
         rho=1+(rho_up/rho_down)
-        eps = nodelta
         if exact:
-           if eps < delta * eps0:
+           if rec_error< tol * rec_error0:
                break
         else:
-           if eps < delta * eps0 or iteration > 1 + 0.5 * rho:
-                break
+           if rec_error< tol * rec_error0 or iteration > 1 + 0.5 * rho:
+               break
 
-    return V, eps, iteration, rho
+    return V, rec_error, iteration, rho
