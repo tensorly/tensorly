@@ -24,9 +24,8 @@ from ..backend import _LOCAL_STATE
 _DEFAULT_TENALG_BACKEND = 'core'
 _LOCAL_STATE.tenalg_backend = _DEFAULT_TENALG_BACKEND
 
-_BACKENDS = {'core':core,
-             'einsum':einsum_tenalg}
-
+_TENALG_BACKENDS = {'core':core,
+                    'einsum':einsum_tenalg}
 
 def get_tenalg_backend():
     """Returns the current backend
@@ -47,7 +46,7 @@ def set_tenalg_backend(backend='core', local_threadsafe=False):
         been explicitly set. If False (default) the backend is set for the
         entire session.
     """
-    if backend in _BACKENDS:
+    if backend in _TENALG_BACKENDS:
         _LOCAL_STATE.tenalg_backend = backend
         if local_threadsafe == False:
             global _DEFAULT_TENALG_BACKEND
@@ -92,7 +91,11 @@ def dynamically_dispatch_tenalg(function):
     @wraps(function)
     def dynamically_dispatched_fun(*args, **kwargs):
         #print('hello')
-        current_backend = _BACKENDS[_LOCAL_STATE.tenalg_backend]
+        try:
+            current_backend = _TENALG_BACKENDS[_LOCAL_STATE.tenalg_backend]
+        except AttributeError:
+            current_backend = _TENALG_BACKENDS[_DEFAULT_TENALG_BACKEND]
+            
         if hasattr(current_backend, name):
             fun = getattr(current_backend, name)(*args, **kwargs)
         else:
