@@ -90,6 +90,8 @@ def procrustes(matrix):
     """
     U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
+
+
 def hals_nnls(UtM, UtU, V=None, n_iter_max=500,tol=10e-8,
                   sparsity_coefficient=None, normalize = False,nonzero_rows=False,exact=False):
 

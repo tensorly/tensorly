@@ -336,8 +336,6 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             element `i` is of shape ``(tensor.shape[i], rank)``
     errors: list
         A list of reconstruction errors at each iteration of the algorithm.
-    toc: list
-        A list with accumulated time at each iterations
 
     References
     ----------
@@ -422,9 +420,6 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
         return cp_tensor, rec_errors
     else:
         return cp_tensor
-
-
-
 
 
 class CPNN(DecompositionMixin):
