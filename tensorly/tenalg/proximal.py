@@ -1,6 +1,9 @@
 import tensorly as tl
 
 # Author: Jean Kossaifi
+#         Jeremy Cohen <jeremy.cohen@irisa.fr>
+#         Axel Marmoret <axel.marmoret@inria.fr>
+#         Caglayan TUna <caglayantun@gmail.com>
 
 # License: BSD 3 clause
 

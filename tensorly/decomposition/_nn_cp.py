@@ -15,6 +15,9 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 #          Sam Schneider <samjohnschneider@gmail.com>
 #          Aaron Meurer <asmeurer@gmail.com>
 #          Aaron Meyer <tensorly@ameyer.me>
+#          Jeremy Cohen <jeremy.cohen@irisa.fr>
+#          Axel Marmoret <axel.marmoret@inria.fr>
+#          Caglayan TUna <caglayantun@gmail.com>
 
 # License: BSD 3 clause
 
@@ -316,10 +319,12 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     sparsity_coefficients: array of float (of length the number of modes)
         The sparsity coefficients on each factor.
         If set to None, the algorithm is computed without sparsity
-        Default: [],
+        Default: None,
     fixed_modes: array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
-        Default: []
+        Default: None
+    exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost. If it is False, the algorithm gives an approximate solution
+        Default: False
     verbose: boolean
         Indicates whether the algorithm prints the successive
         reconstruction errors or not
@@ -328,6 +333,11 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
         Default: False
+    cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
+       Stopping criterion for ALS, works if `tol` is not None. 
+       If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
+       If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
+    sparsity : float or int
 
     Returns
     -------
@@ -422,7 +432,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
         return cp_tensor
 
 
-class CPNN(DecompositionMixin):
+class CP_NN(DecompositionMixin):
     """Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
 
         Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
@@ -553,7 +563,7 @@ class CPNN(DecompositionMixin):
 
 
 
-class CPNN_HALS(DecompositionMixin):
+class CP_NN_HALS(DecompositionMixin):
     """Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
 
         Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
