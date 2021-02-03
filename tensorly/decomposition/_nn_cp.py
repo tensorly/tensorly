@@ -643,6 +643,7 @@ class CP_NN_HALS(DecompositionMixin):
                  sparsity=None,
                  exact=False,
                  mask=None, svd_mask_repeats=5,
+                 return_errors=False,
                  cvg_criterion='abs_rec_error',
                  random_state=None,
                  verbose=0):
@@ -656,6 +657,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.normalize_factors = normalize_factors
         self.mask = mask
         self.svd_mask_repeats = svd_mask_repeats
+        self.return_errors=return_errors
         self.cvg_criterion = cvg_criterion
         self.random_state = random_state
         self.verbose = verbose
@@ -681,7 +683,7 @@ class CP_NN_HALS(DecompositionMixin):
                                                       svd=self.svd,
                                                       exact=self.exact,
                                                       verbose=self.verbose,
-                                                      return_errors=True)
+                                                      return_errors=self.return_errors)
 
         self.decomposition_ = cp_tensor
         self.errors_ = errors
