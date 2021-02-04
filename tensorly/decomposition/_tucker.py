@@ -295,6 +295,155 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
             break
 
     return TuckerTensor((nn_core, nn_factors))
+    
+def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd",svd='numpy_svd', tol=1e-8,
+                              sparsity_coefficients=None, fixed_modes=None,random_state=None,
+                              verbose=False, normalize_factors=False, return_errors=False,exact=False):
+    """
+    Non-negative Tucker decomposition
+
+    Uses HALS which updates each factor columnwise, fixing every other columns, see [1]_
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank   : int
+            number of components
+    n_iter_max : int
+                 maximum number of iteration
+    init : {'svd', 'random'}, optional
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    tol : float, optional
+          tolerance: the algorithm stops when the variation in
+          the reconstruction error is less than the tolerance
+        Default: 1e-8
+    sparsity_coefficients: array of float (as much as the number of modes)
+        The sparsity coefficients on U and V respectively.
+        If set to None, the algorithm is computed without sparsity
+        Default: None,
+    fixed_modes: array of integers (between 0 and the number of modes)
+        Has to be set not to update a factor, 0 and 1 for U and V respectively
+        Default: None
+    verbose: boolean
+        Indicates whether the algorithm prints the successive
+        reconstruction errors or not
+        Default: False
+    return_errors: boolean
+        Indicates whether the algorithm should return all reconstruction errors
+        and computation time of each iteration or not
+        Default: False
+    exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost. If it is False, the algorithm gives an approximate solution
+        Default: False
+    Returns
+    -------
+    factors : ndarray list
+            list of positive factors of the CP decomposition
+            element `i` is of shape ``(tensor.shape[i], rank)``
+    errors: list
+        A list of reconstruction errors at each iteration of the algorithm.
+
+    References
+    ----------
+    [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+    Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
+    Neural Computation 24 (4): 1085-1105, 2012.
+    """
+    
+    rank = validate_tucker_rank(tl.shape(tensor), rank=rank) 
+    n_modes = tl.ndim(tensor)
+            
+    if sparsity_coefficients == None or len(sparsity_coefficients) != n_modes:
+        sparsity_coefficients = [sparsity_coefficients] * n_modes
+
+    if fixed_modes == None:
+        fixed_modes = []
+
+    # Avoiding errors
+    for fixed_value in fixed_modes:
+        sparsity_coefficients[fixed_value] = None
+      
+    # Generating the mode update sequence
+    modes = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+
+    try:
+        svd_fun = tl.SVD_FUNS[svd]
+    except KeyError:
+        message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
+                svd, tl.get_backend(), tl.SVD_FUNS)
+        raise ValueError(message)
+            
+    # Initialisation
+    if init == 'svd':
+        factors = []
+        for index, mode in enumerate(modes):
+            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
+            factors.append(eigenvecs)
+
+        # The initial core approximation is needed here for the masking step
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
+        nn_factors = [tl.abs(f) for f in factors]
+        nn_core = tl.abs(core)
+    elif init == 'random':
+        rng = check_random_state(random_state)
+        core = tl.tensor(rng.random_sample(rank) + 0.01, **tl.context(tensor))  # Check this
+        factors = [tl.tensor(rng.random_sample(s), **tl.context(tensor)) for s in zip(tl.shape(tensor), rank)]
+        nn_factors = [tl.abs(f) for f in factors]
+        nn_core = tl.abs(core)
+
+    # initialisation - declare local varaibles
+    norm_tensor = tl.norm(tensor, 2)
+    rec_errors = []
+
+    # Iterate over one step of NTF
+    for iteration in range(n_iter_max):
+        # One pass of least squares on each updated mode
+        for mode in modes:
+
+            # Computing Hadamard of cross-products
+            elemprod = factors.copy()
+            for i, factor in enumerate(nn_factors):
+                if i != mode:
+                    elemprod[i] = tl.dot(tl.conj(tl.transpose(factor)), factor)
+            # Second, the multiway product with core G
+            temp = multi_mode_dot(nn_core, elemprod, skip=mode)
+            UtU = unfold(temp, mode)@tl.transpose(unfold(nn_core, mode))
+
+            # UtM
+            temp = multi_mode_dot(tensor, nn_factors, skip=mode, transpose=True)
+            MtU = unfold(temp, mode)@tl.transpose(unfold(nn_core, mode))
+            UtM = tl.transpose(MtU)
+
+            # Call the hals resolution with nnls, optimizing the current mode
+            nn_factors[mode] = tl.transpose(
+                hals_nnls(UtM, UtU, tl.transpose(nn_factors[mode]),
+                              n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],exact=exact)[0])
+
+        # Adding the l1 norm value to the reconstruction error
+        sparsity_error = 0
+        for index, sparse in enumerate(sparsity_coefficients):
+            if sparse:
+                sparsity_error += 2 * (sparse * tl.norm(factors[index], order=1))
+        
+        # error computation
+        rec_error = tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2) / norm_tensor
+        rec_errors.append(rec_error)
+
+        if iteration > 1:
+            if verbose:
+                print('reconstruction error={}, variation={}.'.format(
+                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+
+            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                if verbose:
+                    print('converged in {} iterations.'.format(iteration))
+                break
+
+    tensor=TuckerTensor((core, factors))
+    if return_errors:
+        return tensor, rec_errors
+    else:
+        return tensor
 
 
 class Tucker(DecompositionMixin):
@@ -378,7 +527,7 @@ class Tucker(DecompositionMixin):
         return f'Rank-{self.rank} Tucker decomposition via HOOI.'
 
 
-class TuckerNN(DecompositionMixin):
+class Tucker_NN(DecompositionMixin):
     """Non-Negative Tucker decomposition via iterative multiplicative update.
 
         Decomposes `tensor` into a Tucker decomposition:
