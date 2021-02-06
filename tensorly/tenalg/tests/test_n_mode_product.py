@@ -147,25 +147,13 @@ def test_multi_mode_dot():
     vecs = [T.ones(s) for s in shape]
     res = multi_mode_dot(X, vecs)
     # result should be a scalar
-    # MXNet doesn't support order-0 tensors..
-    # FIX ME - this shouldn't have to happen...
-    if T.get_backend() == 'mxnet':
-        assert_equal(T.shape(res), (1, ))
-        assert_array_almost_equal(res[0], np.prod(shape))
-    else:
-        assert_equal(T.shape(res), ())
-        assert_array_almost_equal(res, np.prod(shape))
+    assert_equal(T.shape(res), ())
+    assert_array_almost_equal(res, np.prod(shape))
 
     # Average pooling each mode
     # Order should not matter
     vecs = [vecs[i]/s for i, s in enumerate(shape)]
     for modes in itertools.permutations(range(len(shape))):
         res = multi_mode_dot(X, [vecs[i] for i in modes], modes=modes)
-        # MXNet doesn't support order-0 tensors..
-        # FIX ME - this shouldn't have to happen...
-        if T.get_backend() == 'mxnet':
-            assert_equal(T.shape(res), (1, ))
-            assert_array_almost_equal(res[0], 1)
-        else:
-            assert_equal(T.shape(res), ())
-            assert_array_almost_equal(res, 1)
+        assert_equal(T.shape(res), ())
+        assert_array_almost_equal(res, 1)
