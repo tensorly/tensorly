@@ -270,6 +270,7 @@ def cp_normalize(cp_tensor):
     cp_tensor : CPTensor = (weight, factors)
         factors is list of matrices, all with the same number of columns
         i.e.::
+        
             for u in U:
                 u[i].shape == (s_i, R)
 

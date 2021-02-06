@@ -88,3 +88,70 @@ In practice, this means that function like `min`, `max`, `reshape`, etc, are acc
    U, S, V = tl.partial_svd(unfolding, n_eigenvecs=5)
 
 This will allow your code to work transparently with any of the backend.
+
+
+Case study: TensorLy and PyTorch
+--------------------------------
+
+Let's go through the creation and decomposition of a tensor, using PyTorch.
+
+On CPU
+++++++
+
+First, we import tensorly and set the backend:
+
+.. code:: python
+
+   import tensorly as tl
+   tl.set_backend('pytorch')
+
+Now, let's create a random tensor using the :mod:`tensorly.random` module:
+
+.. code:: python
+
+   from tensorly import random
+
+   tensor = random.random_tensor((10, 10, 10))
+   # tensor is a PyTorch Tensor!
+
+We can decompose it easily, here using a Tucker decomposition: 
+First, we reate a decomposition instance, which keeps the number of parameters the same
+and with a random initialization. We then fit it to our tensor.
+
+.. code:: python
+
+   from tensorly.decomposition import Tucker
+
+   decomp = Tucker(rank='same', init='random')
+   cp_tensor = decomp.fit_transform(tensor)
+
+You can reconstruct the full tensor and measure the reconstruction error:
+
+.. code:: python
+
+   rec = cp_tensor.to_tensor()
+   error = tl.norm(tensor - rec)/tl.norm(tensor)
+
+On GPU
+++++++
+Now, imaging you want everything to run on GPU: this is very easy using TensorLy and the PyTorch backend: 
+you simply send the tensor to the GPU!
+
+There are to main ways to do this: either you specify the context during the creation of the tensor
+or you use pytorch tensors' properties to send them to the desired device post-creation.
+
+.. code:: python
+
+   # Specify context during creation
+   tensor = random.random_tensor(shape=(10, 10, 10), device='cuda', dtype=tl.float32)
+
+   # Posthoc 
+   tensor = random.random_tensor(shape=(10, 10, 10))
+   tensor = tensor.to('cuda')
+
+The rest is exactly the same, nothing more to do!
+
+.. code:: python
+
+   decomp = Tucker(rank='same', init='random')
+   cp_tensor = decomp.fit_transform(tensor) # Runs on GPU!
