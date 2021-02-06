@@ -22,7 +22,7 @@ class MxnetBackend(Backend):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=numpy.float64):
+    def tensor(data, dtype=None):
         if dtype is None and isinstance(data, numpy.ndarray):
             dtype = data.dtype
         return np.array(data, dtype=dtype)
