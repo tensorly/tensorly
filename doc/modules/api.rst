@@ -331,6 +331,9 @@ Functions
     :template: function.rst
 
     parafac
+    parafac_power_iteration
+    symmetric_power_iteration
+    symmetric_parafac_power_iteration
     non_negative_parafac
     sample_khatri_rao
     randomised_parafac
@@ -341,8 +344,6 @@ Functions
     tensor_train
     tensor_train_matrix
     parafac2
-    symmetric_power_iteration
-    symmetric_parafac_power_iteration
 
 
 :mod:`tensorly.regression`: Tensor Regression
