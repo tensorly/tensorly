@@ -29,7 +29,7 @@ def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
 
     eigenval : float
         the obtained eigenvalue
-    best_factors: tl.tensor list
+    best_factors : tl.tensor list
         the best estimated eigenvector, for each mode of the input tensor
     deflated : tl.tensor of same shape as `tensor`
         the deflated tensor (i.e. without the estimated component)
@@ -55,7 +55,7 @@ def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
         if score > best_score:
             best_score = score
             best_factors = factors
-            
+
     if verbose:
         print(f'Best score of {n_repeat}: {best_score}')
     

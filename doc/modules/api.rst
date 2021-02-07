@@ -331,6 +331,7 @@ Functions
     :template: function.rst
 
     parafac
+    power_iteration
     parafac_power_iteration
     symmetric_power_iteration
     symmetric_parafac_power_iteration
