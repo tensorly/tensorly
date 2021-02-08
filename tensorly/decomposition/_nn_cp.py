@@ -1,6 +1,5 @@
 import numpy as np
 import warnings
-import time
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..random import random_cp
@@ -295,8 +294,8 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
 
 def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
-                              sparsity_coefficients=None, fixed_modes=None,exact=False,
-                              verbose=False, return_errors=False,cvg_criterion='abs_rec_error'):
+                              sparsity_coefficients=None, fixed_modes=None, exact=False,
+                              verbose=False, return_errors=False, cvg_criterion='abs_rec_error'):
     """
     Non-negative CP decomposition via HALS
 
@@ -323,7 +322,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     fixed_modes: array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
         Default: None
-    exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost. If it is False, the algorithm gives an approximate solution
+    exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
+        If it is False, the algorithm gives an approximate solution
         Default: False
     verbose: boolean
         Indicates whether the algorithm prints the successive
@@ -334,9 +334,9 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
         and computation time of each iteration or not
         Default: False
     cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
-       Stopping criterion for ALS, works if `tol` is not None. 
-       If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
-       If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
+        Stopping criterion for ALS, works if `tol` is not None.
+        If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
+        If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
     sparsity : float or int
 
     Returns
@@ -349,14 +349,14 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
     References
     ----------
-    [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
-    Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
-    Neural Computation 24 (4): 1085-1105, 2012.
+    .. [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+       Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
+       Neural Computation 24 (4): 1085-1105, 2012.
     """
 
     weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
-                                     random_state=None,
-                                     normalize_factors=False)
+                                        random_state=None,
+                                        normalize_factors=False)
 
     norm_tensor = tl.norm(tensor, 2)
 
@@ -395,10 +395,10 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
                 mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
             # Call the hals resolution with nnls, optimizing the current mode
-            factors[mode] = tl.transpose(
-                      hals_nnls(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
-                             n_iter_max=100,sparsity_coefficient=sparsity_coefficients[mode],exact=exact)[0])
-
+            nn_factor, _, _, _ = hals_nnls(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
+                                           n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
+                                           exact=exact)
+            factors[mode] = tl.transpose(nn_factor)
         if tol:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
@@ -433,138 +433,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
 
 class CP_NN(DecompositionMixin):
-    """Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
-
-        Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
-
-            ``tensor = [|weights; factors[0], ..., factors[-1] |]``.
-
-        Parameters
-        ----------
-        tensor : ndarray
-        rank  : int
-            Number of components.
-        n_iter_max : int
-            Maximum number of iteration
-        init : {'svd', 'random'}, optional
-            Type of factor matrix initialization. See `initialize_factors`.
-        svd : str, default is 'numpy_svd'
-            function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
-        normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
-            of shape (rank, ), which will contain the norms of the factors
-        tol : float, optional
-            (Default: 1e-6) Relative reconstruction error tolerance. The
-            algorithm is considered to have found the global minimum when the
-            reconstruction error is less than `tol`.
-        random_state : {None, int, np.random.RandomState}
-        verbose : int, optional
-            Level of verbosity
-        return_errors : bool, optional
-            Activate return of iteration errors
-        mask : ndarray
-            array of booleans with the same shape as ``tensor`` should be 0 where
-            the values are missing and 1 everywhere else. Note:  if tensor is
-            sparse, then mask should also be sparse with a fill value of 1 (or
-            True). Allows for missing values [2]_
-        cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
-            Stopping criterion for ALS, works if `tol` is not None.
-            If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
-            If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
-        sparsity : float or int
-            If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
-        fixed_modes : list, default is []
-            A list of modes for which the initial value is not modified.
-            The last mode cannot be fixed due to error computation.
-        svd_mask_repeats: int
-            If using a tensor with masked values, this initializes using SVD multiple times to
-            remove the effect of these missing values on the initialization.
-
-        Returns
-        -------
-        CPTensor : (weight, factors)
-            * weights : 1D array of shape (rank, )
-                all ones if normalize_factors is False (default),
-                weights of the (normalized) factors otherwise
-            * factors : List of factors of the CP decomposition element `i` is of shape
-                (tensor.shape[i], rank)
-            * sparse_component : nD array of shape tensor.shape. Returns only if `sparsity` is not None.
-
-        errors : list
-            A list of reconstruction errors at each iteration of the algorithms.
-
-        References
-        ----------
-        .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
-        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-
-        .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
-                Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
-
-        .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
-                Applications", PhD., University of Amsterdam, 1998
     """
-
-    def __init__(self, rank, n_iter_max=100, tol=1e-08,
-                 init='svd', svd='numpy_svd',
-                 l2_reg=0,
-                 fixed_modes = [],
-                 normalize_factors=False,
-                 sparsity = None,
-                 mask=None, svd_mask_repeats = 5,
-                 cvg_criterion='abs_rec_error',
-                 random_state=None,
-                 verbose=0):
-        self.rank = rank
-        self.n_iter_max = n_iter_max
-        self.tol = tol
-        self.l2_reg = l2_reg
-        self.init = init
-        self.svd = svd
-        self.normalize_factors = normalize_factors
-        self.mask = mask
-        self.svd_mask_repeats = svd_mask_repeats
-        self.cvg_criterion = cvg_criterion
-        self.random_state = random_state
-        self.verbose = verbose
-
-    def fit_transform(self, tensor):
-        """Decompose an input tensor
-
-        Parameters
-        ----------
-        tensor : tensorly tensor
-            input tensor to decompose
-
-        Returns
-        -------
-        CPTensor
-            decomposed tensor
-        """
-
-        cp_tensor, errors = non_negative_parafac(tensor, rank=self.rank,
-                                                 n_iter_max=self.n_iter_max,
-                                                 tol=self.tol,
-                                                 init=self.init,
-                                                 svd=self.svd,
-                                                 normalize_factors=self.normalize_factors,
-                                                 mask=self.mask,
-                                                 cvg_criterion=self.cvg_criterion,
-                                                 random_state=self.random_state,
-                                                 verbose=self.verbose,
-                                                 return_errors=True)
-
-
-        self.decomposition_ = cp_tensor
-        self.errors_ = errors
-        return self.decomposition_
-
-    def __repr__(self):
-        return f'Rank-{self.rank} Non-Negative CP decomposition.'
-
-
-
-class CP_NN_HALS(DecompositionMixin):
-    """Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
+    Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
 
         Computes a rank-`rank` decomposition of `tensor` [1]_ such that,
 
@@ -641,13 +511,10 @@ class CP_NN_HALS(DecompositionMixin):
                  fixed_modes=[],
                  normalize_factors=False,
                  sparsity=None,
-                 exact=False,
                  mask=None, svd_mask_repeats=5,
-                 return_errors=False,
                  cvg_criterion='abs_rec_error',
                  random_state=None,
                  verbose=0):
-        self.exact=exact
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.tol = tol
@@ -657,7 +524,140 @@ class CP_NN_HALS(DecompositionMixin):
         self.normalize_factors = normalize_factors
         self.mask = mask
         self.svd_mask_repeats = svd_mask_repeats
-        self.return_errors=return_errors
+        self.cvg_criterion = cvg_criterion
+        self.random_state = random_state
+        self.verbose = verbose
+
+    def fit_transform(self, tensor):
+        """Decompose an input tensor
+
+        Parameters
+        ----------
+        tensor : tensorly tensor
+            input tensor to decompose
+
+        Returns
+        -------
+        CPTensor
+            decomposed tensor
+        """
+
+        cp_tensor, errors = non_negative_parafac(tensor, rank=self.rank,
+                                                 n_iter_max=self.n_iter_max,
+                                                 tol=self.tol,
+                                                 init=self.init,
+                                                 svd=self.svd,
+                                                 normalize_factors=self.normalize_factors,
+                                                 mask=self.mask,
+                                                 cvg_criterion=self.cvg_criterion,
+                                                 random_state=self.random_state,
+                                                 verbose=self.verbose,
+                                                 return_errors=True)
+
+        self.decomposition_ = cp_tensor
+        self.errors_ = errors
+        return self.decomposition_
+
+    def __repr__(self):
+        return f'Rank-{self.rank} Non-Negative CP decomposition.'
+
+
+class CP_NN_HALS(DecompositionMixin):
+    """
+    Non-Negative Candecomp-Parafac decomposition via Alternating-Least Square
+
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that::
+
+            ``tensor = [|weights; factors[0], ..., factors[-1] |]``.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank  : int
+        Number of components.
+    n_iter_max : int
+        Maximum number of iteration
+    init : {'svd', 'random'}, optional
+        Type of factor matrix initialization. See `initialize_factors`.
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+        of shape (rank, ), which will contain the norms of the factors
+    tol : float, optional
+        (Default: 1e-6) Relative reconstruction error tolerance. The
+        algorithm is considered to have found the global minimum when the
+        reconstruction error is less than `tol`.
+    random_state : {None, int, np.random.RandomState}
+    verbose : int, optional
+        Level of verbosity
+    return_errors : bool, optional
+        Activate return of iteration errors
+    mask : ndarray
+        array of booleans with the same shape as ``tensor`` should be 0 where
+        the values are missing and 1 everywhere else. Note:  if tensor is
+        sparse, then mask should also be sparse with a fill value of 1 (or
+        True). Allows for missing values [2]_
+    cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
+        Stopping criterion for ALS, works if `tol` is not None.
+        If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
+        If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
+    sparsity : float or int
+        If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+    fixed_modes : list, default is []
+        A list of modes for which the initial value is not modified.
+        The last mode cannot be fixed due to error computation.
+    svd_mask_repeats: int
+        If using a tensor with masked values, this initializes using SVD multiple times to
+        remove the effect of these missing values on the initialization.
+
+    Returns
+    -------
+    CPTensor : (weight, factors)
+        * weights : 1D array of shape (rank, )
+                all ones if normalize_factors is False (default),
+                weights of the (normalized) factors otherwise
+        * factors : List of factors of the CP decomposition element `i` is of shape
+                (tensor.shape[i], rank)
+        * sparse_component : nD array of shape tensor.shape. Returns only if `sparsity` is not None.
+
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+                SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+
+    .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
+                Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
+
+    .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
+                Applications", PhD., University of Amsterdam, 1998
+    """
+
+    def __init__(self, rank, n_iter_max=100, tol=1e-08,
+                 init='svd', svd='numpy_svd',
+                 l2_reg=0,
+                 fixed_modes=None,
+                 normalize_factors=False,
+                 sparsity=None,
+                 exact=False,
+                 mask=None, svd_mask_repeats=5,
+                 return_errors=True,
+                 cvg_criterion='abs_rec_error',
+                 random_state=None,
+                 verbose=0):
+        self.exact = exact
+        self.rank = rank
+        self.n_iter_max = n_iter_max
+        self.tol = tol
+        self.l2_reg = l2_reg
+        self.init = init
+        self.svd = svd
+        self.normalize_factors = normalize_factors
+        self.mask = mask
+        self.svd_mask_repeats = svd_mask_repeats
+        self.return_errors = return_errors
         self.cvg_criterion = cvg_criterion
         self.random_state = random_state
         self.verbose = verbose

@@ -95,8 +95,8 @@ def procrustes(matrix):
     return tl.dot(U, V)
 
 
-def hals_nnls(UtM, UtU, V=None, n_iter_max=500,tol=10e-8,
-                  sparsity_coefficient=None, normalize = False,nonzero_rows=False,exact=False):
+def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
+              sparsity_coefficient=None, normalize=False, nonzero_rows=False, exact=False):
 
     """
     Non Negative Least Squares (NNLS)
@@ -105,29 +105,6 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500,tol=10e-8,
     squares problem (NNLS) with an exact block-coordinate descent scheme.
     M is m by n, U is m by r, V is r by n.
     All matrices are nonnegative componentwise.
-
-    The NNLS unconstrained problem, as defined in [1], solve the following problem:
-
-            min_{V >= 0} ||M-UV||_F^2
-
-    The matrix V is updated linewise.
-
-    The update rule of the k-th line of V (V[k,:]) for this resolution is:
-
-            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:] V_(j))/UtU[k,k]
-
-    with j the update iteration.
-
-    This problem can also be defined by adding a sparsity coefficient,
-    enhancing sparsity in the solution [2]. The problem thus becomes:
-
-            min_{V >= 0} ||M-UV||_F^2 + 2*sparsity_coefficient*(\sum\limits_{j = 0}^{r}||V[k,:]||_1)
-
-    NB: 2*sp for uniformization in the derivative
-
-    In this sparse version, the update rule for V[k,:] becomes:
-
-            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:] V_(j) - sparsity_coefficient)/UtU[k,k]
 
     This algorithm is defined in [1], as an accelerated version of the HALS algorithm.
 
@@ -174,18 +151,39 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500,tol=10e-8,
         number of loops authorized by the error stop criterion
     iteration: integer
         final number of update iteration performed
-    rho: float
-        number of loops authorized by the time stop criterion
+    cvg_criterion: float
+        number of loops authorized by the stop criterion
+
+    Notes
+    -----
+    We solve the following problem :math:`\\min_{V >= 0} ||M-UV||_F^2`
+
+    The matrix V is updated linewise. The update rule for this resolution is:
+
+    .. math::
+        \\begin{equation}
+            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j))/UtU[k,k]
+        \\end{equation}
+
+    with j the update iteration.
+
+    This problem can also be defined by adding a sparsity coefficient,
+    enhancing sparsity in the solution [2]. In this sparse version, the update rule becomes:
+
+    .. math::
+        \\begin{equation}
+            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:] V_(j) - sparsity_coefficient)/UtU[k,k]
+        \\end{equation}
 
     References
     ----------
-    [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
-    Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
-    Neural Computation 24 (4): 1085-1105, 2012.
+    .. [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+       Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
+       Neural Computation 24 (4): 1085-1105, 2012.
 
-    [2] J. Eggert, and E. Korner. "Sparse coding and NMF."
-    2004 IEEE International Joint Conference on Neural Networks
-    (IEEE Cat. No. 04CH37541). Vol. 4. IEEE, 2004.
+    .. [2] J. Eggert, and E. Korner. "Sparse coding and NMF."
+       2004 IEEE International Joint Conference on Neural Networks
+       (IEEE Cat. No. 04CH37541). Vol. 4. IEEE, 2004.
 
     """
 
@@ -193,60 +191,60 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500,tol=10e-8,
     if V is None:  # checks if V is empty
         V = tl.solve(UtU, UtM)
 
-        V=tl.clip(V,a_min=0,a_max=None)
+        V = tl.clip(V, a_min=0, a_max=None)
         # Scaling
         scale = tl.sum(UtM * V) / tl.sum(
-            UtU * tl.dot(V, tl.transpose(V)))
+                       UtU * tl.dot(V, tl.transpose(V)))
         V = tl.dot(scale, V)
     if exact:
-        n_iter_max=5000
+        n_iter_max = 5000
         tol = 10e-12
 
     for iteration in range(n_iter_max):
-        rec_error= 0
-        rec_error0=0
+        rec_error = 0
+        rec_error0 = 0
         for k in range(rank):
 
             if UtU[k, k]:
-                if sparsity_coefficient is not None: # Modifying the objective function for sparsification
+                if sparsity_coefficient is not None:  # Modifying the function for sparsification
 
-                    deltaV = tl.max([(UtM[k, :] - UtU[k, :] @ V - sparsity_coefficient * tl.ones(n_col_M)) / UtU[k, k],
-                                        -V[k, :]],axis=0)
+                    deltaV = tl.max([(tl.dot(UtM[k, :] - UtU[k, :], V) - sparsity_coefficient)
+                                    / UtU[k, k], -V[k, :]], axis=0)
                     tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
 
                 else:  # without sparsity
 
                     deltaV = tl.max([(UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                                         -V[k, :]], axis=0)
-                    V=tl.index_update(V,tl.index[k, :],V[k, :] + deltaV)
+                                    -V[k, :]], axis=0)
+                    V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
 
                 rec_error = rec_error + tl.dot(deltaV, tl.transpose(deltaV))
 
                 # Safety procedure, if columns aren't allow to be zero
                 if nonzero_rows and tl.all(V[k, :] == 0):
-                    V[k, :] = 1e-16 * tl.max(V)
+                    V[k, :] = tl.eps(V.dtype) * tl.max(V)
 
             elif nonzero_rows:
                 raise ValueError("Column " + str(k) + " of U is zero with nonzero condition")
 
             if normalize:
-                norm = tl.norm(V[k,:])
+                norm = tl.norm(V[k, :])
                 if norm != 0:
-                    V[k,:] /= norm
+                    V[k, :] /= norm
                 else:
                     sqrt_n = 1/n_col_M ** (1/2)
-                    V[k,:] = [sqrt_n for i in range(n_col_M)]
+                    V[k, :] = [sqrt_n for i in range(n_col_M)]
         if iteration == 1:
             rec_error0 = rec_error
 
-        rho_up=tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*rank
-        rho_down=tl.shape(V)[0]*rank+tl.shape(V)[0]
-        rho=1+(rho_up/rho_down)
+        numerator = tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*rank
+        denominator = tl.shape(V)[0]*rank+tl.shape(V)[0]
+        cvg_criterion = 1+(numerator/denominator)
         if exact:
-           if rec_error< tol * rec_error0:
-               break
+            if rec_error < tol * rec_error0:
+                break
         else:
-           if rec_error< tol * rec_error0 or iteration > 1 + 0.5 * rho:
-               break
+            if rec_error < tol * rec_error0 or iteration > 1 + 0.5 * cvg_criterion:
+                break
 
-    return V, rec_error, iteration, rho
+    return V, rec_error, iteration, cvg_criterion
