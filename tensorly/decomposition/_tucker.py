@@ -296,9 +296,9 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
 
     return TuckerTensor((nn_core, nn_factors))
     
-def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd",svd='numpy_svd', tol=1e-8,
-                              sparsity_coefficients=None, fixed_modes=None,random_state=None,
-                              verbose=False, normalize_factors=False, return_errors=False,exact=False):
+def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-8,
+                             sparsity_coefficients=None, fixed_modes=None, random_state=None,
+                             verbose=False, normalize_factors=False, return_errors=False, exact=False):
     """
     Non-negative Tucker decomposition
 
@@ -349,20 +349,17 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd",svd='numpy
     Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
     Neural Computation 24 (4): 1085-1105, 2012.
     """
-    
-    rank = validate_tucker_rank(tl.shape(tensor), rank=rank) 
+    rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
     n_modes = tl.ndim(tensor)
-            
-    if sparsity_coefficients == None or len(sparsity_coefficients) != n_modes:
+    if sparsity_coefficients is None or len(sparsity_coefficients) != n_modes:
         sparsity_coefficients = [sparsity_coefficients] * n_modes
 
-    if fixed_modes == None:
+    if fixed_modes is None:
         fixed_modes = []
 
     # Avoiding errors
     for fixed_value in fixed_modes:
         sparsity_coefficients[fixed_value] = None
-      
     # Generating the mode update sequence
     modes = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
@@ -372,7 +369,6 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd",svd='numpy
         message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
                 svd, tl.get_backend(), tl.SVD_FUNS)
         raise ValueError(message)
-            
     # Initialisation
     if init == 'svd':
         factors = []
@@ -417,14 +413,14 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd",svd='numpy
             # Call the hals resolution with nnls, optimizing the current mode
             nn_factors[mode] = tl.transpose(
                 hals_nnls(UtM, UtU, tl.transpose(nn_factors[mode]),
-                              n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],exact=exact)[0])
+                          n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
+                          exact=exact)[0])
 
         # Adding the l1 norm value to the reconstruction error
         sparsity_error = 0
         for index, sparse in enumerate(sparsity_coefficients):
             if sparse:
                 sparsity_error += 2 * (sparse * tl.norm(factors[index], order=1))
-        
         # error computation
         rec_error = tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2) / norm_tensor
         rec_errors.append(rec_error)
@@ -439,7 +435,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd",svd='numpy
                     print('converged in {} iterations.'.format(iteration))
                 break
 
-    tensor=TuckerTensor((core, factors))
+    tensor = TuckerTensor((core, factors))
     if return_errors:
         return tensor, rec_errors
     else:
