@@ -158,7 +158,7 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
     -----
     We solve the following problem :math:`\\min_{V >= 0} ||M-UV||_F^2`
 
-    The matrix V is updated linewise. The update rule for this resolution is:
+    The matrix V is updated linewise. The update rule for this resolution is::
 
     .. math::
         \\begin{equation}
@@ -168,11 +168,11 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
     with j the update iteration.
 
     This problem can also be defined by adding a sparsity coefficient,
-    enhancing sparsity in the solution [2]. In this sparse version, the update rule becomes:
+    enhancing sparsity in the solution [2]. In this sparse version, the update rule becomes::
 
     .. math::
         \\begin{equation}
-            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:] V_(j) - sparsity_coefficient)/UtU[k,k]
+            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j) - sparsity_coefficient)/UtU[k,k]
         \\end{equation}
 
     References
@@ -210,7 +210,7 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
 
                     deltaV = tl.max([(tl.dot(UtM[k, :] - UtU[k, :], V) - sparsity_coefficient)
                                     / UtU[k, k], -V[k, :]], axis=0)
-                    tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
+                    V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
 
                 else:  # without sparsity
 
