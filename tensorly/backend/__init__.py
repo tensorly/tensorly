@@ -217,11 +217,16 @@ qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
 sort = dispatch(Backend.sort)
-# index = dispatch(Backend.index)
+conj = dispatch(Backend.conj)
+eps = dispatch(Backend.eps)
+finfo = dispatch(Backend.finfo)
+index = Backend.index
 index_update = dispatch(Backend.index_update)
 
 # Initialise the backend to the default one
 initialize_backend()
+
+# dispatch non-callables (e.g. dtypes, index)
 override_module_dispatch(__name__, 
                          _get_backend_method,
                          _get_backend_dir)

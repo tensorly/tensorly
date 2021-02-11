@@ -3,7 +3,7 @@
 Image compression via tensor decomposition
 ==========================================
 
-Example on how to use :func:`tensorly.decomposition.parafac`and :func:`tensorly.decomposition.tucker` on images.
+Example on how to use :func:`tensorly.decomposition.parafac` and :func:`tensorly.decomposition.tucker` on images.
 """
 
 import matplotlib.pyplot as plt
