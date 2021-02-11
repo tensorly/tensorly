@@ -25,6 +25,8 @@ class MxnetBackend(Backend):
     def tensor(data, dtype=None):
         if dtype is None and isinstance(data, numpy.ndarray):
             dtype = data.dtype
+        elif dtype is None:
+            dtype = np.float64
         return np.array(data, dtype=dtype)
 
     @staticmethod
