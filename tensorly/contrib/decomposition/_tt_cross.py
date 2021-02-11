@@ -426,7 +426,7 @@ def maxvol(A):
         A_new = A_new - A_new * tl.reshape(projection, (tl.shape(A_new)[0], 1))
 
         # Delete the selected row
-        mask.pop(max_row_idx)
+        mask.pop(tl.to_numpy(max_row_idx))
         A_new = A_new[mask,:]
 
         # update the row_idx and rest_of_rows

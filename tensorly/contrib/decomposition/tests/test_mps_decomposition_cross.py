@@ -9,7 +9,7 @@ from ....tt_tensor import tt_to_tensor
 from ....random import check_random_state
 from tensorly.testing import assert_
 
-skip_if_backend = pytest.mark.skipif(tl.get_backend() in ("tensorflow", "jax", "mxnet"),
+skip_if_backend = pytest.mark.skipif(tl.get_backend() in ("tensorflow", "jax"),
                                      reason=f"Operation not supported in {tl.get_backend()}")
 
 
@@ -22,13 +22,13 @@ def test_tensor_train_cross_1():
     # Create tensor with random elements
     d = 3
     n = 4
-    tensor = (np.arange(n**d).reshape((n,)*d))
+    tensor = (np.arange(n**d, dtype=float).reshape((n,)*d))
     tensor = tl.tensor(tensor)
 
     tensor_shape = tensor.shape
 
     # Find TT decomposition of the tensor
-    rank = [1, 3,3, 1]
+    rank = [1, 3, 3, 1]
     factors = tensor_train_cross(tensor, rank, tol=1e-5, n_iter_max=10)
     assert(len(factors) == d), "Number of factors should be 4, currently has " + str(len(factors))
 
@@ -68,6 +68,7 @@ def test_tensor_train_cross_2():
 
 
 @skip_if_backend
+@pytest.mark.skipif(tl.get_backend() in ("mxnet"), reason=f"MXNet bug in advanced indexing (Issue 18919).")
 def test_tensor_train_cross_3():
     """ Test for tensor-train """
     rng = check_random_state(1234)

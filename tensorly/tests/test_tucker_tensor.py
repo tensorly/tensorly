@@ -44,7 +44,7 @@ def test_validate_tucker_tensor():
 
 def test_tucker_to_tensor():
     """Test for tucker_to_tensor"""
-    X = tl.tensor([[[1, 13],
+    X = tl.tensor(np.array([[[1., 13],
                    [4, 16],
                    [7, 19],
                    [10, 22]],
@@ -57,10 +57,10 @@ def test_tucker_to_tensor():
                   [[3, 15],
                    [6, 18],
                    [9, 21],
-                   [12, 24]]])
+                   [12, 24]]]))
     ranks = [2, 3, 4]
     U = [tl.tensor(np.arange(R * s, dtype=float).reshape((R, s))) for (R, s) in zip(ranks, tl.shape(X))]
-    true_res = np.array([[[390, 1518, 2646, 3774],
+    true_res = np.array([[[390., 1518, 2646, 3774],
                          [1310, 4966, 8622, 12278],
                          [2230, 8414, 14598, 20782]],
                         [[1524, 5892, 10260, 14628],
