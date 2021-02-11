@@ -151,7 +151,7 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
         number of loops authorized by the error stop criterion
     iteration: integer
         final number of update iteration performed
-    cvg_criterion: float
+    complexity_ratio: float
         number of loops authorized by the stop criterion
 
     Notes
@@ -239,12 +239,12 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
 
         numerator = tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*rank
         denominator = tl.shape(V)[0]*rank+tl.shape(V)[0]
-        cvg_criterion = 1+(numerator/denominator)
+        complexity_ratio = 1+(numerator/denominator)
         if exact:
             if rec_error < tol * rec_error0:
                 break
         else:
-            if rec_error < tol * rec_error0 or iteration > 1 + 0.5 * cvg_criterion:
+            if rec_error < tol * rec_error0 or iteration > 1 + 0.5 * complexity_ratio:
                 break
 
-    return V, rec_error, iteration, cvg_criterion
+    return V, rec_error, iteration, complexity_ratio
