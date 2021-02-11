@@ -59,7 +59,7 @@ def test_tucker_to_tensor():
                    [9, 21],
                    [12, 24]]])
     ranks = [2, 3, 4]
-    U = [tl.tensor(np.arange(R * s).reshape((R, s))) for (R, s) in zip(ranks, tl.shape(X))]
+    U = [tl.tensor(np.arange(R * s, dtype=float).reshape((R, s))) for (R, s) in zip(ranks, tl.shape(X))]
     true_res = np.array([[[390, 1518, 2646, 3774],
                          [1310, 4966, 8622, 12278],
                          [2230, 8414, 14598, 20782]],
