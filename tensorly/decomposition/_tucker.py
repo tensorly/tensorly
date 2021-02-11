@@ -345,9 +345,8 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
 
     References
     ----------
-    [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
-    Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
-    Neural Computation 24 (4): 1085-1105, 2012.
+    [1] Tamara G Kolda and Brett W Bader. "Tensor decompositions and applications",
+        SIAM review 51.3 (2009), pp. 455{500.
     """
     rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
     n_modes = tl.ndim(tensor)
@@ -397,24 +396,24 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         for mode in modes:
 
             # Computing Hadamard of cross-products
-            elemprod = factors.copy()
+            pseudo_inverse = factors.copy()
             for i, factor in enumerate(nn_factors):
                 if i != mode:
-                    elemprod[i] = tl.dot(tl.conj(tl.transpose(factor)), factor)
+                    pseudo_inverse[i] = tl.dot(tl.conj(tl.transpose(factor)), factor)
             # Second, the multiway product with core G
-            temp = multi_mode_dot(nn_core, elemprod, skip=mode)
-            UtU = unfold(temp, mode)@tl.transpose(unfold(nn_core, mode))
+            core_cross = multi_mode_dot(nn_core, pseudo_inverse, skip=mode)
+            UtU = tl.dot(unfold(core_cross, mode),tl.transpose(unfold(nn_core, mode)))
 
             # UtM
-            temp = multi_mode_dot(tensor, nn_factors, skip=mode, transpose=True)
-            MtU = unfold(temp, mode)@tl.transpose(unfold(nn_core, mode))
+            tensor_cross = multi_mode_dot(tensor, nn_factors, skip=mode, transpose=True)
+            MtU = tl.dot(unfold(tensor_cross, mode),tl.transpose(unfold(nn_core, mode)))
             UtM = tl.transpose(MtU)
 
             # Call the hals resolution with nnls, optimizing the current mode
-            nn_factors[mode] = tl.transpose(
-                hals_nnls(UtM, UtU, tl.transpose(nn_factors[mode]),
-                          n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
-                          exact=exact)[0])
+            nn_factor, _, _, _ = hals_nnls(UtM, UtU, tl.transpose(factors[mode]),
+                                           n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
+                                           exact=exact)
+            nn_factors[mode] = tl.transpose(nn_factor)
 
         # Adding the l1 norm value to the reconstruction error
         sparsity_error = 0
@@ -435,7 +434,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
                     print('converged in {} iterations.'.format(iteration))
                 break
 
-    tensor = TuckerTensor((core, factors))
+    tensor = TuckerTensor((nn_core, nn_factors))
     if return_errors:
         return tensor, rec_errors
     else:
