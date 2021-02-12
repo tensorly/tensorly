@@ -72,6 +72,7 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1.0, reg_J=1.0,
     if mask is None:
         mask = 1
     else:
+        # Fix to address surprising MXNet.numpy behavior (Issue #19891)
         mask = T.tensor(mask, dtype=float)
 
     # Initialise the decompositions
