@@ -144,6 +144,7 @@ class MxnetBackend(Backend):
     @property
     def SVD_FUNS(self):
         return {'numpy_svd': self.partial_svd,
+                'truncated_svd': self.truncated_svd,
                 'symeig_svd': self.symeig_svd}
     
     @staticmethod
@@ -161,5 +162,5 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'argmax', 'stack', 'diag', 'einsum']:
     MxnetBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr']:
+for name in ['solve', 'qr', 'svd']:
     MxnetBackend.register_method(name, getattr(np.linalg, name))
