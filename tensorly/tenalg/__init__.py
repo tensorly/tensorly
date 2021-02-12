@@ -24,15 +24,29 @@ from ..backend import _LOCAL_STATE
 _DEFAULT_TENALG_BACKEND = 'core'
 _LOCAL_STATE.tenalg_backend = _DEFAULT_TENALG_BACKEND
 
-_BACKENDS = {'core':core,
-             'einsum':einsum_tenalg}
-
+_TENALG_BACKENDS = {'core':core,
+                    'einsum':einsum_tenalg}
 
 def get_tenalg_backend():
+    """Returns the current backend
+    """
     return _LOCAL_STATE.tenalg_backend
 
 def set_tenalg_backend(backend='core', local_threadsafe=False):
-    if backend in _BACKENDS:
+    """Set the current tenalg backend
+
+    Parameters
+    ----------
+    backend : {'core', 'einsum'}
+        * if 'core', our manually optimized implementations are used 
+        * if 'einsum', all operations are dispatched to ``einsum``
+
+    If True, the backend will not become the default backend for all threads.
+        Note that this only affects threads where the backend hasn't already
+        been explicitly set. If False (default) the backend is set for the
+        entire session.
+    """
+    if backend in _TENALG_BACKENDS:
         _LOCAL_STATE.tenalg_backend = backend
         if local_threadsafe == False:
             global _DEFAULT_TENALG_BACKEND
@@ -46,8 +60,9 @@ def tenalg_backend_context(backend, local_threadsafe=False):
 
     Parameters
     ----------
-    backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
-        The name of the backend to use. Default is 'numpy'.
+    backend : {'core', 'einsum'}
+        * if 'core', our manually optimized implementations are used 
+        * if 'einsum', all operations are dispatched to ``einsum``
     local_threadsafe : bool, optional
         If True, the backend will not become the default backend for all threads.
         Note that this only affects threads where the backend hasn't already
@@ -58,9 +73,9 @@ def tenalg_backend_context(backend, local_threadsafe=False):
     --------
     Set the backend to numpy globally for this thread:
 
-    >>> import tensorly as tl
-    >>> tl.set_backend('numpy')
-    >>> with tl.backend_context('pytorch'):
+    >>> import tensorly.tenalg as tlg
+    >>> tlg.set_tenalg_backend('core')
+    >>> with tlg.set_tenalg_backend('einsum'):
     ...     pass
     """
     _old_backend = get_tenalg_backend()
@@ -76,7 +91,11 @@ def dynamically_dispatch_tenalg(function):
     @wraps(function)
     def dynamically_dispatched_fun(*args, **kwargs):
         #print('hello')
-        current_backend = _BACKENDS[_LOCAL_STATE.tenalg_backend]
+        try:
+            current_backend = _TENALG_BACKENDS[_LOCAL_STATE.tenalg_backend]
+        except AttributeError:
+            current_backend = _TENALG_BACKENDS[_DEFAULT_TENALG_BACKEND]
+            
         if hasattr(current_backend, name):
             fun = getattr(current_backend, name)(*args, **kwargs)
         else:

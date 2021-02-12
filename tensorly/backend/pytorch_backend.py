@@ -175,14 +175,6 @@ class PyTorchBackend(Backend):
         return torch.stack(arrays, dim=axis)
 
     @staticmethod
-    def conj(x, *args, **kwargs):
-        """WARNING: IDENTITY FUNCTION (does nothing)
-
-            This backend currently does not support complex tensors
-        """
-        return x
-
-    @staticmethod
     def _reverse(tensor, axis=0):
         """Reverses the elements along the specified dimension
 
@@ -290,7 +282,7 @@ class PyTorchBackend(Backend):
 
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
              'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
-             'abs', 'sqrt', 'sign', 'where', 'qr', 'diag', 'finfo', 'einsum']:
+             'abs', 'sqrt', 'sign', 'where', 'qr', 'conj', 'diag', 'finfo', 'einsum']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)

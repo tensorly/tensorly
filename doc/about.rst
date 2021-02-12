@@ -90,6 +90,14 @@ INRIA is funding a full-time engineer to work on TensorLy.
    :alt: Skolkovo Institute of Science and Technology 
 ........  
 
+.. image:: _static/logos/logo_ucla.png
+   :width: 150pt
+   :align: center
+   :target: https://www.ucla.edu/
+   :alt: UCLA
+
+........  
+
 
 .. _Jean Kossaifi: http://jeankossaifi.com/
 
