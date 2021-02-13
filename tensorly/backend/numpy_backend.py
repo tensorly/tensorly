@@ -37,21 +37,6 @@ class NumpyBackend(Backend):
     def dot(a, b):
         return a.dot(b)
 
-    @staticmethod
-    def norm(tensor, order=2, axis=None):
-        # handle difference in default axis notation
-        if axis == ():
-            axis = None
-
-        if order == 'inf':
-            return np.max(np.abs(tensor), axis=axis)
-        if order == 1:
-            return np.sum(np.abs(tensor), axis=axis)
-        elif order == 2:
-            return np.sqrt(np.sum(tensor**2, axis=axis))
-        else:
-            return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
-
     def kr(self, matrices, weights=None, mask=None):
         n_columns = matrices[0].shape[1]
         n_factors = len(matrices)
@@ -76,7 +61,7 @@ class NumpyBackend(Backend):
             return np.sort(tensor, axis=axis)
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
-             'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
+             'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'flip',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'conj', 'diag', 'einsum']:

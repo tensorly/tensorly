@@ -53,21 +53,6 @@ class MxnetBackend(Backend):
         return np.dot(a, b)
 
     @staticmethod
-    def norm(tensor, order=2, axis=None):
-        # handle difference in default axis notation
-        if axis == ():
-            axis = None
-
-        if order == 'inf':
-            return np.max(np.abs(tensor), axis=axis)
-        if order == 1:
-            return np.sum(np.abs(tensor), axis=axis)
-        if order == 2:
-            return np.sqrt(np.sum(tensor**2, axis=axis))
-        
-        return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
-
-    @staticmethod
     def clip(tensor, a_min=None, a_max=None):
         return np.clip(tensor, a_min, a_max)
 
@@ -117,7 +102,7 @@ class MxnetBackend(Backend):
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
-             'zeros_like', 'eye', 'concatenate', 'max', 'min',
+             'zeros_like', 'eye', 'concatenate', 'max', 'min', 'flip',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'diag', 'einsum']:
     MxnetBackend.register_method(name, getattr(np, name))

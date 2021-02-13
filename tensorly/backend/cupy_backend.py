@@ -45,24 +45,6 @@ class CupyBackend(Backend):
     def clip(tensor, a_min=None, a_max=None):
         return cp.clip(tensor, a_min, a_max)
 
-    def norm(self, tensor, order=2, axis=None):
-        # handle difference in default axis notation
-        if axis == ():
-            axis = None
-
-        if order == 'inf':
-            res = cp.max(cp.abs(tensor), axis=axis)
-        elif order == 1:
-            res = cp.sum(cp.abs(tensor), axis=axis)
-        elif order == 2:
-            res = cp.sqrt(cp.sum(tensor**2, axis=axis))
-        else:
-            res = cp.sum(cp.abs(tensor)**order, axis=axis)**(1 / order)
-
-        if res.shape == ():
-            return self.to_numpy(res)
-        return res
-
     def solve(self, matrix1, matrix2):
         try:
             cp.linalg.solve(matrix1, matrix2)

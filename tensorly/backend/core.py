@@ -478,8 +478,7 @@ class Backend(object):
         """
         raise NotImplementedError
 
-    @staticmethod
-    def norm(tensor, order=2, axis=None):
+    def norm(self, tensor, order=2, axis=None):
         """Computes the l-`order` norm of a tensor.
 
         Parameters
@@ -493,7 +492,18 @@ class Backend(object):
         float or tensor
             If `axis` is provided returns a tensor.
         """
-        raise NotImplementedError
+        # handle difference in default axis notation
+        if axis == ():
+            axis = None
+
+        if order == 'inf':
+            return self.max(self.abs(tensor), axis=axis)
+        if order == 1:
+            return self.sum(self.abs(tensor), axis=axis)
+        elif order == 2:
+            return self.sqrt(self.sum(tensor**2, axis=axis))
+        else:
+            return self.sum(self.abs(tensor)**order, axis=axis)**(1 / order)
 
     @staticmethod
     def dot(a, b):
@@ -919,7 +929,7 @@ class Backend(object):
             S = self.sqrt(S)
             U = self.dot(matrix, V) / self.reshape(S, (1, -1))
 
-        U, S, V = U[:, ::-1], S[::-1], self.transpose(V)[::-1, :]
+        U, S, V = self.flip(U, axis=1), self.flip(S), self.flip(self.transpose(V), axis=0)
         return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
 
     index = Index()

@@ -125,6 +125,15 @@ class TensorflowBackend(Backend):
             axis = -1
 
         return tf.sort(tensor, axis=axis, direction = direction)
+
+    def flip(self, tensor, axis=None):
+        if isinstance(axis, int):
+            axis = [axis]
+
+        if axis is None:
+            return tf.reverse(tensor, axis=[i for i in range(self.ndim(tensor))])
+        else:
+            return tf.reverse(tensor, axis=axis)
     
     def svd(self, matrix, full_matrices):
         """ Correct for the atypical return order of tf.linalg.svd. """

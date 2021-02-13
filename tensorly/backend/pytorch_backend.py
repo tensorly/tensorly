@@ -157,6 +157,16 @@ class PyTorchBackend(Backend):
             return torch.sum(tensor)
         else:
             return torch.sum(tensor, dim=axis)
+    
+    @staticmethod
+    def flip(tensor, axis=None):
+        if isinstance(axis, int):
+            axis = [axis]
+
+        if axis is None:
+            return torch.flip(tensor, dims=[i for i in range(tensor.ndim)])
+        else:
+            return torch.flip(tensor, dims=axis)
 
     @staticmethod
     def concatenate(tensors, axis=0):
@@ -174,28 +184,22 @@ class PyTorchBackend(Backend):
     def stack(arrays, axis=0):
         return torch.stack(arrays, dim=axis)
 
-    @staticmethod
-    def _reverse(tensor, axis=0):
-        """Reverses the elements along the specified dimension
+    def svd(self, X, full_matrices=True):
+        # The torch SVD has accuracy issues. Try again when torch.linalg is stable.
+        ctx = self.context(X)
+        X = self.to_numpy(X)
 
-        Parameters
-        ----------
-        tensor : tl.tensor
-        axis : int, default is 0
-            axis along which to reverse the ordering of the elements
+        U, S, V = np.linalg.svd(X, full_matrices=full_matrices)
 
-        Returns
-        -------
-        reversed_tensor : for a 1-D tensor, returns the equivalent of
-                        tensor[::-1] in NumPy
-        """
-        indices = torch.arange(tensor.shape[axis] - 1, -1, -1, dtype=torch.int64)
-        return tensor.index_select(axis, indices)
+        U = self.tensor(U, **ctx)
+        S = self.tensor(S, **ctx)
+        V = self.tensor(V, **ctx)
+
+        return U, S, V
 
     @staticmethod
-    def svd(matrix, full_matrices=True):
-        """Computes the standard SVD."""
-        return torch.svd(matrix, some=full_matrices)
+    def eigh(tensor):
+        return torch.symeig(tensor, eigenvectors=True)
     
     @staticmethod
     def sort(tensor, axis, descending = False):
