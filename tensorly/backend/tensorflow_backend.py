@@ -168,6 +168,7 @@ _FUN_NAMES = [
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
     (tf.linalg.qr, 'qr'),
+    (tf.linalg.eigh, 'eigh'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),

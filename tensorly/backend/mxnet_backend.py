@@ -79,17 +79,31 @@ class MxnetBackend(Backend):
         """
         return x
 
-    @staticmethod
-    def svd(X, full_matrices=True):
+    def svd(self, X, full_matrices=True):
+        # MXNet doesn't provide an option for full_matrices=True
+        if full_matrices is True:
+            ctx = self.context(X)
+            X = self.to_numpy(X)
+
+            if X.shape[0] > X.shape[1]:
+                U, S, V = numpy.linalg.svd(X.T)
+
+                U, S, V = V.T, S, U.T
+            else:
+                U, S, V = numpy.linalg.svd(X)
+
+            U = self.tensor(U, **ctx)
+            S = self.tensor(S, **ctx)
+            V = self.tensor(V, **ctx)
+
+            return U, S, V
+
         if X.shape[0] > X.shape[1]:
             U, S, V = np.linalg.svd(X.T)
-            return V.T, S, U.T
 
-        U, S, V = np.linalg.svd(X)
-
-        if full_matrices == False:
-            U = U[:, 0:min(X.shape)]
-            V = V[0:min(X.shape), :]
+            U, S, V = V.T, S, U.T
+        else:
+            U, S, V = np.linalg.svd(X)
         
         return U, S, V
     
