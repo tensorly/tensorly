@@ -349,7 +349,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
 
             new_rec_error, new_tensor, new_norm_tensor = error_calc(tensor, norm_tensor, new_weights, new_factors, sparsity, mask)
 
-            if (new_rec_error / new_norm_tensor) < rec_errors[-1]:
+            if tl.to_numpy(new_rec_error / new_norm_tensor) < rec_errors[-1]:
                 factors, weights = new_factors, new_weights
                 tensor, norm_tensor = new_tensor, new_norm_tensor
                 unnorml_rec_error = new_rec_error
