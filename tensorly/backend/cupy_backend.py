@@ -82,5 +82,5 @@ for name in ['float64', 'float32', 'int64', 'int32', 'reshape', 'moveaxis',
              'conj', 'diag', 'einsum']:
     CupyBackend.register_method(name, getattr(cp, name))
 
-for name in ['svd', 'qr']:
+for name in ['svd', 'qr', 'eigh']:
     CupyBackend.register_method(name, getattr(cp.linalg, name))

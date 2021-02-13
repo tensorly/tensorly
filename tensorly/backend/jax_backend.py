@@ -85,12 +85,6 @@ class JaxBackend(Backend):
         m = mask.reshape((-1, 1)) if mask is not None else 1
         return np.einsum(operation, *matrices).reshape((-1, n_columns))*m
 
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.truncated_svd}
-    
-    
     @staticmethod
     def sort(tensor, axis, descending = False):
         if descending:
@@ -105,7 +99,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum']:
     JaxBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr', 'svd']:
+for name in ['solve', 'qr', 'svd', 'eigh']:
     JaxBackend.register_method(name, getattr(np.linalg, name))
 
 for name in ['index', 'index_update']:

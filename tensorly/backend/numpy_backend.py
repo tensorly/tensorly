@@ -82,5 +82,5 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'argmax', 'stack', 'conj', 'diag', 'einsum']:
     NumpyBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr', 'svd']:
+for name in ['solve', 'qr', 'svd', 'eigh']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
