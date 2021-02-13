@@ -9,7 +9,7 @@ from ....tt_tensor import tt_to_tensor
 from ....random import check_random_state
 from tensorly.testing import assert_
 
-skip_if_backend = pytest.mark.skipif(tl.get_backend() in ("tensorflow", "jax"),
+skip_if_backend = pytest.mark.skipif(tl.get_backend() in ("tensorflow", "jax", "cupy"),
                                      reason=f"Operation not supported in {tl.get_backend()}")
 
 

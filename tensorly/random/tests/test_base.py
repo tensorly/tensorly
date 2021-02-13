@@ -34,8 +34,10 @@ def test_random_cp():
     rank = 4
 
     tensor = random_cp(shape, rank, full=True)
+    assert T.shape(tensor) == shape
+
     for i in range(T.ndim(tensor)):
-        assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
+        assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i)), tol=1e-6), rank)
 
     weights, factors = random_cp(shape, rank, full=False)
     for i, factor in enumerate(factors):

@@ -45,24 +45,20 @@ class CupyBackend(Backend):
     def clip(tensor, a_min=None, a_max=None):
         return cp.clip(tensor, a_min, a_max)
 
-    def solve(self, matrix1, matrix2):
-        try:
-            cp.linalg.solve(matrix1, matrix2)
-        except cp.cuda.cusolver.CUSOLVERError:
-            warnings.warn('CuPy solver failed, using numpy.linalg.solve instead.')
-            ctx = self.context(matrix1)
-            matrix1 = self.to_numpy(matrix1)
-            matrix2 = self.to_numpy(matrix2)
-            res = np.linalg.solve(matrix1, matrix2)
-            return self.tensor(res, **ctx)
+    @staticmethod
+    def sort(tensor, axis, descending = False):
+        if descending:
+            return cp.flip(cp.sort(tensor, axis=axis), axis = axis)
+        else:
+            return cp.sort(tensor, axis=axis)
 
 
 for name in ['float64', 'float32', 'int64', 'int32', 'reshape', 'moveaxis',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye',
-             'arange', 'where', 'dot', 'kron', 'concatenate', 'max',
+             'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip',
              'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'stack',
              'conj', 'diag', 'einsum']:
     CupyBackend.register_method(name, getattr(cp, name))
 
-for name in ['svd', 'qr', 'eigh']:
+for name in ['svd', 'qr', 'eigh', 'solve']:
     CupyBackend.register_method(name, getattr(cp.linalg, name))

@@ -372,7 +372,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                         print("Reducing acceleration.")
 
         rec_error = unnorml_rec_error / norm_tensor
-        rec_errors.append(rec_error)
+        rec_errors.append(tl.to_numpy(rec_error))
 
         if tol:
 
