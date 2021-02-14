@@ -26,7 +26,7 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
 
     eigenval : float
         the obtained eigenvalue
-    best_factor: tl.tensor
+    best_factor : tl.tensor
         the best estimated eigenvector
     deflated : tl.tensor of same shape as `tensor`
         the deflated tensor (i.e. without the estimated component)

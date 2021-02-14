@@ -3,3 +3,5 @@ slimit
 rcssmin
 numpydoc
 sphinx-gallery
+matplotlib
+tensorly_sphinx_theme

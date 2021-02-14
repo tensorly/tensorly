@@ -58,10 +58,10 @@ def test_validate_cp_tensor():
 
 def test_cp_to_tensor():
     """Test for cp_to_tensor."""
-    U1 = np.reshape(np.arange(1, 10), (3, 3))
-    U2 = np.reshape(np.arange(10, 22), (4, 3))
-    U3 = np.reshape(np.arange(22, 28), (2, 3))
-    U4 = np.reshape(np.arange(28, 34), (2, 3))
+    U1 = np.reshape(np.arange(1, 10, dtype=float), (3, 3))
+    U2 = np.reshape(np.arange(10, 22, dtype=float), (4, 3))
+    U3 = np.reshape(np.arange(22, 28, dtype=float), (2, 3))
+    U4 = np.reshape(np.arange(28, 34, dtype=float), (2, 3))
     U = [tl.tensor(t) for t in [U1, U2, U3, U4]]
     true_res = tl.tensor([[[[  46754.,   51524.],
                             [  52748.,   58130.]],
@@ -105,7 +105,7 @@ def test_cp_to_tensor():
 
     columns = 4
     rows = [3, 4, 2]
-    matrices = [tl.tensor(np.arange(k * columns).reshape((k, columns))) for k in rows]
+    matrices = [tl.tensor(np.arange(k * columns, dtype=float).reshape((k, columns))) for k in rows]
     tensor = cp_to_tensor((tl.ones(columns), matrices))
     for i in range(len(rows)):
         unfolded = unfold(tensor, mode=i)
@@ -115,8 +115,8 @@ def test_cp_to_tensor():
         matrices.insert(i, U_i)
 
 def test_cp_to_tensor_with_weights():
-    A = tl.reshape(tl.arange(1,5), (2,2))
-    B = tl.reshape(tl.arange(5,9), (2,2))
+    A = tl.reshape(tl.arange(1,5, dtype=float), (2,2))
+    B = tl.reshape(tl.arange(5,9, dtype=float), (2,2))
     weigths = tl.tensor([2,-1], **tl.context(A))
 
     out = cp_to_tensor((weigths, [A,B]))
@@ -135,10 +135,10 @@ def test_cp_to_unfolded():
     """Test for cp_to_unfolded.
         !!Assumes that cp_to_tensor and unfold are properly tested and work!!
     """
-    U1 = np.reshape(np.arange(1, 10), (3, 3))
-    U2 = np.reshape(np.arange(10, 22), (4, 3))
-    U3 = np.reshape(np.arange(22, 28), (2, 3))
-    U4 = np.reshape(np.arange(28, 34), (2, 3))
+    U1 = np.reshape(np.arange(1, 10, dtype=float), (3, 3))
+    U2 = np.reshape(np.arange(10, 22, dtype=float), (4, 3))
+    U3 = np.reshape(np.arange(22, 28, dtype=float), (2, 3))
+    U4 = np.reshape(np.arange(28, 34, dtype=float), (2, 3))
     U = [tl.tensor(t) for t in [U1, U2, U3, U4]]
     cp_tensor = CPTensor((tl.ones(3), U))
 
@@ -150,10 +150,10 @@ def test_cp_to_unfolded():
 
 def test_cp_to_vec():
     """Test for cp_to_vec"""
-    U1 = np.reshape(np.arange(1, 10), (3, 3))
-    U2 = np.reshape(np.arange(10, 22), (4, 3))
-    U3 = np.reshape(np.arange(22, 28), (2, 3))
-    U4 = np.reshape(np.arange(28, 34), (2, 3))
+    U1 = np.reshape(np.arange(1, 10, dtype=float), (3, 3))
+    U2 = np.reshape(np.arange(10, 22, dtype=float), (4, 3))
+    U3 = np.reshape(np.arange(22, 28, dtype=float), (2, 3))
+    U4 = np.reshape(np.arange(28, 34, dtype=float), (2, 3))
     U = [tl.tensor(t) for t in [U1, U2, U3, U4]]
     cp_tensor = CPTensor((tl.ones(3), U))
     full_tensor = cp_to_tensor(cp_tensor)

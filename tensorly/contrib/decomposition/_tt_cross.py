@@ -7,17 +7,17 @@ import numpy as np
 def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
     """TT (tensor-train) decomposition via cross-approximation (TTcross) [1]
 
-        Decomposes `input_tensor` into a sequence of order-3 tensors of given rank. (factors/cores)
-        Rather than directly decompose the whole tensor, we sample fibers based on skeleton decomposition.
-        We initialize a random tensor-train and sweep from left to right and right to left.
-        On each core, we shape the core as a matrix and choose the fibers indices by finding maximum-volume submatrix and update the core.
+    Decomposes `input_tensor` into a sequence of order-3 tensors of given rank. (factors/cores)
+    Rather than directly decompose the whole tensor, we sample fibers based on skeleton decomposition.
+    We initialize a random tensor-train and sweep from left to right and right to left.
+    On each core, we shape the core as a matrix and choose the fibers indices by finding maximum-volume submatrix and update the core.
 
-        Advantage: faster
-            The main advantage of TTcross is that it doesn't need to evaluate all the entries of the tensor.
-            For a tensor_shape^tensor_order tensor, SVD needs O(tensor_shape^tensor_order) runtime, but TTcross' runtime is linear in tensor_shape and tensor_order, which makes it feasible in high dimension.
-        Disadvantage: less accurate
-            TTcross may underestimate the error, since it only evaluates partial entries of the tensor.
-            Besides, in contrast to its practical fast performance, there is no theoretical guarantee of it convergence.
+    * Advantage: faster
+        The main advantage of TTcross is that it doesn't need to evaluate all the entries of the tensor.
+        For a tensor_shape^tensor_order tensor, SVD needs O(tensor_shape^tensor_order) runtime, but TTcross' runtime is linear in tensor_shape and tensor_order, which makes it feasible in high dimension.
+    * Disadvantage: less accurate
+        TTcross may underestimate the error, since it only evaluates partial entries of the tensor.
+        Besides, in contrast to its practical fast performance, there is no theoretical guarantee of it convergence.
 
     Parameters
     ----------
@@ -41,12 +41,13 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
     --------
 
     Generate a 5^3 tensor, and decompose it into tensor-train of 3 factors, with rank = [1,3,3,1]
+
     >>> tensor = tl.tensor(np.arange(5**3).reshape(5,5,5))
     >>> rank = [1, 3, 3, 1]
     >>> factors = tensor_train_cross(tensor, rank)
-    print the first core:
+    >>> # print the first core:
     >>> print(factors[0])
-    .[[[ 24.   0.   4.]
+    [[[ 24.   0.   4.]
       [ 49.  25.  29.]
       [ 74.  50.  54.]
       [ 99.  75.  79.]
@@ -55,17 +56,28 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
     Notes
     -----
     Pseudo-code [2]:
+    
     1. Initialization tensor_order cores and column indices
+
     2. while (error > tol)
-    3.    update the tensor-train from left to right:
-                for Core 1 to Core tensor_order
-                    approximate the skeleton-decomposition by QR and maxvol
-    4.    update the tensor-train from right to left:
-                for Core tensor_order to Core 1
-                    approximate the skeleton-decomposition by QR and maxvol
+
+    3. update the tensor-train from left to right:
+
+       .. code:: python
+
+           for Core 1 to Core tensor_order:
+           approximate the skeleton-decomposition by QR and maxvol
+    
+    4. update the tensor-train from right to left:
+       
+       .. code:: python
+
+            for Core tensor_order to Core 1
+                approximate the skeleton-decomposition by QR and maxvol
+
     5. end while
 
-    Acknowledgement: the main body of the code is modified based on TensorToolbox by Daniele Bigoni
+    Acknowledgement: the main body of the code is modified based on TensorToolbox by Daniele Bigoni.
 
     References
     ----------
@@ -83,7 +95,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
         rank = [rank] * (tensor_order + 1)
     elif tensor_order + 1 != len(rank):
         message = 'Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}'.format(
-            len(rank), tensor_order)
+                   len(rank), tensor_order)
         raise (ValueError(message))
 
     # Make sure iter's not a tuple but a list
@@ -196,8 +208,8 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
 def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     """ Compute the next (right) core's row indices by QR decomposition.
 
-            For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
-            and compute the next core's row indices by QR and max volume algorithm.
+    For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
+    and compute the next core's row indices by QR and max volume algorithm.
 
     Parameters
     ----------
@@ -270,8 +282,8 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
 def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     """ Compute the next (left) core's col indices by QR decomposition.
 
-            For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
-            and compute the next core's col indices by QR and max volume algorithm.
+    For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
+    and compute the next core's col indices by QR and max volume algorithm.
 
     Parameters
     ----------
@@ -341,23 +353,22 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
 def maxvol(A):
     """ Find the rxr submatrix of maximal volume in A(nxr), n>=r
 
-            We want to decompose matrix A as
-                    A = A[:,J] * (A[I,J])^-1 * A[I,:]
-            This algorithm helps us find this submatrix A[I,J] from A, which has the largest determinant.
-            We greedily find vector of max norm, and subtract its projection from the rest of rows.
+    We want to decompose matrix A as `A = A[:,J] * (A[I,J])^-1 * A[I,:]`.
+    This algorithm helps us find this submatrix A[I,J] from A, which has the largest determinant.
+    We greedily find vector of max norm, and subtract its projection from the rest of rows.
 
     Parameters
     ----------
 
     A: matrix
-            The matrix to find maximal volume
+        The matrix to find maximal volume
 
     Returns
     -------
     row_idx: list of int
-            is the list or rows of A forming the matrix with maximal volume,
+        is the list or rows of A forming the matrix with maximal volume,
     A_inv: matrix
-            is the inverse of the matrix with maximal volume.
+        is the inverse of the matrix with maximal volume.
 
     References
     ----------
@@ -415,7 +426,7 @@ def maxvol(A):
         A_new = A_new - A_new * tl.reshape(projection, (tl.shape(A_new)[0], 1))
 
         # Delete the selected row
-        mask.pop(max_row_idx)
+        mask.pop(tl.to_numpy(max_row_idx))
         A_new = A_new[mask,:]
 
         # update the row_idx and rest_of_rows
