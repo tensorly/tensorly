@@ -99,6 +99,26 @@ class Backend(object):
 
         raise ValueError('Seed should be None, int or np.random.RandomState')
 
+    def randn(self, shape, seed=None, **context):
+        """Returns a random tensor with samples from the “standard normal” distribution.
+
+        Parameters
+        ----------
+        shape: Iterable[int]
+            shape of the random tensor
+        seed: None or instance of int or np.random.RandomState(), default is None
+        if seed is None NumPy's global seed is used
+        context: context of tensor
+
+        Returns
+        -------
+        random_tensor: tl.tensor
+        """
+        rng = self.check_random_state(seed)
+        random_tensor = rng.randn(*shape)
+        random_tensor = self.tensor(random_tensor, **context)
+        return random_tensor
+
     @staticmethod
     def context(tensor):
         """Returns the context of a tensor
