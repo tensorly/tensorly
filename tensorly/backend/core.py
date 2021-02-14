@@ -18,45 +18,6 @@ class Index():
         return indices
 
 
-def svd_flip(u, v, u_based_decision=True):
-    """Sign correction to ensure deterministic output from SVD.
-    Adjusts the columns of u and the rows of v such that the loadings in the
-    columns in u that are largest in absolute value are always positive.
-    This function is borrowed from scikit-learn/utils/extmath.py
-    Parameters
-    ----------
-    u : ndarray
-        u and v are the output of `partial_svd`
-    v : ndarray
-        u and v are the output of `partial_svd`
-    u_based_decision : boolean, (default=True)
-        If True, use the columns of u as the basis for sign flipping.
-        Otherwise, use the rows of v. The choice of which variable to base the
-        decision on is generally algorithm dependent.
-    Returns
-    -------
-    u_adjusted, v_adjusted : arrays with the same dimensions as the input.
-    """
-    if u_based_decision:
-        # columns of u, rows of v
-        max_abs_cols = np.argmax(np.abs(u), axis=0)
-        signs = np.sign(u[max_abs_cols, range(u.shape[1])])
-        u = u * signs
-        if v.shape[0] > u.shape[1]:
-            signs = np.concatenate((signs, np.ones(v.shape[0] - u.shape[1])))
-        v = v * signs[:v.shape[0]][:, None]
-    else:
-        # rows of v, columns of u
-        max_abs_rows = np.argmax(np.abs(v), axis=1)
-        signs = np.sign(v[range(v.shape[0]), max_abs_rows])
-        v = v * signs[:, None]
-        if u.shape[1] > v.shape[0]:
-            signs = np.concatenate((signs, np.ones(u.shape[1] - v.shape[0])))
-        u = u * signs[:u.shape[1]]
-
-    return u, v
-
-
 class Backend(object):
     @classmethod
     def register_method(cls, name, func):
@@ -734,6 +695,50 @@ class Backend(object):
 
         return res*m
 
+    def svd_flip(self, u, v, u_based_decision=True):
+        """Sign correction to ensure deterministic output from SVD.
+        Adjusts the columns of u and the rows of v such that the loadings in the
+        columns in u that are largest in absolute value are always positive.
+        This function is borrowed from scikit-learn/utils/extmath.py
+        Parameters
+        ----------
+        u : ndarray
+            u and v are the output of `partial_svd`
+        v : ndarray
+            u and v are the output of `partial_svd`
+        u_based_decision : boolean, (default=True)
+            If True, use the columns of u as the basis for sign flipping.
+            Otherwise, use the rows of v. The choice of which variable to base the
+            decision on is generally algorithm dependent.
+        Returns
+        -------
+        u_adjusted, v_adjusted : arrays with the same dimensions as the input.
+        """
+        if u_based_decision:
+            # columns of u, rows of v
+            is_numpy = isinstance(u, np.ndarray)
+            max_abs_cols = self.argmax(self.abs(u), axis=0)
+            signs = np.sign(self.to_numpy(u)[max_abs_cols, range(self.shape(u)[1])])
+            if not is_numpy:
+                signs = self.tensor(signs, **self.context(u))
+            u = u * signs
+            if self.shape(v)[0] > self.shape(u)[1]:
+                signs = self.concatenate((signs, self.ones(self.shape(v)[0] - self.shape(u)[1])))
+            v = v * signs[:self.shape(v)[0]][:, None]
+        else:
+            # rows of v, columns of u
+            is_numpy = isinstance(v, np.ndarray)
+            max_abs_rows = self.argmax(self.abs(v), axis=1)
+            signs = np.sign(self.to_numpy(v)[range(self.shape(v)[0]), max_abs_rows])
+            if not is_numpy:
+                signs = self.tensor(signs, **self.context(v))
+            v = v * signs[:, None]
+            if self.shape(u)[1] > self.shape(v)[0]:
+                signs = self.concatenate((signs, np.ones(self.shape(u)[1] - self.shape(v)[0])))
+            u = u * signs[:self.shape(u)[1]]
+
+        return u, v
+
     def partial_svd(self, matrix, n_eigenvecs=None, flip=False, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`
 
@@ -825,14 +830,14 @@ class Backend(object):
                     np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
                 )
                 S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-                U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
+                U = np.dot(matrix, V) * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
 
             # WARNING: here, V is still the transpose of what it should be
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
             V = V.T.conj()
 
         if flip:
-            U, V = svd_flip(U, V)
+            U, V = self.svd_flip(U, V)
 
         if not is_numpy:
             U = self.tensor(U, **ctx)
