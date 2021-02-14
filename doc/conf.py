@@ -24,8 +24,6 @@ sys.path.insert(0, '..')
 # -- General configuration ------------------------------------------------
 
 
-html4_writer=True
-
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
@@ -37,7 +35,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinx.ext.imgmath', #'sphinx.ext.mathjax',
+    # 'sphinx.ext.imgmath', 
+    'sphinx.ext.mathjax',
     'numpydoc.numpydoc',
     'sphinx_gallery.gen_gallery',
 ]
@@ -139,16 +138,24 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'tensorly'
+html_theme = 'tensorly_sphinx_theme'
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['themes']
+# html_theme_path = ['themes']
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'google_analytics' : 'UA-86209849-1',
+    'google_analytics' : 'G-3V91QCZR03',
+    'github_url': 'https://github.com/tensorly/tensorly',
+    'searchbar_text': 'Search in TensorLy',
+    'nav_links' : [('Install', 'installation'), 
+                   ('User Guide', 'user_guide/index'),
+                   ('API', 'modules/api'),
+                   ('Examples', 'auto_examples/index'),
+                   ('About Us', 'about')],
+    'external_nav_links' : [('Notebooks', 'https://github.com/JeanKossaifi/tensorly-notebooks')]
 }
 
 # The name for this set of Sphinx documents.
@@ -162,7 +169,7 @@ html_short_title = 'TensorLy'
 # of the sidebar.
 html_logo = '_static/logos/logo_tensorly.png'
 
-html_add_permalinks = None
+html_add_permalinks = ''
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32

@@ -7,7 +7,7 @@ import tensorly as tl
 from ...random import random_parafac2
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
-from ..parafac2 import parafac2, initialize_decomposition
+from .._parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
 from ...parafac2_tensor import parafac2_to_tensor, parafac2_to_slices
 
 
@@ -36,8 +36,11 @@ def best_correlation(A, B):
     
     return best_corr
 
-@pytest.mark.parametrize("normalize_factors", [True, False])
-def test_parafac2(normalize_factors):
+@pytest.mark.parametrize(
+    ("normalize_factors", "init"),
+     itertools.product([True, False], ["random", "svd"])
+)
+def test_parafac2(normalize_factors, init):
     rng = tl.check_random_state(1234)
     tol_norm_2 = 10e-2
     rank = 3
@@ -56,7 +59,14 @@ def test_parafac2(normalize_factors):
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
-    rec = parafac2(slices, rank, random_state=rng, normalize_factors=normalize_factors)
+    rec = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        init=init,
+        n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+        normalize_factors=normalize_factors
+    )
     rec_tensor = parafac2_to_tensor(rec)
 
     error = T.norm(rec_tensor - tensor, 2)
@@ -151,6 +161,14 @@ def test_parafac2_init_error():
     with np.testing.assert_raises(ValueError):
         _ = initialize_decomposition(tensor, rank, init=('another', 'bogus', 'init', 'type'))
 
+    rank = 4
+    random_parafac2_tensor = random_parafac2(shapes=[(15, 3)]*25, rank=rank, random_state=rng)
+    tensor = parafac2_to_tensor(random_parafac2_tensor)
+
+    with np.testing.assert_raises(ValueError):
+        _ = initialize_decomposition(tensor, rank, init='svd')
+
+
 def test_parafac2_to_tensor():
     rng = tl.check_random_state(1234)
     rank = 3
@@ -172,3 +190,21 @@ def test_parafac2_to_tensor():
                     tensor_manual = tl.index_update(tensor_manual, tl.index[i, j, k],  tensor_manual[i, j, k] + factors[0][i][r]*Bi[j][r]*factors[2][k][r])
 
     assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-6)
+
+
+def test_pad_by_zeros():
+    """Test that if we pad a tensor by zeros, then it doesn't change.
+
+    This failed for TensorFlow at some point.
+    """
+    rng = tl.check_random_state(1234)
+    rank = 3
+
+    I = 25
+    J = 15
+    K = 30
+
+    weights, factors, projections = random_parafac2(shapes=[(J, K)]*I, rank=rank, random_state=rng)
+    constructed_tensor = parafac2_to_tensor((weights, factors, projections))
+    padded_tensor = _pad_by_zeros(constructed_tensor)
+    assert_(tl.max(tl.abs(constructed_tensor - padded_tensor)) < 1e-10)

@@ -12,10 +12,29 @@ import scipy.sparse.linalg
 
 
 class Index():
+    """Convenience class used as a an array, to be used with index_update
+
+    Parameters
+    ----------
+    indices : indices for indexing
+
+    Examples
+    --------
+    Usage: index[indices], e.g. ::
+
+        index[1:3, 4:5, :None]
+    
+    See also
+    --------
+    index_update : updating the values of a tensor for specified indices
+    """
     __slots__ = ()
 
     def __getitem__(self, indices):
         return indices
+    @property
+    def __name__(self):
+        return 'Index'
 
 
 class Backend(object):
@@ -570,16 +589,35 @@ class Backend(object):
         raise NotImplementedError
 
     def eps(self, dtype):
+        """Returns the machine epsilon for a given floating point dtype
+
+        Parameters
+        ----------
+        dtype : tensorly.dtype
+            the dtype for which to get the machine epsilon
+        
+        Returns
+        -------
+        eps : machine epsilon for `dtype`
+        """
         return self.finfo(dtype).eps
 
     def finfo(self, dtype):
+        """Machine limits for floating point types.
+
+        Parameters
+        ----------
+        dtype: float, dtype or instance
+                Kind of floating point data-type about which to get information.
+        """
         return np.finfo(self.to_numpy(self.tensor([], dtype=dtype)).dtype)
 
     @staticmethod
     def conj(x, *args, **kwargs):
         """Return the complex conjugate, element-wise.
 
-            The complex conjugate of a complex number is obtained by changing the sign of its imaginary part.
+            The complex conjugate of a complex number is obtained by 
+            changing the sign of its imaginary part.
         """
         raise NotImplementedError
 
@@ -604,6 +642,7 @@ class Backend(object):
         """
         raise NotImplementedError
 
+    @staticmethod
     def einsum(subscripts, *operands):
         """Evaluates the Einstein summation convention on the operands.
 
@@ -619,6 +658,10 @@ class Backend(object):
         -------
         output : ndarray
             The calculation based on the Einstein summation convention
+
+        Notes
+        -----
+        This is only available for certain backends.
         """
         raise NotImplementedError
 
@@ -894,6 +937,10 @@ class Backend(object):
         >>> tl.index_update(tensor, tl.index[:, 1], 0)
         array([[1, 0, 3],
                [4, 0, 6]])
+
+        See also
+        --------
+        index
         """
         tensor[indices] = values
         return tensor
