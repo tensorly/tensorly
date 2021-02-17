@@ -10,11 +10,11 @@ from ..parafac2_tensor import (parafac2_to_tensor, parafac2_to_unfolded,
 from ..tenalg import kronecker, mode_dot
 from ..testing import (assert_array_equal, assert_array_almost_equal, 
                        assert_equal, assert_raises)
-from ..random import check_random_state, random_parafac2
+from ..random import random_parafac2
 
 
 def test_validate_parafac2_tensor():
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     true_shape = [(4, 5)]*3
     true_rank = 2
     weights, factors, projections = random_parafac2(true_shape, rank=true_rank)
@@ -59,7 +59,7 @@ def test_validate_parafac2_tensor():
 # to support TensorFlow.
 #@pytest.mark.parametrize('copy', [True, False])
 def test_parafac2_normalise():
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     true_shape = [(4, 5)]*3
     true_rank = 2
     parafac2_tensor = random_parafac2(true_shape, rank=true_rank)
@@ -147,7 +147,7 @@ def test_parafac2_to_unfolded():
     -----
     Assumes that parafac2_to_tensor is properly tested
     """
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     true_shape = [(4, 5)]*3
     true_rank = 2
     pf2_tensor = random_parafac2(true_shape, true_rank)
@@ -163,7 +163,7 @@ def test_parafac2_to_vec():
     -----
     Assumes that parafac2_to_tensor works correctly
     """
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     true_shape = [(4, 5)]*3
     true_rank = 2
     pf2_tensor = random_parafac2(true_shape, true_rank)

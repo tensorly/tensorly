@@ -3,7 +3,7 @@ import warnings
 
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ..random import check_random_state, random_cp
+from ..random import random_cp
 from ..base import unfold
 from ..tenalg.proximal import soft_thresholding
 from ..cp_tensor import (cp_to_tensor, CPTensor,
@@ -110,7 +110,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
         An initial cp tensor.
 
     """
-    rng = check_random_state(random_state)
+    rng = tl.check_random_state(random_state)
 
     if init == 'random':
         kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
