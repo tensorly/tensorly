@@ -300,6 +300,50 @@ def cp_normalize(cp_tensor):
     return CPTensor((weights, normalized_factors))
 
 
+def cp_fix_sign(cp_tensor, mode=0, func=None):
+    """Returns cp_tensor with factors flipped to have positive signs.
+    The sign of a given column is determined by `func`, which is the mean
+    by default. Any negative signs are assigned to the mode indicated by `mode`.
+
+    Parameters
+    ----------
+    cp_tensor : CPTensor = (weight, factors)
+        factors is list of matrices, all with the same number of columns
+        i.e.::
+        
+            for u in U:
+                u[i].shape == (s_i, R)
+
+        where `R` is fixed while `s_i` can vary with `i`
+    
+    mode: int
+        mode that should receive negative signs
+
+    func: tensorly function
+        a function that should summarize the sign of a column
+        it must be able to take an axis argument
+
+    Returns
+    -------
+    CPTensor = (normalisation_weights, normalised_factors)
+    """
+    _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
+
+    if func is None:
+        func = T.mean
+
+    for jj in range(0, len(factors)):
+        # Calculate the sign of the current factor in each component
+        means = T.sign(func(factors[jj], axis=0))
+
+        # Update both the current and receiving factor
+        factors[mode] *= means[np.newaxis, :]
+        factors[jj] *= means[np.newaxis, :]
+
+    return CPTensor((weights, factors))
+
+
 def cp_to_tensor(cp_tensor, mask=None):
     """Turns the Khatri-product of matrices into a full tensor
 

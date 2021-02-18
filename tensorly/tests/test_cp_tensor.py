@@ -6,7 +6,7 @@ from ..cp_tensor import (cp_to_tensor, cp_to_unfolded,
                               cp_to_vec, _validate_cp_tensor,
                               cp_normalize, CPTensor,
                               cp_mode_dot, unfolding_dot_khatri_rao,
-                              cp_norm,
+                              cp_norm, cp_fix_sign,
                               _cp_n_param, validate_cp_rank)
 from ..base import unfold, tensor_to_vec
 from tensorly.random import check_random_state, random_cp
@@ -23,7 +23,20 @@ def test_cp_normalize():
     for f in factors:
         assert_array_almost_equal(tl.norm(f, axis=0), expected_norm)
     assert_array_almost_equal(cp_to_tensor((weights, factors)), cp_to_tensor(cp_tensor))
-    
+
+
+def test_cp_fix_sign():
+    shape = (3, 4, 5)
+    rank = 4
+    cp_tensor = random_cp(shape, rank)
+    weights, factors = cp_fix_sign(cp_tensor)
+
+    assert_(tl.all(tl.mean(factors[1], axis=0) > 0))
+    assert_(tl.all(tl.mean(factors[2], axis=0) > 0))
+    assert_equal(cp_tensor.rank, cp_tensor.rank)
+    assert_array_equal(cp_tensor.weights, weights)
+    assert_array_almost_equal(cp_to_tensor((weights, factors)), cp_to_tensor(cp_tensor))
+
 
 def test_validate_cp_tensor():
     rng = check_random_state(12345)
