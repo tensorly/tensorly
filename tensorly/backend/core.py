@@ -830,28 +830,15 @@ class Backend(object):
         dim_1, dim_2 = self.shape(matrix)
         if dim_1 <= dim_2:
             min_dim = dim_1
-            max_dim = dim_2
         else:
             min_dim = dim_2
-            max_dim = dim_1
 
-        if n_eigenvecs is None:
-            # Default on standard SVD
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=True)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        elif min_dim <= n_eigenvecs:
-            if max_dim < n_eigenvecs:
-                warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
-                               'is larger than max(matrix.shape)={1}. Setting '
-                               'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
-                n_eigenvecs = max_dim
-            if n_eigenvecs > min_dim:
-                full_matrices = True
-            else:
-                full_matrices = False
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+        if (n_eigenvecs is None) or (min_dim <= n_eigenvecs):
+            # Just perform trucated SVD
+            return self.truncated_svd(matrix, n_eigenvecs=n_eigenvecs)
         else:
+            matrix = self.to_numpy(matrix)
+
             # We can perform a partial SVD
             rng = self.check_random_state(random_state)
             # initilize with [-1, 1] as in ARPACK
@@ -875,10 +862,11 @@ class Backend(object):
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
             V = V.T.conj()
 
-        if not is_numpy:
-            U = self.tensor(U, **ctx)
-            S = self.tensor(S, **ctx)
-            V = self.tensor(V, **ctx)
+            if not is_numpy:
+                U = self.tensor(U, **ctx)
+                S = self.tensor(S, **ctx)
+                V = self.tensor(V, **ctx)
+
         return U, S, V
 
     def truncated_svd(self, matrix, n_eigenvecs=None):
