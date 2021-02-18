@@ -1,7 +1,6 @@
 import numpy as np
 
 import tensorly as tl
-from ...random import random_cp, check_random_state
 from ..robust_decomposition import robust_pca
 from ...testing import assert_array_equal, assert_, assert_array_almost_equal
 
@@ -13,7 +12,7 @@ def test_RPCA():
                        [2, 4, 6, 8]])
     clean = np.vstack([sample[None, ...]]*100)
     noise_probability = 0.05
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     noise = rng.choice([0., 100., -100.], size=clean.shape, replace=True,
                       p=[1 - noise_probability, noise_probability/2, noise_probability/2])
     tensor = tl.tensor(clean + noise)

@@ -68,6 +68,54 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def check_random_state(seed):
+        """Returns a valid RandomState
+
+        Parameters
+        ----------
+        seed : None or instance of int or np.random.RandomState(), default is None
+        if seed is None NumPy's global seed is used.
+
+        Returns
+        -------
+        Valid instance np.random.RandomState
+
+        Notes
+        -----
+        Inspired by the scikit-learn eponymous function
+        """
+        if seed is None:
+            return np.random.mtrand._rand
+
+        elif isinstance(seed, int):
+            return np.random.RandomState(seed)
+
+        elif isinstance(seed, np.random.RandomState):
+            return seed
+
+        raise ValueError('Seed should be None, int or np.random.RandomState')
+
+    def randn(self, shape, seed=None, **context):
+        """Returns a random tensor with samples from the “standard normal” distribution.
+
+        Parameters
+        ----------
+        shape: Iterable[int]
+            shape of the random tensor
+        seed: None or instance of int or np.random.RandomState(), default is None
+        if seed is None NumPy's global seed is used
+        context: context of tensor
+
+        Returns
+        -------
+        random_tensor: tl.tensor
+        """
+        rng = self.check_random_state(seed)
+        random_tensor = rng.randn(*shape)
+        random_tensor = self.tensor(random_tensor, **context)
+        return random_tensor
+
+    @staticmethod
     def context(tensor):
         """Returns the context of a tensor
 
@@ -785,43 +833,45 @@ class Backend(object):
         else:
             min_dim = dim_2
 
-        # Default on standard SVD
-        if (n_eigenvecs is None) or (min_dim <= n_eigenvecs):
-            return self.truncated_svd(matrix, n_eigenvecs=n_eigenvecs)
-
-        if not is_numpy:
-            matrix = self.to_numpy(matrix)
-
-        # We can perform a partial SVD
-        # construct np.random.RandomState for sampling a starting vector
-        if random_state is None:
-            # if random_state is not specified, do not initialize a starting vector
-            v0 = None
-        elif isinstance(random_state, int):
-            rns = np.random.RandomState(random_state)
-            # initilize with [-1, 1] as in ARPACK
-            v0 = rns.uniform(-1, 1, min_dim)
-        elif isinstance(random_state, np.random.RandomState):
-            # initilize with [-1, 1] as in ARPACK
-            v0 = random_state.uniform(-1, 1, min_dim)
-
-        # First choose whether to use X * X.T or X.T *X
-        if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(
-                np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
-            )
-            S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-            V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
+        if n_eigenvecs is None:
+            # Default on standard SVD
+            U, S, V = scipy.linalg.svd(matrix, full_matrices=True)
+            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
+        elif min_dim <= n_eigenvecs:
+            if max_dim < n_eigenvecs:
+                warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
+                               'is larger than max(matrix.shape)={1}. Setting '
+                               'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
+                n_eigenvecs = max_dim
+            if n_eigenvecs > min_dim:
+                full_matrices = True
+            else:
+                full_matrices = False
+            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
+            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
-            S, V = scipy.sparse.linalg.eigsh(
-                np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
-            )
-            S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-            U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
+            # We can perform a partial SVD
+            rng = self.check_random_state(random_state)
+            # initilize with [-1, 1] as in ARPACK
+            v0 = rng.uniform(-1, 1, min_dim)
 
-        # WARNING: here, V is still the transpose of what it should be
-        U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-        V = V.T.conj()
+            # First choose whether to use X * X.T or X.T *X
+            if dim_1 < dim_2:
+                S, U = scipy.sparse.linalg.eigsh(
+                    np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
+                )
+                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+                V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
+            else:
+                S, V = scipy.sparse.linalg.eigsh(
+                    np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
+                )
+                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+                U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
+
+            # WARNING: here, V is still the transpose of what it should be
+            U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+            V = V.T.conj()
 
         if not is_numpy:
             U = self.tensor(U, **ctx)

@@ -1,6 +1,4 @@
 from ... import backend as T
-from ...base import unfold, fold
-
 from ... import unfold, fold, vec_to_tensor
 
 def mode_dot(tensor, matrix_or_vector, mode, transpose=False):

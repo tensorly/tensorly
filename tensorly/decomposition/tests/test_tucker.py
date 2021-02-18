@@ -3,13 +3,13 @@ import tensorly as tl
 from .._tucker import tucker, partial_tucker, non_negative_tucker
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
-from ...random import check_random_state, random_tucker
+from ...random import random_tucker
 from ...testing import assert_equal, assert_, assert_array_equal
 
 
 def test_partial_tucker():
     """Test for the Partial Tucker decomposition"""
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     tol_norm_2 = 10e-3
     tol_max_abs = 10e-1
     tensor = tl.tensor(rng.random_sample((3, 4, 3)))
@@ -43,7 +43,7 @@ def test_partial_tucker():
 
 def test_tucker():
     """Test for the Tucker decomposition"""
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
 
     tol_norm_2 = 10e-3
     tol_max_abs = 10e-1
@@ -91,7 +91,7 @@ def test_masked_tucker():
     """Test for the masked Tucker decomposition.
     This checks that a mask of 1's is identical to the unmasked case.
     """
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     tensor = tl.tensor(rng.random_sample((3, 3, 3)))
     mask = tl.tensor(np.ones((3, 3, 3)))
 
@@ -117,7 +117,7 @@ def test_masked_tucker():
 
 def test_non_negative_tucker():
     """Test for non-negative Tucker"""
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
 
     tol_norm_2 = 10e-1
     tol_max_abs = 10e-1

@@ -1,5 +1,4 @@
 import numpy as np
-from ..random import check_random_state
 from .. import backend as T
 
 

@@ -3,13 +3,11 @@ from ..base import unfold, vec_to_tensor
 from ..base import partial_tensor_to_vec, partial_unfold
 from ..tenalg import kronecker
 from ..tucker_tensor import tucker_to_tensor, tucker_to_vec
-from ..random import check_random_state
 from .. import backend as T
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
-
 
 
 class TuckerRegressor():
@@ -66,7 +64,7 @@ class TuckerRegressor():
         -------
         self
         """
-        rng = check_random_state(self.random_state)
+        rng = T.check_random_state(self.random_state)
 
         # Initialise randomly the weights
         G = T.tensor(rng.randn(*self.weight_ranks), **T.context(X))

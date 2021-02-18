@@ -7,7 +7,7 @@ from .._cp import (
     sample_khatri_rao, randomised_parafac)
 from .._nn_cp import non_negative_parafac
 from ...cp_tensor import cp_to_tensor
-from ...random import check_random_state, random_cp
+from ...random import random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
@@ -20,7 +20,7 @@ from ...testing import assert_array_equal, assert_
 def test_parafac(linesearch, orthogonalise, rank, init):
     """Test for the CANDECOMP-PARAFAC decomposition
     """
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     tol_norm_2 = 0.01
     tol_max_abs = 0.05
     tensor = random_cp((6, 8, 4), rank=rank, orthogonal=orthogonalise, full=True, random_state=rng)
@@ -90,7 +90,7 @@ def test_masked_parafac(linesearch):
 
 def test_parafac_linesearch():
     """ Test that we more rapidly converge to a solution with line search. """
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     eps = 10e-2
     tensor = T.tensor(rng.random_sample((5, 5, 5)))
     kt = parafac(tensor, rank=5, init='random', random_state=1234, n_iter_max=10, tol=10e-9)
@@ -111,7 +111,7 @@ def test_non_negative_parafac():
     """
     tol_norm_2 = 10e-1
     tol_max_abs = 1
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     tensor = T.tensor(rng.random_sample((3, 3, 3))+1)
     res = parafac(tensor, rank=3, n_iter_max=120)
     nn_res = non_negative_parafac(tensor, rank=3, n_iter_max=100, tol=10e-4, init='svd', verbose=0)
@@ -161,7 +161,7 @@ def test_sample_khatri_rao():
     """ Test for sample_khatri_rao
     """
 
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     t_shape = (8, 9, 10)
     rank = 3
     tensor = T.tensor(rng.random_sample(t_shape)+1)
@@ -186,7 +186,7 @@ def test_sample_khatri_rao():
 def test_randomised_parafac():
     """ Test for randomised_parafac
     """
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     t_shape = (10, 10, 10)
     n_samples = 8
     tensor = T.tensor(rng.random_sample(t_shape))

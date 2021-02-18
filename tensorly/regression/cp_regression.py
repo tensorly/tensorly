@@ -1,8 +1,7 @@
 import numpy as np
 from ..base import partial_tensor_to_vec, partial_unfold
-from ..tenalg import  khatri_rao
+from ..tenalg import khatri_rao
 from ..cp_tensor import cp_to_tensor, cp_to_vec
-from ..random import check_random_state
 from .. import backend as T
 from ..utils import DefineDeprecated
 
@@ -65,7 +64,7 @@ class CPRegressor():
         -------
         self
         """
-        rng = check_random_state(self.random_state)
+        rng = T.check_random_state(self.random_state)
 
         # Initialise randomly the weights
         W = []
