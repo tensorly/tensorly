@@ -830,8 +830,10 @@ class Backend(object):
         dim_1, dim_2 = self.shape(matrix)
         if dim_1 <= dim_2:
             min_dim = dim_1
+            max_dim = dim_2
         else:
             min_dim = dim_2
+            max_dim = dim_1
 
         if n_eigenvecs is None:
             # Default on standard SVD
