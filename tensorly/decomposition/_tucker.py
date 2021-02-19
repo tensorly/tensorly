@@ -1,7 +1,7 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
-from ..tenalg import multi_mode_dot, mode_dot
+from ..tenalg import multi_mode_dot, mode_dot, hals_nnls	
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 import tensorly.tenalg as tlg
 from math import sqrt
@@ -366,7 +366,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         svd_fun = tl.SVD_FUNS[svd]
     except KeyError:
         message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                svd, tl.get_backend(), tl.SVD_FUNS)
+                  svd, tl.get_backend(), tl.SVD_FUNS)
         raise ValueError(message)
     # Initialisation
     if init == 'svd':
