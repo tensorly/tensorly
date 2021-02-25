@@ -214,8 +214,8 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
 
                 else:  # without sparsity
 
-                    deltaV = tl.where(UtM[k, :] - tl.dot(UtU[k, :], V) / UtU[k, k] > -V[k, :],
-                                      UtM[k, :] - tl.dot(UtU[k, :], V) / UtU[k, k], -V[k, :])
+                    deltaV = tl.where((UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k] > -V[k, :],
+                                      (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k], -V[k, :])
                     V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
 
                 rec_error = rec_error + tl.dot(deltaV, tl.transpose(deltaV))
