@@ -162,7 +162,7 @@ def test_non_negative_parafac_hals():
     """
     tol_norm_2 = 10e-1
     tol_max_abs = 1
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     tensor = tl.tensor(rng.random_sample((3, 3, 3))+1)
     res = parafac(tensor, rank=3, n_iter_max=120)
     nn_res = non_negative_parafac_hals(tensor, rank=3, n_iter_max=100, tol=10e-4, init='svd', verbose=0)
