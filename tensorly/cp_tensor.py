@@ -300,7 +300,7 @@ def cp_normalize(cp_tensor):
     return CPTensor((weights, normalized_factors))
 
 
-def cp_fix_sign(cp_tensor, mode=0, func=None):
+def cp_flip_sign(cp_tensor, mode=0, func=None):
     """Returns cp_tensor with factors flipped to have positive signs.
     The sign of a given column is determined by `func`, which is the mean
     by default. Any negative signs are assigned to the mode indicated by `mode`.
