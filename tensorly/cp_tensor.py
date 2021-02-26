@@ -339,11 +339,11 @@ def cp_fix_sign(cp_tensor, mode=0, func=None):
             continue
 
         # Calculate the sign of the current factor in each component
-        means = T.sign(func(factors[jj], axis=0))
+        column_signs = T.sign(func(factors[jj], axis=0))
 
         # Update both the current and receiving factor
-        factors[mode] = factors[mode]*means[np.newaxis, :]
-        factors[jj] = factors[jj]*means[np.newaxis, :]
+        factors[mode] = factors[mode]*column_signs[np.newaxis, :]
+        factors[jj] = factors[jj]*column_signs[np.newaxis, :]
 
     return CPTensor((weights, factors))
 
