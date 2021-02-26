@@ -157,6 +157,16 @@ class PyTorchBackend(Backend):
             return torch.sum(tensor)
         else:
             return torch.sum(tensor, dim=axis)
+    
+    @staticmethod
+    def flip(tensor, axis=None):
+        if isinstance(axis, int):
+            axis = [axis]
+
+        if axis is None:
+            return torch.flip(tensor, dims=[i for i in range(tensor.ndim)])
+        else:
+            return torch.flip(tensor, dims=axis)
 
     @staticmethod
     def concatenate(tensors, axis=0):
@@ -174,133 +184,22 @@ class PyTorchBackend(Backend):
     def stack(arrays, axis=0):
         return torch.stack(arrays, dim=axis)
 
-    @staticmethod
-    def _reverse(tensor, axis=0):
-        """Reverses the elements along the specified dimension
+    def svd(self, X, full_matrices=True):
+        # The torch SVD has accuracy issues. Try again when torch.linalg is stable.
+        ctx = self.context(X)
+        X = self.to_numpy(X)
 
-        Parameters
-        ----------
-        tensor : tl.tensor
-        axis : int, default is 0
-            axis along which to reverse the ordering of the elements
+        U, S, V = np.linalg.svd(X, full_matrices=full_matrices)
 
-        Returns
-        -------
-        reversed_tensor : for a 1-D tensor, returns the equivalent of
-                        tensor[::-1] in NumPy
-        """
-        indices = torch.arange(tensor.shape[axis] - 1, -1, -1, dtype=torch.int64)
-        return tensor.index_select(axis, indices)
+        U = self.tensor(U, **ctx)
+        S = self.tensor(S, **ctx)
+        V = self.tensor(V, **ctx)
 
-    @staticmethod
-    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
-        """Computes a truncated SVD on `matrix` using pytorch's SVD
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        dim_1, dim_2 = matrix.shape
-        if dim_1 <= dim_2:
-            min_dim = dim_1
-        else:
-            min_dim = dim_2
-
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-
-        U, S, V = torch.svd(matrix, some=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         return U, S, V
 
-    def symeig_svd(self, matrix, n_eigenvecs=None, **kwargs):
-        """Computes a truncated SVD on `matrix` using symeig
-
-            Uses symeig on matrix.T.dot(matrix) or its transpose
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        # Check that matrix is... a matrix!
-        if self.ndim(matrix) != 2:
-            raise ValueError('matrix be a matrix. matrix.ndim is %d != 2'
-                             % self.ndim(matrix))
-        dim_1, dim_2 = self.shape(matrix)
-        if dim_1 <= dim_2:
-            min_dim = dim_1
-            max_dim = dim_2
-        else:
-            min_dim = dim_2
-            max_dim = dim_1
-
-        if n_eigenvecs is None:
-            n_eigenvecs = max_dim
-
-        if min_dim <= n_eigenvecs:
-            if n_eigenvecs > max_dim:
-                warnings.warn('Trying to compute SVD with n_eigenvecs={0}, which '
-                              'is larger than max(matrix.shape)={1}. Setting '
-                              'n_eigenvecs to {1}'.format(n_eigenvecs, max_dim))
-                n_eigenvecs = max_dim
-            # we compute decomposition on the largest of the two to keep more eigenvecs
-            dim_1, dim_2 = dim_2, dim_1
-
-        if dim_1 < dim_2:
-            S, U = torch.symeig(self.dot(matrix, self.transpose(matrix)),
-                                eigenvectors=True)
-            S = torch.sqrt(S)
-            V = self.dot(self.transpose(matrix), U / self.reshape(S, (1, -1)))
-        else:
-            S, V = torch.symeig(self.dot(self.transpose(matrix), matrix),
-                                eigenvectors=True)
-            S = torch.sqrt(S)
-            U = self.dot(matrix, V) / self.reshape(S, (1, -1))
-
-        U = self._reverse(U, 1)
-        S = self._reverse(S)
-        V = self._reverse(self.transpose(V), 0)
-        return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.truncated_svd,
-                'symeig_svd': self.symeig_svd}
+    @staticmethod
+    def eigh(tensor):
+        return torch.symeig(tensor, eigenvectors=True)
     
     @staticmethod
     def sort(tensor, axis, descending = False):
@@ -320,7 +219,3 @@ for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
-
-
-
-

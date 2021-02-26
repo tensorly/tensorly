@@ -153,11 +153,6 @@ class NumpySparseBackend(Backend):
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T.conj()
 
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.partial_svd}
-
 # moveaxis is temporarily uses the default implementation to fix issue #131
 # Using the builting function raises a TypeError:
 #     no implementation found for 'numpy.shape' on types

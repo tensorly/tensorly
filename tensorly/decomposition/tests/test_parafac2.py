@@ -165,7 +165,7 @@ def test_parafac2_init_error():
     random_parafac2_tensor = random_parafac2(shapes=[(15, 3)]*25, rank=rank, random_state=rng)
     tensor = parafac2_to_tensor(random_parafac2_tensor)
 
-    with np.testing.assert_raises(ValueError):
+    with pytest.raises(Exception):
         _ = initialize_decomposition(tensor, rank, init='svd')
 
 
