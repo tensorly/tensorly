@@ -345,6 +345,11 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
         factors[mode] = factors[mode]*column_signs[np.newaxis, :]
         factors[jj] = factors[jj]*column_signs[np.newaxis, :]
 
+    # Check the weight signs
+    weight_signs = T.sign(weights)
+    factors[mode] = factors[mode]*weight_signs[np.newaxis, :]
+    weights = T.abs(weights)
+
     return CPTensor((weights, factors))
 
 
