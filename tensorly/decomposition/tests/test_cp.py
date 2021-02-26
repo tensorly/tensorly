@@ -5,7 +5,7 @@ import tensorly as tl
 from .._cp import (
     parafac, initialize_cp,
     sample_khatri_rao, randomised_parafac)
-from .._nn_cp import non_negative_parafac
+from .._nn_cp import non_negative_parafac, non_negative_parafac_hals
 from ...cp_tensor import cp_to_tensor
 from ...random import random_cp
 from ...tenalg import khatri_rao
@@ -156,6 +156,55 @@ def test_non_negative_parafac():
             'abs norm of difference between svd and random init too high')
 
 
+def test_non_negative_parafac_hals():
+    """Test for non-negative PARAFAC HALS
+    TODO: more rigorous test
+    """
+    tol_norm_2 = 10e-1
+    tol_max_abs = 1
+    rng = tl.check_random_state(1234)
+    tensor = tl.tensor(rng.random_sample((3, 3, 3))+1)
+    res = parafac(tensor, rank=3, n_iter_max=120)
+    nn_res = non_negative_parafac_hals(tensor, rank=3, n_iter_max=100, tol=10e-4, init='svd', verbose=0)
+
+    # Make sure all components are positive
+    _, nn_factors = nn_res
+    for factor in nn_factors:
+        assert_(tl.all(factor >= 0))
+
+    reconstructed_tensor = tl.cp_to_tensor(res)
+    nn_reconstructed_tensor = tl.cp_to_tensor(nn_res)
+    error = tl.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
+    error /= tl.norm(reconstructed_tensor, 2)
+    assert_(error < tol_norm_2,
+            'norm 2 of reconstruction higher than tol')
+
+    # Test the max abs difference between the reconstruction and the tensor
+    assert_(tl.max(tl.abs(reconstructed_tensor - nn_reconstructed_tensor)) < tol_max_abs,
+            'abs norm of reconstruction error higher than tol')
+
+    # Test fixing mode 0 or 1 with given init
+    fixed_tensor = random_cp((3, 3, 3), rank=2)
+    for factor in fixed_tensor[1]:
+        factor = tl.abs(factor)
+    rec_svd_fixed_mode_0 = non_negative_parafac_hals(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0])
+    rec_svd_fixed_mode_1 = non_negative_parafac_hals(tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[1])
+    # Check if modified after 2 iterations
+    assert_array_equal(rec_svd_fixed_mode_0.factors[0], fixed_tensor.factors[0], err_msg='Fixed mode 0 was modified in candecomp_parafac')
+    assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')
+
+    res_svd = non_negative_parafac_hals(tensor, rank=3, n_iter_max=100,
+                                       tol=10e-4, init='svd')
+    res_random = non_negative_parafac_hals(tensor, rank=3, n_iter_max=100, tol=10e-4,
+                                          init='random', verbose=0)
+    rec_svd = tl.cp_to_tensor(res_svd)
+    rec_random = tl.cp_to_tensor(res_random)
+    error = tl.norm(rec_svd - rec_random, 2)
+    error /= tl.norm(rec_svd, 2)
+    assert_(error < tol_norm_2,
+            'norm 2 of difference between svd and random init too high')
+    assert_(tl.max(tl.abs(rec_svd - rec_random)) < tol_max_abs,
+            'abs norm of difference between svd and random init too high')
 @pytest.mark.xfail(tl.get_backend() == 'tensorflow', reason='Fails on tensorflow')
 def test_sample_khatri_rao():
     """ Test for sample_khatri_rao
