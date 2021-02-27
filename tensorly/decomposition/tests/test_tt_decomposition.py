@@ -1,14 +1,13 @@
 import tensorly as tl
 from .._tt import tensor_train, tensor_train_matrix
-from ...tt_tensor import tt_to_tensor
 from ...tt_matrix import tt_matrix_to_tensor
-from ...random import check_random_state, random_tt
+from ...random import random_tt
 from ...testing import assert_, assert_array_almost_equal
 
 
 def test_tensor_train():
     """ Test for tensor_train """
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
 
     ## Test 1
 

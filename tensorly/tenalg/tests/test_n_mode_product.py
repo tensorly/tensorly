@@ -3,14 +3,12 @@ import itertools
 import numpy as np
 
 from ... import backend as T
-from ...random import random_cp
 from ...testing import (assert_array_equal, assert_equal,
                         assert_array_almost_equal, assert_raises)
 from ...base import fold, unfold
 
 
 from .. import kronecker
-from .. import khatri_rao
 from .. import mode_dot, multi_mode_dot
 
 

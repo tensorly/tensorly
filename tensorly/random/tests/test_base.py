@@ -2,8 +2,7 @@ import numpy as np
 from numpy.linalg import matrix_rank
 
 from ... import backend as T
-from ..base import (random_cp, random_tucker,
-                    random_tt, check_random_state)
+from ..base import random_cp, random_tucker, random_tt
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...base import unfold
@@ -14,19 +13,19 @@ def test_check_random_state():
     """Test for check_random_state"""
 
     # Generate a random state for me
-    rns = check_random_state(seed=None)
+    rns = T.check_random_state(seed=None)
     assert(isinstance(rns, np.random.RandomState))
 
     # random state from integer seed
-    rns = check_random_state(seed=10)
+    rns = T.check_random_state(seed=10)
     assert(isinstance(rns, np.random.RandomState))
 
     # if it is already a random state, just return it
-    cpy_rns = check_random_state(seed=rns)
+    cpy_rns = T.check_random_state(seed=rns)
     assert(cpy_rns is rns)
 
     # only takes as seed a random state, an int or None
-    assert_raises(ValueError, check_random_state, seed='bs')
+    assert_raises(ValueError, T.check_random_state, seed='bs')
 
 def test_random_cp():
     """test for random.random_cp"""
@@ -34,8 +33,10 @@ def test_random_cp():
     rank = 4
 
     tensor = random_cp(shape, rank, full=True)
+    assert T.shape(tensor) == shape
+
     for i in range(T.ndim(tensor)):
-        assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i))), rank)
+        assert_equal(matrix_rank(T.to_numpy(unfold(tensor, i)), tol=1e-6), rank)
 
     weights, factors = random_cp(shape, rank, full=False)
     for i, factor in enumerate(factors):

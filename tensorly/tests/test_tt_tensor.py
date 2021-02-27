@@ -5,11 +5,11 @@ from ..decomposition import tensor_train
 from ..tt_tensor import tt_to_tensor, _validate_tt_tensor
 from ..tt_tensor import validate_tt_rank, _tt_n_param
 from ..testing import assert_array_almost_equal, assert_equal, assert_raises, assert_
-from ..random import check_random_state, random_tt
+from ..random import random_tt
 
 
 def test_validate_tt_tensor():
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     true_shape = (3, 4, 5)
     true_rank = (1, 3, 2, 1)
     factors = random_tt(true_shape, rank=true_rank)

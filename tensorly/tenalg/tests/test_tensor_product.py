@@ -8,7 +8,7 @@ from .. import tensor_dot, batched_tensor_dot
 
 def test_tensor_product():
     """Test tensor_dot"""
-    rng = random.check_random_state(1234)
+    rng = tl.check_random_state(1234)
 
     X = tl.tensor(rng.random_sample((4, 5, 6)))
     Y = tl.tensor(rng.random_sample((3, 4, 7)))
@@ -24,7 +24,7 @@ def test_batched_tensor_product():
     At the time of writing, MXNet doesn't support transpose 
     for tensors of order higher than 6
     """
-    rng = random.check_random_state(1234)
+    rng = tl.check_random_state(1234)
     batch_size = 3
     
     X = tl.tensor(rng.random_sample((batch_size, 4, 5, 6)))
