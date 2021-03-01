@@ -1,11 +1,11 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
-from ..tenalg import multi_mode_dot, mode_dot, hals_nnls	
+from ..tenalg import multi_mode_dot, mode_dot	
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 import tensorly.tenalg as tlg
+from ..tenalg.proximal import hals_nnls
 from math import sqrt
-
 import warnings
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -13,6 +13,111 @@ import warnings
 # License: BSD 3 clause
 
 
+def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_svd', non_negative= False):
+    """
+    Initialize core and factors used in `tucker`.
+    The type of initialization is set using `init`. If `init == 'random'` then
+    initialize factor matrices using `random_state`. If `init == 'svd'` then
+    initialize the `m`th factor matrix using the `rank` left singular vectors
+    of the `m`th unfolding of the input tensor.
+    
+    Parameters
+    ----------
+    tensor : ndarray
+    rank : int
+           number of components
+    modes : int list
+    random_state : {None, int, np.random.RandomState}
+    init : {'svd', 'random', cptensor}, optional
+    svd : str, default is 'numpy_svd'
+          function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    non_negative : bool, default is False
+        if True, non-negative factors are returned
+    
+    Returns
+    -------
+    core    : ndarray
+              initialized core tensor 
+    factors : list of factors
+    """
+    try:
+        svd_fun = tl.SVD_FUNS[svd]
+    except KeyError:
+        message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
+                svd, tl.get_backend(), tl.SVD_FUNS)
+        raise ValueError(message)
+    # Initialisation
+    if init == 'svd':
+        factors = []
+        for index, mode in enumerate(modes):
+            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
+            factors.append(eigenvecs)
+
+        # The initial core approximation is needed here for the masking step
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
+    elif init == 'random':
+        rng = tl.check_random_state(random_state)
+        core = tl.tensor(rng.random_sample(rank) + 0.01, **tl.context(tensor))  # Check this
+        factors = [tl.tensor(rng.random_sample(s), **tl.context(tensor)) for s in zip(tl.shape(tensor), rank)]
+    else:
+        (core,factors)=init
+ 
+    if non_negative is True:
+        nn_factors = [tl.abs(f) for f in factors]
+        nn_core = tl.abs(core) 
+    return nn_core, nn_factors
+
+def update_core_hals(tensor_cross, core, factors, pseudo_inverse, sparsity_coefficients, n_iter_max=100):
+    """
+    Updating core for non negative tucker hals function
+    
+    Parameters
+    ----------
+    tensor_cross : ndarray
+    core : ndarray
+    factors : list of factors
+    pseudo_inverse : list of ndarray
+    sparsity_coefficients : array of float 
+    n_iter_max : int
+    
+    Returns
+    -------
+    core    : ndarray
+              updated core tensor
+    """
+    all_MtX = tl.tenalg.mode_dot(tensor_cross, tl.transpose(factors[-1]), len(factors)-1)
+    pseudo_inverse[-1] = tl.dot(tl.transpose(factors[-1]),factors[-1])#all_MtM
+    
+    # Projected gradient
+    #Partial svd?
+    gradient_step = 1
+    for MtM in pseudo_inverse:
+       #gradient_step *= 1/(tl.partial_svd(MtM)[1][0])
+       gradient_step *= 1/(scipy.sparse.linalg.svds(MtM, k=1)[1][0])
+
+    if sparsity_coefficients[-1] is None:
+        sparse = 0
+    else:
+        sparse = sparsity_coefficients[-1]
+    
+    norm_0 = 0
+    update = 0
+    # Maybe: try fast gradient instead of gradient
+    for iteration in range(n_iter_max):
+        
+        # Nesterov Fast Gradient
+        core_upd= core-0.9*update
+        gradient = - all_MtX + tl.tenalg.multi_mode_dot(core_upd, pseudo_inverse, transpose=False) + sparse
+        update= 0.9*update + tl.where(gradient_step*gradient < core_upd, gradient_step*gradient, core_upd)
+        core = core - update
+        norm = tl.norm(update)
+        
+        if iteration == 1:
+             norm_0 = norm
+        if norm < 0.01 * norm_0:
+             break
+    return core
+    
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
                    svd='numpy_svd', random_state=None, verbose=False, mask=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
@@ -362,30 +467,8 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     # Generating the mode update sequence
     modes = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
-    try:
-        svd_fun = tl.SVD_FUNS[svd]
-    except KeyError:
-        message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                  svd, tl.get_backend(), tl.SVD_FUNS)
-        raise ValueError(message)
-    # Initialisation
-    if init == 'svd':
-        factors = []
-        for index, mode in enumerate(modes):
-            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
-            factors.append(eigenvecs)
-
-        # The initial core approximation is needed here for the masking step
-        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
-        nn_factors = [tl.abs(f) for f in factors]
-        nn_core = tl.abs(core)
-    elif init == 'random':
-        rng = check_random_state(random_state)
-        core = tl.tensor(rng.random_sample(rank) + 0.01, **tl.context(tensor))  # Check this
-        factors = [tl.tensor(rng.random_sample(s), **tl.context(tensor)) for s in zip(tl.shape(tensor), rank)]
-        nn_factors = [tl.abs(f) for f in factors]
-        nn_core = tl.abs(core)
-
+    nn_core, nn_factors = initialize_tucker(tensor, rank, modes, init=init, svd=svd, random_state=random_state, 
+                                            non_negative=True)
     # initialisation - declare local varaibles
     norm_tensor = tl.norm(tensor, 2)
     rec_errors = []
@@ -414,7 +497,10 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
                                            n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
                                            exact=exact)
             nn_factors[mode] = tl.transpose(nn_factor)
-
+        #updating core
+        nn_core = update_core_hals(tensor_cross, nn_core, nn_factors, pseudo_inverse, 
+                                   sparsity_coefficients=sparsity_coefficients,
+                                   n_iter_max=100)
         # Adding the l1 norm value to the reconstruction error
         sparsity_error = 0
         for index, sparse in enumerate(sparsity_coefficients):
