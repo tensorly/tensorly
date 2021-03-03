@@ -2,7 +2,6 @@ import numpy as np
 import numpy.random as npr
 import numpy.linalg as npl
 import tensorly as tl
-import qutip
 from ..entropy import vonNeumann_entropy
 from ...decomposition import parafac
 
