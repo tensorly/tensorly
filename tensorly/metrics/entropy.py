@@ -19,15 +19,15 @@ def vonNeumann_entropy(tensor, offset=1e-12):
     -------
     float
     """
-
     if tensor.__class__.__name__ == 'CPTensor':
         weights = tensor[0]
         if len(weights) == 1:
             return 0
         if np.allclose(weights, np.ones(len(weights))):
-            weights = cp_normalize(tensor)[0]
+            weights = T.tensor(cp_normalize(tensor)[0])
         return T.sum(-weights*T.log2(weights))
 
+    tensor = T.tensor(tensor)
     eig_vals = T.eigh(tensor)[0]
     eig_vals = eig_vals[eig_vals > offset]
     return -T.sum(T.log2(eig_vals)*eig_vals)
