@@ -224,7 +224,7 @@ eps = dispatch(Backend.eps)
 finfo = dispatch(Backend.finfo)
 index = Backend.index
 index_update = dispatch(Backend.index_update)
-log2 = dispatch(Bandend.log2)
+log2 = dispatch(Backend.log2)
 
 # Initialise the backend to the default one
 initialize_backend()
