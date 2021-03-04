@@ -792,16 +792,16 @@ class Backend(object):
 
         return res*m
 
-    def svd_flip(self, u, v, u_based_decision=True):
+    def svd_flip(self, U, V, u_based_decision=True):
         """Sign correction to ensure deterministic output from SVD.
         Adjusts the columns of u and the rows of v such that the loadings in the
         columns in u that are largest in absolute value are always positive.
         This function is borrowed from scikit-learn/utils/extmath.py
         Parameters
         ----------
-        u : ndarray
+        U : ndarray
             u and v are the output of `partial_svd`
-        v : ndarray
+        V : ndarray
             u and v are the output of `partial_svd`
         u_based_decision : boolean, (default=True)
             If True, use the columns of u as the basis for sign flipping.
@@ -812,29 +812,27 @@ class Backend(object):
         u_adjusted, v_adjusted : arrays with the same dimensions as the input.
         """
         if u_based_decision:
-            # columns of u, rows of v
-            is_numpy = isinstance(u, np.ndarray)
-            max_abs_cols = self.argmax(self.abs(u), axis=0)
-            signs = np.sign(self.to_numpy(u)[max_abs_cols, range(self.shape(u)[1])])
-            if not is_numpy:
-                signs = self.tensor(signs, **self.context(u))
-            u = u * signs
-            if self.shape(v)[0] > self.shape(u)[1]:
-                signs = self.concatenate((signs, self.ones(self.shape(v)[0] - self.shape(u)[1])))
-            v = v * signs[:self.shape(v)[0]][:, None]
+            # columns of U, rows of V
+            max_abs_cols = self.argmax(self.abs(U), axis=0)
+            signs = self.sign(
+                self.tensor([U[i, j] for (i, j) in zip(max_abs_cols, range(self.shape(U)[1]))], **self.context(U))
+            )
+            U = U * signs
+            if self.shape(V)[0] > self.shape(U)[1]:
+                signs = self.concatenate((signs, self.ones(self.shape(V)[0] - self.shape(U)[1])))
+            V = V * signs[:self.shape(V)[0]][:, None]
         else:
-            # rows of v, columns of u
-            is_numpy = isinstance(v, np.ndarray)
-            max_abs_rows = self.argmax(self.abs(v), axis=1)
-            signs = np.sign(self.to_numpy(v)[range(self.shape(v)[0]), max_abs_rows])
-            if not is_numpy:
-                signs = self.tensor(signs, **self.context(v))
-            v = v * signs[:, None]
-            if self.shape(u)[1] > self.shape(v)[0]:
-                signs = self.concatenate((signs, np.ones(self.shape(u)[1] - self.shape(v)[0])))
-            u = u * signs[:self.shape(u)[1]]
+            # rows of V, columns of U
+            max_abs_rows = self.argmax(self.abs(V), axis=1)
+            signs = self.sign(
+                self.tensor([V[i, j] for (i, j) in zip(range(self.shape(V)[0]), max_abs_rows)], **self.context(V))
+            )
+            V = V * signs[:, None]
+            if self.shape(U)[1] > self.shape(V)[0]:
+                signs = self.concatenate((signs, np.ones(self.shape(U)[1] - self.shape(V)[0])))
+            U = U * signs[:self.shape(U)[1]]
 
-        return u, v
+        return U, V
 
     def partial_svd(self, matrix, n_eigenvecs=None, flip=False, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`
