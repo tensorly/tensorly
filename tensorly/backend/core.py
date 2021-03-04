@@ -829,7 +829,7 @@ class Backend(object):
             )
             V = V * signs[:, None]
             if self.shape(U)[1] > self.shape(V)[0]:
-                signs = self.concatenate((signs, np.ones(self.shape(U)[1] - self.shape(V)[0])))
+                signs = self.concatenate((signs, self.ones(self.shape(U)[1] - self.shape(V)[0])))
             U = U * signs[:self.shape(U)[1]]
 
         return U, V
