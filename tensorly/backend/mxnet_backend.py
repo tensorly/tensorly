@@ -101,7 +101,7 @@ class MxnetBackend(Backend):
 
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
-             'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'kron',
+             'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
              'zeros_like', 'eye', 'concatenate', 'max', 'min', 'flip',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'diag', 'einsum']:
