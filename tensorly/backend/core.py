@@ -710,8 +710,7 @@ class Backend(object):
         """
         raise NotImplementedError
 
-    @staticmethod
-    def kron(a, b):
+    def kron(self, a, b):
         """Kronecker product of two tensors.
 
         Parameters
@@ -723,7 +722,11 @@ class Backend(object):
         -------
         tensor
         """
-        raise NotImplementedError
+        s1, s2 = self.shape(a)
+        s3, s4 = self.shape(b)
+        a = self.reshape(a, (s1, 1, s2, 1))
+        b = self.reshape(b, (1, s3, 1, s4))
+        return self.reshape(a * b, (s1 * s3, s2 * s4))
 
     def kr(self, matrices, weights=None, mask=None):
         """Khatri-Rao product of a list of matrices
