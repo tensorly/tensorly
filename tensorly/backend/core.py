@@ -691,7 +691,8 @@ class Backend(object):
         """
         raise NotImplementedError
 
-    def moveaxis(self, tensor, source, destination):
+    @staticmethod
+    def moveaxis(tensor, source, destination):
         """Move axes of a tensor to new positions.
 
         Parameters
@@ -707,22 +708,10 @@ class Backend(object):
         -------
         tensor
         """
-        axes = list(range(self.ndim(tensor)))
-        if source < 0: source = axes[source]
-        if destination < 0: destination = axes[destination]
-        try:
-            axes.pop(source)
-        except IndexError:
-            raise ValueError('Source should verify 0 <= source < tensor.ndim'
-                             'Got %d' % source)
-        try:
-            axes.insert(destination, source)
-        except IndexError:
-            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
-                             'Got %d' % destination)
-        return self.transpose(tensor, axes)
+        raise NotImplementedError
 
-    def kron(self, a, b):
+    @staticmethod
+    def kron(a, b):
         """Kronecker product of two tensors.
 
         Parameters
@@ -734,11 +723,7 @@ class Backend(object):
         -------
         tensor
         """
-        s1, s2 = self.shape(a)
-        s3, s4 = self.shape(b)
-        a = self.reshape(a, (s1, 1, s2, 1))
-        b = self.reshape(b, (1, s3, 1, s4))
-        return self.reshape(a * b, (s1 * s3, s2 * s4))
+        raise NotImplementedError
 
     def kr(self, matrices, weights=None, mask=None):
         """Khatri-Rao product of a list of matrices

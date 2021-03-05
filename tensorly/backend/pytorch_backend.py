@@ -87,47 +87,6 @@ class PyTorchBackend(Backend):
         return tensor.clone()
 
     @staticmethod
-    def moveaxis(tensor, source, target):
-        axes = list(range(tensor.dim()))
-        if source < 0: source = axes[source]
-        if target < 0: target = axes[target]
-        try:
-            axes.pop(source)
-        except IndexError:
-            raise ValueError('Source should be in 0 <= source < tensor.ndim, '
-                             'got %d' % source)
-        try:
-            axes.insert(target, source)
-        except IndexError:
-            raise ValueError('Destination should be in 0 <= destination < '
-                             'tensor.ndim, got %d' % target)
-        return tensor.permute(*axes)
-
-    def solve(self, matrix1, matrix2):
-        """Solve a linear system of equation
-
-        Notes
-        -----
-
-        Previously, this was implemented as follows::
-
-            if self.ndim(matrix2) < 2:
-                # Currently, gesv doesn't support vectors for matrix2
-                # So we instead solve a least square problem...
-                solution, _ = torch.gels(matrix2, matrix1)
-            else:
-                solution, _ = torch.gesv(matrix2, matrix1)
-            return solution
-
-        """
-        if self.ndim(matrix2) < 2:
-            # Currently, solve doesn't support vectors for matrix2
-            solution, _ = torch.solve(matrix2.unsqueeze(1), matrix1)
-        else:
-            solution, _ = torch.solve(matrix2, matrix1)
-        return solution
-
-    @staticmethod
     def norm(tensor, order=2, axis=None):
         # pytorch does not accept `None` for any keyword arguments. additionally,
         # pytorch doesn't seems to support keyword arguments in the first place
@@ -183,23 +142,6 @@ class PyTorchBackend(Backend):
     @staticmethod
     def stack(arrays, axis=0):
         return torch.stack(arrays, dim=axis)
-
-    def svd(self, X, full_matrices=True):
-        # The torch SVD has accuracy issues. Try again when torch.linalg is stable.
-        ctx = self.context(X)
-        X = self.to_numpy(X)
-
-        U, S, V = np.linalg.svd(X, full_matrices=full_matrices)
-
-        U = self.tensor(U, **ctx)
-        S = self.tensor(S, **ctx)
-        V = self.tensor(V, **ctx)
-
-        return U, S, V
-
-    @staticmethod
-    def eigh(tensor):
-        return torch.symeig(tensor, eigenvectors=True)
     
     @staticmethod
     def sort(tensor, axis, descending = False):
@@ -213,9 +155,12 @@ class PyTorchBackend(Backend):
     def update_index(tensor, index, values):
         tensor.index_put_(index, values)
 
-for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
-             'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
-             'abs', 'sqrt', 'sign', 'where', 'qr', 'conj', 'diag', 'finfo', 'einsum']:
+for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones', 'moveaxis',
+             'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'kron',
+             'abs', 'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum']:
     PyTorchBackend.register_method(name, getattr(torch, name))
+
+for name in ['solve', 'qr', 'svd', 'eigh']:
+    PyTorchBackend.register_method(name, getattr(torch.linalg, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
