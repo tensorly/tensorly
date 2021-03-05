@@ -139,21 +139,6 @@ class TensorflowBackend(Backend):
         """ Correct for the atypical return order of tf.linalg.svd. """
         S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
         return U, S, tf.transpose(a=V)
-
-    @staticmethod
-    def kron(a, b):
-        """Kronecker product of two tensors.
-
-        Parameters
-        ----------
-        a, b : tensor
-            The tensors to compute the kronecker product of.
-
-        Returns
-        -------
-        tensor
-        """
-        return tf.linalg.LinearOperatorKronecker([a, b])
     
     def index_update(self, tensor, indices, values):
         if not isinstance(tensor, tf.Variable):
