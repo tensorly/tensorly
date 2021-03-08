@@ -13,8 +13,6 @@ def vonneumann_entropy(tensor):
     ----------
     tensor : (matrix)
         Data structure
-    offset : (float)
-        Minimum value at which to not consider eigenvalue zero to avoid singularities.
 
     Returns
     -------
@@ -36,8 +34,6 @@ def tt_mps_entanglement_entropy(tensor, boundary):
         Data structure
     boundary : (int)
         Qubit at which to partition system.
-    offset : (float)
-        Minimum value at which to not consider eigenvalue zero to avoid singularities.
 
     Returns
     -------
@@ -63,8 +59,6 @@ def tt_vonneumann_entropy(tensor):
     ----------
     tensor : (TT tensor)
         Data structure
-    offset : (float)
-        Minimum value at which to not consider eigenvalue zero to avoid singularities.
 
     Returns
     -------
@@ -83,8 +77,6 @@ def cp_vonneumann_entropy(tensor):
     ----------
     tensor : (CP tensor)
         Data structure
-    offset : (float)
-        Minimum value at which to not consider eigenvalue zero to avoid singularities.
 
     Returns
     -------
