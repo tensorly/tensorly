@@ -155,7 +155,7 @@ class PyTorchBackend(Backend):
     def update_index(tensor, index, values):
         tensor.index_put_(index, values)
 
-for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones',
+for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones', 'moveaxis',
              'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
              'abs', 'sqrt', 'sign', 'where', 'qr', 'conj', 'diag', 'finfo', 'einsum', 'log2']:
 
