@@ -153,12 +153,8 @@ class NumpySparseBackend(Backend):
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T.conj()
 
-# moveaxis is temporarily uses the default implementation to fix issue #131
-# Using the builting function raises a TypeError:
-#     no implementation found for 'numpy.shape' on types
-#     that implement __array_function__: [<class 'sparse._coo.core.COO'>]
-#     This is fixed on sparse master
-for name in ['int64', 'int32', 'float64', 'float32', 'transpose',
+
+for name in ['int64', 'int32', 'float64', 'float32', 'transpose', 'moveaxis',
              'reshape', 'ndim', 'max', 'min', 'all', 'mean', 'sum',
              'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj', 'shape']:
     NumpySparseBackend.register_method(name, getattr(np, name))
