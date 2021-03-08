@@ -98,7 +98,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     for iteration in range(n_iter_max):
         if mask is not None:
-            tensor = tensor*mask + tucker_to_tensor((core, factors))*(1-mask)
+            tensor = tensor*mask + multi_mode_dot(core, factors, modes=modes, transpose=False)*(1-mask)
 
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
