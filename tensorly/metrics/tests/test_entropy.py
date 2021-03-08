@@ -65,7 +65,7 @@ def test_tt_vonneumann_entropy_mixed_state():
     tl.testing.assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
 
 def test_cp_vonneumann_entropy_mixed_state():
-    """Test for cp_vonneumann_entropy on CP tensors.
+    """Test for cp_vonneumann_entropy on CP tensors. 
     This test checks that the VNE of mixed states is calculated correctly.
     """
     state1 = tl.tensor([[0.03004805, 0.42426117, 0.5483771 , 0.4784077 , 0.25792725, 0.34388784, 0.99927586, 0.96605812]])
