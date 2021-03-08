@@ -88,7 +88,11 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
     elif init == 'random':
         rng = tl.check_random_state(random_state)
-        core = tl.tensor(rng.random_sample(rank), **tl.context(tensor))
+        # len(rank) == len(modes) but we still want a core dimension for the modes not optimized
+        core_shape = list(tl.shape(tensor))
+        for (i, e) in enumerate(modes):
+            core_shape[e] = rank[i]
+        core = tl.tensor(rng.random_sample(core_shape), **tl.context(tensor))
         factors = [tl.tensor(rng.random_sample((tl.shape(tensor)[mode], rank[index])), **tl.context(tensor)) for (index, mode) in enumerate(modes)]
     else: 
         (core, factors) = init
