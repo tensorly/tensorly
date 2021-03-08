@@ -16,7 +16,7 @@ def vonneumann_entropy(tensor):
 
     Returns
     -------
-    float
+    von_neumann_entropy : order-0 tensor
     """
     eig_vals = T.eigh(tensor)[0]
     eps = tl.eps(eig_vals.dtype)
@@ -25,8 +25,8 @@ def vonneumann_entropy(tensor):
     return -T.sum(T.log2(eig_vals) * eig_vals)
 
 def tt_mps_entanglement_entropy(tensor, boundary):
-    """Returns the entanglement entropy of an MPS in TT tensor form. Assumes a traditional and
-    single MPS, that is, a linear pure state.
+    """Returns the entanglement entropy of an MPS paritioned at boundary in TT tensor form. Assumes
+    a traditional and single MPS, that is, a linear pure state.
 
     Parameters
     ----------
@@ -37,7 +37,7 @@ def tt_mps_entanglement_entropy(tensor, boundary):
 
     Returns
     -------
-    float
+    tt_mps_entanglement_entropy : order-0 tensor
     """
     partial_mps = tensor[boundary]
     dims = partial_mps.shape
@@ -62,7 +62,7 @@ def tt_vonneumann_entropy(tensor):
 
     Returns
     -------
-    float
+    tt_von_neumann_entropy : order-0 tensor
     """
     square_dim = int(tl.sqrt(tl.prod(tl.tensor(tensor.shape))))
     tensor = tl.reshape(tt_to_tensor(tensor), (square_dim, square_dim))
@@ -80,7 +80,7 @@ def cp_vonneumann_entropy(tensor):
 
     Returns
     -------
-    float
+    cp_von_neumann_entropy : order-0 tensor
     """
     eig_vals = cp_normalize(tensor).weights
     eps = tl.eps(eig_vals.dtype)
