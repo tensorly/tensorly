@@ -177,8 +177,18 @@ class PyTorchBackend(Backend):
 
     def svd(self, X, full_matrices=True):
         """Legacy only, deprecated from PyTorch 1.8.0"""
-        U,S,V = torch.svd(X, some=(not full_matrices))
-        return U, S, V.T
+        # The torch SVD has accuracy issues. Try again when torch.linalg is stable.
+        warnings.warn('Using an old version of PyTorch, converting to NumPy for SVD, consider updating.')
+        ctx = self.context(X)
+        X = self.to_numpy(X)
+
+        U, S, V = np.linalg.svd(X, full_matrices=full_matrices)
+
+        U = self.tensor(U, **ctx)
+        S = self.tensor(S, **ctx)
+        V = self.tensor(V, **ctx)
+
+        return U, S, V
 
     @staticmethod
     def eigh(tensor):
