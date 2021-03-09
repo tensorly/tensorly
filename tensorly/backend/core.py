@@ -1126,3 +1126,9 @@ class Backend(object):
         """
         tensor[indices] = values
         return tensor
+
+    @staticmethod
+    def log2(x):
+        """Return the base 2 logarithm of x.
+        """
+        raise NotImplementedError

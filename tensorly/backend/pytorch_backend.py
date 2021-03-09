@@ -198,7 +198,7 @@ class PyTorchBackend(Backend):
 # Register the other functions
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones', 'zeros', 
              'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 
-             'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum']:
+             'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum', 'log2']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 PyTorchBackend.register_method('dot', torch.matmul)
