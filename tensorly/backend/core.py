@@ -831,7 +831,10 @@ class Backend(object):
         dim_1, dim_2 = self.shape(matrix)
         min_dim, max_dim = min(dim_1, dim_2), max(dim_1, dim_2)
 
-        if (n_eigenvecs is None) or (min_dim <= n_eigenvecs):
+        if n_eigenvecs is None:
+            n_eigenvecs = max_dim
+
+        if n_eigenvecs >= min_dim:
             # Just perform trucated SVD
             return self.truncated_svd(matrix, n_eigenvecs=n_eigenvecs)
         else:
