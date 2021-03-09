@@ -1,5 +1,6 @@
 try:
     import tensorflow as tf
+    import tensorflow.math as tfm
 except ImportError as error:
     message = ('Impossible to import TensorFlow.\n'
                'To use TensorLy with the TensorFlow backend, '
@@ -158,6 +159,8 @@ class TensorflowBackend(Backend):
         else:
             return tensor
 
+    def log2(self,x):
+        return tfm.log(x) / tfm.log(2.)
 
 _FUN_NAMES = [
     # source_fun, target_fun
