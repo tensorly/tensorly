@@ -3,7 +3,6 @@ from ..entropy import vonneumann_entropy, mps_entanglement_entropy
 from ..entropy import tt_vonneumann_entropy, cp_vonneumann_entropy
 from ...decomposition import parafac, matrix_product_state
 
-
 def test_vonneumann_entropy_pure_state():
     """Test for vonneumann_entropy on 2-dimensional tensors.
     This test checks that pure states have a VNE of zero.

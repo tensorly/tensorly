@@ -7,7 +7,7 @@ from ..tt_tensor import tt_to_tensor
 
 
 def vonneumann_entropy(tensor):
-    """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix).
+    """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix). 
 
     Parameters
     ----------
@@ -18,7 +18,13 @@ def vonneumann_entropy(tensor):
     -------
     von_neumann_entropy : order-0 tensor
     """
-    eig_vals = T.eigh(tensor)[0]
+    try:
+        eig_vals = T.eigh(tensor)[0]
+    except:
+    #All density matrices are Hermitian, here real. Hermitianize matrix if rounding/transformation
+    #errors have occured.
+        tensor = (tensor + tl.transpose(tensor))/2
+        eig_vals = T.eigh(tensor)[0]
     eps = tl.eps(eig_vals.dtype)
     eig_vals = eig_vals[eig_vals >  eps]
 
