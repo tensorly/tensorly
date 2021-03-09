@@ -71,7 +71,7 @@ def tt_vonneumann_entropy(tensor):
 
 
 def cp_vonneumann_entropy(tensor):
-    """Returns the von Neumann entropy of the CP tensor.
+    """Returns the von Neumann entropy of the CP tensor. 
 
     Parameters
     ----------
