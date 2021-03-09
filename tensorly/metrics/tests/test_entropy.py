@@ -1,5 +1,5 @@
 import tensorly as tl
-from ..entropy import vonneumann_entropy, tt_mps_entanglement_entropy
+from ..entropy import vonneumann_entropy, mps_entanglement_entropy
 from ..entropy import tt_vonneumann_entropy, cp_vonneumann_entropy
 from ...decomposition import parafac, matrix_product_state
 
@@ -81,7 +81,7 @@ def test_cp_vonneumann_entropy_mixed_state():
     tl.testing.assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
     tl.testing.assert_array_almost_equal(tl_vne_unnorm, actual_vne, decimal=3)
 
-def test_tt_mps_entanglement_entropy():
+def test_mps_entanglement_entropy():
     """Test for the tt_mps_entanglement_entropy on TT tensors.
     This test checks that the EE of both product and entangled states is calculated correctly.
     """
@@ -89,7 +89,7 @@ def test_tt_mps_entanglement_entropy():
     mps = tl.tensor([1,0,0,0,0,0,0,0])
     mps = tl.reshape(mps, (2,2,2))
     mps = matrix_product_state(mps, rank=[1,2,2,1])
-    tl_ee = tt_mps_entanglement_entropy(mps, 1)
+    tl_ee = mps_entanglement_entropy(mps, 1)
     tl.testing.assert_array_almost_equal(tl_ee, 0, decimal=3)
 
     #Entangled state
@@ -97,5 +97,5 @@ def test_tt_mps_entanglement_entropy():
     mps = mps/tl.norm(mps)
     mps = tl.reshape(mps, (2,2,2))
     mps = matrix_product_state(mps, rank=[1,2,2,1])
-    tl_ee = tt_mps_entanglement_entropy(mps, 1)
+    tl_ee = mps_entanglement_entropy(mps, 1)
     tl.testing.assert_array_almost_equal(tl_ee, 1, decimal=3)

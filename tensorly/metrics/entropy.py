@@ -7,7 +7,7 @@ from ..tt_tensor import tt_to_tensor
 
 
 def vonneumann_entropy(tensor):
-    """Returns the von Neumann entropy of the tensor.
+    """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix).
 
     Parameters
     ----------
@@ -24,9 +24,9 @@ def vonneumann_entropy(tensor):
 
     return -T.sum(T.log2(eig_vals) * eig_vals)
 
-def tt_mps_entanglement_entropy(tensor, boundary):
+def mps_entanglement_entropy(tensor, boundary):
     """Returns the entanglement entropy of an MPS paritioned at boundary in TT tensor form. Assumes
-    a traditional and single MPS, that is, a linear pure state.
+    a traditional and single MPS, that is, a linear pure state in single-mode form.
 
     Parameters
     ----------
@@ -53,7 +53,7 @@ def tt_mps_entanglement_entropy(tensor, boundary):
 
 
 def tt_vonneumann_entropy(tensor):
-    """Returns the von Neumann entropy of the TT tensor.
+    """Returns the von Neumann entropy of a density matrix (square matrix) in TT tensor form.
 
     Parameters
     ----------
@@ -71,7 +71,7 @@ def tt_vonneumann_entropy(tensor):
 
 
 def cp_vonneumann_entropy(tensor):
-    """Returns the von Neumann entropy of the CP tensor. 
+    """Returns the von Neumann entropy of a density matrix (square matrix) in CP tensor. 
 
     Parameters
     ----------
