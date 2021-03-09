@@ -389,15 +389,14 @@ def test_svd():
                         name, tl.get_backend(), n, s))
 
             # Check for orthogonality when relevant
-            if name != 'symeig_svd':
-                left_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
-                assert_(left_orthogonality_error <= tol_orthogonality,
-                    msg='Left eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
-                            name, tl.get_backend(), n, s))
-                right_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
-                assert_(right_orthogonality_error <= tol_orthogonality,
-                    msg='Right eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
+            left_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+            assert_(left_orthogonality_error <= tol_orthogonality,
+                msg='Left eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                         name, tl.get_backend(), n, s))
+            right_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+            assert_(right_orthogonality_error <= tol_orthogonality,
+                msg='Right eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
+                    name, tl.get_backend(), n, s))
 
         # Should fail on non-matrices
         with assert_raises(ValueError):
@@ -419,6 +418,13 @@ def test_svd():
         assert_array_equal(U1, U2)
         assert_array_equal(S1, S2)
         assert_array_equal(V1, V2)
+
+
+def test_randomized_range_finder():
+    size = (7, 5)
+    A = T.randn(size)
+    Q = T.randomized_range_finder(A, n_dims=min(size))
+    assert_array_almost_equal(A, tl.dot(tl.dot(Q, tl.transpose(T.conj(Q))), A))
 
 
 def test_shape():
