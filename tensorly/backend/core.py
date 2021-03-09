@@ -829,11 +829,12 @@ class Backend(object):
         if not is_numpy:
             warnings.warn('In partial_svd: converting to NumPy.'
                           ' Check SVD_FUNS for available alternatives if you want to avoid this.')
-        matrix = self.to_numpy(matrix)
 
         # Choose what to do depending on the params
         dim_1, dim_2 = self.shape(matrix)
         min_dim = min(dim_1, dim_2)
+
+        matrix = self.to_numpy(matrix)
 
         if (n_eigenvecs is None) or (min_dim <= n_eigenvecs):
             # Just perform trucated SVD
@@ -864,7 +865,6 @@ class Backend(object):
             V = V.T.conj()
 
         if not is_numpy:
-            print('converting back')
             U = self.tensor(U, **ctx)
             S = self.tensor(S, **ctx)
             V = self.tensor(V, **ctx)
