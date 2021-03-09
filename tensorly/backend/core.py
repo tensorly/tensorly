@@ -691,8 +691,7 @@ class Backend(object):
         """
         raise NotImplementedError
 
-    @staticmethod
-    def moveaxis(tensor, source, destination):
+    def moveaxis(self, tensor, source, destination):
         """Move axes of a tensor to new positions.
 
         Parameters
@@ -708,8 +707,22 @@ class Backend(object):
         -------
         tensor
         """
-        raise NotImplementedError
 
+        axes = list(range(self.ndim(tensor)))
+        if source < 0: source = axes[source]
+        if destination < 0: destination = axes[destination]
+        try:
+            axes.pop(source)
+        except IndexError:
+            raise ValueError('Source should verify 0 <= source < tensor.ndim'
+                             'Got %d' % source)
+        try:
+            axes.insert(destination, source)
+        except IndexError:
+            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
+                             'Got %d' % destination)
+        return self.transpose(tensor, axes)
+    
     def kron(self, a, b):
         """Kronecker product of two tensors.
 

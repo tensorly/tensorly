@@ -9,11 +9,6 @@ except ImportError as error:
                'you must first install PyTorch!')
     raise ImportError(message) from error
 
-if LooseVersion(torch.__version__) < LooseVersion('0.4.0'):
-    raise ImportError('You are using version=%r of PyTorch.'
-                      'Please update to "0.4.0" or higher.'
-                      % torch.__version__)
-
 import numpy as np
 
 from .core import Backend
@@ -155,13 +150,61 @@ class PyTorchBackend(Backend):
     def update_index(tensor, index, values):
         tensor.index_put_(index, values)
 
-for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones', 'moveaxis',
-             'zeros', 'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod',
-             'abs', 'sqrt', 'sign', 'where', 'qr', 'conj', 'diag', 'finfo', 'einsum', 'log2']:
+    def solve(self, matrix1, matrix2):
+        """Legacy only, deprecated from PyTorch 1.8.0
 
+        Solve a linear system of equation
+
+        Notes
+        -----
+        Previously, this was implemented as follows::
+            if self.ndim(matrix2) < 2:
+                # Currently, gesv doesn't support vectors for matrix2
+                # So we instead solve a least square problem...
+                solution, _ = torch.gels(matrix2, matrix1)
+            else:
+                solution, _ = torch.gesv(matrix2, matrix1)
+            return solution
+
+        Deprecated from PyTorch 1.8.0
+        """
+        if self.ndim(matrix2) < 2:
+            # Currently, solve doesn't support vectors for matrix2
+            solution, _ = torch.solve(matrix2.unsqueeze(1), matrix1)
+        else:
+            solution, _ = torch.solve(matrix2, matrix1)
+        return solution
+
+    def svd(self, X, full_matrices=True):
+        """Legacy only, deprecated from PyTorch 1.8.0"""
+        U,S,V = torch.svd(X, some=(not full_matrices))
+        return U, S, V.T
+
+    @staticmethod
+    def eigh(tensor):
+        """Legacy only, deprecated from PyTorch 1.8.0"""
+        return torch.symeig(tensor, eigenvectors=True)
+
+# Register the other functions
+for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones', 'zeros', 
+             'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 
+             'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum', 'log2']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
-for name in ['solve', 'qr', 'svd', 'eigh']:
-    PyTorchBackend.register_method(name, getattr(torch.linalg, name))
-
 PyTorchBackend.register_method('dot', torch.matmul)
+
+# PyTorch 1.8.0 has a much better NumPy interface but somoe haven't updated yet
+if LooseVersion(torch.__version__) < LooseVersion('1.8.0'):
+    # Old version, will be removed in the future
+    warnings.warn(f'You are using an old version of PyTorch ({torch.__version__}). '
+                  'We recommend upgrading to a newest one, e.g. >1.8.0.')
+    PyTorchBackend.register_method('moveaxis', getattr(torch, 'movedim'))
+    PyTorchBackend.register_method('qr', getattr(torch, 'qr'))
+
+else:
+    # New PyTorch NumPy interface
+    for name in ['kron', 'moveaxis']:
+        PyTorchBackend.register_method(name, getattr(torch, name))
+
+    for name in ['solve', 'qr', 'svd', 'eigh']:
+        PyTorchBackend.register_method(name, getattr(torch.linalg, name))
