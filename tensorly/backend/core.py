@@ -826,17 +826,20 @@ class Backend(object):
 
         ctx = self.context(matrix)
         is_numpy = isinstance(matrix, np.ndarray)
+        if not is_numpy:
+            warnings.warn('In partial_svd: converting to NumPy.'
+                          ' Check SVD_FUNS for available alternatives if you want to avoid this.')
+        matrix = self.to_numpy(matrix)
 
         # Choose what to do depending on the params
         dim_1, dim_2 = self.shape(matrix)
-        min_dim, max_dim = min(dim_1, dim_2), max(dim_1, dim_2)
+        min_dim = min(dim_1, dim_2)
 
         if (n_eigenvecs is None) or (min_dim <= n_eigenvecs):
             # Just perform trucated SVD
-            return self.truncated_svd(matrix, n_eigenvecs=n_eigenvecs)
+            U, S, V = np.linalg.svd(matrix, full_matrices=True)
+            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
-            matrix = self.to_numpy(matrix)
-
             # We can perform a partial SVD
             rng = self.check_random_state(random_state)
             # initilize with [-1, 1] as in ARPACK
@@ -860,10 +863,11 @@ class Backend(object):
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
             V = V.T.conj()
 
-            if not is_numpy:
-                U = self.tensor(U, **ctx)
-                S = self.tensor(S, **ctx)
-                V = self.tensor(V, **ctx)
+        if not is_numpy:
+            print('converting back')
+            U = self.tensor(U, **ctx)
+            S = self.tensor(S, **ctx)
+            V = self.tensor(V, **ctx)
 
         return U, S, V
 
@@ -888,6 +892,7 @@ class Backend(object):
             of shape (n_eigenvecs, matrix.shape[1])
             contains the left singular vectors
         """
+        print('using self.svd')
         # Check that matrix is... a matrix!
         if self.ndim(matrix) != 2:
             raise ValueError('matrix be a matrix. matrix.ndim is %d != 2'
