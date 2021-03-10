@@ -154,6 +154,11 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
     random_state : {None, int, np.random.RandomState}
+    mask : ndarray
+        array of booleans with the same shape as ``tensor`` should be 0 where
+        the values are missing and 1 everywhere else. Note:  if tensor is
+        sparse, then mask should also be sparse with a fill value of 1 (or
+        True).
     verbose : int, optional
         level of verbosity
 
