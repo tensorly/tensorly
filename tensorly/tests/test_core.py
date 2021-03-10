@@ -1,7 +1,6 @@
 
 import numpy as np
 
-import tensorly as tl
 from .. import backend as T
 from ..base import fold, unfold
 from ..base import partial_fold, partial_unfold
