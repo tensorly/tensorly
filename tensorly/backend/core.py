@@ -832,13 +832,15 @@ class Backend(object):
 
         # Choose what to do depending on the params
         dim_1, dim_2 = self.shape(matrix)
-        min_dim = min(dim_1, dim_2)
-
+        min_dim, max_dim = (dim_1, dim_2) if dim_1 < dim_2 else (dim_2, dim_1)
         matrix = self.to_numpy(matrix)
 
-        if (n_eigenvecs is None) or (min_dim <= n_eigenvecs):
+        if (n_eigenvecs is None) or (n_eigenvecs >= min_dim):
             # Just perform trucated SVD
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=True)
+            full_matrices = (n_eigenvecs is None) or (n_eigenvecs > min_dim)
+            print(full_matrices)
+            # If n_eigenvecs == min_dim, we don't want full_matrices=True, it's super slow
+            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
             # We can perform a partial SVD
