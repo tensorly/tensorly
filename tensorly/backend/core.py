@@ -838,7 +838,7 @@ class Backend(object):
 
         if (n_eigenvecs is None) or (min_dim <= n_eigenvecs):
             # Just perform trucated SVD
-            U, S, V = np.linalg.svd(matrix, full_matrices=True)
+            U, S, V = scipy.linalg.svd(matrix, full_matrices=True)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
         else:
             # We can perform a partial SVD
