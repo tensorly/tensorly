@@ -175,21 +175,6 @@ class PyTorchBackend(Backend):
             solution, _ = torch.solve(matrix2, matrix1)
         return solution
 
-    def svd(self, X, full_matrices=True):
-        """Legacy only, deprecated from PyTorch 1.8.0"""
-        # The torch SVD has accuracy issues. Try again when torch.linalg is stable.
-        warnings.warn('Using an old version of PyTorch, converting to NumPy for SVD, consider updating.')
-        ctx = self.context(X)
-        X = self.to_numpy(X)
-
-        U, S, V = np.linalg.svd(X, full_matrices=full_matrices)
-
-        U = self.tensor(U, **ctx)
-        S = self.tensor(S, **ctx)
-        V = self.tensor(V, **ctx)
-
-        return U, S, V
-
     @staticmethod
     def eigh(tensor):
         """Legacy only, deprecated from PyTorch 1.8.0"""
@@ -210,6 +195,7 @@ if LooseVersion(torch.__version__) < LooseVersion('1.8.0'):
                   'We recommend upgrading to a newest one, e.g. >1.8.0.')
     PyTorchBackend.register_method('moveaxis', getattr(torch, 'movedim'))
     PyTorchBackend.register_method('qr', getattr(torch, 'qr'))
+    PyTorchBackend.register_method('svd', getattr(torch, 'svd'))
 
 else:
     # New PyTorch NumPy interface
