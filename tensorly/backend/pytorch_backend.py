@@ -180,6 +180,10 @@ class PyTorchBackend(Backend):
         """Legacy only, deprecated from PyTorch 1.8.0"""
         return torch.symeig(tensor, eigenvectors=True)
 
+    @staticmethod
+    def svd(matrix, full_matrices=False):
+        return torch.svd(matrix, some=(not full_matrices), compute_uv=True)
+
 # Register the other functions
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones', 'zeros', 
              'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 
