@@ -182,7 +182,8 @@ class PyTorchBackend(Backend):
 
     @staticmethod
     def svd(matrix, full_matrices=False):
-        return torch.svd(matrix, some=(not full_matrices), compute_uv=True)
+        full_matrices = (not full_matrices)
+        return torch.svd(matrix, some=full_matrices, compute_uv=True)
 
 # Register the other functions
 for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones', 'zeros', 
@@ -199,7 +200,6 @@ if LooseVersion(torch.__version__) < LooseVersion('1.8.0'):
                   'We recommend upgrading to a newest one, e.g. >1.8.0.')
     PyTorchBackend.register_method('moveaxis', getattr(torch, 'movedim'))
     PyTorchBackend.register_method('qr', getattr(torch, 'qr'))
-    PyTorchBackend.register_method('svd', getattr(torch, 'svd'))
 
 else:
     # New PyTorch NumPy interface
