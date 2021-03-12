@@ -1,7 +1,6 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from tensorly.tenalg import outer
-from tensorly.metrics.regression import standard_deviation
 import numpy as np
 from ..cp_tensor import validate_cp_rank
 
@@ -71,7 +70,7 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
     
     if verbose:
         explained = tl.norm(deflated)/tl.norm(tensor)
-        print(f'Eingenvalue: {eigenval}, explained: {explained}')
+        print(f'Eigenvalue: {eigenval}, explained: {explained}')
 
     return eigenval, best_factor, deflated
 
@@ -110,18 +109,18 @@ def symmetric_parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10,
         raise ValueError('The input tensor does not have the same size along each mode.')
 
     factor = []
-    weigths = []
+    weights = []
 
     for _ in range(rank):
         eigenval, eigenvec, deflated = symmetric_power_iteration(tensor, n_repeat=n_repeat, n_iteration=n_iteration, verbose=verbose)
         factor.append(eigenvec)
-        weigths.append(eigenval)
+        weights.append(eigenval)
         tensor = deflated
 
     factor = tl.stack(factor, axis=1)
-    weigths = tl.stack(weigths)
+    weights = tl.stack(weights)
 
-    return weigths, factor
+    return weights, factor
 
 class SymmetricCP(DecompositionMixin):
     """Symmetric CP Decomposition via Robust Symmetric Tensor Power Iteration
@@ -156,4 +155,3 @@ class SymmetricCP(DecompositionMixin):
         self.decomposition_ = symmetric_parafac_power_iteration(tensor, self.rank, n_repeat=self.n_repeat,
                                                                 n_iteration=self.n_iteration, verbose=self.verbose)
         return self.decomposition_
-
