@@ -32,15 +32,15 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
     """
     order = tl.ndim(tensor)
     size = tl.shape(tensor)[0]
-    
+
     if not tl.shape(tensor) == (size, )*order:
         raise ValueError('The input tensor does not have the same size along each mode.')
 
     # A list of candidates for each mode
-    best_score = 0
+    best_score = -np.inf
     scores = []
     modes = list(range(1, order))
-    
+
     for _ in range(n_repeat):
         factor = tl.tensor(np.random.random_sample(size), **tl.context(tensor))
 
@@ -48,14 +48,14 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
             for _ in range(order):
                 factor = tl.tenalg.multi_mode_dot(tensor, [factor]*(order-1), modes=modes)
                 factor = factor / tl.norm(factor, 2)
-                
+
         score = tl.tenalg.multi_mode_dot(tensor, [factor]*order)
         scores.append(score) #round(score, 2))
         
         if score > best_score:
             best_score = score
             best_factor = factor
-            
+
     if verbose:
         print(f'Best score of {n_repeat}: {best_score}')
     
@@ -66,8 +66,8 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
             best_factor = best_factor / tl.norm(best_factor, 2)
 
     eigenval = tl.tenalg.multi_mode_dot(tensor, [best_factor]*order)
-    deflated = tensor - outer([best_factor]*3)*eigenval
-    
+    deflated = tensor - outer([best_factor]*order)*eigenval
+
     if verbose:
         explained = tl.norm(deflated)/tl.norm(tensor)
         print(f'Eigenvalue: {eigenval}, explained: {explained}')
@@ -104,7 +104,7 @@ def symmetric_parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10,
 
     order = tl.ndim(tensor)
     size = tl.shape(tensor)[0]
-    
+
     if not tl.shape(tensor) == (size, )*order:
         raise ValueError('The input tensor does not have the same size along each mode.')
 
