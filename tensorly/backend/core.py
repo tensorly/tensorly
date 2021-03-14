@@ -838,7 +838,6 @@ class Backend(object):
         if (n_eigenvecs is None) or (n_eigenvecs >= min_dim):
             # Just perform trucated SVD
             full_matrices = (n_eigenvecs is None) or (n_eigenvecs > min_dim)
-            print(full_matrices)
             # If n_eigenvecs == min_dim, we don't want full_matrices=True, it's super slow
             U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]

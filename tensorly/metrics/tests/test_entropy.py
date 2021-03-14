@@ -21,7 +21,7 @@ def test_tt_vonneumann_entropy_pure_state():
     state = tl.randn((8, 1))
     state = state/tl.norm(state)
     mat_pure = tl.reshape(tl.dot(state, tl.transpose(state)), (2, 2, 2, 2, 2, 2))
-    mat_pure = matrix_product_state(mat_pure, rank=(1, 4, 2, 3, 2, 2, 1))
+    mat_pure = matrix_product_state(mat_pure, rank=(1, 3, 2, 1, 2, 3, 1))
     tl_vne = tt_vonneumann_entropy(mat_pure)
     assert_array_almost_equal(tl_vne, 0, decimal=3)
 
