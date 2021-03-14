@@ -893,7 +893,6 @@ class Backend(object):
             of shape (n_eigenvecs, matrix.shape[1])
             contains the left singular vectors
         """
-        print('using self.svd')
         # Check that matrix is... a matrix!
         if self.ndim(matrix) != 2:
             raise ValueError('matrix be a matrix. matrix.ndim is %d != 2'
