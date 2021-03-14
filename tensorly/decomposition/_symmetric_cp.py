@@ -37,7 +37,6 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
         raise ValueError('The input tensor does not have the same size along each mode.')
 
     # A list of candidates for each mode
-    best_score = -np.inf
     scores = []
     modes = list(range(1, order))
 
