@@ -36,10 +36,9 @@ def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
     order = tl.ndim(tensor)
     
     # A list of candidates for each mode
-    best_score = 0
     scores = []
     
-    for _ in range(n_repeat):
+    for i in range(n_repeat):
         factors = [tl.tensor(np.random.random_sample(s), **tl.context(tensor)) for s in tl.shape(tensor)]
 
         for _ in range(n_iteration):
@@ -51,7 +50,7 @@ def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
         score = tl.tenalg.multi_mode_dot(tensor, factors)
         scores.append(score) #round(score, 2))
         
-        if score > best_score:
+        if (i == 0) or (score > best_score):
             best_score = score
             best_factors = factors
 
