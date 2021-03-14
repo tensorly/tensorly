@@ -41,7 +41,7 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
     scores = []
     modes = list(range(1, order))
 
-    for _ in range(n_repeat):
+    for i in range(n_repeat):
         factor = tl.tensor(np.random.random_sample(size), **tl.context(tensor))
 
         for _ in range(n_iteration):
@@ -52,7 +52,7 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
         score = tl.tenalg.multi_mode_dot(tensor, [factor]*order)
         scores.append(score) #round(score, 2))
         
-        if score > best_score:
+        if (i == 0) or (score > best_score):
             best_score = score
             best_factor = factor
 
