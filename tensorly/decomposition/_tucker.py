@@ -4,7 +4,7 @@ from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot	
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 import tensorly.tenalg as tlg
-from ..tenalg.proximal import hals_nnls
+from ..tenalg.proximal import hals_nnls, active_set_nnls, fista_nnls
 from math import sqrt
 import warnings
 
@@ -67,7 +67,7 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
         nn_core = tl.abs(core) 
     return nn_core, nn_factors
 
-def update_core_hals(tensor_cross, core, factors, pseudo_inverse, sparsity_coefficients, n_iter_max=100):
+def update_core_hals(tensor, core, factors, pseudo_inverse, sparsity_coefficients, algorithm='fpg', n_iter_max=100):
     """
     Updating core for non negative tucker hals function
     
@@ -85,37 +85,29 @@ def update_core_hals(tensor_cross, core, factors, pseudo_inverse, sparsity_coeff
     core    : ndarray
               updated core tensor
     """
-    all_MtX = tl.tenalg.mode_dot(tensor_cross, tl.transpose(factors[-1]), len(factors)-1)
     pseudo_inverse[-1] = tl.dot(tl.transpose(factors[-1]),factors[-1])#all_MtM
-    
     # Projected gradient
-    #Partial svd?
     gradient_step = 1
     for MtM in pseudo_inverse:
-       #gradient_step *= 1/(tl.partial_svd(MtM)[1][0])
-       gradient_step *= 1/(scipy.sparse.linalg.svds(MtM, k=1)[1][0])
+       gradient_step *= 1/(tl.partial_svd(MtM)[1][0])
 
-    if sparsity_coefficients[-1] is None:
-        sparse = 0
-    else:
-        sparse = sparsity_coefficients[-1]
-    
-    norm_0 = 0
-    update = 0
-    # Maybe: try fast gradient instead of gradient
-    for iteration in range(n_iter_max):
+    #gradient_step = round(gradient_step, 6) # Heurisitc, to avoid consecutive imprecision
+
+
         
-        # Nesterov Fast Gradient
-        core_upd= core-0.9*update
-        gradient = - all_MtX + tl.tenalg.multi_mode_dot(core_upd, pseudo_inverse, transpose=False) + sparse
-        update= 0.9*update + tl.where(gradient_step*gradient < core_upd, gradient_step*gradient, core_upd)
-        core = core - update
-        norm = tl.norm(update)
-        
-        if iteration == 1:
-             norm_0 = norm
-        if norm < 0.01 * norm_0:
-             break
+    # Fast Iterative Shrinkage-Thresholding Algorithm (FISTA)
+    if algorithm == 'fista':
+          core = fista(tensor, factors, x=core, n_iter_max=n_iter_max, gradient_step=gradient_step,                                                    sparsity_coefficient=sparsity_coefficients)
+
+    # Active set algorithm
+    if algorithm == 'as':
+          core = active_set(tensor, factors, x=core, n_iter_max=n_iter_max)  
+
+    if algorithm == 'nnls':
+        tensorvec = tl.base.tensor_to_vec(tensor)
+        factor_kr = tl.tenalg.kronecker(factors)
+        vectorcore, norm = scipy.optimize.nnls(factor_kr, tensorvec)
+        core = tl.reshape(vectorcore, tl.shape(core))
     return core
     
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
@@ -312,7 +304,7 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         return TuckerTensor((core, factors))
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
-                        random_state=None, verbose=False):
+                        random_state=None, verbose=False, return_errors=False):
     """Non-negative Tucker decomposition
 
         Iterative multiplicative update, see [2]_
@@ -399,7 +391,11 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
                 print('converged in {} iterations.'.format(iteration))
             break
 
-    return TuckerTensor((nn_core, nn_factors))
+    tensor = TuckerTensor((nn_core, nn_factors))
+    if return_errors:
+        return tensor, rec_errors
+    else:
+        return tensor
     
 def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-8,
                              sparsity_coefficients=None, fixed_modes=None, random_state=None,
