@@ -248,3 +248,137 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
                 break
 
     return V, rec_error, iteration, complexity_ratio
+    
+def active_set_nnls(A, B, x=None, n_iter_max=100):
+    """
+    A=bx
+    Parameters
+    ----------
+    a: Tensor
+    b: list of matrices
+    x: initial tensor
+    n_iter_max : int
+    gradient_step : float
+    sparsity_coefficient :
+
+    Returns
+    -------
+    x: Tensor
+    """
+    #For gradient
+    pseudo_inverse = B.copy()
+    for i, b in enumerate(B):
+            pseudo_inverse[i] = tl.dot(tl.conj(tl.transpose(b)), b)
+    rec_erroras = []
+    AtB = tl.base.tensor_to_vec(multi_mode_dot(A, B, transpose=True))
+    AtA = tl.tenalg.kronecker(pseudo_inverse)
+    x_vec = tl.base.tensor_to_vec(x)
+
+    first = AtB
+    second = tl.base.tensor_to_vec(tl.tenalg.multi_mode_dot(x, pseudo_inverse, transpose=False))
+    w = first - second
+    P = []
+    R = list(tl.arange(start=0, stop=tl.shape(w)[0], step=1))
+    s = tl.zeros(tl.shape(x_vec))
+    for iteration in range(n_iter_max):
+        if tl.min(w) < 0:
+            break
+        indice = w.argmax()
+        if len(P) == 0:
+            P.append(indice)
+            R.remove(indice)
+        elif P[-1] != indice:
+            P.append(indice)
+            R.remove(indice)
+
+        s[P] = tl.solve(AtA[P][:, P], AtB[P])
+
+        # core update
+        if tl.min(s[P]) <= 0:
+            for i in range(len(P)):
+                alpha = -tl.min(x_vec[P] / (x_vec[P] - s[P]))
+                update = alpha * (s[P] - x_vec[P])
+                x_vec[P] = x_vec[P] + update
+                if x[P[i]] < 0:
+                    R.append(P[i])
+                    P.remove(P[i])
+                    s[P] = tl.solve(AtA[P][:, P], AtB[P])
+                    if s[R[i]] > 0:
+                        x_vec[R[i]] = s[R[i]]
+                    else:
+                        x_vec[R[i]] = 0
+                if tl.min(s[P]) > 0:
+                    break
+        else:
+            x_vec[P] = s[P]
+
+        # core update
+        x = tl.reshape(x_vec, tl.shape(x))
+        norm = tl.norm(update)
+
+        # w update
+        second = tl.base.tensor_to_vec(tl.tenalg.multi_mode_dot(x, pseudo_inverse, transpose=False))
+        w = first - second
+
+        # reconstruction error
+        rec_erroras.append(norm)
+        if iteration >= 1:
+            rec_error_decrease = rec_erroras[-2] - rec_erroras[-1]
+            if tl.all(x >= 0) or rec_error_decrease < 0:
+                break
+            if len(R) == 0:
+                break
+    return x
+
+def fista_nnls(A, B, x=None, n_iter_max=100, gradient_step=None, sparsity_coefficient=None):
+    """
+    A=bx
+    Parameters
+    ----------
+    A: Tensor
+    B: list of matrices
+    x: initial
+    n_iter_max : int
+    gradient_step
+    sparsity_coefficient
+
+    Returns
+    -------
+    x
+    """
+    if sparsity_coefficient is None:
+        sparsity_coefficient = 0
+
+    if gradient_step is None:
+        gradient_step = 0.001
+
+    if x is None:
+        x=tl.zeros()
+
+    #For gradient
+    pseudo_inverse = B.copy()
+    for i, b in enumerate(B):
+            pseudo_inverse[i] = tl.dot(tl.conj(tl.transpose(b)), b)
+
+    BtA = multi_mode_dot(A, B, transpose=True)
+
+    #Parameters
+    momentum_0 = 1
+    norm_0 = 0
+    x_upd = x
+
+
+    for iteration in range(n_iter_max):
+        gradient = - BtA + tl.tenalg.multi_mode_dot(x_upd, pseudo_inverse, transpose=False)
+        delta_x = tl.where(gradient_step * gradient < x, gradient_step * gradient, x_upd)
+        xnew = x_upd - delta_x
+        momentum = (1 + np.sqrt(1 + 4 * momentum_0 ** 2)) / 2
+        x_upd = xnew + ((momentum_0 - 1) / momentum) * (xnew - x)
+        momentum_0 = momentum
+        x= xnew
+        norm = tl.norm(delta_x)
+        if iteration == 1:
+            norm_0 = norm
+        if norm < 0.01 * norm_0:
+            break
+    return x
