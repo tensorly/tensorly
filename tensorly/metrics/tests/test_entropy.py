@@ -12,7 +12,7 @@ def test_vonneumann_entropy_pure_state():
     state = state/tl.norm(state)
     mat_pure = tl.dot(state, tl.transpose(state))
     tl_vne = vonneumann_entropy(mat_pure)
-    tl.testing.assert_array_almost_equal(tl_vne, 0, decimal=3)
+    assert_array_almost_equal(tl_vne, 0, decimal=3)
 
 def test_tt_vonneumann_entropy_pure_state():
     """Test for tt_vonneumann_entropy TT tensors.
@@ -24,7 +24,7 @@ def test_tt_vonneumann_entropy_pure_state():
     #mat_pure = matrix_product_state(mat_pure, rank=[1, 2, 2, 2, 2, 2, 1])
     mat_pure = matrix_product_state(mat_pure, rank=[1, 2, 1, 2, 1, 2, 1])
     tl_vne = tt_vonneumann_entropy(mat_pure)
-    tl.testing.assert_array_almost_equal(tl_vne, 0, decimal=3)
+    assert_array_almost_equal(tl_vne, 0, decimal=3)
 
 def test_cp_vonneumann_entropy_pure_state():
     """Test for cp_vonneumann_entropy on 2-dimensional CP tensors.
@@ -35,7 +35,7 @@ def test_cp_vonneumann_entropy_pure_state():
     mat_pure = tl.dot(state, tl.transpose(state))
     mat = parafac(mat_pure, rank=1, normalize_factors=True)
     tl_vne = cp_vonneumann_entropy(mat)
-    tl.testing.assert_array_almost_equal(tl_vne, 0, decimal=3)
+    assert_array_almost_equal(tl_vne, 0, decimal=3)
 
 def test_vonneumann_entropy_mixed_state():
     """Test for vonneumann_entropy on 2-dimensional tensors.
@@ -48,7 +48,7 @@ def test_vonneumann_entropy_mixed_state():
     mat_mixed = tl.tensor((tl.dot(tl.transpose(state1), state1) + tl.dot(tl.transpose(state2), state2))/2.)
     actual_vne = 0.5546
     tl_vne = vonneumann_entropy(mat_mixed)
-    tl.testing.assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
+    assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
 
 def test_tt_vonneumann_entropy_mixed_state():
     """Test for tt_vonneumann_entropy on TT tensors.
@@ -63,7 +63,7 @@ def test_tt_vonneumann_entropy_mixed_state():
     tt_mixed = tl.reshape(mat_mixed, (2, 2, 2, 2, 2, 2))
     tt_mixed = matrix_product_state(tt_mixed, rank=[1, 2, 4, 8, 4, 2, 1])
     tl_vne = tt_vonneumann_entropy(tt_mixed)
-    tl.testing.assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
+    assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
 
 def test_cp_vonneumann_entropy_mixed_state():
     """Test for cp_vonneumann_entropy on CP tensors. 
@@ -81,3 +81,5 @@ def test_cp_vonneumann_entropy_mixed_state():
     tl_vne_unnorm = cp_vonneumann_entropy(mat_unnorm)
     tl.testing.assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
     tl.testing.assert_array_almost_equal(tl_vne_unnorm, actual_vne, decimal=3)
+    assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
+    assert_array_almost_equal(tl_vne_unnorm, actual_vne, decimal=3)
