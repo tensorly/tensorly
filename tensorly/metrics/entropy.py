@@ -30,33 +30,6 @@ def vonneumann_entropy(tensor):
 
     return -T.sum(T.log2(eig_vals) * eig_vals)
 
-def mps_entanglement_entropy(tensor, boundary):
-    """Returns the entanglement entropy of an MPS paritioned at boundary in TT tensor form. Assumes
-    a traditional and single MPS, that is, a linear pure state in single-mode form.
-
-    Parameters
-    ----------
-    tensor : (TT tensor)
-        Data structure
-    boundary : (int)
-        Qubit at which to partition system.
-
-    Returns
-    -------
-    tt_mps_entanglement_entropy : order-0 tensor
-    """
-    partial_mps = tensor[boundary]
-    dims = partial_mps.shape
-    partial_mps = tl.reshape(partial_mps, (1, dims[0]*dims[1], dims[2]))
-    partial_mps = tt_to_tensor([partial_mps] + tensor[boundary+1::])
-    partial_mps = tl.reshape(partial_mps, (dims[0]*dims[1], -1))
-    _, eig_vals, _ = tl.partial_svd(partial_mps, min(partial_mps.shape))
-    eig_vals = eig_vals**2
-    eps = tl.eps(eig_vals.dtype)
-    eig_vals = eig_vals[eig_vals > eps]
-
-    return -T.sum(T.log2(eig_vals) * eig_vals)
-
 
 def tt_vonneumann_entropy(tensor):
     """Returns the von Neumann entropy of a density matrix (square matrix) in TT tensor form.

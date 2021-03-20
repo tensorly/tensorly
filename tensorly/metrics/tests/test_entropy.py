@@ -2,6 +2,7 @@ import tensorly as tl
 from ..entropy import vonneumann_entropy
 from ..entropy import tt_vonneumann_entropy, cp_vonneumann_entropy
 from ...decomposition import parafac, matrix_product_state
+from tensorly.testing import assert_array_almost_equal
 
 def test_vonneumann_entropy_pure_state():
     """Test for vonneumann_entropy on 2-dimensional tensors.
@@ -20,7 +21,8 @@ def test_tt_vonneumann_entropy_pure_state():
     state = tl.randn((8, 1))
     state = state/tl.norm(state)
     mat_pure = tl.reshape(tl.dot(state, tl.transpose(state)), (2, 2, 2, 2, 2, 2))
-    mat_pure = matrix_product_state(mat_pure, rank=[1, 2, 2, 2, 2, 2, 1])
+    #mat_pure = matrix_product_state(mat_pure, rank=[1, 2, 2, 2, 2, 2, 1])
+    mat_pure = matrix_product_state(mat_pure, rank=[1, 2, 1, 2, 1, 2, 1])
     tl_vne = tt_vonneumann_entropy(mat_pure)
     tl.testing.assert_array_almost_equal(tl_vne, 0, decimal=3)
 
