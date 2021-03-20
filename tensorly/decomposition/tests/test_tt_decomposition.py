@@ -68,3 +68,11 @@ def test_tensor_train_matrix():
 
     tt_rec = tt_matrix_to_tensor(tt)
     assert_array_almost_equal(tensor, tt_rec, decimal=4)
+
+def test_tensor_train_complex():
+    shape = (2, 2, 2, 2)
+    tensor = tl.randn(shape) + tl.randn(shape)*1j
+    rank = [1, 2, 4, 2, 1]
+    decomp = tensor_train(tensor, rank=rank)
+    decomp = tl.tt_to_tensor(decomp)
+    assert_array_almost_equal(tensor, decomp)
