@@ -67,6 +67,14 @@ class Backend(object):
     def float32(self):
         raise NotImplementedError
 
+    @property
+    def complex128(self):
+        raise NotImplementedError
+
+    @property
+    def complex64(self):
+        raise NotImplementedError
+
     @staticmethod
     def check_random_state(seed):
         """Returns a valid RandomState

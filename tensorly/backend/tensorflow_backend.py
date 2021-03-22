@@ -168,6 +168,8 @@ _FUN_NAMES = [
     (np.int64, 'int64'),
     (np.float32, 'float32'),
     (np.float64, 'float64'),
+    (np.complex128, 'complex128'),
+    (np.complex64, 'complex64'),
     (tf.ones, 'ones'),
     (tf.zeros, 'zeros'),
     (tf.linalg.tensor_diag, 'diag'),
