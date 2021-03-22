@@ -90,7 +90,6 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
     transpose : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
-        (the conjugate is used for complex tensors)
 
     Returns
     -------
