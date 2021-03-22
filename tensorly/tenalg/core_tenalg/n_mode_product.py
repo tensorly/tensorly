@@ -43,7 +43,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
                     ))
             
             if transpose:
-                matrix_or_vector = T.transpose(matrix_or_vector)
+                matrix_or_vector = T.conj(T.transpose(matrix_or_vector))
 
             new_shape[mode] = matrix_or_vector.shape[0]
             vec = False
