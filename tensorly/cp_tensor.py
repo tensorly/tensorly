@@ -392,7 +392,7 @@ def cp_to_tensor(cp_tensor, mask=None):
 
     if mask is None:
         full_tensor = T.dot(factors[0]*weights,
-                             T.conj(T.transpose(khatri_rao(factors, skip_matrix=0))))
+                            T.transpose(khatri_rao(factors, skip_matrix=0)))
     else:
         full_tensor = T.sum(khatri_rao([factors[0]*weights]+factors[1:], mask=mask), axis=1)
 
