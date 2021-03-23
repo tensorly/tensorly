@@ -105,7 +105,7 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
 
     if mask is not None:
         equation += ',' + ''.join(individual_dims)
-        matrices = matrices + mask
+        matrices.append(mask)
 
     equation += '->' + ''.join(individual_dims) + shared_dim
         
