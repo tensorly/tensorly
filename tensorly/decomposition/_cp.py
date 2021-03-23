@@ -20,15 +20,16 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
     r"""Initialize factors used in `parafac`.
 
     The type of initialization is set using `init`. If `init == 'random'` then
-    initialize factor matrices using `random_state`. If `init == 'svd'` then
+    initialize factor matrices with uniform distribution using `random_state`. If `init == 'svd'` then
     initialize the `m`th factor matrix using the `rank` left singular vectors
-    of the `m`th unfolding of the input tensor.
+    of the `m`th unfolding of the input tensor. If init is a previously initialized `cp tensor`, all
+    the weights are pulled in the last factor and then the weights are set to "1" for the output tensor.
 
     Parameters
     ----------
     tensor : ndarray
     rank : int
-    init : {'svd', 'random'}, optional
+    init : {'svd', 'random', cptensor}, optional
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     non_negative : bool, default is False
@@ -73,8 +74,20 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
 
     elif isinstance(init, (tuple, list, CPTensor)):
         # TODO: Test this
-        try:
+        try:         
+            if normalize_factors is True:
+                warnings.warn('It is not recommended to initialize a tensor with normalizing. Consider normalizing the tensor before using this function')
+            
             kt = CPTensor(init)
+            weights, factors = kt
+            
+            if tl.all(weights == 1):
+                kt = CPTensor((None, factors))
+            else:
+                weights_avg = tl.prod(weights)**(1.0/tl.shape(weights)[0])
+                for i in range(len(factors)):
+                    factors[i] = factors[i]*weights_avg
+                kt = CPTensor((None, factors))
         except ValueError:
             raise ValueError(
                 'If initialization method is a mapping, then it must '
@@ -311,11 +324,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',\
                     pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
             pseudo_inverse += Id
 
-            if not iteration and weights is not None:
-                # Take into account init weights
-                mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
-            else:
-                mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+            mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
             factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse),
                                     tl.transpose(mttkrp)))
