@@ -16,7 +16,8 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
             matrix or vectors to which to n-mode multiply the tensor
         mode : int
         transpose : bool, default is False
-            if True, the matrix is transposed
+            If True, the matrix is transposed. 
+            For complex tensors, the conjugate transpose is used. 
 
         Returns
         -------
@@ -43,7 +44,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
                     ))
             
             if transpose:
-                matrix_or_vector = T.transpose(matrix_or_vector)
+                matrix_or_vector = T.conj(T.transpose(matrix_or_vector))
 
             new_shape[mode] = matrix_or_vector.shape[0]
             vec = False
@@ -84,13 +85,14 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     matrix_or_vec_list : list of matrices or vectors of length ``tensor.ndim``
 
     skip : None or int, optional, default is None
-        if not None, index of a matrix to skip
+        If not None, index of a matrix to skip. 
         Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
 
     modes : None or int list, optional, default is None
 
     transpose : bool, optional, default is False
-        if True, the matrices or vectors in in the list are transposed
+        If True, the matrices or vectors in in the list are transposed.
+        For complex tensors, the conjugate transpose is used. 
 
     Returns
     -------
@@ -122,7 +124,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             continue
 
         if transpose:
-            res = mode_dot(res, T.transpose(matrix_or_vec), mode - decrement)
+            res = mode_dot(res, T.conj(T.transpose(matrix_or_vec)), mode - decrement)
         else:
             res = mode_dot(res, matrix_or_vec, mode - decrement)
 
