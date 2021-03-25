@@ -53,7 +53,7 @@ class CupyBackend(Backend):
             return cp.sort(tensor, axis=axis)
 
 
-for name in ['float64', 'float32', 'int64', 'int32', 'reshape', 'moveaxis',
+for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye',
              'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip',
              'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'stack',

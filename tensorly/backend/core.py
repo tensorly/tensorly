@@ -67,6 +67,14 @@ class Backend(object):
     def float32(self):
         raise NotImplementedError
 
+    @property
+    def complex128(self):
+        raise NotImplementedError
+
+    @property
+    def complex64(self):
+        raise NotImplementedError
+
     @staticmethod
     def check_random_state(seed):
         """Returns a valid RandomState
@@ -549,7 +557,7 @@ class Backend(object):
         if order == 1:
             return self.sum(self.abs(tensor), axis=axis)
         elif order == 2:
-            return self.sqrt(self.sum(tensor**2, axis=axis))
+            return self.sqrt(self.sum(self.abs(tensor)**2, axis=axis))
         else:
             return self.sum(self.abs(tensor)**order, axis=axis)**(1 / order)
 

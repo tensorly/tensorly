@@ -77,7 +77,7 @@ class JaxBackend(Backend):
         else:
             return np.sort(tensor, axis=axis)
 
-for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
+for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 'reshape', 'moveaxis',
              'where', 'transpose', 'arange', 'ones', 'zeros', 'flip',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
              'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',

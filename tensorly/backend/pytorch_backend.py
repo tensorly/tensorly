@@ -186,7 +186,8 @@ class PyTorchBackend(Backend):
         return torch.svd(matrix, some=full_matrices, compute_uv=True)
 
 # Register the other functions
-for name in ['float64', 'float32', 'int64', 'int32', 'is_tensor', 'ones', 'zeros', 
+for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
+             'is_tensor', 'ones', 'zeros', 
              'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 
              'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum', 'log2']:
     PyTorchBackend.register_method(name, getattr(torch, name))
