@@ -13,10 +13,6 @@ def _validate_tt_tensor(tt_tensor):
     factors = tt_tensor
     n_factors = len(factors)
     
-    if n_factors < 2:
-        raise ValueError('A Tensor-Train (MPS) tensor should be composed of at least two factors.'
-                         'However, {} factor was given.'.format(n_factors))
-
     rank = []
     shape = []
     for index, factor in enumerate(factors):
