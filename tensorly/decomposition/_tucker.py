@@ -4,7 +4,7 @@ from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot	
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 import tensorly.tenalg as tlg
-from ..tenalg.proximal import hals_nnls, active_set_nnls, fista_nnls
+from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
 
@@ -60,55 +60,13 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
         core = tl.tensor(rng.random_sample(rank) + 0.01, **tl.context(tensor))  # Check this
         factors = [tl.tensor(rng.random_sample(s), **tl.context(tensor)) for s in zip(tl.shape(tensor), rank)]
     else:
-        (core,factors)=init
+        (core, factors) = init
  
     if non_negative is True:
         nn_factors = [tl.abs(f) for f in factors]
         nn_core = tl.abs(core) 
     return nn_core, nn_factors
 
-def update_core_hals(tensor, core, factors, pseudo_inverse, sparsity_coefficients, algorithm='fpg', n_iter_max=100):
-    """
-    Updating core for non negative tucker hals function
-    
-    Parameters
-    ----------
-    tensor_cross : ndarray
-    core : ndarray
-    factors : list of factors
-    pseudo_inverse : list of ndarray
-    sparsity_coefficients : array of float 
-    n_iter_max : int
-    
-    Returns
-    -------
-    core    : ndarray
-              updated core tensor
-    """
-    pseudo_inverse[-1] = tl.dot(tl.transpose(factors[-1]),factors[-1])#all_MtM
-    # Projected gradient
-    gradient_step = 1
-    for MtM in pseudo_inverse:
-       gradient_step *= 1/(tl.partial_svd(MtM)[1][0])
-
-    #gradient_step = round(gradient_step, 6) # Heurisitc, to avoid consecutive imprecision
-
-
-        
-    # Fast Iterative Shrinkage-Thresholding Algorithm (FISTA)
-    if algorithm == 'fista':
-          core = fista(tensor, factors, x=core, n_iter_max=n_iter_max, gradient_step=gradient_step,                                                    sparsity_coefficient=sparsity_coefficients)
-
-    # Active set algorithm
-    if algorithm == 'as':
-          core = active_set(tensor, factors, x=core, n_iter_max=n_iter_max)  
-
-    if algorithm == 'nnls':
-        tensorvec = tl.base.tensor_to_vec(tensor)
-        factor_kr = tl.tenalg.kronecker(factors)
-        vectorcore, norm = scipy.optimize.nnls(factor_kr, tensorvec)
-        core = tl.reshape(vectorcore, tl.shape(core))
-    return core
     
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
                    svd='numpy_svd', random_state=None, verbose=False, mask=None):
@@ -399,7 +357,8 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
     
 def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-8,
                              sparsity_coefficients=None, fixed_modes=None, random_state=None,
-                             verbose=False, normalize_factors=False, return_errors=False, exact=False):
+                             verbose=False, normalize_factors=False, return_errors=False, exact=False, 
+                             algorithm='fista'):
     """
     Non-negative Tucker decomposition
 
@@ -419,23 +378,27 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
         Default: 1e-8
-    sparsity_coefficients: array of float (as much as the number of modes)
+    sparsity_coefficients : array of float (as much as the number of modes)
         The sparsity coefficients on U and V respectively.
         If set to None, the algorithm is computed without sparsity
         Default: None,
-    fixed_modes: array of integers (between 0 and the number of modes)
+    fixed_modes : array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
         Default: None
-    verbose: boolean
+    verbose : boolean
         Indicates whether the algorithm prints the successive
         reconstruction errors or not
         Default: False
-    return_errors: boolean
+    return_errors : boolean
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
         Default: False
-    exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost. If it is False, the algorithm gives an approximate solution
+    exact : If it is True, the algorithm gives a results with high precision but it needs high computational cost. 
+        If it is False, the algorithm gives an approximate solution
         Default: False
+    algorithm : {'fista', 'as'}
+         Non negative least square solution to update the core. 
+         Default: 'fista'
     Returns
     -------
     factors : ndarray list
@@ -475,17 +438,17 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         for mode in modes:
 
             # Computing Hadamard of cross-products
-            pseudo_inverse = factors.copy()
+            pseudo_inverse = nn_factors.copy()
             for i, factor in enumerate(nn_factors):
                 if i != mode:
                     pseudo_inverse[i] = tl.dot(tl.conj(tl.transpose(factor)), factor)
             # Second, the multiway product with core G
             core_cross = multi_mode_dot(nn_core, pseudo_inverse, skip=mode)
-            UtU = tl.dot(unfold(core_cross, mode),tl.transpose(unfold(nn_core, mode)))
+            UtU = tl.dot(unfold(core_cross, mode), tl.transpose(unfold(nn_core, mode)))
 
             # UtM
             tensor_cross = multi_mode_dot(tensor, nn_factors, skip=mode, transpose=True)
-            MtU = tl.dot(unfold(tensor_cross, mode),tl.transpose(unfold(nn_core, mode)))
+            MtU = tl.dot(unfold(tensor_cross, mode), tl.transpose(unfold(nn_core, mode)))
             UtM = tl.transpose(MtU)
 
             # Call the hals resolution with nnls, optimizing the current mode
@@ -493,15 +456,29 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
                                            n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
                                            exact=exact)
             nn_factors[mode] = tl.transpose(nn_factor)
-        #updating core
-        nn_core = update_core_hals(tensor_cross, nn_core, nn_factors, pseudo_inverse, 
-                                   sparsity_coefficients=sparsity_coefficients,
-                                   n_iter_max=100)
+        # updating core
+        if algorithm == 'fista':
+            pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])  # all_MtM
+            AtB = multi_mode_dot(tensor, nn_factors, transpose=True)
+            gradient_step = 1
+            
+            for MtM in pseudo_inverse:
+                gradient_step *= 1 / (tl.partial_svd(MtM)[1][0])
+            nn_core = fista(AtB, pseudo_inverse, x=nn_core, n_iter_max=n_iter_max, gradient_step=gradient_step,
+                            sparsity_coefficient=sparsity_coefficients)
+        if algorithm == 'as':
+            pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
+            AtB = tl.base.tensor_to_vec(tl.tenalg.mode_dot(tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]))
+            AtA = tl.tenalg.kronecker(pseudo_inverse)
+            nn_core = active_set_nnls(AtA, AtB, x=nn_core, n_iter_max=n_iter_max)
+            vectorcore = active_set_nnls(AtA, AtB, x=nn_core, n_iter_max=n_iter_max)
+            nn_core = tl.reshape(vectorcore, tl.shape(nn_core))
+        
         # Adding the l1 norm value to the reconstruction error
         sparsity_error = 0
         for index, sparse in enumerate(sparsity_coefficients):
             if sparse:
-                sparsity_error += 2 * (sparse * tl.norm(factors[index], order=1))
+                sparsity_error += 2 * (sparse * tl.norm(nn_factors[index], order=1))
         # error computation
         rec_error = tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2) / norm_tensor
         rec_errors.append(rec_error)
