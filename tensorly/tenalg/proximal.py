@@ -249,136 +249,165 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
 
     return V, rec_error, iteration, complexity_ratio
     
-def active_set_nnls(A, B, x=None, n_iter_max=100):
+
+def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, gradient_step=None,
+          sparsity_coefficient=None):
     """
-    A=bx
+    Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
+
+    Computes and approximate solution for Ax=b linear system.
+
     Parameters
     ----------
-    a: Tensor
-    b: list of matrices
-    x: initial tensor
+    AtB: ndarray
+       Pre-computed product of the transposed of A and B.
+    pseudo_inverse: ndarray
+       Pre-computed product of the transposed of A and A.
+    x: initialized array
+       Default: NOne
     n_iter_max : int
+        Maximum number of iteration
+        Default: 100
+    non_negative : bool, default is False
+                   if True, result will be non-negative
     gradient_step : float
-    sparsity_coefficient :
+    sparsity_coefficient : float or None
 
     Returns
     -------
-    x: Tensor
-    """
-    #For gradient
-    pseudo_inverse = B.copy()
-    for i, b in enumerate(B):
-            pseudo_inverse[i] = tl.dot(tl.conj(tl.transpose(b)), b)
-    rec_erroras = []
-    AtB = tl.base.tensor_to_vec(multi_mode_dot(A, B, transpose=True))
-    AtA = tl.tenalg.kronecker(pseudo_inverse)
-    x_vec = tl.base.tensor_to_vec(x)
+    x : Updated ndarray
 
-    first = AtB
-    second = tl.base.tensor_to_vec(tl.tenalg.multi_mode_dot(x, pseudo_inverse, transpose=False))
-    w = first - second
-    P = []
-    R = list(tl.arange(start=0, stop=tl.shape(w)[0], step=1))
-    s = tl.zeros(tl.shape(x_vec))
-    for iteration in range(n_iter_max):
-        if tl.min(w) < 0:
-            break
-        indice = w.argmax()
-        if len(P) == 0:
-            P.append(indice)
-            R.remove(indice)
-        elif P[-1] != indice:
-            P.append(indice)
-            R.remove(indice)
-
-        s[P] = tl.solve(AtA[P][:, P], AtB[P])
-
-        # core update
-        if tl.min(s[P]) <= 0:
-            for i in range(len(P)):
-                alpha = -tl.min(x_vec[P] / (x_vec[P] - s[P]))
-                update = alpha * (s[P] - x_vec[P])
-                x_vec[P] = x_vec[P] + update
-                if x[P[i]] < 0:
-                    R.append(P[i])
-                    P.remove(P[i])
-                    s[P] = tl.solve(AtA[P][:, P], AtB[P])
-                    if s[R[i]] > 0:
-                        x_vec[R[i]] = s[R[i]]
-                    else:
-                        x_vec[R[i]] = 0
-                if tl.min(s[P]) > 0:
-                    break
-        else:
-            x_vec[P] = s[P]
-
-        # core update
-        x = tl.reshape(x_vec, tl.shape(x))
-        norm = tl.norm(update)
-
-        # w update
-        second = tl.base.tensor_to_vec(tl.tenalg.multi_mode_dot(x, pseudo_inverse, transpose=False))
-        w = first - second
-
-        # reconstruction error
-        rec_erroras.append(norm)
-        if iteration >= 1:
-            rec_error_decrease = rec_erroras[-2] - rec_erroras[-1]
-            if tl.all(x >= 0) or rec_error_decrease < 0:
-                break
-            if len(R) == 0:
-                break
-    return x
-
-def fista_nnls(A, B, x=None, n_iter_max=100, gradient_step=None, sparsity_coefficient=None):
-    """
-    A=bx
-    Parameters
+    Reference
     ----------
-    A: Tensor
-    B: list of matrices
-    x: initial
-    n_iter_max : int
-    gradient_step
-    sparsity_coefficient
-
-    Returns
-    -------
-    x
+    [1] : Beck, A., & Teboulle, M. (2009). A fast iterative
+          shrinkage-thresholding algorithm for linear inverse problems.
+          SIAM journal on imaging sciences, 2(1), 183-202.
     """
-    if sparsity_coefficient is None:
-        sparsity_coefficient = 0
+
+    if sparsity_coefficient[-1] is None:
+        sparse = 0
+    else:
+        sparse = sparsity_coefficient[-1]
 
     if gradient_step is None:
         gradient_step = 0.001
 
     if x is None:
-        x=tl.zeros()
+        x = tl.zeros([tl.shape(pseudo_inverse)[0], tl.shape(AtB)[1]])
 
-    #For gradient
-    pseudo_inverse = B.copy()
-    for i, b in enumerate(B):
-            pseudo_inverse[i] = tl.dot(tl.conj(tl.transpose(b)), b)
-
-    BtA = multi_mode_dot(A, B, transpose=True)
-
-    #Parameters
-    momentum_0 = 1
+    # Parameters
+    momentum_old = 1
     norm_0 = 0
-    x_upd = x
-
+    x_upd = tl.copy(x)
 
     for iteration in range(n_iter_max):
-        gradient = - BtA + tl.tenalg.multi_mode_dot(x_upd, pseudo_inverse, transpose=False)
-        delta_x = tl.where(gradient_step * gradient < x, gradient_step * gradient, x_upd)
+        gradient = - AtB + tl.tenalg.multi_mode_dot(x_upd, pseudo_inverse, transpose=False)
+
+        if non_negative is True:
+            delta_x = tl.where(gradient_step * gradient < x, gradient_step * gradient, x_upd) + sparse
+        else:
+            delta_x = gradient_step * gradient + sparse
+
         xnew = x_upd - delta_x
-        momentum = (1 + np.sqrt(1 + 4 * momentum_0 ** 2)) / 2
-        x_upd = xnew + ((momentum_0 - 1) / momentum) * (xnew - x)
-        momentum_0 = momentum
-        x= xnew
+        momentum = (1 + tl.sqrt(1 + 4 * momentum_old ** 2)) / 2
+        x_upd = xnew + ((momentum_old - 1) / momentum) * (xnew - x)
+        momentum_old = momentum
+        x = tl.copy(xnew)
         norm = tl.norm(delta_x)
         if iteration == 1:
             norm_0 = norm
         if norm < 0.01 * norm_0:
             break
     return x
+
+
+def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-4):
+    """
+     Active set algorithm for non-negative least square solution.
+
+     Parameters
+     ----------
+     AtA: ndarray
+        Pre-computed Kronecker product of the transposed of A and A.
+     AtB: ndarray
+        Pre-computed product of the transposed of A and B.
+     x: initialized array
+        Default: NOne
+     n_iter_max : int
+         Maximum number of iteration
+         Default: 100
+    tol : float
+         Early stopping criterion
+
+     Returns
+     -------
+     x : Updated ndarray
+
+     Reference
+     ----------
+     [1] : Bro, R., & De Jong, S. (1997). A fast non‐negativity‐constrained
+           least squares algorithm. Journal of Chemometrics: A Journal of
+           the Chemometrics Society, 11(5), 393-401.
+     """
+    
+    if x is None:
+        x_vec = tl.zeros(tl.shape(AtA)[1])
+    else: 
+        x_vec = tl.base.tensor_to_vec(x)       
+    # Gradient
+    first = AtB
+    second = tl.dot(AtA, x_vec)
+    w = first - second        
+    P = list(tl.where(x_vec > 0)[0])
+    R = list(tl.where(x_vec <= 0)[0])
+    s = tl.zeros(tl.shape(x_vec))
+
+    for iteration in range(n_iter_max):
+        if len(R) != 0 and tl.max(w[R]) <= tol:
+            if iteration == 0:
+                try:
+                    x_vec[P] = tl.solve(AtA[P][:, P], AtB[P])
+                    x_vec[R] = 0
+                    x_vec = tl.clip(x_vec, 0, tl.max(x_vec))
+                except:
+                    x_vec = tl.copy(x_vec)
+            break
+
+        if len(R) != 0:
+            indice = R[w[R].argmax()]
+            P.append(indice)
+            R.remove(indice)
+
+        try:
+            s[P] = tl.solve(AtA[P][:, P], AtB[P])
+            s[R] = 0
+        except:
+            s = tl.zeros(tl.shape(x_vec))
+            P = list(tl.where(s > 0)[0])
+            R = list(tl.where(s <= 0)[0])
+            indice = R[w[R].argmax()]
+            P.append(indice)
+            R.remove(indice)        
+        # update support vector if it is necessary
+        if tl.min(s[P]) <= 0:
+            for i in range(len(P)):
+                alpha = tl.min(x_vec[P][s[P] <= 0] / (x_vec[P][s[P] <= 0] - s[P][s[P] <= 0]))
+                update = alpha * (s - x_vec)
+                x_vec = x_vec + update
+                P = list(tl.where(x_vec > tl.eps(x_vec.dtype)*tl.max(x_vec))[0])
+                R = list(tl.where(x_vec <= tl.eps(x_vec.dtype)*tl.max(x_vec))[0])
+                try:
+                    s[P] = tl.solve(AtA[P][:, P], AtB[P])
+                    s[R] = 0
+                except:
+                    s = tl.zeros(tl.shape(x_vec))                   
+                if len(P) == 0 or tl.min(s[P]) > 0:
+                    break
+        # set x to s
+        x_vec = tl.copy(s)
+
+        # w update
+        second = tl.dot(AtA, x_vec)
+        w = first - second
+
+    return x_vec
