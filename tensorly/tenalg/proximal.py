@@ -296,8 +296,8 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, gradie
         x = tl.zeros([tl.shape(pseudo_inverse)[0], tl.shape(AtB)[1]])
 
     # Parameters
-    momentum_old = 1
-    norm_0 = 0
+    momentum_old = tl.tensor(1.0)
+    norm_0 = 0.0
     x_upd = tl.copy(x)
 
     for iteration in range(n_iter_max):
@@ -321,7 +321,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, gradie
     return x
 
 
-def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-4):
+def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
     """
      Active set algorithm for non-negative least square solution.
 
@@ -352,62 +352,103 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-4):
     
     if x is None:
         x_vec = tl.zeros(tl.shape(AtA)[1])
-    else: 
-        x_vec = tl.base.tensor_to_vec(x)       
-    # Gradient
+    else:
+        x_vec = tl.base.tensor_to_vec(x)
+
     first = AtB
     second = tl.dot(AtA, x_vec)
-    w = first - second        
-    P = list(tl.where(x_vec > 0)[0])
-    R = list(tl.where(x_vec <= 0)[0])
-    s = tl.zeros(tl.shape(x_vec))
+    w = first - second
+    P = x_vec > 0
+    R = x_vec <= 0
+    s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
 
     for iteration in range(n_iter_max):
-        if len(R) != 0 and tl.max(w[R]) <= tol:
+        # Early stopping criterion
+        if True in R and tl.max(w[R]) <= tol:
+            # Not necessary to solve, if iteration is more than 0
             if iteration == 0:
                 try:
-                    x_vec[P] = tl.solve(AtA[P][:, P], AtB[P])
-                    x_vec[R] = 0
+                    a = tl.tensor(tl.to_numpy(AtA)[P, :][:, P], **tl.context(AtA))
+                    b = AtB[P]
+                    c = tl.solve(a, b)
+                    indice_list = []
+                    for i in range(tl.shape(s)[0]):
+                        if P[i]:
+                            indice_list.append(i)
+                            x_vec = tl.index_update(x_vec, tl.index[int(i)], c[len(indice_list) - 1])
+                        else:
+                            x_vec = tl.index_update(x_vec, tl.index[int(i)], 0)
                     x_vec = tl.clip(x_vec, 0, tl.max(x_vec))
                 except:
                     x_vec = tl.copy(x_vec)
             break
 
-        if len(R) != 0:
-            indice = R[w[R].argmax()]
-            P.append(indice)
-            R.remove(indice)
-
+        if True in R:
+            indice = tl.argmax(w)
+            P = tl.index_update(P, tl.index[indice], True)
+            R = tl.index_update(R, tl.index[indice], False)
+        # To avoid singularity error when initial x exists
         try:
-            s[P] = tl.solve(AtA[P][:, P], AtB[P])
-            s[R] = 0
+            a = tl.tensor(tl.to_numpy(AtA)[P, :][:, P], **tl.context(AtA))
+            b = AtB[P]
+            c = tl.solve(a, b)
+            indice_list = []
+            for i in range(tl.shape(s)[0]):
+                if P[i]:
+                    indice_list.append(i)
+                    s = tl.index_update(s, tl.index[int(i)], c[len(indice_list)-1])
+                else:
+                    s = tl.index_update(s, tl.index[int(i)], 0)
+        # Start from zeros if solve is not achieved  
         except:
-            s = tl.zeros(tl.shape(x_vec))
-            P = list(tl.where(s > 0)[0])
-            R = list(tl.where(s <= 0)[0])
-            indice = R[w[R].argmax()]
-            P.append(indice)
-            R.remove(indice)        
+            x_vec = tl.zeros(tl.shape(AtA)[1])
+            s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
+            P = x_vec > 0
+            R = x_vec <= 0
+            if True in R:
+                indice = tl.argmax(w)
+                P = tl.index_update(P, tl.index[indice], True)
+                R = tl.index_update(R, tl.index[indice], False)
+            a = tl.tensor(tl.to_numpy(AtA)[P, :][:, P], **tl.context(AtA))
+            b = AtB[P]
+            c = tl.solve(a, b)
+            indice_list = []
+            for i in range(tl.shape(s)[0]):
+                if P[i]:
+                    indice_list.append(i)
+                    s = tl.index_update(s, tl.index[int(i)], c[len(indice_list)-1])
+                else:
+                    s = tl.index_update(s, tl.index[int(i)], 0)
+
         # update support vector if it is necessary
         if tl.min(s[P]) <= 0:
             for i in range(len(P)):
                 alpha = tl.min(x_vec[P][s[P] <= 0] / (x_vec[P][s[P] <= 0] - s[P][s[P] <= 0]))
                 update = alpha * (s - x_vec)
                 x_vec = x_vec + update
-                P = list(tl.where(x_vec > tl.eps(x_vec.dtype)*tl.max(x_vec))[0])
-                R = list(tl.where(x_vec <= tl.eps(x_vec.dtype)*tl.max(x_vec))[0])
-                try:
-                    s[P] = tl.solve(AtA[P][:, P], AtB[P])
-                    s[R] = 0
-                except:
-                    s = tl.zeros(tl.shape(x_vec))                   
-                if len(P) == 0 or tl.min(s[P]) > 0:
+                P = x_vec > 0
+                R = x_vec <= 0                 
+                a = tl.tensor(tl.to_numpy(AtA)[P, :][:, P], **tl.context(AtA))
+                b = AtB[P]
+                c = tl.solve(a, b)
+                indice_list = []
+                for i in range(tl.shape(s)[0]):
+                    if P[i]:
+                        indice_list.append(i)
+                        s = tl.index_update(s, tl.index[int(i)], c[len(indice_list) - 1])
+                    else:
+                        s = tl.index_update(s, tl.index[int(i)], 0)
+
+                if True not in P or tl.min(s[P]) > 0:
                     break
         # set x to s
-        x_vec = tl.copy(s)
+        x_vec = tl.clip(s, 0, tl.max(s))
 
-        # w update
+        # gradient update
         second = tl.dot(AtA, x_vec)
         w = first - second
+
+        if True not in R:
+            break
 
     return x_vec
