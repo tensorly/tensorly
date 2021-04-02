@@ -362,15 +362,16 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     """
     Non-negative Tucker decomposition
 
-    Uses HALS which updates each factor columnwise, fixing every other columns, see [1]_
-
+    Uses HALS to update each factor columnwise and uses
+    fista or active set algorithm to update the core, see [1]_ 
+    
     Parameters
     ----------
     tensor : ndarray
     rank   : int
             number of components
     n_iter_max : int
-                 maximum number of iteration
+            maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
@@ -379,9 +380,10 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
           the reconstruction error is less than the tolerance
         Default: 1e-8
     sparsity_coefficients : array of float (as much as the number of modes)
-        The sparsity coefficients on U and V respectively.
+        The sparsity coefficients are used for each factor
+        If algorithm is fista, last coefficient is used when updating core
         If set to None, the algorithm is computed without sparsity
-        Default: None,
+        Default: None
     fixed_modes : array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
         Default: None
@@ -393,8 +395,8 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
         Default: False
-    exact : If it is True, the algorithm gives a results with high precision but it needs high computational cost. 
-        If it is False, the algorithm gives an approximate solution
+    exact : If it is True, the HALS nnls subroutines give results with high precision but it needs high computational cost. 
+        If it is False, the algorithm gives an approximate solution.
         Default: False
     algorithm : {'fista', 'as'}
          Non negative least square solution to update the core. 
@@ -409,8 +411,8 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
 
     References
     ----------
-    [1] Tamara G Kolda and Brett W Bader. "Tensor decompositions and applications",
-        SIAM review 51.3 (2009), pp. 455{500.
+    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+       SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
     rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
     n_modes = tl.ndim(tensor)
