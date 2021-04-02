@@ -301,12 +301,12 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, gradie
     x_upd = tl.copy(x)
 
     for iteration in range(n_iter_max):
-        gradient = - AtB + tl.tenalg.multi_mode_dot(x_upd, pseudo_inverse, transpose=False)
+        gradient = - AtB + tl.tenalg.multi_mode_dot(x_upd, pseudo_inverse, transpose=False) + sparse
 
         if non_negative is True:
-            delta_x = tl.where(gradient_step * gradient < x, gradient_step * gradient, x_upd) + sparse
+            delta_x = tl.where(gradient_step * gradient < x, gradient_step * gradient, x_upd)
         else:
-            delta_x = gradient_step * gradient + sparse
+            delta_x = gradient_step * gradient
 
         xnew = x_upd - delta_x
         momentum = (1 + tl.sqrt(1 + 4 * momentum_old ** 2)) / 2
