@@ -264,7 +264,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, gradie
     pseudo_inverse: ndarray
        Pre-computed product of the transposed of A and A.
     x: initialized array
-       Default: NOne
+       Default: None
     n_iter_max : int
         Maximum number of iteration
         Default: 100
@@ -332,7 +332,7 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
      AtB: ndarray
         Pre-computed product of the transposed of A and B.
      x: initialized array
-        Default: NOne
+        Default: None
      n_iter_max : int
          Maximum number of iteration
          Default: 100
