@@ -452,7 +452,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
             UtM = tl.transpose(MtU)
 
             # Call the hals resolution with nnls, optimizing the current mode
-            nn_factor, _, _, _ = hals_nnls(UtM, UtU, tl.transpose(factors[mode]),
+            nn_factor, _, _, _ = hals_nnls(UtM, UtU, tl.transpose(nn_factors[mode]),
                                            n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
                                            exact=exact)
             nn_factors[mode] = tl.transpose(nn_factor)
@@ -470,7 +470,6 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
             pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
             AtB = tl.base.tensor_to_vec(tl.tenalg.mode_dot(tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]))
             AtA = tl.tenalg.kronecker(pseudo_inverse)
-            nn_core = active_set_nnls(AtA, AtB, x=nn_core, n_iter_max=n_iter_max)
             vectorcore = active_set_nnls(AtA, AtB, x=nn_core, n_iter_max=n_iter_max)
             nn_core = tl.reshape(vectorcore, tl.shape(nn_core))
         
