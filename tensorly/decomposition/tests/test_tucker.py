@@ -1,6 +1,6 @@
 import numpy as np
 import tensorly as tl
-from .._tucker import tucker, partial_tucker, non_negative_tucker
+from .._tucker import tucker, partial_tucker, non_negative_tucker, non_negative_tucker_hals
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...random import random_tucker
