@@ -78,7 +78,7 @@ def make_svd_non_negative(tensor, U, S, V, nntype):
         W = soft_thresholding(W, eps)
     elif nntype == "nndsvda":
         avg = tl.mean(tensor)
-        W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W))*avg, W)
+        W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W)) * avg, W)
     else:
         raise ValueError(
             'Invalid nntype parameter: got %r instead of one of %r' %
@@ -164,7 +164,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
 def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                          tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
                          return_errors=False, mask=None, cvg_criterion='abs_rec_error',
-                         fixed_modes=[]):
+                         fixed_modes=None):
     """
     Non-negative CP decomposition
 
@@ -188,7 +188,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         level of verbosity
-    fixed_modes : list, default is []
+    fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
 
@@ -217,10 +217,13 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                                         normalize_factors=normalize_factors)
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
+    
+    if fixed_modes is None:
+        fixed_modes = []
 
-    if tl.ndim(tensor)-1 in fixed_modes:
+    if tl.ndim(tensor) - 1 in fixed_modes:
         warnings.warn('You asked for fixing the last mode, which is not supported while tol is fixed.\n The last mode will not be fixed. Consider using tl.moveaxis()')
-        fixed_modes.remove(tl.ndim(tensor)-1)
+        fixed_modes.remove(tl.ndim(tensor) - 1)
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
     for iteration in range(n_iter_max):
@@ -241,7 +244,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                     accum = tl.dot(tl.transpose(factors[e]), factors[e])
 
             if mask is not None:
-                tensor = tensor*mask + tl.cp_to_tensor((None, factors), mask=1-mask)
+                tensor = tensor * mask + tl.cp_to_tensor((None, factors), mask=1 - mask)
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
@@ -261,8 +264,8 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
-            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod)) / norm_tensor
+            iprod = tl.sum(tl.sum(mttkrp * factor, axis=0) * weights)
+            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
             rec_errors.append(rec_error)
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
@@ -386,7 +389,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             pseudo_inverse = tl.tensor(tl.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse*tl.dot(tl.transpose(factor), factor)
+                    pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
 
             if not iteration and weights is not None:
                 # Take into account init weights
@@ -401,8 +404,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             factors[mode] = tl.transpose(nn_factor)
         if tol:
             factors_norm = cp_norm((weights, factors))
-            iprod = tl.sum(tl.sum(mttkrp*factor, axis=0)*weights)
-            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2*iprod)) / norm_tensor
+            iprod = tl.sum(tl.sum(mttkrp * factor, axis=0) * weights)
+            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
             rec_errors.append(rec_error)
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
@@ -473,7 +476,7 @@ class CP_NN(DecompositionMixin):
             If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
         sparsity : float or int
             If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
-        fixed_modes : list, default is []
+        fixed_modes : list, default is None
             A list of modes for which the initial value is not modified.
             The last mode cannot be fixed due to error computation.
         svd_mask_repeats: int
@@ -508,7 +511,7 @@ class CP_NN(DecompositionMixin):
     def __init__(self, rank, n_iter_max=100, tol=1e-08,
                  init='svd', svd='numpy_svd',
                  l2_reg=0,
-                 fixed_modes=[],
+                 fixed_modes=None,
                  normalize_factors=False,
                  sparsity=None,
                  mask=None, svd_mask_repeats=5,
@@ -603,7 +606,7 @@ class CP_NN_HALS(DecompositionMixin):
         If 'abs_rec_error', ALS terminates when |previous rec_error - current rec_error| < tol.
     sparsity : float or int
         If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
-    fixed_modes : list, default is []
+    fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
     svd_mask_repeats: int
