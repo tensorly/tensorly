@@ -195,7 +195,8 @@ _FUN_NAMES = [
     (tf.reduce_sum, 'sum'),
     (tf.reduce_prod, 'prod'),
     (tf.reduce_all, 'all'),
-    (tf.einsum, 'einsum')
+    (tf.einsum, 'einsum'),
+    (tf.tensordot, 'tensordot')
     ]
 for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)

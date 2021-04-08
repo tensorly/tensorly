@@ -57,7 +57,7 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye',
              'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip',
              'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'stack',
-             'conj', 'diag', 'einsum', 'log2']:
+             'conj', 'diag', 'einsum', 'log2', 'tensordot']:
     CupyBackend.register_method(name, getattr(cp, name))
 
 for name in ['svd', 'qr', 'eigh', 'solve']:
