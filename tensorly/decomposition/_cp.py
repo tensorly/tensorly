@@ -413,8 +413,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
     cp_tensor = CPTensor((weights, factors))
     
     if sparsity:
-        sparse_component = sparsify_tensor(tensor,
-                                           cp_to_tensor((weights, factors)),
+        sparse_component = sparsify_tensor(tensor - cp_to_tensor((weights, factors)),
                                            sparsity)
         cp_tensor = (cp_tensor, sparse_component)
 
