@@ -8,6 +8,7 @@ from ._nn_cp import non_negative_parafac
 from ._tucker import tucker, partial_tucker, non_negative_tucker, Tucker
 from .robust_decomposition import robust_pca
 from ._tt import TensorTrain, tensor_train, tensor_train_matrix
+from ._tr import tensor_ring
 from ._parafac2 import parafac2, Parafac2
 from ._symmetric_cp import symmetric_parafac_power_iteration, symmetric_power_iteration, SymmetricCP
 from ._cp_power import parafac_power_iteration, power_iteration, CPPower
