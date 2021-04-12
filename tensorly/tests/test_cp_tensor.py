@@ -12,7 +12,6 @@ from ..base import unfold, tensor_to_vec
 from tensorly.random import random_cp
 from tensorly.testing import (assert_equal, assert_raises, assert_,
                               assert_array_equal, assert_array_almost_equal)
-from tensorly.decomposition import parafac
 
 
 def test_cp_normalize():
