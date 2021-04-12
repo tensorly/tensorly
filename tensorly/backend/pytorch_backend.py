@@ -82,7 +82,7 @@ class PyTorchBackend(Backend):
         return tensor.clone()
 
     @staticmethod
-    def norm(tensor, order=2, axis=None):
+    def norm(tensor, order=None, axis=None):
         # pytorch does not accept `None` for any keyword arguments. additionally,
         # pytorch doesn't seems to support keyword arguments in the first place
         kwds = {}
