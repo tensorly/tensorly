@@ -99,11 +99,11 @@ def tensor_train_matrix(tensor, rank):
     new_shape = list([a*b for (a,b) in zip(in_shape, out_shape)])
     tensor = tl.reshape(tl.transpose(tensor, new_idx), new_shape)
     
-    factors = tensor_train(tensor, rank)
+    factors = tensor_train(tensor, rank).factors
     for i in range(len(factors)):
         factors[i] = tl.reshape(factors[i], (factors[i].shape[0], in_shape[i], out_shape[i], -1))
     
-    return factors
+    return TTMatrix(factors)
 
 
 class TensorTrain(DecompositionMixin):
