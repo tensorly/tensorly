@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import pytest
 
@@ -11,6 +12,29 @@ from ...random import random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
+
+
+def tucker_congruence(A, B):
+    As = A/T.norm(A, axis=0)
+    Bs = B/T.norm(B, axis=0)
+
+    return T.dot(T.transpose(As), Bs)
+
+
+def best_congruence(A, B):
+    _, r = T.shape(A)
+    corr_matrix = T.abs(tucker_congruence(A, B))
+
+    best_corr = 0
+    for permutation in itertools.permutations(range(r)):
+        corr = 1
+        for i, j in zip(range(r), permutation):
+            corr *= corr_matrix[i, j]
+        
+        if corr > best_corr:
+            best_corr = corr
+    
+    return best_corr
 
 
 @pytest.mark.parametrize("linesearch", [True, False])
@@ -205,6 +229,33 @@ def test_non_negative_parafac_hals():
             'norm 2 of difference between svd and random init too high')
     assert_(tl.max(tl.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
+
+
+def test_non_negative_parafac_hals_one_unconstrained():
+    """Test for non-negative PARAFAC HALS
+    TODO: more rigorous test
+    """
+    rng = tl.check_random_state(1234)
+    t_shape = (8, 9, 10)
+    rank = 3
+    weights = rng.uniform(size=rank)
+    A = rng.uniform(size=(t_shape[0], rank))
+    B = rng.standard_normal(size=(t_shape[1], rank))
+    C = rng.uniform(0.1, 1.1, size=(t_shape[2], rank))
+    cp_tensor = (weights, (A, B, C))
+    X = cp_to_tensor(cp_tensor)
+
+    nn_estimate, errs = non_negative_parafac_hals(
+        X, rank=3, n_iter_max=1000, tol=1e-5, init='svd', verbose=0, nn_modes={0, 2}, return_errors=True
+    )
+    X_hat = cp_to_tensor(nn_estimate)
+    assert_(tl.norm(X - X_hat,) < 1e-3, "Error was too high")
+    
+    assert_(best_congruence(A, nn_estimate[1][0]) > 0.99, "Factor recovery not high enough")
+    assert_(best_congruence(B, nn_estimate[1][1]) > 0.99, "Factor recovery not high enough")
+    assert_(best_congruence(C, nn_estimate[1][2]) > 0.99, "Factor recovery not high enough")
+
+
 @pytest.mark.xfail(tl.get_backend() == 'tensorflow', reason='Fails on tensorflow')
 def test_sample_khatri_rao():
     """ Test for sample_khatri_rao

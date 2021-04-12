@@ -297,7 +297,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
 
 def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
-                              sparsity_coefficients=None, fixed_modes=None, exact=False,
+                              sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
                               verbose=False, return_errors=False, cvg_criterion='abs_rec_error'):
     """
     Non-negative CP decomposition via HALS
@@ -325,6 +325,10 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     fixed_modes: array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
         Default: None
+    nn_modes: None, 'all' or array of integers (between 0 and the number of modes)
+        Used to specify which modes to impose non-negativity constraints on.
+        If 'all', then non-negativity is imposed on all modes.
+        Default: 'all'
     exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
         If it is False, the algorithm gives an approximate solution
         Default: False
@@ -370,10 +374,18 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     if fixed_modes is None:
         fixed_modes = []
 
+    if nn_modes == 'all':
+        nn_modes = set(range(n_modes))
+    elif nn_modes is None:
+        nn_modes = set()
+
     # Avoiding errors
     for fixed_value in fixed_modes:
         sparsity_coefficients[fixed_value] = None
 
+    for mode in range(n_modes):
+        if sparsity_coefficients[mode] is not None:
+            warnings.warn("Sparsity coefficient is ignored in unconstrained modes.")
     # Generating the mode update sequence
     modes = [mode for mode in range(n_modes) if mode not in fixed_modes]
 
@@ -397,11 +409,15 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             else:
                 mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
-            # Call the hals resolution with nnls, optimizing the current mode
-            nn_factor, _, _, _ = hals_nnls(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
-                                           n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
-                                           exact=exact)
-            factors[mode] = tl.transpose(nn_factor)
+            if mode in nn_modes:
+                # Call the hals resolution with nnls, optimizing the current mode
+                nn_factor, _, _, _ = hals_nnls(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
+                                            n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
+                                            exact=exact)
+                factors[mode] = tl.transpose(nn_factor)
+            else:
+                factor = tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp))
+                factors[mode] = tl.transpose(factor)
         if tol:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp * factor, axis=0) * weights)
@@ -642,10 +658,12 @@ class CP_NN_HALS(DecompositionMixin):
                  init='svd', svd='numpy_svd',
                  l2_reg=0,
                  fixed_modes=None,
+                 nn_modes='all',
                  normalize_factors=False,
                  sparsity=None,
                  exact=False,
-                 mask=None, svd_mask_repeats=5,
+                 mask=None,
+                 svd_mask_repeats=5,
                  return_errors=True,
                  cvg_criterion='abs_rec_error',
                  random_state=None,
