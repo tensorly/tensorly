@@ -8,7 +8,7 @@ from ...random import random_parafac2
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
 from .._parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
-from ...parafac2_tensor import parafac2_to_tensor, parafac2_to_slices
+from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
 
 
 def corrcoef(A, B):
@@ -88,6 +88,54 @@ def test_parafac2(normalize_factors, init):
         rec_Bi = T.dot(rec_proj, rec.factors[1])*rec_A_sign[i]
         Bi_corr = best_correlation(true_Bi, rec_Bi)
         assert_(T.prod(Bi_corr) > 0.98**rank)
+
+
+def test_parafac2_nn():
+    rng = tl.check_random_state(1234)
+    tol_norm_2 = 1e-2
+    rank = 3
+
+    weights, factors, projections = random_parafac2(
+        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        rank=rank,
+        random_state=rng
+    )
+    factors = [tl.abs(factors[0]), factors[1], tl.abs(factors[2])]
+    random_parafac2_tensor = Parafac2Tensor((weights, factors, projections))
+
+    # It is difficult to correctly identify B[i, :, r] if A[i, r] is small.
+    # This is sensible, since then B[i, :, r] contributes little to the total value of X.
+    # To test the PARAFAC2 decomposition in the precence of roundoff errors, we therefore add
+    # 0.01 to the A factor matrix.
+    random_parafac2_tensor.factors[0] = random_parafac2_tensor.factors[0] + 0.01
+
+    tensor = parafac2_to_tensor(random_parafac2_tensor)
+    slices = parafac2_to_slices(random_parafac2_tensor)
+
+    rec, err = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        init='random',
+        nn_modes=[0, 2],
+        n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+        normalize_factors=False,
+        return_errors=True,
+        n_iter_max=1000
+    )
+    rec_tensor = parafac2_to_tensor(rec)
+
+    error = T.norm(rec_tensor - tensor, 2)
+    error /= T.norm(tensor, 2)
+    assert_(error < tol_norm_2,
+            'norm 2 of reconstruction higher than tol')
+
+    # Test factor correlation
+    A_corr = best_correlation(random_parafac2_tensor.factors[0], rec.factors[0])
+    assert_(T.prod(A_corr) > 0.98**rank)
+
+    C_corr = best_correlation(random_parafac2_tensor.factors[2], rec.factors[2])
+    assert_(T.prod(C_corr) > 0.98**rank)
 
 
 def test_parafac2_slice_and_tensor_input():

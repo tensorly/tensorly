@@ -2,7 +2,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from tensorly.random import random_parafac2
 from tensorly import backend as T
-from . import parafac
+from . import parafac, non_negative_parafac_hals
 from ..parafac2_tensor import parafac2_to_slice, Parafac2Tensor, _validate_parafac2_tensor
 from ..cp_tensor import CPTensor
 from ..base import unfold
@@ -133,7 +133,7 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
 
 
 def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5):
+             tol=1e-8, nn_modes=None, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5,):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
     Computes a rank-`rank` PARAFAC2 decomposition of the third-order tensor defined by 
@@ -230,6 +230,20 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     rec_errors = []
     norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2)**2 for tensor_slice in tensor_slices))
     svd_fun = _get_svd(svd)
+
+    if nn_modes is not None:
+        def parafac_updates(X, w, f):
+                return parafac(X, rank, n_iter_max=n_iter_parafac,
+                               init=(w, f), svd=svd, orthogonalise=False, verbose=verbose,
+                               return_errors=False, normalize_factors=False, mask=None,
+                               random_state=random_state, tol=1e-100)[1]
+    else:
+        def parafac_updates(X, w, f):
+                return non_negative_parafac_hals(
+                    X, rank, n_iter_max=n_iter_parafac, init=(w, f), svd=svd, nn_modes=nn_modes,
+                    verbose=verbose, return_errors=False, tol=1e-100)[1]
+
+
 
     projected_tensor = tl.zeros([factor.shape[0] for factor in factors], **T.context(factors[0]))
 
