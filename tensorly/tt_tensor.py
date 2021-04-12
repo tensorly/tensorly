@@ -12,7 +12,13 @@ import warnings
 def _validate_tt_tensor(tt_tensor):
     factors = tt_tensor
     n_factors = len(factors)
-    
+
+    if isinstance(tt_tensor, TTTensor):
+        # it's already been validated at creation
+        return tt_tensor.shape, tt_tensor.rank
+    elif isinstance(tt_tensor, (float, int)): #0-order tensor
+        return 0, 0
+
     rank = []
     shape = []
     for index, factor in enumerate(factors):
@@ -65,6 +71,9 @@ def tt_to_tensor(factors):
     output_tensor : ndarray
                    tensor whose TT/MPS decomposition was given by 'factors'
     """
+    if isinstance(factors, (float, int)): #0-order tensor
+        return factors
+
     full_shape = [f.shape[1] for f in factors]
     full_tensor = tl.reshape(factors[0], (full_shape[0], -1))
 
@@ -275,7 +284,6 @@ class TTTensor(FactorizedTensor):
     
     def to_vec(self):
         return tt_to_vec(self)
-
 
 mps_to_tensor = DefineDeprecated(deprecated_name='mps_to_tensor', use_instead=tt_to_tensor)
 mps_to_unfolded = DefineDeprecated(deprecated_name='mps_to_unfolded', use_instead=tt_to_unfolded)
