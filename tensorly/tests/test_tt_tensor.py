@@ -12,7 +12,7 @@ def test_validate_tt_tensor():
     rng = tl.check_random_state(12345)
     true_shape = (3, 4, 5)
     true_rank = (1, 3, 2, 1)
-    factors = random_tt(true_shape, rank=true_rank)
+    factors = random_tt(true_shape, rank=true_rank).factors
     
     # Check that the correct shape/rank are returned
     shape, rank = _validate_tt_tensor(factors)
@@ -38,10 +38,6 @@ def test_validate_tt_tensor():
     factors[0] = tl.tensor(rng.random_sample((3, 3, 2)))
     with assert_raises(ValueError):
         _validate_tt_tensor(factors)
-
-    # Not enough factors
-    with assert_raises(ValueError):
-        _validate_tt_tensor(factors[:1])
 
 
 def test_tt_to_tensor():
@@ -144,3 +140,4 @@ def testvalidate_tt_rank():
     rank = validate_tt_rank(tensor_shape, rank='same', rounding='ceil')
     n_param = _tt_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)
+
