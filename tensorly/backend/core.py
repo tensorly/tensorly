@@ -1192,3 +1192,15 @@ class Backend(object):
         """Return the base 2 logarithm of x.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def sin(x):
+        """Return the sin of x.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def cos(x):
+        """Return the cos of x.
+        """
+        raise NotImplementedError
