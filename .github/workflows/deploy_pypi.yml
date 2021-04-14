@@ -1,12 +1,6 @@
 name: Deploy to Pypi
 
 on:
-  workflow_dispatch:
-    inputs:
-      pypi_repo:
-        description: 'Repo to upload to (testpypi or pypi)'
-        default: 'testpypi'
-        required: true
   push:
     tags:
     - '*'
@@ -29,6 +23,12 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install -r doc/requirements_doc.txt
           pip install setuptools wheel
+      - name: Make doc
+        run: |
+          cd doc
+          python minify.py
+          make html
+          cd ..
       - name: Install package
         run: |
           python -m pip install -e .
@@ -41,10 +41,29 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_PASSWORD }}
           repository_url: https://test.pypi.org/legacy/
-        if: ${{ github.event.inputs.pypi_repo }} == 'testpypi'
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_PASSWORD }}
-        if: ${{ github.event.inputs.pypi_repo }} == 'pypi'
+      - name: Push doc to stable
+        if: success()
+        run: |
+          # Add deploy key and clone through ssh
+          eval "$(ssh-agent -s)"
+          mkdir ~/.ssh
+          echo "${{ secrets.DEPLOY_DOC_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -t rsa github.com
+          echo 'Documentation was successfully built, updating the website.'
+          # See https://github.community/t/github-actions-bot-email-address/17204/5
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions"
+          git clone "git@github.com:tensorly/tensorly.github.io.git" doc_folder
+          echo "-- Updating the content"
+          cd doc_folder
+          cp -r dev/* stable/
+          echo "Pushing to git"
+          git add stable
+          git commit -m "Github action: new release."
+          git push --force origin main
