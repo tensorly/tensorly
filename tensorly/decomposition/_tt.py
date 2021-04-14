@@ -92,7 +92,6 @@ def tensor_train_matrix(tensor, rank):
         msg += f'but got a tensor of order tl.ndim(tensor)={order} which is odd.'
         raise ValueError(msg)
 
-        
     in_shape = tl.shape(tensor)[:n_input]
     out_shape = tl.shape(tensor)[n_input:]
 

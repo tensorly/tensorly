@@ -361,3 +361,4 @@ def validate_tucker_rank(tensor_shape, rank='same', rounding='round', fixed_mode
             rank = [rank  if i not in fixed_modes else s for (i, s) in enumerate(tensor_shape)]# *n_mode
 
     return rank
+
