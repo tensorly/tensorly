@@ -250,8 +250,8 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
     return V, rec_error, iteration, complexity_ratio
     
 
-def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, gradient_step=None,
-          sparsity_coefficient=None):
+def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, lr=10e-3,
+          sparsity_coef=0, tol=10e-2):
     """
     Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
 
@@ -259,23 +259,26 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, gradie
 
     Parameters
     ----------
-    AtB: ndarray
+    AtB : ndarray
        Pre-computed product of the transposed of A and B.
     pseudo_inverse: ndarray
        Pre-computed product of the transposed of A and A.
-    x: initialized array
+    x : init
        Default: None
     n_iter_max : int
         Maximum number of iteration
         Default: 100
     non_negative : bool, default is False
                    if True, result will be non-negative
-    gradient_step : float
-    sparsity_coefficient : float or None
+    lr : float
+        learning rate
+    sparsity_coef : float or None
+    tol : float
+        stopping criterion
 
     Returns
     -------
-    x : Updated ndarray
+    x : approximate solution such that Ax = b
 
     Reference
     ----------
@@ -283,40 +286,32 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, gradie
           shrinkage-thresholding algorithm for linear inverse problems.
           SIAM journal on imaging sciences, 2(1), 183-202.
     """
-
-    if sparsity_coefficient[-1] is None:
-        sparse = 0
-    else:
-        sparse = sparsity_coefficient[-1]
-
-    if gradient_step is None:
-        gradient_step = 0.001
-
+    if sparsity_coef is None:
+        sparsity_coef = 0
+    
     if x is None:
         x = tl.zeros([tl.shape(pseudo_inverse)[0], tl.shape(AtB)[1]])
 
     # Parameters
     momentum_old = tl.tensor(1.0)
     norm_0 = 0.0
-    x_upd = tl.copy(x)
+    x_update = tl.copy(x)
 
     for iteration in range(n_iter_max):
-        gradient = - AtB + tl.tenalg.multi_mode_dot(x_upd, pseudo_inverse, transpose=False) + sparse
+        x_gradient = - AtB + tl.tenalg.multi_mode_dot(x_update, pseudo_inverse, transpose=False) + sparsity_coef
 
         if non_negative is True:
-            delta_x = tl.where(gradient_step * gradient < x, gradient_step * gradient, x_upd)
-        else:
-            delta_x = gradient_step * gradient
+            x_gradient = tl.where(lr * x_gradient < x, x_gradient, x_update)
 
-        xnew = x_upd - delta_x
+        x_new = x_update - lr * x_gradient
         momentum = (1 + tl.sqrt(1 + 4 * momentum_old ** 2)) / 2
-        x_upd = xnew + ((momentum_old - 1) / momentum) * (xnew - x)
+        x_update = x_new + ((momentum_old - 1) / momentum) * (x_new - x)
         momentum_old = momentum
-        x = tl.copy(xnew)
-        norm = tl.norm(delta_x)
+        x = tl.copy(x_new)
+        norm = tl.norm(lr * x_gradient)
         if iteration == 1:
             norm_0 = norm
-        if norm < 0.01 * norm_0:
+        if norm < tol * norm_0:
             break
     return x
 
@@ -327,11 +322,11 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
 
      Parameters
      ----------
-     AtA: ndarray
+     AtA : ndarray
         Pre-computed Kronecker product of the transposed of A and A.
-     AtB: ndarray
+     AtB : ndarray
         Pre-computed product of the transposed of A and B.
-     x: initialized array
+     x : init
         Default: None
      n_iter_max : int
          Maximum number of iteration
@@ -341,7 +336,7 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
 
      Returns
      -------
-     x : Updated ndarray
+     x : approximate solution such that Ax = b
 
      Reference
      ----------
@@ -355,100 +350,78 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
     else:
         x_vec = tl.base.tensor_to_vec(x)
 
-    first = AtB
-    second = tl.dot(AtA, x_vec)
-    w = first - second
-    P = x_vec > 0
-    R = x_vec <= 0
+    w = AtB - tl.dot(AtA, x_vec)
+    passive_set = x_vec > 0
+    active_set = x_vec <= 0
     s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
 
     for iteration in range(n_iter_max):
-        # Early stopping criterion
-        if True in R and tl.max(w[R]) <= tol:
-            # Not necessary to solve, if iteration is more than 0
-            if iteration == 0:
-                try:
-                    a = tl.tensor(tl.to_numpy(AtA)[P, :][:, P], **tl.context(AtA))
-                    b = AtB[P]
-                    c = tl.solve(a, b)
-                    indice_list = []
-                    for i in range(tl.shape(s)[0]):
-                        if P[i]:
-                            indice_list.append(i)
-                            x_vec = tl.index_update(x_vec, tl.index[int(i)], c[len(indice_list) - 1])
-                        else:
-                            x_vec = tl.index_update(x_vec, tl.index[int(i)], 0)
-                    x_vec = tl.clip(x_vec, 0, tl.max(x_vec))
-                except:
-                    x_vec = tl.copy(x_vec)
-            break
 
-        if True in R:
+        if True in active_set:
             indice = tl.argmax(w)
-            P = tl.index_update(P, tl.index[indice], True)
-            R = tl.index_update(R, tl.index[indice], False)
+            passive_set = tl.index_update(passive_set, tl.index[indice], True)
+            active_set = tl.index_update(active_set, tl.index[indice], False)
         # To avoid singularity error when initial x exists
         try:
-            a = tl.tensor(tl.to_numpy(AtA)[P, :][:, P], **tl.context(AtA))
-            b = AtB[P]
+            a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
+            b = AtB[passive_set]
             c = tl.solve(a, b)
             indice_list = []
             for i in range(tl.shape(s)[0]):
-                if P[i]:
+                if passive_set[i]:
                     indice_list.append(i)
-                    s = tl.index_update(s, tl.index[int(i)], c[len(indice_list)-1])
+                    s = tl.index_update(s, tl.index[int(i)], c[len(indice_list) - 1])
                 else:
                     s = tl.index_update(s, tl.index[int(i)], 0)
         # Start from zeros if solve is not achieved  
         except:
             x_vec = tl.zeros(tl.shape(AtA)[1])
             s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
-            P = x_vec > 0
-            R = x_vec <= 0
-            if True in R:
+            passive_set = x_vec > 0
+            active_set = x_vec <= 0
+            if True in active_set:
                 indice = tl.argmax(w)
-                P = tl.index_update(P, tl.index[indice], True)
-                R = tl.index_update(R, tl.index[indice], False)
-            a = tl.tensor(tl.to_numpy(AtA)[P, :][:, P], **tl.context(AtA))
-            b = AtB[P]
+                passive_set = tl.index_update(passive_set, tl.index[indice], True)
+                active_set = tl.index_update(active_set, tl.index[indice], False)
+            a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
+            b = AtB[passive_set]
             c = tl.solve(a, b)
             indice_list = []
             for i in range(tl.shape(s)[0]):
-                if P[i]:
+                if passive_set[i]:
                     indice_list.append(i)
-                    s = tl.index_update(s, tl.index[int(i)], c[len(indice_list)-1])
+                    s = tl.index_update(s, tl.index[int(i)], c[len(indice_list) - 1])
                 else:
                     s = tl.index_update(s, tl.index[int(i)], 0)
 
         # update support vector if it is necessary
-        if tl.min(s[P]) <= 0:
-            for i in range(len(P)):
-                alpha = tl.min(x_vec[P][s[P] <= 0] / (x_vec[P][s[P] <= 0] - s[P][s[P] <= 0]))
+        if tl.min(s[passive_set]) <= 0:
+            for i in range(len(passive_set)):
+                alpha = tl.min(x_vec[passive_set][s[passive_set] <= 0] / (x_vec[passive_set][s[passive_set] <= 0] - s[passive_set][s[passive_set] <= 0]))
                 update = alpha * (s - x_vec)
                 x_vec = x_vec + update
-                P = x_vec > 0
-                R = x_vec <= 0                 
-                a = tl.tensor(tl.to_numpy(AtA)[P, :][:, P], **tl.context(AtA))
-                b = AtB[P]
+                passive_set = x_vec > 0
+                active_set = x_vec <= 0
+                a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
+                b = AtB[passive_set]
                 c = tl.solve(a, b)
                 indice_list = []
                 for i in range(tl.shape(s)[0]):
-                    if P[i]:
+                    if passive_set[i]:
                         indice_list.append(i)
                         s = tl.index_update(s, tl.index[int(i)], c[len(indice_list) - 1])
                     else:
                         s = tl.index_update(s, tl.index[int(i)], 0)
 
-                if True not in P or tl.min(s[P]) > 0:
+                if True not in passive_set or tl.min(s[passive_set]) > 0:
                     break
         # set x to s
         x_vec = tl.clip(s, 0, tl.max(s))
 
         # gradient update
-        second = tl.dot(AtA, x_vec)
-        w = first - second
+        w = AtB - tl.dot(AtA, x_vec)
 
-        if True not in R:
+        if True not in active_set or tl.max(w[active_set]) <= tol:
             break
 
     return x_vec
