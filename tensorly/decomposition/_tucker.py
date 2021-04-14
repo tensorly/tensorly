@@ -1,7 +1,7 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
-from ..tenalg import multi_mode_dot, mode_dot	
+from ..tenalg import multi_mode_dot, mode_dot
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
@@ -398,7 +398,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     exact : If it is True, the HALS nnls subroutines give results with high precision but it needs high computational cost. 
         If it is False, the algorithm gives an approximate solution.
         Default: False
-    algorithm : {'fista', 'as'}
+    algorithm : {'fista', 'active_set'}
          Non negative least square solution to update the core. 
          Default: 'fista'
     Returns
@@ -461,18 +461,18 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         # updating core
         if algorithm == 'fista':
             pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])  # all_MtM
-            AtB = multi_mode_dot(tensor, nn_factors, transpose=True)
-            gradient_step = 1
+            core_estimation = multi_mode_dot(tensor, nn_factors, transpose=True)
+            learning_rate = 1
             
             for MtM in pseudo_inverse:
-                gradient_step *= 1 / (tl.partial_svd(MtM)[1][0])
-            nn_core = fista(AtB, pseudo_inverse, x=nn_core, n_iter_max=n_iter_max, gradient_step=gradient_step,
-                            sparsity_coefficient=sparsity_coefficients)
-        if algorithm == 'as':
+                learning_rate *= 1 / (tl.partial_svd(MtM)[1][0])
+            nn_core = fista(core_estimation, pseudo_inverse, x=nn_core, n_iter_max=n_iter_max, lr=learning_rate,
+                            sparsity_coef=sparsity_coefficients[-1])
+        if algorithm == 'active_set':
             pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
-            AtB = tl.base.tensor_to_vec(tl.tenalg.mode_dot(tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]))
+            core_estimation_vec = tl.base.tensor_to_vec(tl.tenalg.mode_dot(tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]))
             AtA = tl.tenalg.kronecker(pseudo_inverse)
-            vectorcore = active_set_nnls(AtA, AtB, x=nn_core, n_iter_max=n_iter_max)
+            vectorcore = active_set_nnls(AtA, core_estimation_vec, x=nn_core, n_iter_max=n_iter_max)
             nn_core = tl.reshape(vectorcore, tl.shape(nn_core))
         
         # Adding the l1 norm value to the reconstruction error
