@@ -250,8 +250,8 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
     return V, rec_error, iteration, complexity_ratio
     
 
-def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, lr=10e-3,
-          sparsity_coef=0, tol=10e-2):
+def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
+          lr=10e-3, tol=10e-2):
     """
     Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
 
@@ -301,7 +301,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, lr=10e
         x_gradient = - AtB + tl.tenalg.multi_mode_dot(x_update, pseudo_inverse, transpose=False) + sparsity_coef
 
         if non_negative is True:
-            x_gradient = tl.where(lr * x_gradient < x, x_gradient, x_update)
+            x_gradient = tl.where(lr * x_gradient < x_update, x_gradient, x_update/lr)
 
         x_new = x_update - lr * x_gradient
         momentum = (1 + tl.sqrt(1 + 4 * momentum_old ** 2)) / 2
@@ -316,7 +316,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, lr=10e
     return x
 
 
-def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
+def active_set_nnls(AtA, Atb, x=None, n_iter_max=100, tol=10e-8):
     """
      Active set algorithm for non-negative least square solution.
 
@@ -324,8 +324,8 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
      ----------
      AtA : ndarray
         Pre-computed Kronecker product of the transposed of A and A.
-     AtB : ndarray
-        Pre-computed product of the transposed of A and B.
+     Atb : ndarray
+        Pre-computed product of the transposed of A and b.
      x : init
         Default: None
      n_iter_max : int
@@ -336,7 +336,7 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
 
      Returns
      -------
-     x : approximate solution such that Ax = b
+     x : ndarray
 
      Reference
      ----------
@@ -350,7 +350,7 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
     else:
         x_vec = tl.base.tensor_to_vec(x)
 
-    w = AtB - tl.dot(AtA, x_vec)
+    gradient = Atb - tl.dot(AtA, x_vec)
     passive_set = x_vec > 0
     active_set = x_vec <= 0
     s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
@@ -358,14 +358,13 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
     for iteration in range(n_iter_max):
 
         if True in active_set:
-            indice = tl.argmax(w)
+            indice = tl.argmax(gradient)
             passive_set = tl.index_update(passive_set, tl.index[indice], True)
             active_set = tl.index_update(active_set, tl.index[indice], False)
         # To avoid singularity error when initial x exists
         try:
             a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
-            b = AtB[passive_set]
-            c = tl.solve(a, b)
+            c = tl.solve(a, Atb[passive_set])
             indice_list = []
             for i in range(tl.shape(s)[0]):
                 if passive_set[i]:
@@ -380,12 +379,11 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
             passive_set = x_vec > 0
             active_set = x_vec <= 0
             if True in active_set:
-                indice = tl.argmax(w)
+                indice = tl.argmax(gradient)
                 passive_set = tl.index_update(passive_set, tl.index[indice], True)
                 active_set = tl.index_update(active_set, tl.index[indice], False)
             a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
-            b = AtB[passive_set]
-            c = tl.solve(a, b)
+            c = tl.solve(a, Atb[passive_set])
             indice_list = []
             for i in range(tl.shape(s)[0]):
                 if passive_set[i]:
@@ -403,8 +401,7 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
                 passive_set = x_vec > 0
                 active_set = x_vec <= 0
                 a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
-                b = AtB[passive_set]
-                c = tl.solve(a, b)
+                c = tl.solve(a, Atb[passive_set])
                 indice_list = []
                 for i in range(tl.shape(s)[0]):
                     if passive_set[i]:
@@ -419,9 +416,9 @@ def active_set_nnls(AtA, AtB, x=None, n_iter_max=100, tol=10e-8):
         x_vec = tl.clip(s, 0, tl.max(s))
 
         # gradient update
-        w = AtB - tl.dot(AtA, x_vec)
+        gradient = Atb - tl.dot(AtA, x_vec)
 
-        if True not in active_set or tl.max(w[active_set]) <= tol:
+        if True not in active_set or tl.max(gradient[active_set]) <= tol:
             break
 
     return x_vec
