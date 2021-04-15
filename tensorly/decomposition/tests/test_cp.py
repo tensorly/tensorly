@@ -15,15 +15,15 @@ from ...testing import assert_array_equal, assert_
 
 @pytest.mark.parametrize("linesearch", [True, False])
 @pytest.mark.parametrize("orthogonalise", [True, False])
-@pytest.mark.parametrize("rank", [1, 3])
+@pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 5)])
 @pytest.mark.parametrize("init", ['svd', 'random'])
-def test_parafac(linesearch, orthogonalise, rank, init):
+def test_parafac(linesearch, orthogonalise, true_rank, rank, init):
     """Test for the CANDECOMP-PARAFAC decomposition
     """
     rng = tl.check_random_state(1234)
     tol_norm_2 = 0.01
     tol_max_abs = 0.05
-    tensor = random_cp((6, 8, 4), rank=rank, orthogonal=orthogonalise, full=True, random_state=rng)
+    tensor = random_cp((6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=True, random_state=rng)
     fac, errors = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=10e-5, random_state=rng, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
 
     # Check that the error monotonically decreases
@@ -41,9 +41,9 @@ def test_parafac(linesearch, orthogonalise, rank, init):
             f'abs norm of reconstruction error = {T.max(T.abs(rec - tensor))} higher than tolerance={tol_max_abs}')
 
     # Test fixing mode 0 or 1 with given init
-    fixed_tensor = random_cp((6, 8, 4), rank=rank, normalise_factors=False)
-    rec_svd_fixed_mode_0 = parafac(tensor, rank=rank, n_iter_max=2, init=fixed_tensor, fixed_modes=[0], linesearch=linesearch)
-    rec_svd_fixed_mode_1 = parafac(tensor, rank=rank, n_iter_max=2, init=fixed_tensor, fixed_modes=[1], linesearch=linesearch)
+    fixed_tensor = random_cp((6, 8, 4), rank=true_rank, normalise_factors=False)
+    rec_svd_fixed_mode_0 = parafac(tensor, rank=true_rank, n_iter_max=2, init=fixed_tensor, fixed_modes=[0], linesearch=linesearch)
+    rec_svd_fixed_mode_1 = parafac(tensor, rank=true_rank, n_iter_max=2, init=fixed_tensor, fixed_modes=[1], linesearch=linesearch)
     # Check if modified after 2 iterations
     assert_array_equal(rec_svd_fixed_mode_0.factors[0], fixed_tensor.factors[0], err_msg='Fixed mode 0 was modified in candecomp_parafac')
     assert_array_equal(rec_svd_fixed_mode_1.factors[1], fixed_tensor.factors[1], err_msg='Fixed mode 1 was modified in candecomp_parafac')

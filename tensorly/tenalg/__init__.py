@@ -3,7 +3,7 @@ The :mod:`tensorly.tenalg` module contains utilities for Tensor Algebra
 operations such as khatri-rao or kronecker product, n-mode product, etc.
 """ 
 from contextlib import contextmanager
-
+import os
 from functools import wraps
 import warnings
 
@@ -22,10 +22,26 @@ from . import einsum_tenalg
 from ..backend import _LOCAL_STATE
 
 _DEFAULT_TENALG_BACKEND = 'core'
-_LOCAL_STATE.tenalg_backend = _DEFAULT_TENALG_BACKEND
 
 _TENALG_BACKENDS = {'core':core,
                     'einsum':einsum_tenalg}
+
+def initialize_tenalg_backend():
+    """Initialises the backend
+
+    1) retrieve the default backend name from the `TENSORLY_TENALG_BACKEND` environment variable
+        if not found, use _DEFAULT_TENALG_BACKEND
+    2) sets the backend to the retrieved backend name
+    """
+    tenalg_backend_name = os.environ.get('TENSORLY_TENALG_BACKEND', _DEFAULT_TENALG_BACKEND)
+    if tenalg_backend_name not in _TENALG_BACKENDS:
+        msg = ("TENSORLY_BACKEND should be one of {}, got {}. Defaulting to {}'").format(
+            ', '.join(map(repr, _TENALG_BACKENDS)),
+            tenalg_backend_name, _DEFAULT_TENALG_BACKEND)
+        warnings.warn(msg, UserWarning)
+        tenalg_backend_name = _DEFAULT_TENALG_BACKEND
+
+    set_tenalg_backend(tenalg_backend_name, local_threadsafe=False)
 
 def get_tenalg_backend():
     """Returns the current backend
@@ -117,4 +133,4 @@ tensor_dot = dynamically_dispatch_tenalg(tensor_dot)
 batched_tensor_dot = dynamically_dispatch_tenalg(batched_tensor_dot)
 higher_order_moment = dynamically_dispatch_tenalg(higher_order_moment)
 
-set_tenalg_backend(_DEFAULT_TENALG_BACKEND, local_threadsafe=False)
+initialize_tenalg_backend()

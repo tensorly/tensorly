@@ -166,12 +166,14 @@ def _validate_cp_tensor(cp_tensor):
     if isinstance(cp_tensor, CPTensor):
         # it's already been validated at creation
         return cp_tensor.shape, cp_tensor.rank
+    elif isinstance(cp_tensor, (float, int)): #0-order tensor
+        return 0, 0
 
     weights, factors = cp_tensor
             
-    if len(factors) < 2:
-        raise ValueError('A CP tensor should be composed of at least two factors.'
-                         'However, {} factor was given.'.format(len(factors)))
+    # if len(factors) < 2:
+    #     raise ValueError('A CP tensor should be composed of at least two factors.'
+    #                      'However, {} factor was given.'.format(len(factors)))
 
     if T.ndim(factors[0]) == 2:
         rank = int(T.shape(factors[0])[1])
@@ -385,14 +387,20 @@ def cp_to_tensor(cp_tensor, mask=None):
 
     """
     shape, _ = _validate_cp_tensor(cp_tensor)
+
+    if not shape: # 0-order tensor
+        return cp_tensor
+
     weights, factors = cp_tensor
+    if len(shape) == 1: # just a vector
+        return weights.tl.sum(factors, axis=1)
 
     if weights is None:
         weights = 1
 
     if mask is None:
         full_tensor = T.dot(factors[0]*weights,
-                             T.transpose(khatri_rao(factors, skip_matrix=0)))
+                            T.transpose(khatri_rao(factors, skip_matrix=0)))
     else:
         full_tensor = T.sum(khatri_rao([factors[0]*weights]+factors[1:], mask=mask), axis=1)
 

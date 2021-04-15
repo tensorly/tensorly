@@ -51,7 +51,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
                     tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[dim]
                 ))
         if transpose: 
-            matrix_or_vector = tl.transpose(matrix_or_vector)
+            matrix_or_vector = tl.conj(tl.transpose(matrix_or_vector))
         matrix_or_vector_modes = [chr(start+tensor_order+1), tensor_modes[mode]]
 
     elif tl.ndim(matrix_or_vector) == 1:  # Tensor times vector
@@ -90,7 +90,6 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
     transpose : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
-        (the conjugate is used for complex tensors)
 
     Returns
     -------
@@ -116,7 +115,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     # Sorting by mode shouldn't change order for equal modes
     # However, it is needed to pop dimensions contracted over
     factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
-    matrix_or_vec_list, modes = zip(*factors_modes)
+    _, modes = zip(*factors_modes)
 
     start = ord('a')
     result_modes = [chr(start + i) for i in range(order)]
@@ -125,6 +124,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     counter = start + order + 1
     decrement = 0
 
+    matrix_or_vec_list = []
     for i, (matrix_or_vec, mode) in enumerate(factors_modes):
         #print(i, matrix_or_vec.shape, mode)
         if (skip is not None) and (i == skip):
@@ -132,16 +132,21 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             continue
 
         if tl.ndim(matrix_or_vec) == 1:
+            matrix_or_vec_list.append(matrix_or_vec)
             equation += f',{tensor_modes[mode]}'
             # We are contracting over the mode-th dimension
             result_modes.pop(mode - decrement)
             decrement += 1
 
+
         elif tl.ndim(matrix_or_vec) == 2:
             if transpose:
-                mat_symbol = f'{tensor_modes[mode]}{chr(counter)}'
+                matrix_or_vec_list.append(tl.conj(tl.transpose(matrix_or_vec)))
+                # mat_symbol = f'{tensor_modes[mode]}{chr(counter)}'
             else:
-                mat_symbol = f'{chr(counter)}{tensor_modes[mode]}'
+                matrix_or_vec_list.append(matrix_or_vec)
+
+            mat_symbol = f'{chr(counter)}{tensor_modes[mode]}'
             equation += ',' + mat_symbol
             # Contracting mode-th mode with a matrix: new dimension
             result_modes[mode - decrement] = chr(counter)
@@ -155,7 +160,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     # If fully contracting 
     result_modes
     equation = tensor_modes + equation + f"->{''.join(result_modes)}"
-    matrix_or_vec_list = [m for (i, m) in enumerate(matrix_or_vec_list) if ((skip is None) or (skip != i))]
+    # matrix_or_vec_list = [m for (i, m) in enumerate(matrix_or_vec_list) if ((skip is None) or (skip != i))]
 
     #print(equation, tl.shape(tensor), [tl.shape(f) for f in matrix_or_vec_list])
     return tl.einsum(equation, tensor, *matrix_or_vec_list)

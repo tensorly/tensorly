@@ -168,17 +168,22 @@ def test_validate_tucker_rank():
     assert_(n_param >= n_param_tensor*(1 - tol))
 
     # With fixed modes
+    fixed_modes = [1, 4]
+    tensor_shape = [s**2 if i in fixed_modes else s for (i, s) in enumerate(np.random.randint(2, 10, size=5))]
+    n_param_tensor = np.prod(tensor_shape)
     # Floor
-    fixed_modes = [0, 2]
     rank = validate_tucker_rank(tensor_shape, rank=0.5, fixed_modes=fixed_modes, rounding='floor')
     n_param = _tucker_n_param(tensor_shape, rank)
     for mode in fixed_modes:
         assert_(rank[mode] == tensor_shape[mode])
     assert_(n_param*(1 - tol) <= n_param_tensor*0.5)
     # Ceil
-    fixed_modes = [1, 3]
+    fixed_modes = [0, 2]
+    tensor_shape = [s**2 if i in fixed_modes else s for (i, s) in enumerate(np.random.randint(2, 10, size=5))]
+    n_param_tensor = np.prod(tensor_shape)
     rank = validate_tucker_rank(tensor_shape, rank=0.5, fixed_modes=fixed_modes, rounding='ceil')
     n_param = _tucker_n_param(tensor_shape, rank)
     for mode in fixed_modes:
         assert_(rank[mode] == tensor_shape[mode])
     assert_(n_param >= n_param_tensor*0.5*(1 - tol))
+

@@ -7,7 +7,8 @@ from ..cp_tensor import (cp_to_tensor, cp_to_unfolded,
                               cp_normalize, CPTensor,
                               cp_mode_dot, unfolding_dot_khatri_rao,
                               cp_norm, cp_flip_sign,
-                              _cp_n_param, validate_cp_rank)
+                              _cp_n_param, validate_cp_rank
+                        )
 from ..base import unfold, tensor_to_vec
 from tensorly.random import random_cp
 from tensorly.testing import (assert_equal, assert_raises, assert_,
@@ -261,3 +262,4 @@ def testvalidate_cp_rank():
     rank = validate_cp_rank(tensor_shape, rank='same', rounding='ceil')
     n_param = _cp_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)
+

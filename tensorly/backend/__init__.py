@@ -218,12 +218,15 @@ solve = dispatch(Backend.solve)
 qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
+randomized_svd = dispatch(Backend.randomized_svd)
+randomized_range_finder = dispatch(Backend.randomized_range_finder)
 sort = dispatch(Backend.sort)
 conj = dispatch(Backend.conj)
 eps = dispatch(Backend.eps)
 finfo = dispatch(Backend.finfo)
 index = Backend.index
 index_update = dispatch(Backend.index_update)
+log2 = dispatch(Backend.log2)
 
 # Initialise the backend to the default one
 initialize_backend()
