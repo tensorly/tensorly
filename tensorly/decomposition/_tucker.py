@@ -460,19 +460,19 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
             nn_factors[mode] = tl.transpose(nn_factor)
         # updating core
         if algorithm == 'fista':
-            pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])  # all_MtM
+            pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
             core_estimation = multi_mode_dot(tensor, nn_factors, transpose=True)
             learning_rate = 1
             
             for MtM in pseudo_inverse:
                 learning_rate *= 1 / (tl.partial_svd(MtM)[1][0])
-            nn_core = fista(core_estimation, pseudo_inverse, x=nn_core, n_iter_max=n_iter_max, lr=learning_rate,
-                            sparsity_coef=sparsity_coefficients[-1])
+            nn_core = fista(core_estimation, pseudo_inverse, x=nn_core, n_iter_max=n_iter_max,
+                            sparsity_coef=sparsity_coefficients[-1], lr=learning_rate,)
         if algorithm == 'active_set':
             pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
             core_estimation_vec = tl.base.tensor_to_vec(tl.tenalg.mode_dot(tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]))
-            AtA = tl.tenalg.kronecker(pseudo_inverse)
-            vectorcore = active_set_nnls(AtA, core_estimation_vec, x=nn_core, n_iter_max=n_iter_max)
+            pseudo_inverse_kr = tl.tenalg.kronecker(pseudo_inverse)
+            vectorcore = active_set_nnls(pseudo_inverse_kr, core_estimation_vec, x=nn_core, n_iter_max=n_iter_max)
             nn_core = tl.reshape(vectorcore, tl.shape(nn_core))
         
         # Adding the l1 norm value to the reconstruction error
