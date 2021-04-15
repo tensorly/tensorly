@@ -7,20 +7,21 @@ import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
+from tensorly.decomposition._nn_cp import make_svd_non_negative
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
 # License: BSD 3 clause
 
 
-def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_svd', non_negative= False):
+def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_svd', non_negative=False):
     """
     Initialize core and factors used in `tucker`.
     The type of initialization is set using `init`. If `init == 'random'` then
     initialize factor matrices using `random_state`. If `init == 'svd'` then
     initialize the `m`th factor matrix using the `rank` left singular vectors
     of the `m`th unfolding of the input tensor.
-    
+
     Parameters
     ----------
     tensor : ndarray
@@ -33,39 +34,45 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
           function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     non_negative : bool, default is False
         if True, non-negative factors are returned
-    
+
     Returns
     -------
     core    : ndarray
-              initialized core tensor 
+              initialized core tensor
     factors : list of factors
     """
     try:
         svd_fun = tl.SVD_FUNS[svd]
     except KeyError:
         message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                svd, tl.get_backend(), tl.SVD_FUNS)
+            svd, tl.get_backend(), tl.SVD_FUNS)
         raise ValueError(message)
     # Initialisation
     if init == 'svd':
         factors = []
         for index, mode in enumerate(modes):
-            eigenvecs, _, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
-            factors.append(eigenvecs)
+            U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
 
-        # The initial core approximation is needed here for the masking step
+            if non_negative is True:
+                U = make_svd_non_negative(tensor, U, S, V, nntype="nndsvd")
+            factors.append(U[:, :rank[index]])
+            # The initial core approximation is needed here for the masking step
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
+        if non_negative is True:
+            core = tl.abs(core)
+
     elif init == 'random':
         rng = tl.check_random_state(random_state)
         core = tl.tensor(rng.random_sample(rank) + 0.01, **tl.context(tensor))  # Check this
         factors = [tl.tensor(rng.random_sample(s), **tl.context(tensor)) for s in zip(tl.shape(tensor), rank)]
+
+        if non_negative is True:
+            factors = [tl.abs(f) for f in factors]
+            core = tl.abs(core)
     else:
         (core, factors) = init
- 
-    if non_negative is True:
-        nn_factors = [tl.abs(f) for f in factors]
-        nn_core = tl.abs(core) 
-    return nn_core, nn_factors
+
+    return core, factors
 
     
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
