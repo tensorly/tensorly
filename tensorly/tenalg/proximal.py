@@ -261,7 +261,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, sparsi
     ----------
     AtB : ndarray
        Pre-computed product of the transposed of A and B.
-    pseudo_inverse: ndarray
+    pseudo_inverse: ndarray list
        Pre-computed product of the transposed of A and A.
     x : init
        Default: None
@@ -290,7 +290,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, sparsi
         sparsity_coef = 0
     
     if x is None:
-        x = tl.zeros([tl.shape(pseudo_inverse)[0], tl.shape(AtB)[1]])
+        x = tl.zeros(tl.shape(AtB))
 
     # Parameters
     momentum_old = tl.tensor(1.0)
