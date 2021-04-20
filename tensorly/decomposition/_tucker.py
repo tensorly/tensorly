@@ -7,21 +7,20 @@ import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
-from tensorly.decomposition._nn_cp import make_svd_non_negative
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
 # License: BSD 3 clause
 
 
-def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_svd', non_negative=False):
+def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_svd', non_negative= False):
     """
     Initialize core and factors used in `tucker`.
     The type of initialization is set using `init`. If `init == 'random'` then
     initialize factor matrices using `random_state`. If `init == 'svd'` then
     initialize the `m`th factor matrix using the `rank` left singular vectors
     of the `m`th unfolding of the input tensor.
-
+    
     Parameters
     ----------
     tensor : ndarray
@@ -34,46 +33,45 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
           function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     non_negative : bool, default is False
         if True, non-negative factors are returned
-
+    
     Returns
     -------
     core    : ndarray
-              initialized core tensor
+              initialized core tensor 
     factors : list of factors
     """
     try:
         svd_fun = tl.SVD_FUNS[svd]
     except KeyError:
         message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-            svd, tl.get_backend(), tl.SVD_FUNS)
+                svd, tl.get_backend(), tl.SVD_FUNS)
         raise ValueError(message)
     # Initialisation
     if init == 'svd':
         factors = []
         for index, mode in enumerate(modes):
-            U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)
-
-            if non_negative is True:
+            U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state)   
+            
+            if non_negative is True: 
                 U = make_svd_non_negative(tensor, U, S, V, nntype="nndsvd")
-            factors.append(U[:, :rank[index]])
-            # The initial core approximation is needed here for the masking step
-        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
+            
+            factors.append(U[:, :rank[index]])        
+        # The initial core approximation is needed here for the masking step
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)        
         if non_negative is True:
-            core = tl.abs(core)
-
+            core = tl.abs(core) 
+            
     elif init == 'random':
         rng = tl.check_random_state(random_state)
         core = tl.tensor(rng.random_sample(rank) + 0.01, **tl.context(tensor))  # Check this
         factors = [tl.tensor(rng.random_sample(s), **tl.context(tensor)) for s in zip(tl.shape(tensor), rank)]
-
         if non_negative is True:
             factors = [tl.abs(f) for f in factors]
-            core = tl.abs(core)
+            core = tl.abs(core) 
     else:
         (core, factors) = init
-
+ 
     return core, factors
-
     
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
                    svd='numpy_svd', random_state=None, verbose=False, mask=None):
@@ -416,6 +414,31 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     errors: list
         A list of reconstruction errors at each iteration of the algorithm.
 
+    Notes
+    -----
+    Tucker decomposes a tensor into a core tensor and list of factors:
+    .. math::
+        \begin{equation}
+            tensor = [| core; factors[0], ... ,factors[-1] |]
+        \end{equation}
+
+    We solve the following problem for each factor:
+    .. math::
+        \begin{equation}
+            \min_{tensor >= 0} ||tensor_[i] - factors[i]\times core_[i] \times (\prod_{i\neq j}(factors[j]))^T||^2
+        \end{equation}
+
+    If we define two variables such as:
+    .. math::
+            U = core_[i] \times (\prod_{i\neq j}(factors[j]))^T \\
+            M = tensor_[i]
+
+    Gradient of the problem becomes:
+        .. math::
+        \begin{equation}
+            \delta = -U^TM + factors[i] \times U^TU
+        \end{equation}
+
     References
     ----------
     .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
@@ -437,11 +460,11 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
 
     nn_core, nn_factors = initialize_tucker(tensor, rank, modes, init=init, svd=svd, random_state=random_state, 
                                             non_negative=True)
-    # initialisation - declare local varaibles
+    # initialisation - declare local variables
     norm_tensor = tl.norm(tensor, 2)
     rec_errors = []
 
-    # Iterate over one step of NTF
+    # Iterate over one step of NTD
     for iteration in range(n_iter_max):
         # One pass of least squares on each updated mode
         for mode in modes:
@@ -451,7 +474,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
             for i, factor in enumerate(nn_factors):
                 if i != mode:
                     pseudo_inverse[i] = tl.dot(tl.conj(tl.transpose(factor)), factor)
-            # Second, the multiway product with core G
+            # UtU
             core_cross = multi_mode_dot(nn_core, pseudo_inverse, skip=mode)
             UtU = tl.dot(unfold(core_cross, mode), tl.transpose(unfold(nn_core, mode)))
 
@@ -479,7 +502,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
             pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
             core_estimation_vec = tl.base.tensor_to_vec(tl.tenalg.mode_dot(tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]))
             pseudo_inverse_kr = tl.tenalg.kronecker(pseudo_inverse)
-            vectorcore = active_set_nnls(pseudo_inverse_kr, core_estimation_vec, x=nn_core, n_iter_max=n_iter_max)
+            vectorcore = active_set_nnls(core_estimation_vec, pseudo_inverse_kr, x=nn_core, n_iter_max=n_iter_max)
             nn_core = tl.reshape(vectorcore, tl.shape(nn_core))
         
         # Adding the l1 norm value to the reconstruction error

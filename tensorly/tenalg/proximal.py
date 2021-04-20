@@ -250,19 +250,19 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
     return V, rec_error, iteration, complexity_ratio
     
 
-def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
+def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
           lr=10e-3, tol=10e-2):
     """
     Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
 
-    Computes and approximate solution for Ax=b linear system.
+    Computes an approximate (nonnegative) solution for Ux=M linear system.
 
     Parameters
     ----------
-    AtB : ndarray
-       Pre-computed product of the transposed of A and B.
-    pseudo_inverse: ndarray list
-       Pre-computed product of the transposed of A and A.
+    UtM : ndarray
+        Pre-computed product of the transposed of U and M
+    UtU : ndarray
+        Pre-computed product of the transposed of U and U
     x : init
        Default: None
     n_iter_max : int
@@ -278,7 +278,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, sparsi
 
     Returns
     -------
-    x : approximate solution such that Ax = b
+    x : approximate solution such that Ux = M
 
     Reference
     ----------
@@ -290,7 +290,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, sparsi
         sparsity_coef = 0
     
     if x is None:
-        x = tl.zeros(tl.shape(AtB))
+        x = tl.zeros(tl.shape(UtM))
 
     # Parameters
     momentum_old = tl.tensor(1.0)
@@ -298,7 +298,7 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, sparsi
     x_update = tl.copy(x)
 
     for iteration in range(n_iter_max):
-        x_gradient = - AtB + tl.tenalg.multi_mode_dot(x_update, pseudo_inverse, transpose=False) + sparsity_coef
+        x_gradient = - UtM + tl.tenalg.multi_mode_dot(x_update, UtU, transpose=False) + sparsity_coef
 
         if non_negative is True:
             x_gradient = tl.where(lr * x_gradient < x_update, x_gradient, x_update/lr)
@@ -316,16 +316,18 @@ def fista(AtB, pseudo_inverse, x=None, n_iter_max=100, non_negative=True, sparsi
     return x
 
 
-def active_set_nnls(AtA, Atb, x=None, n_iter_max=100, tol=10e-8):
+def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     """
      Active set algorithm for non-negative least square solution.
 
+     Computes an approximate non-negative solution for Ux=m linear system.
+
      Parameters
      ----------
-     AtA : ndarray
-        Pre-computed Kronecker product of the transposed of A and A.
-     Atb : ndarray
-        Pre-computed product of the transposed of A and b.
+     Utm : ndarray
+        Pre-computed product of the transposed of U and m
+     UtU : ndarray
+        Pre-computed Kronecker product of the transposed of U and U
      x : init
         Default: None
      n_iter_max : int
@@ -346,25 +348,25 @@ def active_set_nnls(AtA, Atb, x=None, n_iter_max=100, tol=10e-8):
      """
     
     if x is None:
-        x_vec = tl.zeros(tl.shape(AtA)[1])
+        x_vec = tl.zeros(tl.shape(UtU)[1])
     else:
         x_vec = tl.base.tensor_to_vec(x)
 
-    gradient = Atb - tl.dot(AtA, x_vec)
+    x_gradient = Utm - tl.dot(UtU, x_vec)
     passive_set = x_vec > 0
     active_set = x_vec <= 0
     s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
 
     for iteration in range(n_iter_max):
 
-        if True in active_set:
-            indice = tl.argmax(gradient)
+        if iteration > 0 or tl.all(x_vec == 0):
+            indice = tl.argmax(x_gradient)
             passive_set = tl.index_update(passive_set, tl.index[indice], True)
             active_set = tl.index_update(active_set, tl.index[indice], False)
         # To avoid singularity error when initial x exists
         try:
-            a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
-            c = tl.solve(a, Atb[passive_set])
+            a = tl.tensor(tl.to_numpy(UtU)[passive_set, :][:, passive_set], **tl.context(UtU))
+            c = tl.solve(a, Utm[passive_set])
             indice_list = []
             for i in range(tl.shape(s)[0]):
                 if passive_set[i]:
@@ -374,16 +376,16 @@ def active_set_nnls(AtA, Atb, x=None, n_iter_max=100, tol=10e-8):
                     s = tl.index_update(s, tl.index[int(i)], 0)
         # Start from zeros if solve is not achieved  
         except:
-            x_vec = tl.zeros(tl.shape(AtA)[1])
+            x_vec = tl.zeros(tl.shape(UtU)[1])
             s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
             passive_set = x_vec > 0
             active_set = x_vec <= 0
             if True in active_set:
-                indice = tl.argmax(gradient)
+                indice = tl.argmax(x_gradient)
                 passive_set = tl.index_update(passive_set, tl.index[indice], True)
                 active_set = tl.index_update(active_set, tl.index[indice], False)
-            a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
-            c = tl.solve(a, Atb[passive_set])
+            a = tl.tensor(tl.to_numpy(UtU)[passive_set, :][:, passive_set], **tl.context(UtU))
+            c = tl.solve(a, Utm[passive_set])
             indice_list = []
             for i in range(tl.shape(s)[0]):
                 if passive_set[i]:
@@ -400,8 +402,8 @@ def active_set_nnls(AtA, Atb, x=None, n_iter_max=100, tol=10e-8):
                 x_vec = x_vec + update
                 passive_set = x_vec > 0
                 active_set = x_vec <= 0
-                a = tl.tensor(tl.to_numpy(AtA)[passive_set, :][:, passive_set], **tl.context(AtA))
-                c = tl.solve(a, Atb[passive_set])
+                a = tl.tensor(tl.to_numpy(UtU)[passive_set, :][:, passive_set], **tl.context(UtU))
+                c = tl.solve(a, Utm[passive_set])
                 indice_list = []
                 for i in range(tl.shape(s)[0]):
                     if passive_set[i]:
@@ -416,9 +418,9 @@ def active_set_nnls(AtA, Atb, x=None, n_iter_max=100, tol=10e-8):
         x_vec = tl.clip(s, 0, tl.max(s))
 
         # gradient update
-        gradient = Atb - tl.dot(AtA, x_vec)
+        x_gradient = Utm - tl.dot(UtU, x_vec)
 
-        if True not in active_set or tl.max(gradient[active_set]) <= tol:
+        if True not in active_set or tl.max(x_gradient[active_set]) <= tol:
             break
 
     return x_vec
