@@ -80,6 +80,7 @@ Array creation
     zeros_like
     eye
     diag
+   check_random_state
 
 Array manipulation
 ++++++++++++++++++
@@ -318,6 +319,7 @@ Note that these are currently experimental and may change in the future.
     CP
     RandomizedCP
     CPPower
+    CP_NN_HALS
     Tucker
     TensorTrain
     Parafac2
@@ -331,7 +333,12 @@ Functions
     :template: function.rst
 
     parafac
+    power_iteration
+    parafac_power_iteration
+    symmetric_power_iteration
+    symmetric_parafac_power_iteration
     non_negative_parafac
+    non_negative_parafac_hals
     sample_khatri_rao
     randomised_parafac
     tucker
@@ -341,8 +348,6 @@ Functions
     tensor_train
     tensor_train_matrix
     parafac2
-    symmetric_power_iteration
-    symmetric_parafac_power_iteration
 
 
 :mod:`tensorly.regression`: Tensor Regression
@@ -397,7 +402,6 @@ Functions
    random_tt
    random_tt_matrix
    random_parafac2
-   check_random_state
 
 
 

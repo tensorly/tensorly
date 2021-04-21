@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        BACKEND: ['numpy', 'pytorch', 'tensorflow', 'jax', 'mxnet', 'cupy']
+        BACKEND: ['numpy', 'pytorch', 'tensorflow', 'jax', 'mxnet']
 
     steps:
     - uses: actions/checkout@v2
@@ -18,20 +18,26 @@ jobs:
       with:
         python-version: 3.8
   
-    - name: Install dependencies and backend ${BACKEND}
+    - name: Install dependencies and backend ${{matrix.BACKEND}}
       run: |
         python -m pip install --upgrade pip
         python -m pip install -r requirements.txt
         python -m pip install -r doc/requirements_doc.txt
-        if [[ "${BACKEND}" == "numpy" ]]; then
+        echo "Installing dependencies for BACKEND=${{matrix.BACKEND}}"
+        if [[ "${{matrix.BACKEND}}" == "numpy" ]]; then
+          echo "Installing sparse";
           pip install sparse;
-        elif [[ "${BACKEND}" == "pytorch" ]]; then
+        elif [[ "${{matrix.BACKEND}}" == "pytorch" ]]; then
+          echo "Installing PyTorch";
           pip install torch torchvision;
-        elif [[ "${BACKEND}" == "tensorflow" ]]; then
+        elif [[ "${{matrix.BACKEND}}" == "tensorflow" ]]; then
+          echo "Installing TensorFlow";
           pip install tensorflow;
-        elif [[ "${BACKEND}" == "mxnet" ]]; then
+        elif [[ "${{matrix.BACKEND}}" == "mxnet" ]]; then
+          echo "Installing MXNet";
           pip install mxnet;
-        elif [[ "${BACKEND}" == "jax" ]]; then
+        elif [[ "${{matrix.BACKEND}}" == "jax" ]]; then
+          echo "Installing JAX";
           pip install jax jaxlib;
         fi
 
@@ -39,9 +45,9 @@ jobs:
       run: |
         python -m pip install -e .
 
-    - name: Test with backend ${BACKEND} pytest and coverage
+    - name: Test with backend ${{matrix.BACKEND}} pytest and coverage
       run: |
-        TENSORLY_BACKEND=${BACKEND} pytest -vv --cov tensorly --cov-report xml tensorly
+        TENSORLY_BACKEND=${{matrix.BACKEND}} pytest -vv --cov tensorly --cov-report xml tensorly
     
     - name: Check coverage with CodeCov
       uses: codecov/codecov-action@v1

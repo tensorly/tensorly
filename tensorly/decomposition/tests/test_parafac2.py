@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import tensorly as tl
-from ...random import check_random_state, random_parafac2
+from ...random import random_parafac2
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
 from .._parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
@@ -41,7 +41,7 @@ def best_correlation(A, B):
      itertools.product([True, False], ["random", "svd"])
 )
 def test_parafac2(normalize_factors, init):
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     tol_norm_2 = 10e-2
     rank = 3
 
@@ -111,7 +111,7 @@ def test_parafac2_slice_and_tensor_input():
 
 
 def test_parafac2_normalize_factors():
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     rank = 2  # Rank 2 so we only need to test rank of minimum and maximum
 
     random_parafac2_tensor = random_parafac2(
@@ -135,21 +135,21 @@ def test_parafac2_normalize_factors():
     assert abs(tl.min(norms) - tl.min(normalized_rec.weights))/tl.min(norms) < 1e-2
 
 def test_parafac2_init_valid():
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     rank = 3
 
     random_parafac2_tensor = random_parafac2(shapes=[(15, 30)]*25, rank=rank, random_state=rng)
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     weights, (A, B, C), projections = random_parafac2_tensor
     B = T.dot(projections[0], B)
-    
+
     for init_method in ['random', 'svd', random_parafac2_tensor, (weights, (A, B, C))]:
         init = initialize_decomposition(tensor, rank, init=init_method)
         assert init.shape == random_parafac2_tensor.shape
 
 
 def test_parafac2_init_error():
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     rank = 3
 
     random_parafac2_tensor = random_parafac2(shapes=[(15, 30)]*25, rank=rank, random_state=rng)
@@ -165,12 +165,12 @@ def test_parafac2_init_error():
     random_parafac2_tensor = random_parafac2(shapes=[(15, 3)]*25, rank=rank, random_state=rng)
     tensor = parafac2_to_tensor(random_parafac2_tensor)
 
-    with np.testing.assert_raises(ValueError):
+    with pytest.raises(Exception):
         _ = initialize_decomposition(tensor, rank, init='svd')
 
 
 def test_parafac2_to_tensor():
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     rank = 3
 
     I = 25
@@ -197,7 +197,7 @@ def test_pad_by_zeros():
 
     This failed for TensorFlow at some point.
     """
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     rank = 3
 
     I = 25

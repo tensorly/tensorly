@@ -1,7 +1,6 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from tensorly.tenalg import outer
-from tensorly.metrics.regression import standard_deviation
 import numpy as np
 from ..cp_tensor import validate_cp_rank
 
@@ -26,37 +25,36 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
 
     eigenval : float
         the obtained eigenvalue
-    best_factor: tl.tensor
+    best_factor : tl.tensor
         the best estimated eigenvector
     deflated : tl.tensor of same shape as `tensor`
         the deflated tensor (i.e. without the estimated component)
     """
     order = tl.ndim(tensor)
     size = tl.shape(tensor)[0]
-    
+
     if not tl.shape(tensor) == (size, )*order:
         raise ValueError('The input tensor does not have the same size along each mode.')
 
     # A list of candidates for each mode
-    best_score = 0
     scores = []
     modes = list(range(1, order))
-    
-    for _ in range(n_repeat):
+
+    for i in range(n_repeat):
         factor = tl.tensor(np.random.random_sample(size), **tl.context(tensor))
 
         for _ in range(n_iteration):
             for _ in range(order):
                 factor = tl.tenalg.multi_mode_dot(tensor, [factor]*(order-1), modes=modes)
                 factor = factor / tl.norm(factor, 2)
-                
+
         score = tl.tenalg.multi_mode_dot(tensor, [factor]*order)
         scores.append(score) #round(score, 2))
         
-        if score > best_score:
+        if (i == 0) or (score > best_score):
             best_score = score
             best_factor = factor
-            
+
     if verbose:
         print(f'Best score of {n_repeat}: {best_score}')
     
@@ -67,11 +65,11 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
             best_factor = best_factor / tl.norm(best_factor, 2)
 
     eigenval = tl.tenalg.multi_mode_dot(tensor, [best_factor]*order)
-    deflated = tensor - outer([best_factor]*3)*eigenval
-    
+    deflated = tensor - outer([best_factor]*order)*eigenval
+
     if verbose:
         explained = tl.norm(deflated)/tl.norm(tensor)
-        print(f'Eingenvalue: {eigenval}, explained: {explained}')
+        print(f'Eigenvalue: {eigenval}, explained: {explained}')
 
     return eigenval, best_factor, deflated
 
@@ -105,23 +103,23 @@ def symmetric_parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10,
 
     order = tl.ndim(tensor)
     size = tl.shape(tensor)[0]
-    
+
     if not tl.shape(tensor) == (size, )*order:
         raise ValueError('The input tensor does not have the same size along each mode.')
 
     factor = []
-    weigths = []
+    weights = []
 
     for _ in range(rank):
         eigenval, eigenvec, deflated = symmetric_power_iteration(tensor, n_repeat=n_repeat, n_iteration=n_iteration, verbose=verbose)
         factor.append(eigenvec)
-        weigths.append(eigenval)
+        weights.append(eigenval)
         tensor = deflated
 
     factor = tl.stack(factor, axis=1)
-    weigths = tl.stack(weigths)
+    weights = tl.stack(weights)
 
-    return weigths, factor
+    return weights, factor
 
 class SymmetricCP(DecompositionMixin):
     """Symmetric CP Decomposition via Robust Symmetric Tensor Power Iteration
@@ -156,4 +154,3 @@ class SymmetricCP(DecompositionMixin):
         self.decomposition_ = symmetric_parafac_power_iteration(tensor, self.rank, n_repeat=self.n_repeat,
                                                                 n_iteration=self.n_iteration, verbose=self.verbose)
         return self.decomposition_
-

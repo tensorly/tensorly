@@ -3,7 +3,6 @@ import numpy as np
 from ..cp_regression import CPRegressor
 from ...base import tensor_to_vec, partial_tensor_to_vec
 from ...metrics.regression import RMSE
-from ...random import check_random_state
 from ... import backend as T
 from ...testing import assert_
 
@@ -18,7 +17,7 @@ def test_CPRegressor():
     tol = 0.05
 
     # Generate random samples
-    rng = check_random_state(1234)
+    rng = T.check_random_state(1234)
     X = T.tensor(rng.normal(size=(1200, image_height, image_width, n_channels), loc=0, scale=1))
     regression_weights = np.zeros((image_height, image_width, n_channels))
     regression_weights[2:-2, 2:-2, 0] = 1

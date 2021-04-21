@@ -3,7 +3,6 @@ from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
-from ..random import check_random_state
 import tensorly.tenalg as tlg
 from math import sqrt
 
@@ -88,8 +87,12 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         # The initial core approximation is needed here for the masking step
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
     elif init == 'random':
-        rng = check_random_state(random_state)
-        core = tl.tensor(rng.random_sample(rank), **tl.context(tensor))
+        rng = tl.check_random_state(random_state)
+        # len(rank) == len(modes) but we still want a core dimension for the modes not optimized
+        core_shape = list(tl.shape(tensor))
+        for (i, e) in enumerate(modes):
+            core_shape[e] = rank[i]
+        core = tl.tensor(rng.random_sample(core_shape), **tl.context(tensor))
         factors = [tl.tensor(rng.random_sample((tl.shape(tensor)[mode], rank[index])), **tl.context(tensor)) for (index, mode) in enumerate(modes)]
     else: 
         (core, factors) = init
@@ -99,7 +102,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
     for iteration in range(n_iter_max):
         if mask is not None:
-            tensor = tensor*mask + tucker_to_tensor((core, factors))*(1-mask)
+            tensor = tensor*mask + multi_mode_dot(core, factors, modes=modes, transpose=False)*(1-mask)
 
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(tensor, factors, modes=modes, skip=index, transpose=True)
@@ -151,6 +154,11 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
     random_state : {None, int, np.random.RandomState}
+    mask : ndarray
+        array of booleans with the same shape as ``tensor`` should be 0 where
+        the values are missing and 1 everywhere else. Note:  if tensor is
+        sparse, then mask should also be sparse with a fill value of 1 (or
+        True).
     verbose : int, optional
         level of verbosity
 
@@ -245,7 +253,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         nn_factors = [tl.abs(f) for f in factors]
         nn_core = tl.abs(core)
     else:
-        rng = check_random_state(random_state)
+        rng = tl.check_random_state(random_state)
         core = tl.tensor(rng.random_sample(rank) + 0.01, **tl.context(tensor))  # Check this
         factors = [tl.tensor(rng.random_sample(s), **tl.context(tensor)) for s in zip(tl.shape(tensor), rank)]
         nn_factors = [tl.abs(f) for f in factors]

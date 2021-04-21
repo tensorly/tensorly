@@ -8,7 +8,6 @@ Example on how to use :class:`tensorly.regression.cp_regression.CPRegressor` to 
 import matplotlib.pyplot as plt
 from tensorly.base import tensor_to_vec, partial_tensor_to_vec
 from tensorly.datasets.synthetic import gen_image
-from tensorly.random import check_random_state
 from tensorly.regression.cp_regression import CPRegressor
 import tensorly as tl
 
@@ -21,7 +20,7 @@ patterns = ['rectangle', 'swiss', 'circle']
 ranks = [1, 2, 3, 4, 5]
 
 # Generate random samples
-rng = check_random_state(1)
+rng = tl.check_random_state(1)
 X = tl.tensor(rng.normal(size=(1000, image_height, image_width), loc=0, scale=1))
 
 

@@ -2,7 +2,6 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..cp_tensor import validate_cp_rank
 from tensorly.tenalg import outer
-from tensorly.metrics.regression import standard_deviation
 import numpy as np
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -29,7 +28,7 @@ def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
 
     eigenval : float
         the obtained eigenvalue
-    best_factors: tl.tensor list
+    best_factors : tl.tensor list
         the best estimated eigenvector, for each mode of the input tensor
     deflated : tl.tensor of same shape as `tensor`
         the deflated tensor (i.e. without the estimated component)
@@ -37,10 +36,9 @@ def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
     order = tl.ndim(tensor)
     
     # A list of candidates for each mode
-    best_score = 0
     scores = []
     
-    for _ in range(n_repeat):
+    for i in range(n_repeat):
         factors = [tl.tensor(np.random.random_sample(s), **tl.context(tensor)) for s in tl.shape(tensor)]
 
         for _ in range(n_iteration):
@@ -52,10 +50,10 @@ def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
         score = tl.tenalg.multi_mode_dot(tensor, factors)
         scores.append(score) #round(score, 2))
         
-        if score > best_score:
+        if (i == 0) or (score > best_score):
             best_score = score
             best_factors = factors
-            
+
     if verbose:
         print(f'Best score of {n_repeat}: {best_score}')
     
@@ -71,7 +69,7 @@ def power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False):
     
     if verbose:
         explained = tl.norm(deflated)/tl.norm(tensor)
-        print(f'Eingenvalue: {eigenval}, explained: {explained}')
+        print(f'Eigenvalue: {eigenval}, explained: {explained}')
 
     return eigenval, best_factors, deflated
 
@@ -105,18 +103,18 @@ def parafac_power_iteration(tensor, rank, n_repeat=10, n_iteration=10, verbose=0
 
     order = tl.ndim(tensor)
     factors = []
-    weigths = []
+    weights = []
 
     for _ in range(rank):
         eigenval, eigenvec, deflated = power_iteration(tensor, n_repeat=n_repeat, n_iteration=n_iteration, verbose=verbose)
         factors.append(eigenvec)
-        weigths.append(eigenval)
+        weights.append(eigenval)
         tensor = deflated
 
     factors = [tl.stack([f[i] for f in factors], axis=1) for i in range(order)]
-    weigths = tl.stack(weigths)
+    weights = tl.stack(weights)
 
-    return weigths, factors
+    return weights, factors
 
 
 

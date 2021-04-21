@@ -166,12 +166,14 @@ def _validate_cp_tensor(cp_tensor):
     if isinstance(cp_tensor, CPTensor):
         # it's already been validated at creation
         return cp_tensor.shape, cp_tensor.rank
+    elif isinstance(cp_tensor, (float, int)): #0-order tensor
+        return 0, 0
 
     weights, factors = cp_tensor
             
-    if len(factors) < 2:
-        raise ValueError('A CP tensor should be composed of at least two factors.'
-                         'However, {} factor was given.'.format(len(factors)))
+    # if len(factors) < 2:
+    #     raise ValueError('A CP tensor should be composed of at least two factors.'
+    #                      'However, {} factor was given.'.format(len(factors)))
 
     if T.ndim(factors[0]) == 2:
         rank = int(T.shape(factors[0])[1])
@@ -300,6 +302,59 @@ def cp_normalize(cp_tensor):
     return CPTensor((weights, normalized_factors))
 
 
+def cp_flip_sign(cp_tensor, mode=0, func=None):
+    """Returns cp_tensor with factors flipped to have positive signs.
+    The sign of a given column is determined by `func`, which is the mean
+    by default. Any negative signs are assigned to the mode indicated by `mode`.
+
+    Parameters
+    ----------
+    cp_tensor : CPTensor = (weight, factors)
+        factors is list of matrices, all with the same number of columns
+        i.e.::
+        
+            for u in U:
+                u[i].shape == (s_i, R)
+
+        where `R` is fixed while `s_i` can vary with `i`
+    
+    mode: int
+        mode that should receive negative signs
+
+    func: tensorly function
+        a function that should summarize the sign of a column
+        it must be able to take an axis argument
+
+    Returns
+    -------
+    CPTensor = (normalisation_weights, normalised_factors)
+    """
+    _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
+
+    if func is None:
+        func = T.mean
+
+    for jj in range(0, len(factors)):
+        # Skip the target mode
+        if jj == mode:
+            continue
+
+        # Calculate the sign of the current factor in each component
+        column_signs = T.sign(func(factors[jj], axis=0))
+
+        # Update both the current and receiving factor
+        factors[mode] = factors[mode]*column_signs[np.newaxis, :]
+        factors[jj] = factors[jj]*column_signs[np.newaxis, :]
+
+    # Check the weight signs
+    weight_signs = T.sign(weights)
+    factors[mode] = factors[mode]*weight_signs[np.newaxis, :]
+    weights = T.abs(weights)
+
+    return CPTensor((weights, factors))
+
+
 def cp_to_tensor(cp_tensor, mask=None):
     """Turns the Khatri-product of matrices into a full tensor
 
@@ -332,14 +387,20 @@ def cp_to_tensor(cp_tensor, mask=None):
 
     """
     shape, _ = _validate_cp_tensor(cp_tensor)
+
+    if not shape: # 0-order tensor
+        return cp_tensor
+
     weights, factors = cp_tensor
+    if len(shape) == 1: # just a vector
+        return weights.tl.sum(factors, axis=1)
 
     if weights is None:
         weights = 1
 
     if mask is None:
         full_tensor = T.dot(factors[0]*weights,
-                             T.transpose(khatri_rao(factors, skip_matrix=0)))
+                            T.transpose(khatri_rao(factors, skip_matrix=0)))
     else:
         full_tensor = T.sum(khatri_rao([factors[0]*weights]+factors[1:], mask=mask), axis=1)
 
