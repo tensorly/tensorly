@@ -7,6 +7,7 @@ import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
+from tensorly.decomposition._nn_cp import make_svd_non_negative
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
