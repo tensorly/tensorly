@@ -18,10 +18,11 @@ import os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('sphinx_ext'))
+# sys.path.insert(0, os.path.abspath('sphinx_ext'))
 sys.path.insert(0, '..')
 
 # -- General configuration ------------------------------------------------
+
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
@@ -34,7 +35,8 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinx.ext.imgmath', #'sphinx.ext.mathjax',
+    # 'sphinx.ext.imgmath', 
+    'sphinx.ext.mathjax',
     'numpydoc.numpydoc',
     'sphinx_gallery.gen_gallery',
 ]
@@ -53,7 +55,7 @@ templates_path = ['templates']
 
 # generate autosummary even if no references
 autosummary_generate = True
-
+autoclass_content = 'class'
 autodoc_default_flags = ['members', 'inherited-members']
 
 # The suffix(es) of source filenames.
@@ -71,7 +73,7 @@ master_doc = 'index'
 project = u'tensorly'
 from datetime import datetime
 year = datetime.now().year
-copyright = u'2016 - {}, Jean Kossaifi'.format(year)
+copyright = u'2016 - {}, TensorLy Developers'.format(year)
 author = 'Jean Kossaifi'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -79,9 +81,10 @@ author = 'Jean Kossaifi'
 # built documents.
 #
 # The short X.Y version.
-version = '0.1'
-# The full version, including alpha/beta/rc tags.
+# version = '0.1'
 import tensorly
+version = '.'.join(tensorly.__version__.split('.')[:2])
+# The full version, including alpha/beta/rc tags.
 release = tensorly.__version__
 # release = ''
 
@@ -135,16 +138,24 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'tensorly'
+html_theme = 'tensorly_sphinx_theme'
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['themes']
+# html_theme_path = ['themes']
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'google_analytics' : 'UA-86209849-1',
+    'google_analytics' : 'G-3V91QCZR03',
+    'github_url': 'https://github.com/tensorly/tensorly',
+    'searchbar_text': 'Search in TensorLy',
+    'nav_links' : [('Install', 'installation'), 
+                   ('User Guide', 'user_guide/index'),
+                   ('API', 'modules/api'),
+                   ('Examples', 'auto_examples/index'),
+                   ('About Us', 'about')],
+    'external_nav_links' : [('Notebooks', 'https://github.com/JeanKossaifi/tensorly-notebooks')]
 }
 
 # The name for this set of Sphinx documents.
@@ -156,9 +167,9 @@ html_short_title = 'TensorLy'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = '_static/TensorLy_logo.png'
+html_logo = '_static/logos/logo_tensorly.png'
 
-html_add_permalinks = None
+html_add_permalinks = ''
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -170,9 +181,8 @@ html_add_permalinks = None
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-html_additional_pages = {
-    'home': 'home.html',
-}
+# html_additional_pages = {
+# }
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

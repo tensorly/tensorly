@@ -34,7 +34,7 @@ Algorithms
 - ``robust_pca``
 
 Usage
-=====
+-----
 
 The sparse sub-package in ``tensorly.contrib.sparse`` contains a mirror of the
 interfaces in the usual, dense ``tensorly`` package. For example, unfolding a
@@ -95,7 +95,7 @@ When using masks with sparse tensors, there are two important caveats:
   backend ``parafac`` will densify the array.
 
 Example
-=======
+-------
 
 In the following example, we construct a random sparse tensor that has a known
 rank (by construction), and decompose it with parafac.
@@ -114,11 +114,11 @@ rank (by construction), and decompose it with parafac.
 
 Here we construct a tensor from the random factors. Note that in general,
 a recomposed tensor will be dense, but for our constructed example it is
-sparse, so we can use ``kruskal_to_tensor`` without worrying about using too
+sparse, so we can use ``cp_to_tensor`` without worrying about using too
 much memory.
 
-   >>> from tensorly.contrib.sparse.kruskal_tensor import kruskal_to_tensor
-   >>> tensor = kruskal_to_tensor((starting_weights, starting_factors))
+   >>> from tensorly.contrib.sparse.cp_tensor import cp_to_tensor
+   >>> tensor = cp_to_tensor((starting_weights, starting_factors))
    >>> tensor
    <COO: shape=(1000, 1001, 1002), dtype=float64, nnz=5044, fill_value=0.0>
 
@@ -135,13 +135,13 @@ Now to decompose the tensor.
 
    >>> from tensorly.decomposition import parafac # The dense version
    >>> import time
-   >>> t = time.time(); dense_kruskal = parafac(tensor, 5, init='random'); print(time.time() - t)
+   >>> t = time.time(); dense_cp = parafac(tensor, 5, init='random'); print(time.time() - t)
    1.3858051300048828
 
 Note that the decomposition takes much longer when using the sparse variant.
 
    >>> from tensorly.contrib.sparse.decomposition import parafac as sparse_parafac # The sparse version
-   >>> t = time.time(); sparse_kruskal = sparse_parafac(tensor, 5, init='random'); print(time.time() - t)
+   >>> t = time.time(); sparse_cp = sparse_parafac(tensor, 5, init='random'); print(time.time() - t)
    14.053689002990723
 
 However, there can be advantages to using the sparse variant. It is currently

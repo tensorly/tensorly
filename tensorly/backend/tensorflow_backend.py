@@ -1,13 +1,11 @@
 try:
     import tensorflow as tf
+    import tensorflow.math as tfm
 except ImportError as error:
     message = ('Impossible to import TensorFlow.\n'
                'To use TensorLy with the TensorFlow backend, '
                'you must first install TensorFlow!')
     raise ImportError(message) from error
-
-#import tensorflow.contrib.eager as tfe
-#tfe.enable_eager_execution(device_policy=tfe.DEVICE_PLACEMENT_SILENT)
 
 import numpy as np
 
@@ -26,12 +24,12 @@ class TensorflowBackend(Backend):
         if isinstance(data, tf.Tensor):
             return data
 
-        out = tf.constant(data, dtype=dtype)
+        out = tf.Variable(data, dtype=dtype)
         return out.gpu(device_id) if device == 'gpu' else out
 
     @staticmethod
     def is_tensor(tensor):
-        return isinstance(tensor, tf.Tensor)
+        return isinstance(tensor, tf.Tensor) or isinstance(tensor, tf.Variable)
 
     @staticmethod
     def to_numpy(tensor):
@@ -39,6 +37,8 @@ class TensorflowBackend(Backend):
             return tensor
         elif isinstance(tensor, tf.Tensor):
             return tensor.numpy()
+        elif isinstance(tensor, tf.Variable):
+            return tf.convert_to_tensor(tensor).numpy()
         else:
             return tensor
 
@@ -90,11 +90,7 @@ class TensorflowBackend(Backend):
     def norm(tensor, order=2, axis=None):
         if order == 'inf':
             order = np.inf
-        res = tf.norm(tensor=tensor, ord=order, axis=axis)
-
-        if res.shape == ():
-            return res.numpy()
-        return res
+        return tf.norm(tensor=tensor, ord=order, axis=axis)
 
     def dot(self, tensor1, tensor2):
         return tf.tensordot(tensor1, tensor2, axes=([self.ndim(tensor1) - 1], [0]))
@@ -119,48 +115,52 @@ class TensorflowBackend(Backend):
         return res
 
     @staticmethod
-    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
-        """Computes an SVD on `matrix`
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        dim_1, dim_2 = matrix.shape
-        if dim_1 <= dim_2:
-            min_dim = dim_1
+    def sort(tensor, axis, descending = False):
+        if descending:
+            direction = 'DESCENDING'
         else:
-            min_dim = dim_2
+            direction = 'ASCENDING'
+            
+        if axis is None:
+            tensor = tf.reshape(tensor, [-1])
+            axis = -1
 
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
+        return tf.sort(tensor, axis=axis, direction = direction)
+
+    def flip(self, tensor, axis=None):
+        if isinstance(axis, int):
+            axis = [axis]
+
+        if axis is None:
+            return tf.reverse(tensor, axis=[i for i in range(self.ndim(tensor))])
         else:
-            full_matrices = False
-
+            return tf.reverse(tensor, axis=axis)
+    
+    def svd(self, matrix, full_matrices):
+        """ Correct for the atypical return order of tf.linalg.svd. """
         S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], tf.transpose(a=V)[:n_eigenvecs, :]
-        return U, S, V
+        return U, S, tf.transpose(a=V)
+    
+    def index_update(self, tensor, indices, values):
+        if not isinstance(tensor, tf.Variable):
+            tensor = tf.Variable(tensor)
+            to_tensor = True
+        else:
+            to_tensor = False
+        
+        if isinstance(values, int):
+            values = tf.constant(np.ones(self.shape(tensor[indices]))*values,
+                                 **self.context(tensor))
+        
+        tensor = tensor[indices].assign(values)
 
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.truncated_svd}
+        if to_tensor:
+            return tf.convert_to_tensor(tensor)
+        else:
+            return tensor
+
+    def log2(self,x):
+        return tfm.log(x) / tfm.log(2.)
 
 _FUN_NAMES = [
     # source_fun, target_fun
@@ -168,6 +168,8 @@ _FUN_NAMES = [
     (np.int64, 'int64'),
     (np.float32, 'float32'),
     (np.float64, 'float64'),
+    (np.complex128, 'complex128'),
+    (np.complex64, 'complex64'),
     (tf.ones, 'ones'),
     (tf.zeros, 'zeros'),
     (tf.linalg.tensor_diag, 'diag'),
@@ -180,7 +182,7 @@ _FUN_NAMES = [
     (tf.abs, 'abs'),
     (tf.sqrt, 'sqrt'),
     (tf.linalg.qr, 'qr'),
-    #(tf.linalg.solve, 'solve'),
+    (tf.linalg.eigh, 'eigh'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),
@@ -193,6 +195,10 @@ _FUN_NAMES = [
     (tf.reduce_sum, 'sum'),
     (tf.reduce_prod, 'prod'),
     (tf.reduce_all, 'all'),
+    (tf.einsum, 'einsum'),
+    (tf.tensordot, 'tensordot'),
+    (tfm.sin, 'sin'),
+    (tfm.cos, 'cos')
     ]
 for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)

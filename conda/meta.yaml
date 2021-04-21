@@ -1,6 +1,6 @@
 package:
   name: tensorly
-  version: "0.4.3"
+  version: "0.5.1"
 
 source:
   path: ../
@@ -12,7 +12,7 @@ build:
 
 requirements:
   build:
-    - python >=3.4
+    - python >=3.6
     - setuptools
     - pip
 
@@ -38,6 +38,6 @@ about:
     TensorLy is a Python library that aims at making tensor learning simple 
     and accessible. It allows to easily perform tensor decomposition, 
     tensor learning and tensor algebra. Its backend system allows to 
-    seamlessly perform computation with NumPy, MXNet, PyTorch, TensorFlow 
-    or CuPy, and run methods at scale on CPU or GPU.
+    seamlessly perform computation with NumPy, MXNet, PyTorch, TensorFlow,
+    CuPy or JAX, and run methods at scale on CPU or GPU.
 

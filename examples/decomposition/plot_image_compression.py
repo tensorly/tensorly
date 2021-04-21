@@ -1,8 +1,9 @@
+
 """
 Image compression via tensor decomposition
 ==========================================
 
-Example on how to use :func:`tensorly.decomposition.parafac`and :func:`tensorly.decomposition.tucker` on images.
+Example on how to use :func:`tensorly.decomposition.parafac` and :func:`tensorly.decomposition.tucker` on images.
 """
 
 import matplotlib.pyplot as plt
@@ -36,10 +37,10 @@ tucker_rank = [100, 100, 2]
 # Perform the CP decomposition
 weights, factors = parafac(image, rank=cp_rank, init='random', tol=10e-6)
 # Reconstruct the image from the factors
-cp_reconstruction = tl.kruskal_to_tensor((weights, factors))
+cp_reconstruction = tl.cp_to_tensor((weights, factors))
 
 # Tucker decomposition
-core, tucker_factors = tucker(image, ranks=tucker_rank, init='random', tol=10e-5, random_state=random_state)
+core, tucker_factors = tucker(image, rank=tucker_rank, init='random', tol=10e-5, random_state=random_state)
 tucker_reconstruction = tl.tucker_to_tensor((core, tucker_factors))
 
 # Plotting the original and reconstruction from the decompositions

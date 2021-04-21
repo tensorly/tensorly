@@ -13,6 +13,7 @@ from .core import Backend
 
 
 class CupyBackend(Backend):
+    backend_name = 'cupy'
 
     @staticmethod
     def context(tensor):
@@ -44,84 +45,20 @@ class CupyBackend(Backend):
     def clip(tensor, a_min=None, a_max=None):
         return cp.clip(tensor, a_min, a_max)
 
-    def norm(self, tensor, order=2, axis=None):
-        # handle difference in default axis notation
-        if axis == ():
-            axis = None
-
-        if order == 'inf':
-            res = cp.max(cp.abs(tensor), axis=axis)
-        elif order == 1:
-            res = cp.sum(cp.abs(tensor), axis=axis)
-        elif order == 2:
-            res = cp.sqrt(cp.sum(tensor**2, axis=axis))
-        else:
-            res = cp.sum(cp.abs(tensor)**order, axis=axis)**(1 / order)
-
-        if res.shape == ():
-            return self.to_numpy(res)
-        return res
-
-    def solve(self, matrix1, matrix2):
-        try:
-            cp.linalg.solve(matrix1, matrix2)
-        except cp.cuda.cusolver.CUSOLVERError:
-            warnings.warn('CuPy solver failed, using numpy.linalg.solve instead.')
-            ctx = self.context(matrix1)
-            matrix1 = self.to_numpy(matrix1)
-            matrix2 = self.to_numpy(matrix2)
-            res = np.linalg.solve(matrix1, matrix2)
-            return self.tensor(res, **ctx)
-
     @staticmethod
-    def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
-        """Computes a truncated SVD on `matrix`
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        dim_1, dim_2 = matrix.shape
-        if dim_1 <= dim_2:
-            min_dim = dim_1
+    def sort(tensor, axis, descending = False):
+        if descending:
+            return cp.flip(cp.sort(tensor, axis=axis), axis = axis)
         else:
-            min_dim = dim_2
-
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-
-        U, S, V = cp.linalg.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        return U, S, V
-
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.truncated_svd}
+            return cp.sort(tensor, axis=axis)
 
 
-for name in ['float64', 'float32', 'int64', 'int32', 'reshape', 'moveaxis',
+for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye',
-             'arange', 'where', 'dot', 'kron', 'qr', 'concatenate', 'max',
+             'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip',
              'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'stack',
-             'conj', 'diag']:
+             'conj', 'diag', 'einsum', 'log2', 'tensordot']:
     CupyBackend.register_method(name, getattr(cp, name))
 
+for name in ['svd', 'qr', 'eigh', 'solve']:
+    CupyBackend.register_method(name, getattr(cp.linalg, name))

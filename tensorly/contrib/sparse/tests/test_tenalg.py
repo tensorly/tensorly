@@ -9,10 +9,10 @@ if not tl.get_backend() == "numpy":
 pytest.importorskip("sparse")
 
 import tensorly.contrib.sparse as stl
-from tensorly.contrib.sparse.kruskal_tensor import unfolding_dot_khatri_rao as sparse_unfolding_dot_khatri_rao
+from tensorly.contrib.sparse.cp_tensor import unfolding_dot_khatri_rao as sparse_unfolding_dot_khatri_rao
 
-def test_sparse_unfolding_times_kruskal():
-    """Test for unfolding_times_kruskal with sparse tensors
+def test_sparse_unfolding_times_cp():
+    """Test for unfolding_times_cp with sparse tensors
     
     We have already checked correctness in main backend
     Here, we check it is sparse-safe:
@@ -20,11 +20,11 @@ def test_sparse_unfolding_times_kruskal():
     """
     import sparse
 
-    shape = (100, 101, 102, 100, 100, 100)
+    shape = (1000, 1000, 1000, 10)
     rank = 5
-    factors = [sparse.random((i, rank)) for i in shape]
+    factors = [sparse.random((i, rank), density=0.08) for i in shape]
     weights = np.ones(rank)
-    tensor = stl.kruskal_to_tensor((weights, factors))
+    tensor = stl.cp_to_tensor((weights, factors))
     
     for mode in range(tl.ndim(tensor)):
         # Will blow-up memory if not sparse-safe

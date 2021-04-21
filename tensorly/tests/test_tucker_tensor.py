@@ -4,15 +4,16 @@ from .. import backend as tl
 from ..base import unfold, tensor_to_vec
 from ..tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
                              tucker_to_vec, _validate_tucker_tensor,
-                             tucker_mode_dot)
+                             tucker_mode_dot,
+                             _tucker_n_param, validate_tucker_rank)
 from ..tenalg import kronecker, mode_dot
 from ..testing import (assert_array_equal, assert_array_almost_equal, 
-                       assert_equal, assert_raises)
-from ..random import check_random_state, random_tucker
+                       assert_equal, assert_raises, assert_)
+from ..random import random_tucker
 
 
 def test_validate_tucker_tensor():
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     true_shape = (3, 4, 5)
     true_rank = (3, 2, 4)
     core, factors = random_tucker(true_shape, rank=true_rank)
@@ -43,7 +44,7 @@ def test_validate_tucker_tensor():
 
 def test_tucker_to_tensor():
     """Test for tucker_to_tensor"""
-    X = tl.tensor([[[1, 13],
+    X = tl.tensor(np.array([[[1., 13],
                    [4, 16],
                    [7, 19],
                    [10, 22]],
@@ -56,10 +57,10 @@ def test_tucker_to_tensor():
                   [[3, 15],
                    [6, 18],
                    [9, 21],
-                   [12, 24]]])
+                   [12, 24]]]))
     ranks = [2, 3, 4]
-    U = [tl.tensor(np.arange(R * s).reshape((R, s))) for (R, s) in zip(ranks, tl.shape(X))]
-    true_res = np.array([[[390, 1518, 2646, 3774],
+    U = [tl.tensor(np.arange(R * s, dtype=float).reshape((R, s))) for (R, s) in zip(ranks, tl.shape(X))]
+    true_res = np.array([[[390., 1518, 2646, 3774],
                          [1310, 4966, 8622, 12278],
                          [2230, 8414, 14598, 20782]],
                         [[1524, 5892, 10260, 14628],
@@ -110,7 +111,7 @@ def test_tucker_mode_dot():
         with mode_dot (which operates on full tensors)
         and check that the results are the same.
     """
-    rng = check_random_state(12345)
+    rng = tl.check_random_state(12345)
     shape = (5, 4, 6)
     rank = (3, 2, 4)
     tucker_ten = random_tucker(shape, rank=rank, full=False, random_state=rng)
@@ -138,3 +139,51 @@ def test_tucker_mode_dot():
     true_res = mode_dot(full_tensor, vec, mode=2)
     assert_equal(res.shape, true_res.shape)
     assert_array_almost_equal(true_res, res, decimal=5)
+
+
+def test_n_param_tucker():
+    """Test for _tucker_n_param"""
+    tensor_shape = (2, 3, 4, 1, 5)
+    rank = (3, 2, 2, 1, 4)
+    core, factors = random_tucker(shape=tensor_shape, rank=rank)
+    true_n_param = np.prod(tl.shape(core)) + np.sum([np.prod(tl.shape(f)) for f in factors])
+    n_param = _tucker_n_param(tensor_shape, rank)
+    assert_equal(n_param, true_n_param)
+
+def test_validate_tucker_rank():
+    """Test validate_tucker_rank with random sizes"""
+    tol = 0.01
+
+    tensor_shape = tuple(np.random.randint(1, 100, size=5))
+    n_param_tensor = np.prod(tensor_shape)
+
+    # Rounding = floor
+    rank = validate_tucker_rank(tensor_shape, rank='same', rounding='floor')
+    n_param = _tucker_n_param(tensor_shape, rank)
+    assert_(n_param*(1 - tol) <= n_param_tensor)
+
+    # Rounding = ceil
+    rank = validate_tucker_rank(tensor_shape, rank='same', rounding='ceil')
+    n_param = _tucker_n_param(tensor_shape, rank)
+    assert_(n_param >= n_param_tensor*(1 - tol))
+
+    # With fixed modes
+    fixed_modes = [1, 4]
+    tensor_shape = [s**2 if i in fixed_modes else s for (i, s) in enumerate(np.random.randint(2, 10, size=5))]
+    n_param_tensor = np.prod(tensor_shape)
+    # Floor
+    rank = validate_tucker_rank(tensor_shape, rank=0.5, fixed_modes=fixed_modes, rounding='floor')
+    n_param = _tucker_n_param(tensor_shape, rank)
+    for mode in fixed_modes:
+        assert_(rank[mode] == tensor_shape[mode])
+    assert_(n_param*(1 - tol) <= n_param_tensor*0.5)
+    # Ceil
+    fixed_modes = [0, 2]
+    tensor_shape = [s**2 if i in fixed_modes else s for (i, s) in enumerate(np.random.randint(2, 10, size=5))]
+    n_param_tensor = np.prod(tensor_shape)
+    rank = validate_tucker_rank(tensor_shape, rank=0.5, fixed_modes=fixed_modes, rounding='ceil')
+    n_param = _tucker_n_param(tensor_shape, rank)
+    for mode in fixed_modes:
+        assert_(rank[mode] == tensor_shape[mode])
+    assert_(n_param >= n_param_tensor*0.5*(1 - tol))
+

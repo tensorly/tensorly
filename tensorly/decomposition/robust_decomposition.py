@@ -1,18 +1,17 @@
 import numpy as np
-from ..base import fold, unfold
-from ..tenalg import khatri_rao
-from ..random import check_random_state
-from ..tenalg.proximal import soft_thresholding, svd_thresholding
 from .. import backend as T
+from ..base import fold, unfold
+from ..tenalg.proximal import soft_thresholding, svd_thresholding
+
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
 
 
-def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
+def robust_pca(X, mask=None, tol=10e-7, reg_E=1.0, reg_J=1.0,
                mu_init=10e-5, mu_max=10e9, learning_rate=1.1,
-               n_iter_max=100, random_state=None, verbose=1):
+               n_iter_max=100, verbose=1):
     """Robust Tensor PCA via ALM with support for missing values
 
         Decomposes a tensor `X` into the sum of a low-rank component `D`
@@ -39,7 +38,6 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
         percentage increase of mu at each iteration
     n_iter_max : int, optional, default is 100
         maximum number of iteration
-    random_state : None, int or RandomState, optional, default is None
     verbose : int, default is 1
         level of verbosity
 
@@ -73,6 +71,9 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
     """
     if mask is None:
         mask = 1
+    else:
+        # Fix to address surprising MXNet.numpy behavior (Issue #19891)
+        mask = T.tensor(mask, dtype=float)
 
     # Initialise the decompositions
     D = T.zeros_like(X, **T.context(X))  # low rank part
@@ -113,7 +114,7 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1, reg_J=1,
 
         # Convergence check
         if iteration > 1:
-            if (max(rec_X[-1], rec_D[-1]) <= tol):
+            if max(rec_X[-1], rec_D[-1]) <= tol:
                 if verbose:
                     print('\nConverged in {} iterations'.format(iteration))
                 break

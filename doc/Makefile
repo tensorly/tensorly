@@ -44,7 +44,7 @@ clean:
 	rm -rf modules/generated/*
 
 .PHONY: html-noplot
-	$(SPHINXBUILD) -D plot_gallery=0 -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(SPHINXBUILD) -vvv -D plot_gallery=0 -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
@@ -138,3 +138,12 @@ xml:
 	@echo
 	@echo "Build finished. The XML files are in $(BUILDDIR)/xml."
 
+.PHONY: doc
+doc: 
+	python minify.py
+	$(SPHINXBUILD) -v -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+
+
+	open _build/html/index.html

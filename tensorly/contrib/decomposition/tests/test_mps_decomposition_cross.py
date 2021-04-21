@@ -3,35 +3,32 @@ import tensorly as tl
 import pytest
 import numpy as np
 import itertools
-import numpy.random as npr
 
-from ..mps_decomposition_cross import matrix_product_state_cross
-from ....mps_tensor import mps_to_tensor
-from ....random import check_random_state
+from .._tt_cross import tensor_train_cross
+from ....tt_tensor import tt_to_tensor
 from tensorly.testing import assert_
 
-skip_if_tensorflow = pytest.mark.skipif(tl.get_backend() == "tensorflow",
-                                        reason="Operation not supported in TensorFlow")
+skip_if_backend = pytest.mark.skipif(tl.get_backend() in ("tensorflow", "jax", "cupy"),
+                                     reason=f"Operation not supported in {tl.get_backend()}")
 
-@skip_if_tensorflow
-def test_matrix_product_state_cross_1():
-    """ Test for matrix_product_state """
-    rng = check_random_state(1234)
+
+@skip_if_backend
+def test_tensor_train_cross_1():
+    """ Test for tensor-train """
 
     ## Test 1
 
     # Create tensor with random elements
     d = 3
     n = 4
-    tensor = (np.arange(n**d).reshape((n,)*d))
+    tensor = (np.arange(n**d, dtype=float).reshape((n,)*d))
     tensor = tl.tensor(tensor)
-
 
     tensor_shape = tensor.shape
 
-    # Find MPS decomposition of the tensor
-    rank = [1, 3,3, 1]
-    factors = matrix_product_state_cross(tensor, rank, tol=1e-5, n_iter_max=10)
+    # Find TT decomposition of the tensor
+    rank = [1, 3, 3, 1]
+    factors = tensor_train_cross(tensor, rank, tol=1e-5, n_iter_max=10)
     assert(len(factors) == d), "Number of factors should be 4, currently has " + str(len(factors))
 
     # Check that the ranks are correct and that the second mode of each factor
@@ -43,49 +40,52 @@ def test_matrix_product_state_cross_1():
         assert(r_prev_k == r_prev_iteration), " Incorrect ranks of factors "
         r_prev_iteration = r_k
 
-@skip_if_tensorflow
-def test_matrix_product_state_cross_2():
-    """ Test for matrix_product_state """
-    rng = check_random_state(1234)
+
+@skip_if_backend
+def test_tensor_train_cross_2():
+    """ Test for tensor-train """
+    rng = tl.check_random_state(1234)
 
     ## Test 2
     # Create tensor with random elements
     tensor = tl.tensor(rng.random_sample([3, 4, 5, 6, 2, 10]))
-    tensor_shape = tensor.shape
 
-    # Find MPS decomposition of the tensor
-    rank = [1, 3, 3, 4, 2, 2, 1]
-    factors = matrix_product_state_cross(tensor, rank)
+    # Find TT decomposition of the tensor
+    rank = [1, 2, 2, 3, 2, 2, 1]
+    factors = tensor_train_cross(tensor, rank)
 
     for k in range(6):
         (r_prev, n_k, r_k) = factors[k].shape
 
-        first_error_message = "MPS rank " + str(k) + " is greater than the maximum allowed "
+        first_error_message = "TT rank " + str(k) + " is greater than the maximum allowed "
         first_error_message += str(r_prev) + " > " + str(rank[k])
         assert(r_prev<=rank[k]), first_error_message
 
-        first_error_message = "MPS rank " + str(k+1) + " is greater than the maximum allowed "
+        first_error_message = "TT rank " + str(k+1) + " is greater than the maximum allowed "
         first_error_message += str(r_k) + " > " + str(rank[k+1])
         assert(r_k<=rank[k+1]), first_error_message
 
-@skip_if_tensorflow
-def test_matrix_product_state_cross_3():
-    """ Test for matrix_product_state """
-    rng = check_random_state(1234)
+
+@skip_if_backend
+@pytest.mark.skipif(tl.get_backend() in ("mxnet"), reason=f"MXNet bug in advanced indexing (Issue 18919).")
+def test_tensor_train_cross_3():
+    """ Test for tensor-train """
+    rng = tl.check_random_state(1234)
 
     ## Test 3
     tol = 10e-5
     tensor = tl.tensor(rng.random_sample([3, 3, 3]))
-    factors = matrix_product_state_cross(tensor, (1, 3, 3, 1))
-    reconstructed_tensor = mps_to_tensor(factors)
+    factors = tensor_train_cross(tensor, (1, 3, 3, 1))
+    reconstructed_tensor = tt_to_tensor(factors)
     error = tl.norm(reconstructed_tensor - tensor, 2)
     error /= tl.norm(tensor, 2)
     assert_(error < tol,
               'norm 2 of reconstruction higher than tol')
 
-@skip_if_tensorflow
-def test_matrix_product_state_cross_4():
-    """ Test for matrix_product_state """
+
+@skip_if_backend
+def test_tensor_train_cross_4():
+    """ Test for tensor-train """
 
     # TEST 4
     # Random tensor is not really compress-able. Test on a tensor as values of a function
@@ -119,7 +119,6 @@ def test_matrix_product_state_cross_4():
     def func (X):
         return sum(X)**3
 
-    maxvoleps = 1e-4
     tol = 1e-3
     n = 10
     d = 4
@@ -128,11 +127,11 @@ def test_matrix_product_state_cross_4():
     value = evaluateGrid(grid, func)
     value = tl.tensor(value)
 
-    # Find MPS decomposition of the tensor
+    # Find TT decomposition of the tensor
     rank = [1, 4, 4, 4, 1]
-    factors = matrix_product_state_cross(value, rank, tol=tol)
+    factors = tensor_train_cross(value, rank, tol=tol)
 
-    approx = mps_to_tensor(factors)
+    approx = tt_to_tensor(factors)
     error = tl.norm(approx-value,2)
     error /= tl.norm(value, 2)
 
