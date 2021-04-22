@@ -186,3 +186,4 @@ def test_validate_tucker_rank():
     for mode in fixed_modes:
         assert_(rank[mode] == tensor_shape[mode])
     assert_(n_param >= n_param_tensor*0.5*(1 - tol))
+

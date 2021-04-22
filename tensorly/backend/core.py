@@ -848,7 +848,49 @@ class Backend(object):
 
         return res*m
 
-    def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
+    def svd_flip(self, U, V, u_based_decision=True):
+        """Sign correction to ensure deterministic output from SVD.
+        Adjusts the columns of u and the rows of v such that the loadings in the
+        columns in u that are largest in absolute value are always positive.
+        This function is borrowed from scikit-learn/utils/extmath.py
+        Parameters
+        ----------
+        U : ndarray
+            u and v are the output of `partial_svd`
+        V : ndarray
+            u and v are the output of `partial_svd`
+        u_based_decision : boolean, (default=True)
+            If True, use the columns of u as the basis for sign flipping.
+            Otherwise, use the rows of v. The choice of which variable to base the
+            decision on is generally algorithm dependent.
+        Returns
+        -------
+        u_adjusted, v_adjusted : arrays with the same dimensions as the input.
+        """
+        if u_based_decision:
+            # columns of U, rows of V
+            max_abs_cols = self.argmax(self.abs(U), axis=0)
+            signs = self.sign(
+                self.tensor([U[i, j] for (i, j) in zip(max_abs_cols, range(self.shape(U)[1]))], **self.context(U))
+            )
+            U = U * signs
+            if self.shape(V)[0] > self.shape(U)[1]:
+                signs = self.concatenate((signs, self.ones(self.shape(V)[0] - self.shape(U)[1])))
+            V = V * signs[:self.shape(V)[0]][:, None]
+        else:
+            # rows of V, columns of U
+            max_abs_rows = self.argmax(self.abs(V), axis=1)
+            signs = self.sign(
+                self.tensor([V[i, j] for (i, j) in zip(range(self.shape(V)[0]), max_abs_rows)], **self.context(V))
+            )
+            V = V * signs[:, None]
+            if self.shape(U)[1] > self.shape(V)[0]:
+                signs = self.concatenate((signs, self.ones(self.shape(U)[1] - self.shape(V)[0])))
+            U = U * signs[:self.shape(U)[1]]
+
+        return U, V
+
+    def partial_svd(self, matrix, n_eigenvecs=None, flip=False, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`
 
         If `n_eigenvecs` is specified, sparse eigendecomposition is used on
@@ -860,6 +902,9 @@ class Backend(object):
             A 2D tensor.
         n_eigenvecs : int, optional, default is None
             If specified, number of eigen[vectors-values] to return.
+        flip : bool, default is False
+            If True, the SVD sign ambiguity is resolved by making the largest component
+            in the columns of U, positive.
         random_state: {None, int, np.random.RandomState}
             If specified, use it for sampling starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
         **kwargs : optional
@@ -919,6 +964,9 @@ class Backend(object):
             # WARNING: here, V is still the transpose of what it should be
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
             V = V.T.conj()
+
+        if flip:
+            U, V = self.svd_flip(U, V)
 
         if not is_numpy:
             U = self.tensor(U, **ctx)
@@ -1190,5 +1238,17 @@ class Backend(object):
     @staticmethod
     def log2(x):
         """Return the base 2 logarithm of x.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def sin(x):
+        """Return the sin of x.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def cos(x):
+        """Return the cos of x.
         """
         raise NotImplementedError

@@ -317,7 +317,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
-        Default: 1e-8
+          Default: 1e-8
     sparsity_coefficients: array of float (of length the number of modes)
         The sparsity coefficients on each factor.
         If set to None, the algorithm is computed without sparsity
