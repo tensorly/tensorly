@@ -298,7 +298,10 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
     x_update = tl.copy(x)
 
     for iteration in range(n_iter_max):
-        x_gradient = - UtM + tl.tenalg.multi_mode_dot(x_update, UtU, transpose=False) + sparsity_coef
+        if isinstance(UtU, list):
+            x_gradient = - UtM + tl.tenalg.multi_mode_dot(x_update, UtU, transpose=False) + sparsity_coef
+        else:
+            x_gradient = - UtM + tl.dot(UtU, x_update) + sparsity_coef
 
         if non_negative is True:
             x_gradient = tl.where(lr * x_gradient < x_update, x_gradient, x_update/lr)

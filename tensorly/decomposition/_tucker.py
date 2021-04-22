@@ -74,6 +74,7 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
  
     return core, factors
     
+
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
                    svd='numpy_svd', random_state=None, verbose=False, mask=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
@@ -419,26 +420,26 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     -----
     Tucker decomposes a tensor into a core tensor and list of factors:
     .. math::
-        \begin{equation}
+        \\begin{equation}
             tensor = [| core; factors[0], ... ,factors[-1] |]
-        \end{equation}
+        \\end{equation}
 
     We solve the following problem for each factor:
     .. math::
-        \begin{equation}
-            \min_{tensor >= 0} ||tensor_[i] - factors[i]\times core_[i] \times (\prod_{i\neq j}(factors[j]))^T||^2
-        \end{equation}
+        \\begin{equation}
+            \\min_{tensor >= 0} ||tensor_[i] - factors[i]\\times core_[i] \\times (\\prod_{i\\neq j}(factors[j]))^T||^2
+        \\end{equation}
 
     If we define two variables such as:
     .. math::
-            U = core_[i] \times (\prod_{i\neq j}(factors[j]))^T \\
+            U = core_[i] \\times (\\prod_{i\\neq j}(factors[j]))^T \\
             M = tensor_[i]
 
     Gradient of the problem becomes:
         .. math::
-        \begin{equation}
-            \delta = -U^TM + factors[i] \times U^TU
-        \end{equation}
+        \\begin{equation}
+            \\delta = -U^TM + factors[i] \\times U^TU
+        \\end{equation}
 
     References
     ----------
