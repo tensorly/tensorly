@@ -176,7 +176,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         Either a third order tensor or a list of second order tensors that may have different number of rows.
         Note that the second mode factor matrices are allowed to change over the first mode, not the
         third mode as some other implementations use (see note below).
-    rank  : int
+    rank : int
         Number of components.
     n_iter_max : int
         Maximum number of iteration
