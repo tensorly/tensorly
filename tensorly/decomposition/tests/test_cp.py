@@ -7,7 +7,7 @@ from .._cp import (
     parafac, initialize_cp,
     sample_khatri_rao, randomised_parafac)
 from .._nn_cp import non_negative_parafac, non_negative_parafac_hals
-from ...cp_tensor import cp_to_tensor, CPTensor
+from ...cp_tensor import cp_to_tensor
 from ...random import random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
@@ -239,11 +239,11 @@ def test_non_negative_parafac_hals_one_unconstrained():
     t_shape = (8, 9, 10)
     rank = 3
     weights = rng.uniform(size=rank)
-    A = rng.uniform(size=(t_shape[0], rank))
-    B = rng.standard_normal(size=(t_shape[1], rank))
-    C = rng.uniform(0.1, 1.1, size=(t_shape[2], rank))
+    A = T.tensor(rng.uniform(size=(t_shape[0], rank)))
+    B = T.tensor(rng.standard_normal(size=(t_shape[1], rank)))
+    C = T.tensor(rng.uniform(0.1, 1.1, size=(t_shape[2], rank)))
     cp_tensor = (weights, (A, B, C))
-    X = cp_to_tensor(CPTensor(cp_tensor))
+    X = cp_to_tensor(cp_tensor)
 
     nn_estimate, errs = non_negative_parafac_hals(
         X, rank=3, n_iter_max=1000, tol=1e-5, init='svd', verbose=0, nn_modes={0, 2}, return_errors=True
