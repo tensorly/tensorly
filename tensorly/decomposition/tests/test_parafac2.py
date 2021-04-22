@@ -142,10 +142,54 @@ def test_parafac2_nn():
         rec_Bi = T.dot(rec_proj, rec.factors[1])
         Bi_corr = best_correlation(true_Bi, rec_Bi)
         assert_(T.prod(Bi_corr) > 0.98**rank)
-
+    
+    # Fit with only one iteration to check non-negativity
+    weights, factors, projections = random_parafac2(
+        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        rank=rank,
+        random_state=rng
+    )
+    factors = [factors[0] * rng.randint(-1, 2, factors[0].shape), factors[1], factors[2] * rng.randint(-1, 2, factors[2].shape)]
+    slices = parafac2_to_slices((weights, factors, projections))
+    rec, err = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        init='random',
+        nn_modes=[0, 2],
+        n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+        normalize_factors=False,
+        return_errors=True,
+        n_iter_max=1
+    )
     assert_(T.all(rec[1][0] > -1e-10))
     assert_(T.all(rec[1][2] > -1e-10))
 
+    # Test that constraining B leads to a warning
+    with pytest.warns(UserWarning):
+        rec, err = parafac2(
+            slices,
+            rank,
+            random_state=rng,
+            init='random',
+            nn_modes=[0, 1, 2],
+            n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+            normalize_factors=False,
+            return_errors=True,
+            n_iter_max=1
+        )
+    with pytest.warns(UserWarning):
+        rec, err = parafac2(
+            slices,
+            rank,
+            random_state=rng,
+            init='random',
+            nn_modes='all',
+            n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+            normalize_factors=False,
+            return_errors=True,
+            n_iter_max=1
+        )
 
 def test_parafac2_slice_and_tensor_input():
     rank = 3
