@@ -137,6 +137,12 @@ def test_parafac2_nn():
     C_corr = best_correlation(random_parafac2_tensor.factors[2], rec.factors[2])
     assert_(T.prod(C_corr) > 0.98**rank)
 
+    for i, (true_proj, rec_proj) in enumerate(zip(random_parafac2_tensor.projections, rec.projections)):
+        true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1])
+        rec_Bi = T.dot(rec_proj, rec.factors[1])
+        Bi_corr = best_correlation(true_Bi, rec_Bi)
+        assert_(T.prod(Bi_corr) > 0.98**rank)
+
     assert_(T.all(rec[1][0] > -1e-10))
     assert_(T.all(rec[1][2] > -1e-10))
 
