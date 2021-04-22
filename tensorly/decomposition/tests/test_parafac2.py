@@ -137,6 +137,9 @@ def test_parafac2_nn():
     C_corr = best_correlation(random_parafac2_tensor.factors[2], rec.factors[2])
     assert_(T.prod(C_corr) > 0.98**rank)
 
+    assert_(T.all(rec[1][0] > -1e-10))
+    assert_(T.all(rec[1][2] > -1e-10))
+
 
 def test_parafac2_slice_and_tensor_input():
     rank = 3

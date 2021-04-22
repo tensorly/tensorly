@@ -255,6 +255,9 @@ def test_non_negative_parafac_hals_one_unconstrained():
     assert_(best_congruence(B, nn_estimate[1][1]) > 0.99, "Factor recovery not high enough")
     assert_(best_congruence(C, nn_estimate[1][2]) > 0.99, "Factor recovery not high enough")
 
+    assert_(T.all(nn_estimate[1][0] > -1e-10))
+    assert_(T.all(nn_estimate[1][2] > -1e-10))
+
 
 @pytest.mark.xfail(tl.get_backend() == 'tensorflow', reason='Fails on tensorflow')
 def test_sample_khatri_rao():
