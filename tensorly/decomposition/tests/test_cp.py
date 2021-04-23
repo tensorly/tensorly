@@ -238,7 +238,7 @@ def test_non_negative_parafac_hals_one_unconstrained():
     rng = tl.check_random_state(1234)
     t_shape = (8, 9, 10)
     rank = 3
-    weights = rng.uniform(size=rank)
+    weights = T.tensor(rng.uniform(size=rank))
     A = T.tensor(rng.uniform(size=(t_shape[0], rank)))
     B = T.tensor(rng.standard_normal(size=(t_shape[1], rank)))
     C = T.tensor(rng.uniform(0.1, 1.1, size=(t_shape[2], rank)))
