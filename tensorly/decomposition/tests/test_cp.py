@@ -246,7 +246,7 @@ def test_non_negative_parafac_hals_one_unconstrained():
     X = cp_to_tensor(cp_tensor)
 
     nn_estimate, errs = non_negative_parafac_hals(
-        X, rank=3, n_iter_max=1000, tol=1e-5, init='svd', verbose=0, nn_modes={0, 2}, return_errors=True
+        X, rank=3, n_iter_max=100, tol=0, init='svd', verbose=0, nn_modes={0, 2}, return_errors=True
     )
     X_hat = cp_to_tensor(nn_estimate)
     assert_(tl.norm(X - X_hat,) < 1e-3, "Error was too high")
