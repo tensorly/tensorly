@@ -126,8 +126,10 @@ def test_parafac2_nn():
         random_state=rng
     )
     # The default random parafac2 tensor has non-negative A and C
-    # wet therefore multiply them randomly with -1, 0 or 1 to get both positive and negative components
-    factors = [factors[0] * rng.randint(-1, 2, factors[0].shape), factors[1], factors[2] * rng.randint(-1, 2, factors[2].shape)]
+    # we therefore multiply them randomly with -1, 0 or 1 to get both positive and negative components
+    factors = [factors[0] * T.tensor(rng.randint(-1, 2, factors[0].shape)),
+               factors[1],
+               factors[2] * T.tensor(rng.randint(-1, 2, factors[2].shape))]
     slices = parafac2_to_slices((weights, factors, projections))
     rec, err = parafac2(
         slices,
