@@ -39,8 +39,8 @@ def _congruence_coefficient_slow(A, B, absolute_value):
 )
 def test_congruence_coefficient(I, R, absolute_value):
     rng = tl.check_random_state(1234)
-    A = rng.standard_normal((I, R))
-    B = rng.standard_normal((I, R))
+    A = tl.tensor(rng.standard_normal((I, R)))
+    B = tl.tensor(rng.standard_normal((I, R)))
 
     fast_congruence, fast_permutation = congruence_coefficient(A, B, absolute_value=absolute_value)
     slow_congruence, slow_permutation = _congruence_coefficient_slow(A, B, absolute_value=absolute_value)
