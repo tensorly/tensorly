@@ -133,7 +133,7 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
 
 
 def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5):
+             tol=1e-8, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5, loss_decrease_tol='relative'):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
     Computes a rank-`rank` PARAFAC2 decomposition of the third-order tensor defined by 
@@ -187,14 +187,21 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         there may be some inaccuracies in the component weights.
     tol : float, optional
         (Default: 1e-8) Relative reconstruction error tolerance. The
-        algorithm is considered to have found the global minimum when the
-        reconstruction error is less than `tol`.
+        algorithm is considered to have found the global minimum when
+        :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon \| X - \hat{X}_{n-1} \|^2`.
+        That is, when the relative change in sum of squared error is less
+        than the tolerance.
+
+        .. versionchanged:: TODO: insert version
+
+            Previously, the stopping condition was
+            :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         Level of verbosity
     return_errors : bool, optional
         Activate return of iteration errors
-    n_iter_parafac: int, optional
+    n_iter_parafac : int, optional
         Number of PARAFAC iterations to perform for each PARAFAC2 iteration
 
     Returns
@@ -268,7 +275,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
                     print('PARAFAC2 reconstruction error={}, variation={}.'.format(
                         rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
-                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                if tol and abs(rec_errors[-2]**2 - rec_errors[-1]**2) < (tol * rec_errors[-2]**2):
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
                     break       
