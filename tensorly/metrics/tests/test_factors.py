@@ -18,6 +18,7 @@ def _congruence_coefficient_slow(A, B, absolute_value):
     corr_matrix = _tucker_congruence(A, B)
     if absolute_value:
         corr_matrix = tl.abs(corr_matrix)
+    corr_matrix = tl.to_numpy(corr_matrix)
 
     best_corr = None
     best_permutation = None
