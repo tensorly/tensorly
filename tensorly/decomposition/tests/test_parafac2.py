@@ -9,32 +9,8 @@ from ... import backend as T
 from ...testing import assert_array_equal, assert_
 from .._parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
 from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
+from ...metrics.factors import congruence_coefficient
 
-
-def corrcoef(A, B):
-    Ac = A - T.mean(A, axis=0)
-    Bc = B - T.mean(B, axis=0)
-
-    As = Ac/T.norm(Ac, axis=0)
-    Bs = Bc/T.norm(Bc, axis=0)
-
-    return T.dot(T.transpose(As), Bs)
-
-
-def best_correlation(A, B):
-    _, r = T.shape(A)
-    corr_matrix = T.abs(corrcoef(A, B))
-
-    best_corr = 0
-    for permutation in itertools.permutations(range(r)):
-        corr = 1
-        for i, j in zip(range(r), permutation):
-            corr *= corr_matrix[i, j]
-        
-        if corr > best_corr:
-            best_corr = corr
-    
-    return best_corr
 
 @pytest.mark.parametrize(
     ("normalize_factors", "init"),
@@ -77,17 +53,17 @@ def test_parafac2(normalize_factors, init):
     # Test factor correlation
     A_sign = T.sign(random_parafac2_tensor.factors[0])
     rec_A_sign = T.sign(rec.factors[0])
-    A_corr = best_correlation(A_sign*random_parafac2_tensor.factors[0], rec_A_sign*rec.factors[0])
-    assert_(T.prod(A_corr) > 0.98**rank)
+    A_corr = congruence_coefficient(A_sign*random_parafac2_tensor.factors[0], rec_A_sign*rec.factors[0])[0]
+    assert_(A_corr > 0.98)
 
-    C_corr = best_correlation(random_parafac2_tensor.factors[2], rec.factors[2])
-    assert_(T.prod(C_corr) > 0.98**rank)
+    C_corr = congruence_coefficient(random_parafac2_tensor.factors[2], rec.factors[2])[0]
+    assert_(C_corr > 0.98)
 
     for i, (true_proj, rec_proj) in enumerate(zip(random_parafac2_tensor.projections, rec.projections)):
         true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1])*A_sign[i]
         rec_Bi = T.dot(rec_proj, rec.factors[1])*rec_A_sign[i]
-        Bi_corr = best_correlation(true_Bi, rec_Bi)
-        assert_(T.prod(Bi_corr) > 0.98**rank)
+        Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
+        assert_(Bi_corr > 0.98)
 
 
 def test_parafac2_nn():
@@ -131,17 +107,17 @@ def test_parafac2_nn():
             'norm 2 of reconstruction higher than tol')
 
     # Test factor correlation
-    A_corr = best_correlation(random_parafac2_tensor.factors[0], rec.factors[0])
-    assert_(T.prod(A_corr) > 0.98**rank)
+    A_corr = congruence_coefficient(random_parafac2_tensor.factors[0], rec.factors[0])[0]
+    assert_(A_corr > 0.98)
 
-    C_corr = best_correlation(random_parafac2_tensor.factors[2], rec.factors[2])
-    assert_(T.prod(C_corr) > 0.98**rank)
+    C_corr = congruence_coefficient(random_parafac2_tensor.factors[2], rec.factors[2])[0]
+    assert_(C_corr > 0.98)
 
     for i, (true_proj, rec_proj) in enumerate(zip(random_parafac2_tensor.projections, rec.projections)):
         true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1])
         rec_Bi = T.dot(rec_proj, rec.factors[1])
-        Bi_corr = best_correlation(true_Bi, rec_Bi)
-        assert_(T.prod(Bi_corr) > 0.98**rank)
+        Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
+        assert_(Bi_corr > 0.98)
     
     # Fit with only one iteration to check non-negativity
     weights, factors, projections = random_parafac2(
