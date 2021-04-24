@@ -16,8 +16,8 @@ def congruence_coefficient(matrix1, matrix2, absolute_value=True):
     When we compute the congruence between two matrices, we find the optimal permutation of
     the columns and return the mean congruence and the permutation.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     matrix1 : tensorly.Tensor
     matrix2 : tensorly.Tensor
     absolute_value : bool
