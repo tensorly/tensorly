@@ -37,7 +37,7 @@ def _congruence_coefficient_slow(A, B, absolute_value):
     ("I", "R", "absolute_value"),
      itertools.product((1, 3, 5, 10, 100), (1, 3, 5), (True, False),)
 )
-def test_congruence_coefficient(I, R, absolute_value, return_permutation):
+def test_congruence_coefficient(I, R, absolute_value):
     rng = tl.check_random_state(1234)
     A = rng.standard_normal((I, R))
     B = rng.standard_normal((I, R))
