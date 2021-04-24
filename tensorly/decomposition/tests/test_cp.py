@@ -12,29 +12,7 @@ from ...random import random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
-
-
-def tucker_congruence(A, B):
-    As = A/T.norm(A, axis=0)
-    Bs = B/T.norm(B, axis=0)
-
-    return T.dot(T.transpose(As), Bs)
-
-
-def best_congruence(A, B):
-    _, r = T.shape(A)
-    corr_matrix = T.abs(tucker_congruence(A, B))
-
-    best_corr = 0
-    for permutation in itertools.permutations(range(r)):
-        corr = 1
-        for i, j in zip(range(r), permutation):
-            corr *= corr_matrix[i, j]
-        
-        if corr > best_corr:
-            best_corr = corr
-    
-    return best_corr
+from ...metrics.factors import congruence_coefficient
 
 
 @pytest.mark.parametrize("linesearch", [True, False])
@@ -251,9 +229,9 @@ def test_non_negative_parafac_hals_one_unconstrained():
     X_hat = cp_to_tensor(nn_estimate)
     assert_(tl.norm(X - X_hat,) < 1e-3, "Error was too high")
     
-    assert_(best_congruence(A, nn_estimate[1][0]) > 0.99, "Factor recovery not high enough")
-    assert_(best_congruence(B, nn_estimate[1][1]) > 0.99, "Factor recovery not high enough")
-    assert_(best_congruence(C, nn_estimate[1][2]) > 0.99, "Factor recovery not high enough")
+    assert_(congruence_coefficient(A, nn_estimate[1][0], absolute_value=True)[0] > 0.99, "Factor recovery not high enough")
+    assert_(congruence_coefficient(B, nn_estimate[1][1], absolute_value=True)[0] > 0.99, "Factor recovery not high enough")
+    assert_(congruence_coefficient(C, nn_estimate[1][2], absolute_value=True)[0] > 0.99, "Factor recovery not high enough")
 
     assert_(T.all(nn_estimate[1][0] > -1e-10))
     assert_(T.all(nn_estimate[1][2] > -1e-10))
