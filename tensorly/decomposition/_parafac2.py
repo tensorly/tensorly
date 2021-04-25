@@ -275,7 +275,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
                     print('PARAFAC2 reconstruction error={}, variation={}.'.format(
                         rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
-                if tol and abs(rec_errors[-2]**2 - rec_errors[-1]**2) < (tol * rec_errors[-2]**2):
+                if abs(rec_errors[-2]**2 - rec_errors[-1]**2) < (tol * rec_errors[-2]**2):
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
                     break       
