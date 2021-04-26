@@ -251,7 +251,7 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
     
 
 def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
-          lr=10e-3, tol=10e-2):
+          lr=10e-3, tol=10e-8):
     """
     Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
 
@@ -327,7 +327,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
 
      Parameters
      ----------
-     Utm : ndarray
+     Utm : vectorized ndarray
         Pre-computed product of the transposed of U and m
      UtU : ndarray
         Pre-computed Kronecker product of the transposed of U and U
@@ -336,12 +336,26 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
      n_iter_max : int
          Maximum number of iteration
          Default: 100
-    tol : float
+     tol : float
          Early stopping criterion
 
      Returns
      -------
      x : ndarray
+
+     Notes
+     -----
+     This function solves following problem:
+     .. math::
+        \\begin{equation}
+             \\min_{x} ||Ux - m||^2
+        \\end{equation}
+
+     According to [1], non-negativity-constrained least square estimation problem becomes:
+     .. math::
+        \\begin{equation}
+             x' = (Utm) - (UTU)\\times x
+        \\end{equation}
 
      Reference
      ----------
