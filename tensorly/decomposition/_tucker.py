@@ -432,15 +432,27 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
 
     If we define two variables such as:
     .. math::
-            U = core_[i] \\times (\\prod_{i\\neq j}(factors[j]))^T \\
+            U = core_[i] \\times (\\prod_{i\\neq j}(factors[j]\\times factors[j]^T)) \\
             M = tensor_[i]
 
     Gradient of the problem becomes:
-        .. math::
+    .. math::
         \\begin{equation}
             \\delta = -U^TM + factors[i] \\times U^TU
         \\end{equation}
 
+    In order to calculate UTU and UTM, we define two variables:
+    .. math::
+        \\begin{equation}
+            core_cross = \prod_{i\\neq j}(core_[i] \\times (\\prod_{i\\neq j}(factors[j]\\times factors[j]^T)) \\
+            tensor_cross =  \prod_{i\\neq j} tensor_[i] \\times factors_[i]
+        \\end{equation}
+    Then UTU and UTM becomes:
+    .. math::
+        \\begin{equation}
+            UTU = core_cross_[j] \\times core_[j]^T  \\
+            UTM =  (tensor_cross_[j] \\times \\times core_[j]^T)^T
+        \\end{equation}
     References
     ----------
     .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",

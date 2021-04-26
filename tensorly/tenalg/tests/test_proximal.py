@@ -1,7 +1,7 @@
 import numpy as np
 
 from ... import backend as T
-from ..proximal import svd_thresholding, soft_thresholding
+from ..proximal import svd_thresholding, soft_thresholding, hals_nnls, fista, active_set_nnls
 from ..proximal import procrustes
 from ...testing import assert_array_equal, assert_array_almost_equal
 
@@ -66,3 +66,37 @@ def test_procrustes():
     true_res = T.dot(S, V)
     res = procrustes(U)
     assert_array_almost_equal(true_res, res)
+
+def test_hals_nnls():
+    """Test for hals_nnls operator"""
+    a = T.tensor(np.random.rand(20, 20))
+    true_res = T.tensor(np.random.rand(20, 1))
+    b = T.dot(a, true_res)
+    atb = T.dot(T.transpose(a), b)
+    ata = T.dot(T.transpose(a), a)
+    xinit = T.zeros(T.shape(atb))
+    x_hals = hals_nnls(atb, ata, V=xinit, exact=True)[0]
+    assert_array_almost_equal(true_res, x_hals)
+
+
+def test_fista():
+    """Test for fista operator"""
+    a = T.tensor(np.random.rand(20, 20))
+    true_res = T.tensor(np.random.rand(20, 1))
+    b = T.dot(a, true_res)
+    atb = T.dot(T.transpose(a), b)
+    ata = T.dot(T.transpose(a), a)
+    x_fista = fista(atb, ata, n_iter_max=10000)
+    assert_array_almost_equal(true_res, x_fista, decimal=3)
+
+
+def test_active_set_nnls():
+    """Test for active_set_nnls operator"""
+    a = T.tensor(np.random.rand(20, 20))
+    true_res = T.tensor(np.random.rand(20, 1))
+    b = T.dot(a, true_res)
+    atb = T.dot(T.transpose(a), b)
+    ata = T.dot(T.transpose(a), a)
+    x_as = active_set_nnls(T.base.tensor_to_vec(atb), ata)
+    x_as = T.reshape(x_as, T.shape(atb))
+    assert_array_almost_equal(true_res, x_as)
