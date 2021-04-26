@@ -97,6 +97,6 @@ def test_active_set_nnls():
     b = T.dot(a, true_res)
     atb = T.dot(T.transpose(a), b)
     ata = T.dot(T.transpose(a), a)
-    x_as = active_set_nnls(T.base.tensor_to_vec(atb), ata)
+    x_as = active_set_nnls(T.tensor_to_vec(atb), ata)
     x_as = T.reshape(x_as, T.shape(atb))
     assert_array_almost_equal(true_res, x_as)
