@@ -76,7 +76,7 @@ def test_hals_nnls():
     ata = T.dot(T.transpose(a), a)
     xinit = T.zeros(T.shape(atb))
     x_hals = hals_nnls(atb, ata, V=xinit, exact=True)[0]
-    assert_array_almost_equal(true_res, x_hals)
+    assert_array_almost_equal(true_res, x_hals, decimal=2)
 
 
 def test_fista():
@@ -86,8 +86,8 @@ def test_fista():
     b = T.dot(a, true_res)
     atb = T.dot(T.transpose(a), b)
     ata = T.dot(T.transpose(a), a)
-    x_fista = fista(atb, ata, n_iter_max=10000)
-    assert_array_almost_equal(true_res, x_fista, decimal=3)
+    x_fista = fista(atb, ata, tol=10e-10, n_iter_max=20000)
+    assert_array_almost_equal(true_res, x_fista, decimal=2)
 
 
 def test_active_set_nnls():
@@ -97,6 +97,6 @@ def test_active_set_nnls():
     b = T.dot(a, true_res)
     atb = T.dot(T.transpose(a), b)
     ata = T.dot(T.transpose(a), a)
-    x_as = active_set_nnls(T.tensor_to_vec(atb), ata)
+    x_as = active_set_nnls(T.base.tensor_to_vec(atb), ata)
     x_as = T.reshape(x_as, T.shape(atb))
-    assert_array_almost_equal(true_res, x_as)
+    assert_array_almost_equal(true_res, x_as, decimal=2)
