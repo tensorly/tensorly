@@ -8,33 +8,9 @@ from ...random import random_parafac2
 from ... import backend as T
 from ...testing import assert_array_equal, assert_
 from .._parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
-from ...parafac2_tensor import parafac2_to_tensor, parafac2_to_slices
+from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
+from ...metrics.factors import congruence_coefficient
 
-
-def corrcoef(A, B):
-    Ac = A - T.mean(A, axis=0)
-    Bc = B - T.mean(B, axis=0)
-
-    As = Ac/T.norm(Ac, axis=0)
-    Bs = Bc/T.norm(Bc, axis=0)
-
-    return T.dot(T.transpose(As), Bs)
-
-
-def best_correlation(A, B):
-    _, r = T.shape(A)
-    corr_matrix = T.abs(corrcoef(A, B))
-
-    best_corr = 0
-    for permutation in itertools.permutations(range(r)):
-        corr = 1
-        for i, j in zip(range(r), permutation):
-            corr *= corr_matrix[i, j]
-        
-        if corr > best_corr:
-            best_corr = corr
-    
-    return best_corr
 
 @pytest.mark.parametrize(
     ("normalize_factors", "init"),
@@ -77,18 +53,123 @@ def test_parafac2(normalize_factors, init):
     # Test factor correlation
     A_sign = T.sign(random_parafac2_tensor.factors[0])
     rec_A_sign = T.sign(rec.factors[0])
-    A_corr = best_correlation(A_sign*random_parafac2_tensor.factors[0], rec_A_sign*rec.factors[0])
-    assert_(T.prod(A_corr) > 0.98**rank)
+    A_corr = congruence_coefficient(A_sign*random_parafac2_tensor.factors[0], rec_A_sign*rec.factors[0])[0]
+    assert_(A_corr > 0.98)
 
-    C_corr = best_correlation(random_parafac2_tensor.factors[2], rec.factors[2])
-    assert_(T.prod(C_corr) > 0.98**rank)
+    C_corr = congruence_coefficient(random_parafac2_tensor.factors[2], rec.factors[2])[0]
+    assert_(C_corr > 0.98)
 
     for i, (true_proj, rec_proj) in enumerate(zip(random_parafac2_tensor.projections, rec.projections)):
         true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1])*A_sign[i]
         rec_Bi = T.dot(rec_proj, rec.factors[1])*rec_A_sign[i]
-        Bi_corr = best_correlation(true_Bi, rec_Bi)
-        assert_(T.prod(Bi_corr) > 0.98**rank)
+        Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
+        assert_(Bi_corr > 0.98)
 
+
+def test_parafac2_nn():
+    rng = tl.check_random_state(1234)
+    tol_norm_2 = 1e-2
+    rank = 3
+
+    weights, factors, projections = random_parafac2(
+        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        rank=rank,
+        random_state=rng
+    )
+    factors = [tl.abs(factors[0]), factors[1], tl.abs(factors[2])]
+    random_parafac2_tensor = Parafac2Tensor((weights, factors, projections))
+
+    # It is difficult to correctly identify B[i, :, r] if A[i, r] is small.
+    # This is sensible, since then B[i, :, r] contributes little to the total value of X.
+    # To test the PARAFAC2 decomposition in the precence of roundoff errors, we therefore add
+    # 0.01 to the A factor matrix.
+    random_parafac2_tensor.factors[0] = random_parafac2_tensor.factors[0] + 0.01
+
+    tensor = parafac2_to_tensor(random_parafac2_tensor)
+    slices = parafac2_to_slices(random_parafac2_tensor)
+
+    rec, err = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        init='random',
+        nn_modes=[0, 2],
+        n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+        normalize_factors=False,
+        return_errors=True,
+        n_iter_max=1000
+    )
+    rec_tensor = parafac2_to_tensor(rec)
+
+    error = T.norm(rec_tensor - tensor, 2)
+    error /= T.norm(tensor, 2)
+    assert_(error < tol_norm_2,
+            'norm 2 of reconstruction higher than tol')
+
+    # Test factor correlation
+    A_corr = congruence_coefficient(random_parafac2_tensor.factors[0], rec.factors[0])[0]
+    assert_(A_corr > 0.98)
+
+    C_corr = congruence_coefficient(random_parafac2_tensor.factors[2], rec.factors[2])[0]
+    assert_(C_corr > 0.98)
+
+    for i, (true_proj, rec_proj) in enumerate(zip(random_parafac2_tensor.projections, rec.projections)):
+        true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1])
+        rec_Bi = T.dot(rec_proj, rec.factors[1])
+        Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
+        assert_(Bi_corr > 0.98)
+    
+    # Fit with only one iteration to check non-negativity
+    weights, factors, projections = random_parafac2(
+        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        rank=rank,
+        random_state=rng
+    )
+    # The default random parafac2 tensor has non-negative A and C
+    # we therefore multiply them randomly with -1, 0 or 1 to get both positive and negative components
+    factors = [factors[0] * T.tensor(rng.randint(-1, 2, factors[0].shape)),
+               factors[1],
+               factors[2] * T.tensor(rng.randint(-1, 2, factors[2].shape))]
+    slices = parafac2_to_slices((weights, factors, projections))
+    rec, err = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        init='random',
+        nn_modes=[0, 2],
+        n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+        normalize_factors=False,
+        return_errors=True,
+        n_iter_max=1
+    )
+    assert_(T.all(rec[1][0] > -1e-10))
+    assert_(T.all(rec[1][2] > -1e-10))
+
+    # Test that constraining B leads to a warning
+    with pytest.warns(UserWarning):
+        rec, err = parafac2(
+            slices,
+            rank,
+            random_state=rng,
+            init='random',
+            nn_modes=[0, 1, 2],
+            n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+            normalize_factors=False,
+            return_errors=True,
+            n_iter_max=1
+        )
+    with pytest.warns(UserWarning):
+        rec, err = parafac2(
+            slices,
+            rank,
+            random_state=rng,
+            init='random',
+            nn_modes='all',
+            n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
+            normalize_factors=False,
+            return_errors=True,
+            n_iter_max=1
+        )
 
 def test_parafac2_slice_and_tensor_input():
     rank = 3

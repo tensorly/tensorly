@@ -382,6 +382,7 @@ Functions
 
     regression.MSE
     regression.RMSE
+    factors.congruence_coefficient
 
 
 :mod:`tensorly.random`: Sampling tensors
