@@ -142,6 +142,9 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
         True if the lines of the V matrix can't be zero,
         False if they can be zero
         Default: False
+    exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
+        If it is False, the algorithm gives an approximate solution
+        Default: False
 
     Returns
     -------
@@ -197,8 +200,8 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
                        UtU * tl.dot(V, tl.transpose(V)))
         V = tl.dot(scale, V)
     if exact:
-        n_iter_max = 5000
-        tol = 10e-12
+        n_iter_max = 50000
+        tol = 10e-16
 
     for iteration in range(n_iter_max):
         rec_error = 0
@@ -372,7 +375,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     x_gradient = Utm - tl.dot(UtU, x_vec)
     passive_set = x_vec > 0
     active_set = x_vec <= 0
-    s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
+    support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
 
     for iteration in range(n_iter_max):
 
@@ -382,62 +385,59 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
             active_set = tl.index_update(active_set, tl.index[indice], False)
         # To avoid singularity error when initial x exists
         try:
-            a = tl.tensor(tl.to_numpy(UtU)[passive_set, :][:, passive_set], **tl.context(UtU))
-            c = tl.solve(a, Utm[passive_set])
+            passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
             indice_list = []
-            for i in range(tl.shape(s)[0]):
+            for i in range(tl.shape(support_vec)[0]):
                 if passive_set[i]:
                     indice_list.append(i)
-                    s = tl.index_update(s, tl.index[int(i)], c[len(indice_list) - 1])
+                    support_vector = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
                 else:
-                    s = tl.index_update(s, tl.index[int(i)], 0)
+                    support_vector = tl.index_update(support_vec, tl.index[int(i)], 0)
         # Start from zeros if solve is not achieved  
         except:
             x_vec = tl.zeros(tl.shape(UtU)[1])
-            s = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
+            support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
             passive_set = x_vec > 0
             active_set = x_vec <= 0
-            if True in active_set:
+            if tl.any(active_set)==True:
                 indice = tl.argmax(x_gradient)
                 passive_set = tl.index_update(passive_set, tl.index[indice], True)
                 active_set = tl.index_update(active_set, tl.index[indice], False)
-            a = tl.tensor(tl.to_numpy(UtU)[passive_set, :][:, passive_set], **tl.context(UtU))
-            c = tl.solve(a, Utm[passive_set])
+            passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
             indice_list = []
-            for i in range(tl.shape(s)[0]):
+            for i in range(tl.shape(support_vec)[0]):
                 if passive_set[i]:
                     indice_list.append(i)
-                    s = tl.index_update(s, tl.index[int(i)], c[len(indice_list) - 1])
+                    support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
                 else:
-                    s = tl.index_update(s, tl.index[int(i)], 0)
+                    support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
 
         # update support vector if it is necessary
-        if tl.min(s[passive_set]) <= 0:
+        if tl.min(support_vec[passive_set]) <= 0:
             for i in range(len(passive_set)):
-                alpha = tl.min(x_vec[passive_set][s[passive_set] <= 0] / (x_vec[passive_set][s[passive_set] <= 0] - s[passive_set][s[passive_set] <= 0]))
-                update = alpha * (s - x_vec)
+                alpha = tl.min(x_vec[passive_set][support_vec[passive_set] <= 0] / (x_vec[passive_set][support_vec[passive_set] <= 0] - support_vec[passive_set][support_vec[passive_set] <= 0]))
+                update = alpha * (support_vec - x_vec)
                 x_vec = x_vec + update
                 passive_set = x_vec > 0
                 active_set = x_vec <= 0
-                a = tl.tensor(tl.to_numpy(UtU)[passive_set, :][:, passive_set], **tl.context(UtU))
-                c = tl.solve(a, Utm[passive_set])
+                passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
                 indice_list = []
-                for i in range(tl.shape(s)[0]):
+                for i in range(tl.shape(support_vec)[0]):
                     if passive_set[i]:
                         indice_list.append(i)
-                        s = tl.index_update(s, tl.index[int(i)], c[len(indice_list) - 1])
+                        support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
                     else:
-                        s = tl.index_update(s, tl.index[int(i)], 0)
+                        support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
 
-                if True not in passive_set or tl.min(s[passive_set]) > 0:
+                if tl.any(passive_set)!=True or tl.min(support_vec[passive_set]) > 0:
                     break
         # set x to s
-        x_vec = tl.clip(s, 0, tl.max(s))
+        x_vec = tl.clip(support_vec, 0, tl.max(support_vec))
 
         # gradient update
         x_gradient = Utm - tl.dot(UtU, x_vec)
 
-        if True not in active_set or tl.max(x_gradient[active_set]) <= tol:
+        if tl.any(active_set)!=True or tl.max(x_gradient[active_set]) <= tol:
             break
 
     return x_vec
