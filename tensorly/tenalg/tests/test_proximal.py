@@ -4,6 +4,7 @@ from ... import backend as T
 from ..proximal import svd_thresholding, soft_thresholding, hals_nnls, fista, active_set_nnls
 from ..proximal import procrustes
 from ...testing import assert_array_equal, assert_array_almost_equal
+from tensorly import tensor_to_vec
 
 # Author: Jean Kossaifi
 
@@ -76,7 +77,7 @@ def test_hals_nnls():
     ata = T.dot(T.transpose(a), a)
     xinit = T.zeros(T.shape(atb))
     x_hals = hals_nnls(atb, ata, V=xinit, exact=True)[0]
-    assert_array_almost_equal(true_res, x_hals, decimal=3)
+    assert_array_almost_equal(true_res, x_hals, decimal=2)
 
 
 def test_fista():
@@ -97,6 +98,6 @@ def test_active_set_nnls():
     b = T.dot(a, true_res)
     atb = T.dot(T.transpose(a), b)
     ata = T.dot(T.transpose(a), a)
-    x_as = active_set_nnls(T.tensor_to_vec(atb), ata)
+    x_as = active_set_nnls(tensor_to_vec(atb), ata)
     x_as = T.reshape(x_as, T.shape(atb))
     assert_array_almost_equal(true_res, x_as, decimal=3)
