@@ -198,7 +198,8 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
         # Scaling
         scale = tl.sum(UtM * V) / tl.sum(
                        UtU * tl.dot(V, tl.transpose(V)))
-        V = tl.dot(scale, V)
+        V = V * scale
+
     if exact:
         n_iter_max = 50000
         tol = 10e-16
@@ -293,7 +294,7 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
         sparsity_coef = 0
     
     if x is None:
-        x = tl.zeros(tl.shape(UtM))
+        x = tl.zeros(tl.shape(UtM), **tl.context(UtM))
 
     # Parameters
     momentum_old = tl.tensor(1.0)
@@ -368,7 +369,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
      """
     
     if x is None:
-        x_vec = tl.zeros(tl.shape(UtU)[1])
+        x_vec = tl.zeros(tl.shape(UtU)[1], **tl.context(UtU))
     else:
         x_vec = tl.base.tensor_to_vec(x)
 
