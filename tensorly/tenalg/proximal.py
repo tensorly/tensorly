@@ -391,9 +391,9 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
             for i in range(tl.shape(support_vec)[0]):
                 if passive_set[i]:
                     indice_list.append(i)
-                    support_vector = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
+                    support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
                 else:
-                    support_vector = tl.index_update(support_vec, tl.index[int(i)], 0)
+                    support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
         # Start from zeros if solve is not achieved  
         except:
             x_vec = tl.zeros(tl.shape(UtU)[1])
