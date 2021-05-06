@@ -1,10 +1,10 @@
 import numpy as np
 import tensorly as tl
-from .._tucker import tucker, partial_tucker, non_negative_tucker
+from .._tucker import tucker, partial_tucker, non_negative_tucker, Tucker, TuckerNN
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...random import random_tucker
-from ...testing import assert_equal, assert_, assert_array_equal
+from ...testing import assert_equal, assert_, assert_array_equal, assert_class_wrapper_correctly_passes_arguments
 
 
 def test_partial_tucker():
@@ -41,7 +41,7 @@ def test_partial_tucker():
         assert_array_equal(factor1, factor2)
 
 
-def test_tucker():
+def test_tucker(monkeypatch):
     """Test for the Tucker decomposition"""
     rng = tl.check_random_state(1234)
 
@@ -86,6 +86,7 @@ def test_tucker():
             'norm 2 of difference between svd and random init too high')
     assert_(tl.max(tl.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, tucker, Tucker, ignore_args={}, rank=3)
 
 def test_masked_tucker():
     """Test for the masked Tucker decomposition.
@@ -115,7 +116,7 @@ def test_masked_tucker():
 
     assert_(mask_err < 0.001, 'norm 2 of reconstruction higher than 0.001')
 
-def test_non_negative_tucker():
+def test_non_negative_tucker(monkeypatch):
     """Test for non-negative Tucker"""
     rng = tl.check_random_state(1234)
 
@@ -162,3 +163,5 @@ def test_non_negative_tucker():
         expected_shape = (tl.shape(tensor)[i], rank)
         assert_(tl.shape(f) == expected_shape, '{}-th factor has the wrong shape, got {}, but expected {}.'.format(
                 i, tl.shape(f), expected_shape))
+
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_tucker, TuckerNN, ignore_args={}, rank=3)

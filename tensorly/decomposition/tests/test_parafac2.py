@@ -6,8 +6,8 @@ import pytest
 import tensorly as tl
 from ...random import random_parafac2
 from ... import backend as T
-from ...testing import assert_array_equal, assert_
-from .._parafac2 import parafac2, initialize_decomposition, _pad_by_zeros
+from ...testing import assert_array_equal, assert_, assert_class_wrapper_correctly_passes_arguments
+from .._parafac2 import Parafac2, parafac2, initialize_decomposition, _pad_by_zeros
 from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
 from ...metrics.factors import congruence_coefficient
 
@@ -16,7 +16,7 @@ from ...metrics.factors import congruence_coefficient
     ("normalize_factors", "init"),
      itertools.product([True, False], ["random", "svd"])
 )
-def test_parafac2(normalize_factors, init):
+def test_parafac2(monkeypatch, normalize_factors, init):
     rng = tl.check_random_state(1234)
     tol_norm_2 = 10e-2
     rank = 3
@@ -64,6 +64,8 @@ def test_parafac2(normalize_factors, init):
         rec_Bi = T.dot(rec_proj, rec.factors[1])*rec_A_sign[i]
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)
+
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, parafac2, Parafac2, ignore_args={'return_errors'}, rank=3)
 
 
 def test_parafac2_nn():

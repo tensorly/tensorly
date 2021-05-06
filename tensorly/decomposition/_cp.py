@@ -663,32 +663,25 @@ class CP(DecompositionMixin):
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and 
            Applications", PhD., University of Amsterdam, 1998
     """
-    def __init__(self, rank, n_iter_max=100, tol=1e-08, 
-                 init='svd', svd='numpy_svd',
-                 l2_reg=0,
-                 linesearch=False,
-                 fixed_modes=None,
-                 normalize_factors=False, 
-                 orthogonalise=False, 
-                 sparsity=None,
-                 mask=None, svd_mask_repeats=5,
-                 cvg_criterion='abs_rec_error',
-                 random_state=None, 
-                 verbose=0):
+    def __init__(self, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize_factors=False, orthogonalise=False,
+                 tol=1e-8, random_state=None, verbose=0, sparsity=None, l2_reg=0,  mask=None,
+                 cvg_criterion='abs_rec_error', fixed_modes=None, svd_mask_repeats=5, linesearch=False):
         self.rank = rank
         self.n_iter_max = n_iter_max
-        self.tol = tol
-        self.l2_reg = l2_reg
         self.init = init
-        self.linesearch = linesearch
         self.svd = svd
         self.normalize_factors = normalize_factors
         self.orthogonalise = orthogonalise
-        self.mask = mask
-        self.svd_mask_repeats = svd_mask_repeats
-        self.cvg_criterion = cvg_criterion
+        self.tol = tol
         self.random_state = random_state
         self.verbose = verbose
+        self.sparsity = sparsity
+        self.l2_reg = l2_reg
+        self.mask = mask
+        self.cvg_criterion = cvg_criterion
+        self.fixed_modes = fixed_modes
+        self.svd_mask_repeats = svd_mask_repeats
+        self.linesearch = linesearch
 
     
     def fit_transform(self, tensor):
@@ -704,19 +697,26 @@ class CP(DecompositionMixin):
         CPTensor
             decomposed tensor
         """
-        cp_tensor, errors = parafac(tensor, rank=self.rank,
-                                    n_iter_max=self.n_iter_max,
-                                    tol=self.tol,
-                                    init=self.init,
-                                    svd=self.svd,
-                                    normalize_factors=self.normalize_factors,
-                                    orthogonalise=self.orthogonalise,
-                                    mask=self.mask,
-                                    linesearch=self.linesearch,
-                                    cvg_criterion=self.cvg_criterion,
-                                    random_state=self.random_state,
-                                    verbose=self.verbose,
-                                    return_errors=True)
+        cp_tensor, errors = parafac(
+            tensor,
+            rank=self.rank,
+            n_iter_max=self.n_iter_max,
+            init=self.init,
+            svd=self.svd,
+            normalize_factors=self.normalize_factors,
+            orthogonalise=self.orthogonalise,
+            tol=self.tol,
+            random_state=self.random_state,
+            verbose=self.verbose,
+            sparsity=self.sparsity,
+            l2_reg=self.l2_reg,
+            mask=self.mask,
+            cvg_criterion=self.cvg_criterion,
+            fixed_modes=self.fixed_modes,
+            svd_mask_repeats=self.svd_mask_repeats,
+            linesearch=self.linesearch,
+            return_errors=True,
+        )
         self.decomposition_ = cp_tensor 
         self.errors_ = errors
         return self.decomposition_
