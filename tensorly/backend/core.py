@@ -349,6 +349,26 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def any(tensor, axis=None, keepdims=False, **kwargs):
+        """Test whether any array element along a given axis evaluates to True.
+
+        Parameters
+        ----------
+        tensor : tensor
+            input tensor to check for non-zero values
+        axis : int or None, default is None
+            optional, indicates an axis along which to check for non-zero values
+        keepdims : bool, default is False
+
+        Returns
+        -------
+        bool or tensor
+            if axis is None, returns a bool indicating whether any value is non-zero
+            otherwise, returns a tensor of bools.
+        """
+        return tensor.any(axis=axis, keepdims=keepdims, **kwargs)
+          
+    @staticmethod
     def clip(tensor, a_min=None, a_max=None):
         """Clip the values of a tensor to within an interval.
 
@@ -701,7 +721,6 @@ class Backend(object):
             changing the sign of its imaginary part.
         """
         raise NotImplementedError
-
 
     @staticmethod
     def sort(tensor, axis, descending = False):
