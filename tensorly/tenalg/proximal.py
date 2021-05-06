@@ -367,7 +367,10 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
            least squares algorithm. Journal of Chemometrics: A Journal of
            the Chemometrics Society, 11(5), 393-401.
      """
-    
+    if tl.get_backend() == 'tensorflow':
+        raise ValueError(
+            "Active set is not supported with the tensorflow backend. Consider using fista method with tensorflow.")
+
     if x is None:
         x_vec = tl.zeros(tl.shape(UtU)[1], **tl.context(UtU))
     else:
