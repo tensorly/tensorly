@@ -181,6 +181,10 @@ def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd
         Number of components.
     n_iter_max : int, optional
         (Default: 2000) Maximum number of iteration
+
+        .. versionchanged:: TODO: set the version
+
+            Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
@@ -365,6 +369,10 @@ class Parafac2(DecompositionMixin):
         Number of components.
     n_iter_max : int, optional
         (Default: 2000) Maximum number of iteration
+
+        .. versionchanged:: TODO: set the version
+
+            Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
