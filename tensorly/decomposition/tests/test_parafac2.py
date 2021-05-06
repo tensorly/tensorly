@@ -64,6 +64,33 @@ def test_parafac2(normalize_factors, init):
         rec_Bi = T.dot(rec_proj, rec.factors[1])*rec_A_sign[i]
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)
+    
+    # Test convergence criterion
+    rec, err = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        init=init,
+        normalize_factors=normalize_factors,
+        tol=1e-10,
+        absolute_tol=1e-4,
+        return_errors=True
+    )
+    assert err[-1]**2 < 1e-4
+
+    noisy_slices = [slice_ + 0.001*rng.standard_normal(T.shape(slice_)) for slice_ in slices]
+    rec, err = parafac2(
+        noisy_slices,
+        rank,
+        random_state=rng,
+        init=init,
+        normalize_factors=normalize_factors,
+        tol=1e-4,
+        absolute_tol=-1,
+        return_errors=True,
+        n_iter_max=1000
+    )
+    assert abs(err[-2]**2 - err[-1]**2) < (1e-4 * err[-2]**2)
 
 
 def test_parafac2_nn():
