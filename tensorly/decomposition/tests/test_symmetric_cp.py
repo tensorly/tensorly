@@ -1,10 +1,10 @@
 import tensorly as tl
-from ...testing import assert_
+from ...testing import assert_, assert_class_wrapper_correctly_passes_arguments
 
-from .._symmetric_cp import symmetric_parafac_power_iteration
+from .._symmetric_cp import symmetric_parafac_power_iteration, SymmetricCP
 
 
-def test_symmetric_parafac_power_iteration():
+def test_symmetric_parafac_power_iteration(monkeypatch):
     """Test for symmetric Parafac optimized with robust tensor power iterations"""
     rng = tl.check_random_state(1234)
     tol_norm_2 = 10e-1
@@ -25,3 +25,4 @@ def test_symmetric_parafac_power_iteration():
     # Test the max abs difference between the reconstruction and the tensor
     assert_(tl.max(tl.abs(rec - tensor)) < tol_max_abs,
             'abs norm of reconstruction error higher than tol')
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, symmetric_parafac_power_iteration, SymmetricCP, ignore_args={}, rank=3)
