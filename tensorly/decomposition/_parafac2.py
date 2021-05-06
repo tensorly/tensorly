@@ -207,6 +207,11 @@ def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd
         That is, when the relative sum of squared error is less than the specified tolerance.
         The absolute tolerance is necessary for stopping the algorithm when used on noise-free
         data that follows the PARAFAC2 constraint.
+    nn_modes: None, 'all' or array of integers
+        (Default: None) Used to specify which modes to impose non-negativity constraints on.
+        We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
+        algorithm, so if this mode is among the constrained modes, then a warning will be shown
+        (see notes for more info).
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         Level of verbosity
@@ -356,10 +361,6 @@ class Parafac2(DecompositionMixin):
 
     Parameters
     ----------
-    tensor_slices : ndarray or list of ndarrays
-        Either a third order tensor or a list of second order tensors that may have different number of rows.
-        Note that the second mode factor matrices are allowed to change over the first mode, not the
-        third mode as some other implementations use (see note below).
     rank : int
         Number of components.
     n_iter_max : int, optional
@@ -390,6 +391,11 @@ class Parafac2(DecompositionMixin):
         That is, when the relative sum of squared error is less than the specified tolerance.
         The absolute tolerance is necessary for stopping the algorithm when used on noise-free
         data that follows the PARAFAC2 constraint.
+    nn_modes: None, 'all' or array of integers
+        (Default: None) Used to specify which modes to impose non-negativity constraints on.
+        We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
+        algorithm, so if this mode is among the constrained modes, then a warning will be shown
+        (see notes for more info).
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         Level of verbosity
