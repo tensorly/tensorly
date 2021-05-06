@@ -135,7 +135,7 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
 
 
 def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, absolute_tol=1e-13, nn_modes=None, random_state=None, verbose=False, return_errors=False,
+             tol=1e-8, absolute_tol=None, nn_modes=None, random_state=None, verbose=False, return_errors=False,
              n_iter_parafac=5,):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
@@ -205,12 +205,14 @@ def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
     absolute_tol : float, optional
-        (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
+        (Default: None) Absolute reconstruction error tolearnce. The algorithm
         is considered to have converged when 
         :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
         That is, when the relative sum of squared error is less than the specified tolerance.
         The absolute tolerance is necessary for stopping the algorithm when used on noise-free
         data that follows the PARAFAC2 constraint.
+
+        If None, then the machine precision + 1000 will be used.
     nn_modes: None, 'all' or array of integers
         (Default: None) Used to specify which modes to impose non-negativity constraints on.
         We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
@@ -262,6 +264,9 @@ def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd
     rec_errors = []
     norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2)**2 for tensor_slice in tensor_slices))
     svd_fun = _get_svd(svd)
+
+    if absolute_tol is None:
+        absolute_tol = tl.eps(factors[0].dtype) * 1000
 
     # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
     if nn_modes is None:
@@ -393,12 +398,14 @@ class Parafac2(DecompositionMixin):
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
     absolute_tol : float, optional
-        (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
+        (Default: None) Absolute reconstruction error tolearnce. The algorithm
         is considered to have converged when 
         :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
         That is, when the relative sum of squared error is less than the specified tolerance.
         The absolute tolerance is necessary for stopping the algorithm when used on noise-free
         data that follows the PARAFAC2 constraint.
+
+        If None, then the machine precision + 1000 will be used.
     nn_modes: None, 'all' or array of integers
         (Default: None) Used to specify which modes to impose non-negativity constraints on.
         We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
@@ -438,7 +445,7 @@ class Parafac2(DecompositionMixin):
     any reordering of the modes.
     """
     def __init__(self, rank, n_iter_max=2000, init='random', svd='numpy_svd', normalize_factors=False,
-                 tol=1e-8, absolute_tol=1e-13, nn_modes=None, random_state=None, verbose=False,
+                 tol=1e-8, absolute_tol=None, nn_modes=None, random_state=None, verbose=False,
                  return_errors=False, n_iter_parafac=5,):
         self.rank = rank
         self.n_iter_max = n_iter_max
