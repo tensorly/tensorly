@@ -5,13 +5,13 @@ import pytest
 import tensorly as tl
 from .._cp import (
     parafac, initialize_cp,
-    sample_khatri_rao, randomised_parafac)
-from .._nn_cp import non_negative_parafac, non_negative_parafac_hals
+    sample_khatri_rao, randomised_parafac, CP, RandomizedCP)
+from .._nn_cp import non_negative_parafac, non_negative_parafac_hals, CP_NN, CP_NN_HALS
 from ...cp_tensor import cp_to_tensor
 from ...random import random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
-from ...testing import assert_array_equal, assert_
+from ...testing import assert_array_equal, assert_, assert_class_wrapper_correctly_passes_arguments
 from ...metrics.factors import congruence_coefficient
 
 
@@ -19,7 +19,7 @@ from ...metrics.factors import congruence_coefficient
 @pytest.mark.parametrize("orthogonalise", [True, False])
 @pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 5)])
 @pytest.mark.parametrize("init", ['svd', 'random'])
-def test_parafac(linesearch, orthogonalise, true_rank, rank, init):
+def test_parafac(linesearch, orthogonalise, true_rank, rank, init, monkeypatch):
     """Test for the CANDECOMP-PARAFAC decomposition
     """
     rng = tl.check_random_state(1234)
@@ -64,6 +64,8 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init):
     with np.testing.assert_raises(ValueError):
         _, _ = initialize_cp(tensor, rank, init='bogus init type')
 
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, parafac, CP, ignore_args={'return_errors'}, rank=3)
+
 
 @pytest.mark.parametrize("linesearch", [True, False])
 def test_masked_parafac(linesearch):
@@ -106,7 +108,7 @@ def test_parafac_linesearch():
                                              'CP with line-search seems to have converged more slowly.')
 
 
-def test_non_negative_parafac():
+def test_non_negative_parafac(monkeypatch):
     """Test for non-negative PARAFAC
 
     TODO: more rigorous test
@@ -157,8 +159,10 @@ def test_non_negative_parafac():
     assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
 
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_parafac, CP_NN, ignore_args={'return_errors'}, rank=3)
 
-def test_non_negative_parafac_hals():
+
+def test_non_negative_parafac_hals(monkeypatch):
     """Test for non-negative PARAFAC HALS
     TODO: more rigorous test
     """
@@ -207,6 +211,8 @@ def test_non_negative_parafac_hals():
             'norm 2 of difference between svd and random init too high')
     assert_(tl.max(tl.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
+
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_parafac_hals, CP_NN_HALS, ignore_args={'return_errors'}, rank=3)
 
 
 def test_non_negative_parafac_hals_one_unconstrained():
@@ -264,7 +270,7 @@ def test_sample_khatri_rao():
 
 
 @pytest.mark.xfail(tl.get_backend() == 'tensorflow', reason='Fails on tensorflow')
-def test_randomised_parafac():
+def test_randomised_parafac(monkeypatch):
     """ Test for randomised_parafac
     """
     rng = tl.check_random_state(1234)
@@ -285,3 +291,5 @@ def test_randomised_parafac():
     reconstruction = cp_to_tensor(cp_tensor)
     error = float(T.norm(reconstruction - tensor, 2)/T.norm(tensor, 2))
     assert_(error < tolerance, msg='reconstruction of {} (higher than tolerance of {})'.format(error, tolerance))
+
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, randomised_parafac, RandomizedCP, ignore_args={'return_errors'}, rank=3, n_samples=100)
