@@ -524,28 +524,20 @@ class CP_NN(DecompositionMixin):
                 Applications", PhD., University of Amsterdam, 1998
     """
 
-    def __init__(self, rank, n_iter_max=100, tol=1e-08,
-                 init='svd', svd='numpy_svd',
-                 l2_reg=0,
-                 fixed_modes=None,
-                 normalize_factors=False,
-                 sparsity=None,
-                 mask=None, svd_mask_repeats=5,
-                 cvg_criterion='abs_rec_error',
-                 random_state=None,
-                 verbose=0):
-        self.rank = rank
+    def __init__(self, rank, n_iter_max=100, init='svd', svd='numpy_svd',
+                 tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
+                 mask=None, cvg_criterion='abs_rec_error',
+                 fixed_modes=None):
         self.n_iter_max = n_iter_max
-        self.tol = tol
-        self.l2_reg = l2_reg
         self.init = init
         self.svd = svd
-        self.normalize_factors = normalize_factors
-        self.mask = mask
-        self.svd_mask_repeats = svd_mask_repeats
-        self.cvg_criterion = cvg_criterion
+        self.tol = tol
         self.random_state = random_state
         self.verbose = verbose
+        self.normalize_factors = normalize_factors
+        self.mask = mask
+        self.cvg_criterion = cvg_criterion
+        self.fixed_modes = fixed_modes
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -561,17 +553,20 @@ class CP_NN(DecompositionMixin):
             decomposed tensor
         """
 
-        cp_tensor, errors = non_negative_parafac(tensor, rank=self.rank,
-                                                 n_iter_max=self.n_iter_max,
-                                                 tol=self.tol,
-                                                 init=self.init,
-                                                 svd=self.svd,
-                                                 normalize_factors=self.normalize_factors,
-                                                 mask=self.mask,
-                                                 cvg_criterion=self.cvg_criterion,
-                                                 random_state=self.random_state,
-                                                 verbose=self.verbose,
-                                                 return_errors=True)
+        cp_tensor, errors = non_negative_parafac(
+            tensor, 
+            n_iter_max=self.n_iter_max,
+            init=self.init,
+            svd=self.svd,
+            tol=self.tol,
+            random_state=self.random_state,
+            verbose=self.verbose,
+            normalize_factors=self.normalize_factors,
+            mask=self.mask,
+            cvg_criterion=self.cvg_criterion,
+            fixed_modes=self.fixed_modes,
+            return_errors=True,
+        )
 
         self.decomposition_ = cp_tensor
         self.errors_ = errors
@@ -654,34 +649,20 @@ class CP_NN_HALS(DecompositionMixin):
                 Applications", PhD., University of Amsterdam, 1998
     """
 
-    def __init__(self, rank, n_iter_max=100, tol=1e-08,
-                 init='svd', svd='numpy_svd',
-                 l2_reg=0,
-                 fixed_modes=None,
-                 nn_modes='all',
-                 normalize_factors=False,
-                 sparsity=None,
-                 exact=False,
-                 mask=None,
-                 svd_mask_repeats=5,
-                 return_errors=True,
-                 cvg_criterion='abs_rec_error',
-                 random_state=None,
-                 verbose=0):
-        self.exact = exact
+    def __init__(self, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
+                 sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
+                 verbose=False, cvg_criterion='abs_rec_error'):
         self.rank = rank
         self.n_iter_max = n_iter_max
-        self.tol = tol
-        self.l2_reg = l2_reg
         self.init = init
         self.svd = svd
-        self.normalize_factors = normalize_factors
-        self.mask = mask
-        self.svd_mask_repeats = svd_mask_repeats
-        self.return_errors = return_errors
-        self.cvg_criterion = cvg_criterion
-        self.random_state = random_state
+        self.tol = tol
+        self.sparsity_coefficients = sparsity_coefficients
+        self.fixed_modes = fixed_modes
+        self.nn_modes = nn_modes
+        self.exact = exact
         self.verbose = verbose
+        self.cvg_criterion = cvg_criterion
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -697,14 +678,21 @@ class CP_NN_HALS(DecompositionMixin):
             decomposed tensor
         """
 
-        cp_tensor, errors = non_negative_parafac_hals(tensor, rank=self.rank,
-                                                      n_iter_max=self.n_iter_max,
-                                                      tol=self.tol,
-                                                      init=self.init,
-                                                      svd=self.svd,
-                                                      exact=self.exact,
-                                                      verbose=self.verbose,
-                                                      return_errors=self.return_errors)
+        cp_tensor, errors = non_negative_parafac_hals(
+            tensor,
+            rank=self.rank,
+            n_iter_max=self.n_iter_max,
+            init=self.init,
+            svd=self.svd,
+            tol=self.tol,
+            sparsity_coefficients=self.sparsity_coefficients,
+            fixed_modes=self.fixed_modes,
+            nn_modes=self.nn_modes,
+            exact=self.exact,
+            verbose=self.verbose,
+            return_errors=True,
+            cvg_criterion=self.cvg_criterion,
+        )
 
         self.decomposition_ = cp_tensor
         self.errors_ = errors
