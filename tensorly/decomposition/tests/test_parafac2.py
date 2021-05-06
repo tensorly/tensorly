@@ -78,7 +78,7 @@ def test_parafac2(normalize_factors, init):
     )
     assert err[-1]**2 < 1e-4
 
-    noisy_slices = [slice_ + 0.001*rng.standard_normal(T.shape(slice_)) for slice_ in slices]
+    noisy_slices = [slice_ + tl.tensor(0.001*rng.standard_normal(T.shape(slice_))) for slice_ in slices]
     rec, err = parafac2(
         noisy_slices,
         rank,
