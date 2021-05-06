@@ -309,9 +309,6 @@ class Tucker(DecompositionMixin):
         rank : None, int or int list
             size of the core tensor, ``(len(ranks) == tensor.ndim)``
             if int, the same rank is used for all modes
-        non_negative : bool, default is False
-            if True, uses a non-negative Tucker via iterative multiplicative updates
-            otherwise, uses a Higher-Order Orthogonal Iteration.
         fixed_factors : int list or None, default is None
             if not None, list of modes for which to keep the factors fixed.
             Only valid if a Tucker tensor is provided as init.
@@ -339,13 +336,13 @@ class Tucker(DecompositionMixin):
 
         References
         ----------
-        .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+        .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
         SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
         """
-    def __init__(self, rank=None, n_iter_max=100,
-                 init='svd', svd='numpy_svd', tol=10e-5, fixed_factors=None,
-                 random_state=None, mask=None, verbose=False):
+    def __init__(self, rank, fixed_factors=None, n_iter_max=100, init='svd',
+                 svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False):
         self.rank = rank
+        self.fixed_factors = fixed_factors
         self.n_iter_max = n_iter_max
         self.init = init
         self.svd = svd
@@ -355,14 +352,18 @@ class Tucker(DecompositionMixin):
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        tucker_tensor = tucker(tensor, rank=self.rank,
-                            n_iter_max=self.n_iter_max,
-                            init=self.init,
-                            svd=self.svd,
-                            tol=self.tol,
-                            random_state=self.random_state,
-                            mask=self.mask,
-                            verbose=self.verbose)        
+        tucker_tensor = tucker(
+            tensor,
+            rank=self.rank,
+            fixed_factors=self.fixed_factors,
+            n_iter_max=self.n_iter_max,
+            init=self.init,
+            svd=self.svd,
+            tol=self.tol,
+            random_state=self.random_state,
+            mask=self.mask,
+            verbose=self.verbose,
+        )        
         self.decomposition_ = tucker_tensor
         return tucker_tensor
 
