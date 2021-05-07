@@ -135,7 +135,7 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
 
 
 def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, absolute_tol=None, nn_modes=None, random_state=None, verbose=False, return_errors=False,
+             tol=1e-8, absolute_tol=1e-13, nn_modes=None, random_state=None, verbose=False, return_errors=False,
              n_iter_parafac=5,):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
@@ -205,7 +205,7 @@ def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
     absolute_tol : float, optional
-        (Default: None) Absolute reconstruction error tolearnce. The algorithm
+        (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
         is considered to have converged when 
         :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
         That is, when the relative sum of squared error is less than the specified tolerance.
@@ -398,7 +398,7 @@ class Parafac2(DecompositionMixin):
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
     absolute_tol : float, optional
-        (Default: None) Absolute reconstruction error tolearnce. The algorithm
+        (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
         is considered to have converged when 
         :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
         That is, when the relative sum of squared error is less than the specified tolerance.
@@ -445,7 +445,7 @@ class Parafac2(DecompositionMixin):
     any reordering of the modes.
     """
     def __init__(self, rank, n_iter_max=2000, init='random', svd='numpy_svd', normalize_factors=False,
-                 tol=1e-8, absolute_tol=None, nn_modes=None, random_state=None, verbose=False,
+                 tol=1e-8, absolute_tol=1e-13, nn_modes=None, random_state=None, verbose=False,
                  return_errors=False, n_iter_parafac=5,):
         self.rank = rank
         self.n_iter_max = n_iter_max
