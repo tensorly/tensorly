@@ -182,7 +182,7 @@ def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd
     n_iter_max : int, optional
         (Default: 2000) Maximum number of iteration
 
-        .. versionchanged:: TODO: set the version
+        .. versionchanged:: 0.6.1
 
             Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
@@ -200,7 +200,7 @@ def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd
         That is, when the relative change in sum of squared error is less
         than the tolerance.
 
-        .. versionchanged:: TODO: set the version
+        .. versionchanged:: 0.6.1
 
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
@@ -375,7 +375,7 @@ class Parafac2(DecompositionMixin):
     n_iter_max : int, optional
         (Default: 2000) Maximum number of iteration
 
-        .. versionchanged:: TODO: set the version
+        .. versionchanged:: 0.6.1
 
             Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
@@ -393,7 +393,7 @@ class Parafac2(DecompositionMixin):
         That is, when the relative change in sum of squared error is less
         than the tolerance.
 
-        .. versionchanged:: TODO: set the version
+        .. versionchanged:: 0.6.1
 
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
