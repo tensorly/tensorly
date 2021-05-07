@@ -5,9 +5,12 @@ from ..proximal import svd_thresholding, soft_thresholding, hals_nnls, fista, ac
 from ..proximal import procrustes
 from ...testing import assert_array_equal, assert_array_almost_equal
 from tensorly import tensor_to_vec
+import pytest
 
 # Author: Jean Kossaifi
 
+skip_tensorflow = pytest.mark.skipif((T.get_backend() == "tensorflow"),
+                                     reason=f"Indexing with list not supported in TensorFlow")
 
 def test_soft_thresholding():
     """Test for shrinkage"""
@@ -91,6 +94,7 @@ def test_fista():
     assert_array_almost_equal(true_res, x_fista, decimal=2)
 
 
+@skip_tensorflow
 def test_active_set_nnls():
     """Test for active_set_nnls operator"""
     a = T.tensor(np.random.rand(10, 10))
