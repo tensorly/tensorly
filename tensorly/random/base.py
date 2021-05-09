@@ -10,37 +10,10 @@ from ..utils import DefineDeprecated
 import warnings
 
 
-def check_random_state(seed):
-    """Returns a valid RandomState
-
-    Parameters
-    ----------
-    seed : None or instance of int or np.random.RandomState(), default is None
-
-    Returns
-    -------
-    Valid instance np.random.RandomState
-
-    Notes
-    -----
-    Inspired by the scikit-learn eponymous function
-    """
-    if seed is None:
-        return np.random.mtrand._rand
-
-    elif isinstance(seed, int):
-        return np.random.RandomState(seed)
-
-    elif isinstance(seed, np.random.RandomState):
-        return seed
-
-    raise ValueError('Seed should be None, int or np.random.RandomState')
-
-
 def random_tensor(shape, random_state=None, **context):
     """Create a random tensor
     """
-    rns = check_random_state(random_state)
+    rns = T.check_random_state(random_state)
     return T.tensor(rns.random_sample(shape), **context)
 
 
@@ -62,7 +35,7 @@ def random_parafac2(shapes, rank, full=False, random_state=None,
         the decomposed tensor is returned
     random_state : `np.random.RandomState`
     """
-    rns = check_random_state(random_state)
+    rns = T.check_random_state(random_state)
     if not all(shape[1] == shapes[0][1] for shape in shapes):
         raise ValueError('All matrices must have equal number of columns.')
     
@@ -113,7 +86,7 @@ def random_cp(shape, rank, full=False, orthogonal=False,
         warnings.warn('Can only construct orthogonal tensors when rank <= min(shape) but got '
                       'a tensor with min(shape)={} < rank={}'.format(min(shape), rank))
 
-    rns = check_random_state(random_state)
+    rns = T.check_random_state(random_state)
     factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
     weights = T.ones(rank, **context)
     if orthogonal:
@@ -150,7 +123,7 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
         ND-array : full tensor if `full` is True
         (ND-array, 2D-array list) : core tensor and list of factors otherwise
     """
-    rns = check_random_state(random_state)
+    rns = T.check_random_state(random_state)
 
     rank = validate_tucker_rank(shape, rank)
 
@@ -215,7 +188,7 @@ def random_tt(shape, rank, full=False, random_state=None, **context):
         message = 'Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(rank[0])
         raise ValueError(message)
 
-    rns = check_random_state(random_state)
+    rns = T.check_random_state(random_state)
     factors = [T.tensor(rns.random_sample((rank[i], s, rank[i+1])), **context)\
                for i, s in enumerate(shape)]
 

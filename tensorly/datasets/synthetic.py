@@ -1,5 +1,4 @@
 import numpy as np
-from ..random import check_random_state
 from .. import backend as T
 
 
@@ -23,7 +22,7 @@ def gen_image(region='swiss', image_height=20, image_width=20,
         or ``(image_height, image_width, n_channels)``
         array for which all values are zero except the region specified
     """
-    weight = np.zeros((image_height, image_width), dtype=np.float)
+    weight = np.zeros((image_height, image_width), dtype=float)
 
     if region == "swiss":
         slim_width = (image_width // 2) - (image_width // 10 + 1)
