@@ -4,4 +4,5 @@ tensor decomposition for which the API is still evolving.
 """
 
 from ._tt_cross import tensor_train_cross
+from ._gcp import gcp
 
