@@ -1,5 +1,4 @@
 import tensorly as tl
-from ...random import check_random_state
 from ...testing import assert_
 
 from .._symmetric_cp import symmetric_parafac_power_iteration
@@ -7,7 +6,7 @@ from .._symmetric_cp import symmetric_parafac_power_iteration
 
 def test_symmetric_parafac_power_iteration():
     """Test for symmetric Parafac optimized with robust tensor power iterations"""
-    rng = check_random_state(1234)
+    rng = tl.check_random_state(1234)
     tol_norm_2 = 10e-1
     tol_max_abs = 10e-1
     

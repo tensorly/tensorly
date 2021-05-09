@@ -322,6 +322,7 @@ def validate_tucker_rank(tensor_shape, rank='same', rounding='round', fixed_mode
     # rank is 'same' or float: choose rank so as to preserve a fraction of the original #parameters
     if rank == 'same':
         rank = float(1)
+
     if isinstance(rank, float):
         n_modes_compressed = len(tensor_shape)
         n_param_tensor = np.prod(tensor_shape)
@@ -360,3 +361,4 @@ def validate_tucker_rank(tensor_shape, rank='same', rounding='round', fixed_mode
             rank = [rank  if i not in fixed_modes else s for (i, s) in enumerate(tensor_shape)]# *n_mode
 
     return rank
+

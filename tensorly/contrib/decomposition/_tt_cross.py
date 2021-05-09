@@ -1,6 +1,5 @@
 import tensorly as tl
 from ...tt_tensor import tt_to_tensor
-from ...random import check_random_state
 import numpy as np
 
 
@@ -117,7 +116,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
 
     # Initialize indice: random selection of column indices
     random_seed = None
-    rng = check_random_state(random_seed)
+    rng = tl.check_random_state(random_seed)
 
     col_idx = [None] * tensor_order
     for k_col_idx in range(tensor_order - 1):
@@ -426,7 +425,7 @@ def maxvol(A):
         A_new = A_new - A_new * tl.reshape(projection, (tl.shape(A_new)[0], 1))
 
         # Delete the selected row
-        mask.pop(max_row_idx)
+        mask.pop(tl.to_numpy(max_row_idx))
         A_new = A_new[mask,:]
 
         # update the row_idx and rest_of_rows

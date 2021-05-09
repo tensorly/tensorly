@@ -1,8 +1,10 @@
+from warnings import warn
+
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from tensorly.random import random_parafac2
 from tensorly import backend as T
-from . import parafac
+from . import parafac, non_negative_parafac_hals
 from ..parafac2_tensor import parafac2_to_slice, Parafac2Tensor, _validate_parafac2_tensor
 from ..cp_tensor import CPTensor
 from ..base import unfold
@@ -133,7 +135,7 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
 
 
 def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5):
+             tol=1e-8, nn_modes=None, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5,):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
     Computes a rank-`rank` PARAFAC2 decomposition of the third-order tensor defined by 
@@ -156,6 +158,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
 
     where :math:`P_i` is a :math:`J_i \times R` orthogonal matrix and :math:`B` is a
     :math:`R \times R` matrix.
+    
 
     An alternative formulation of the PARAFAC2 decomposition is that the tensor element
     :math:`X_{ijk}` is given by
@@ -173,7 +176,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         Either a third order tensor or a list of second order tensors that may have different number of rows.
         Note that the second mode factor matrices are allowed to change over the first mode, not the
         third mode as some other implementations use (see note below).
-    rank  : int
+    rank : int
         Number of components.
     n_iter_max : int
         Maximum number of iteration
@@ -224,12 +227,33 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     [1]_, the second mode changes over the third mode. We made this change since that means
     that the function accept both lists of matrices and a single nd-array as input without
     any reordering of the modes.
+
+    Because of the reformulation above, :math:`B_i = P_i B`, the :math:`B_i` matrices
+    cannot be constrained to be non-negative with ALS. If this mode is constrained to be
+    non-negative, then :math:`B` will be non-negative, but not the orthogonal `P_i` matrices.
+    Consequently, the `B_i` matrices are unlikely to be non-negative.
     """
     weights, factors, projections = initialize_decomposition(tensor_slices, rank, init=init, svd=svd, random_state=random_state)
 
     rec_errors = []
     norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2)**2 for tensor_slice in tensor_slices))
     svd_fun = _get_svd(svd)
+
+    # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
+    if nn_modes is None:
+        def parafac_updates(X, w, f):
+                return parafac(X, rank, n_iter_max=n_iter_parafac,
+                               init=(w, f), svd=svd, orthogonalise=False, verbose=verbose,
+                               return_errors=False, normalize_factors=False, mask=None,
+                               random_state=random_state, tol=1e-100)[1]
+    else:
+        if nn_modes == 'all' or 1 in nn_modes:
+            warn("Mode `1` of PARAFAC2 fitted with ALS cannot be constrained to be truly non-negative. See the documentation for more info.")
+        def parafac_updates(X, w, f):
+                return non_negative_parafac_hals(
+                    X, rank, n_iter_max=n_iter_parafac, init=(w, f), svd=svd, nn_modes=nn_modes,
+                    verbose=verbose, return_errors=False, tol=1e-100)[1]
+
 
     projected_tensor = tl.zeros([factor.shape[0] for factor in factors], **T.context(factors[0]))
 
@@ -241,9 +265,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
 
         projections = _compute_projections(tensor_slices, factors, svd_fun, out=projections)
         projected_tensor = _project_tensor_slices(tensor_slices, projections, out=projected_tensor)
-        _, factors = parafac(projected_tensor, rank, n_iter_max=n_iter_parafac, init=(weights, factors),
-                             svd=svd, orthogonalise=False, verbose=verbose, return_errors=False,
-                             normalize_factors=False, mask=None, random_state=random_state, tol=1e-100)
+        factors = parafac_updates(projected_tensor, weights, factors)
 
         if normalize_factors:
             new_factors = []

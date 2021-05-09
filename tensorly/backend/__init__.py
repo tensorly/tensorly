@@ -9,10 +9,10 @@ import inspect
 
 _DEFAULT_BACKEND = 'numpy'
 _KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
-                   'mxnet':'MxnetBackend', 
-                   'pytorch':'PyTorchBackend', 
-                   'tensorflow':'TensorflowBackend',
-                   'cupy':'CupyBackend',
+                   'mxnet': 'MxnetBackend',
+                   'pytorch': 'PyTorchBackend',
+                   'tensorflow': 'TensorflowBackend',
+                   'cupy': 'CupyBackend',
                    'jax': 'JaxBackend'}
 
 _LOADED_BACKENDS = {}
@@ -28,11 +28,11 @@ def initialize_backend():
     backend_name = os.environ.get('TENSORLY_BACKEND', _DEFAULT_BACKEND)
     if backend_name not in _KNOWN_BACKENDS:
         msg = ("TENSORLY_BACKEND should be one of {}, got {}. Defaulting to {}'").format(
-                    ', '.join(map(repr, _KNOWN_BACKENDS)),
-                        backend_name, _DEFAULT_BACKEND)
+            ', '.join(map(repr, _KNOWN_BACKENDS)),
+            backend_name, _DEFAULT_BACKEND)
         warnings.warn(msg, UserWarning)
         backend_name = _DEFAULT_BACKEND
-    
+
     set_backend(backend_name, local_threadsafe=False)
 
 def register_backend(backend_name):
@@ -56,7 +56,7 @@ def register_backend(backend_name):
         _LOADED_BACKENDS[backend_name] = backend
     else:
         msg = "Unknown backend name {0!r}, known backends are [{1}]".format(
-                backend_name, ', '.join(map(repr, _KNOWN_BACKENDS)))
+            backend_name, ', '.join(map(repr, _KNOWN_BACKENDS)))
         raise ValueError(msg)
 
 def set_backend(backend, local_threadsafe=False):
@@ -78,7 +78,7 @@ def set_backend(backend, local_threadsafe=False):
 
     # Set the backend
     _LOCAL_STATE.backend = backend
-    
+
     if not local_threadsafe:
         global _DEFAULT_BACKEND
         _DEFAULT_BACKEND = backend.backend_name
@@ -178,7 +178,9 @@ def dispatch(method):
 
     return inner
 
+
 # Generic methods, exposed as part of the public API
+check_random_state = dispatch(Backend.check_random_state)
 context = dispatch(Backend.context)
 tensor = dispatch(Backend.tensor)
 is_tensor = dispatch(Backend.is_tensor)
@@ -216,12 +218,17 @@ solve = dispatch(Backend.solve)
 qr = dispatch(Backend.qr)
 kr = dispatch(Backend.kr)
 partial_svd = dispatch(Backend.partial_svd)
+randomized_svd = dispatch(Backend.randomized_svd)
+randomized_range_finder = dispatch(Backend.randomized_range_finder)
 sort = dispatch(Backend.sort)
 conj = dispatch(Backend.conj)
 eps = dispatch(Backend.eps)
 finfo = dispatch(Backend.finfo)
 index = Backend.index
 index_update = dispatch(Backend.index_update)
+log2 = dispatch(Backend.log2)
+sin = dispatch(Backend.sin)
+cos = dispatch(Backend.cos)
 
 # Initialise the backend to the default one
 initialize_backend()
