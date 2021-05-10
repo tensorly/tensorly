@@ -190,12 +190,12 @@ def vec2factors(vec, shape, rank, context=None):
     factors = []
     place = 0
     for i in range(numFacts):
-        factor = np.zeros((R * shape[i]), **context)
-        for j in range(shape[i] * R):
+        factor = np.zeros((rank * shape[i]), **context)
+        for j in range(shape[i] * rank):
             factor[j] = vec[j + place]
-        factor = tl.tensor(factor.reshape((R, shape[i])), **context)
+        factor = tl.tensor(factor.reshape((rank, shape[i])), **context)
         factors.append(tl.transpose(factor))
-        place += shape[i] * R
+        place += shape[i] * rank
 
     return factors
 
