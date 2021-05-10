@@ -52,8 +52,9 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, n_iter_max=1000, \
       the same shape as 'tensor'.
     n_iter_max : int
       Maximum number of outer iterations, 1000 by default.
-    init : {random, svd}
+    init : {random, svd, cptensor}
       Initialization for factor matrices, 'random' by default.
+      Initial guess normalized to ensure weights are one.
     printitn : int
       Print every n iterations; 0 for no printing, 10 by default.
     random_state : {None, int, np.random.RandomState}
@@ -117,26 +118,109 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, n_iter_max=1000, \
     # Timers, @@@@@ TODO
 
     # Initial setup
-    tensor_order = tl.ndim(X)
-    tensor_shape = tl.shape(X)
-    tensor_size = 1
-    for i in range(tensor_order):
-        tensor_size *= tensor_shape[i]
+    nd = tl.ndim(X)
+    sz = tl.shape(X)
+    tsz = 1
+    vecsz = 0
+    for i in range(nd):
+        tsz *= sz[i]
+        vecsz += sz[i]
+    vecsz *= R
 
     # Random set-up
     if state is not None:
         rng = tl.check_random_state(state)
 
-    # @@@@@ Do I need an equivalent to the 'info' structure in Tensor Toolbox
+    # @@@@@  TODO: Do I need an equivalent to the 'info' structure in Tensor Toolbox
     # code??  Captures params, tensor info details
 
-    # initialize CP-tensor
-    M = initialize_cp(X, R, init=init, random_state=rng)
+    # TODO capture stats(nnzs, zeros, missing)
+    nnonnzeros = 0
+    X = tl.tensor_to_vec(X)
+    for i in X:
+        if i > 0: nnonnzeros += 1
+    X = tl.reshape(X,sz)
+    nzeros = tsz - nnonnzeros
+    nmissing = 0
+    if W is not None:
+        W = tl.tensor_to_vec(W)
+        for i in W:
+            if i > 0 : nmissing += 1
+        W = tl.reshape(W,sz)
 
     # Set up function, gradient, and bounds
     if type:
         fh, gh, lb = validate_type(type)
 
+    # initialize CP-tensor
+    M0 = initialize_cp(X, R, init=init, random_state=rng)
+
+    # check optimization method
+    if validate_opt(opt):
+        print("Choose optimization method from: {lbfgsb}")
+        sys.exit(1)
+
+    # TODO check dense vs sparse (currently only supports dense tensor format
+
+
+    # Welcome message
+    if printitn > 0:
+        print("GCP-OPT-{} (Generalized CP Tensor Decomposition".format(opt))
+
+
+def vec2factors(vec, shape, rank, context=None):
+    """Wrapper function detailed in Appendix C [1]
+    Builds a set of N matrices, where the k-th matrix is shape(k) x rank in dimension
+
+    Parameters
+    ----------
+    vec : ndarray
+        vector of values to proliferate matrices with
+    shape: tensor shape
+        shape of tensor dictates number of rows in each matrix
+    rank: int
+        number of columns in each matrix
+
+    Returns
+    -------
+    factors : ndarrays
+        factor matrices update
+    """
+    numFacts = len(shape)
+    factors = []
+    place = 0
+    for i in range(numFacts):
+        factor = np.zeros((R * shape[i]), **context)
+        for j in range(shape[i] * R):
+            factor[j] = vec[j + place]
+        factor = tl.tensor(factor.reshape((R, shape[i])), **context)
+        factors.append(tl.transpose(factor))
+        place += shape[i] * R
+
+    return factors
+
+
+def factors2vec(factors):
+    """Wrapper function detailed in Appendix C [1]
+    Stacks the column vectors of a set of matrices into a single vecto
+
+    Parameters
+    ---------
+    factors : list of ndarrays
+        Factor matrices or Gradient wrt factor gradient
+
+    Returns
+    -------
+    vec : ndarry
+        column-wise vectorization of a list of matrices
+    """
+    vec = None
+    for factor in factors:
+        if vec is None:
+            vec = tl.tensor_to_vec(tl.unfold(factor,1))
+        else:
+            vec = tl.concatenate([vec,tl.tensor_to_vec(tl.unfold(factor,1))])
+    return vec
 
 def validate_type(type):
     """ Validate 'type' is among the implemented loss/gradient/lower bound
@@ -221,3 +305,69 @@ def validate_opt(opt):
 
     return status
 
+# TODO crush this out, crucial bit to the program
+def tt_gcp_fg(M, X, f, g, W = None, computeF = True, computeG = True, vectorG = True):
+    """Loss function and gradient for generalized CP decomposition.
+
+    Parameters
+    ----------
+    M : CPTensor
+    X : ndarray
+        Dense tensor
+    f : Function handle
+        elementwise loss of the form f(x,m)
+    g : Function handle
+        Elementwise intermediate gradient of the form g(x,m)
+    W : ndarray
+        Weight tensor, 1's for known values, 0's for missing values.  Function/gradient is only computed w.r.t
+        know values. Setting W =[] indicates no missing data.
+    computeF : boolean
+        Include computation of the loss function. Default is true.
+    computeG : boolean
+        Include computation of the gradient.
+    vectorG : boolean
+        Reshape gradient matrices into a single vector.
+
+    Returns
+    -------
+    F : scalar
+        Loss function value
+    G : ndarray(s)
+        If vectorG = False, G is a list of matrices where G[k] is the same size as the k-th factor matrix
+        Otherwise, G is the gradient in vector form
+    """
+    # setup
+    Mfull = M.to_tensor()
+    Mv = tl.tensor_to_vec(Mfull)
+    Xv = tl.tensor_to_vec(X)
+
+    F = None
+    G = None
+    # calculate loss
+    if computeF:
+        Fvec = f(Xv,Mv)
+        if W is not None:
+            # TODO handle applying weight tensor, probably need to vec it then elementwise product
+            pass
+        F = Fvec.sum()
+    # calculate gradient
+    if computeG:
+
+        Y = g(Xv,Mv)
+        Y = tl.reshape(Y, tl.shape(X))
+
+        if W is not None:
+            # TODO handle applying weight tensor, probably need to vec it then elementwise product
+            pass
+
+        G = []
+
+        for i in range(len(M[1])):
+            mGrad = tl.unfolding_dot_khatri_rao(Y, M, i)
+            G.append(mGrad)
+        if vectorG:
+            G = factors2vec(G)
+
+    return F, G
+
+# TODO update -> index_update, either they are the same or I need to rewrite update from TToolbox
