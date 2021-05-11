@@ -132,7 +132,7 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, maxiters=1000, \
 
     # Random set-up
     if state is not None:
-        rng = tl.check_random_state(state)
+        state = tl.check_random_state(state)
 
     # @@@@@  TODO: Do I need an equivalent to the 'info' structure in Tensor Toolbox
     # code??  Captures params, tensor info details
