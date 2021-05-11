@@ -185,7 +185,7 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, maxiters=1000, \
         sys.exit(1)
 
     # initialize CP-tensor and make a copy to work with so as to have the starting guess
-    M0 = initialize_cp(X, R, init=init, random_state=rng)
+    M0 = initialize_cp(X, R, init=init, random_state=state)
     wghts0 = tl.copy(M0[0])
     fcts0 = []
     for i in range(nd):
