@@ -152,8 +152,37 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, maxiters=1000, \
         W = tl.reshape(W,sz)
 
     # Set up function, gradient, and bounds
-    if type:
-        fh, gh, lb = validate_type(type)
+    # @@@@@@ fh, gh, lb = validate_type(type) # old-way, needs troubleshooting
+    fh = None
+    gh = None
+    lb = None
+    if type == "normal" or type == 'gaussian':
+        fh = lambda x, m: (x - m) ** 2
+        gh = lambda x, m: 2 * (x - m)
+        lb = -math.inf
+    elif type == 'binary' or type == 'bernoulli-odds':
+        fh = lambda x, m: math.log(m + 1) - x * math.log(m + 1e-10)
+        gh = lambda x, m: 1 / (m + 1) - x / (m + 1e-10)
+        lb = 0
+    elif type == 'bernoulli-logit':
+        fh = lambda x, m: math.log(math.exp(m) + 1) - x * m
+        gh = lambda x, m: math.exp(m) / (math.exp(m) + 1) - x
+        lb = -math.inf
+    elif type == 'count' or type == 'poisson':
+        fh = lambda x, m: m - x * math.log(m + 1e-10)
+        gh = lambda x, m: 1 - x / (m + 1e-10)
+        lb = 0
+    elif type == 'poisson-log':
+        fh = lambda x, m: math.exp(m) - x * m
+        gh = lambda x, m: 1 - x / (m + 1e-10)
+        lb = 0
+    elif type == 'rayleigh':
+        fh = lambda x, m: 2 * math.log(m + 1e-10) + (math.pi / 4) * ((x / (m + 1e-10)) ** 2)
+        gh = lambda x, m: 2 / (m + 1e-10) - (math.pi / 2) * (x ** 2) / ((m + 1e-10) ** 3)
+        lb = 0
+    else:
+        print("Type unsupported!!")
+        sys.exit(1)
 
     # initialize CP-tensor and make a copy to work with so as to have the starting guess
     M0 = initialize_cp(X, R, init=init, random_state=rng)
@@ -176,7 +205,7 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, maxiters=1000, \
 
     # Welcome message
     if printitn > 0:
-        print("GCP-OPT-{} (Generalized CP Tensor Decomposition\n".format(opt))
+        print("GCP-OPT-{} (Generalized CP Tensor Decomposition)\n".format(opt))
         print("Tensor size: {} ({} total entries)".format(sz,tsz))
         if nmissing > 0:
             print("Missing entries: {} ({})".format(nmissing, 100*nmissing/tsz))
@@ -221,9 +250,6 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, maxiters=1000, \
         pass
 
 
-
-
-
 def vec2factors(vec, shape, rank, context = None):
     """Wrapper function detailed in Appendix C [1]
     Builds a set of N matrices, where the k-th matrix is shape(k) x rank in dimension
@@ -235,7 +261,7 @@ def vec2factors(vec, shape, rank, context = None):
     shape: tensor shape
         shape of tensor dictates number of rows in each matrix
     rank: int
-        number of columns in each matrix
+        number of columns in each matrix, *** rank cannot be > dimension of smallest mode ***
 
     Returns
     -------
@@ -298,6 +324,9 @@ def validate_type(type):
       Lower bound
 
     """
+    fh = None
+    gh = None
+    lb = None
     if type == "normal" or type == 'gaussian':
         fh = lambda x, m: (x - m) ** 2
         gh = lambda x, m: 2 * (x - m)
