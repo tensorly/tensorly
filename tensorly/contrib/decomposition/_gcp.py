@@ -2,6 +2,8 @@ import numpy as np
 import warnings
 import math
 import sys
+import inspect
+from scipy.optimize import fmin_l_bfgs_b
 
 import tensorly as tl
 from ...decomposition._base_decomposition import DecompositionMixin
@@ -11,7 +13,7 @@ from ...cp_tensor import (cp_to_tensor, CPTensor,
 from ...decomposition._cp import initialize_cp
 
 
-def gcp(X, R, type='normal', opt='lbfgsb', mask=None, n_iter_max=1000, \
+def gcp(X, R, type='normal', opt='lbfgsb', mask=None, maxiters=1000, \
         init='random', printitn=10, state=None, factr=1e7, pgtol=1e-4, \
         fsamp=None, gsamp=None, oversample=1.1, sampler=None, \
         fsampler=None, rate=1e-3, decay=0.1, maxfails=1, epciters=1000, \
@@ -99,11 +101,10 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, n_iter_max=1000, \
       Quit estimation of function if it goes below this level (SGD/ADAM/ADAGRAD parameter).
       Defaults to -inf.
 
-
-
-
     Returns
     -------
+    Mfin : CPTensor
+        Canonical polyadic decomposition of input tensor X
 
     Reference
     ---------
@@ -120,12 +121,14 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, n_iter_max=1000, \
     # Initial setup
     nd = tl.ndim(X)
     sz = tl.shape(X)
-    tsz = 1
+    tsz = X.size
+    X_context = tl.context(X)
     vecsz = 0
     for i in range(nd):
-        tsz *= sz[i]
+        # tsz *= sz[i]
         vecsz += sz[i]
     vecsz *= R
+    W = mask
 
     # Random set-up
     if state is not None:
@@ -134,7 +137,7 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, n_iter_max=1000, \
     # @@@@@  TODO: Do I need an equivalent to the 'info' structure in Tensor Toolbox
     # code??  Captures params, tensor info details
 
-    # TODO capture stats(nnzs, zeros, missing)
+    # capture stats(nnzs, zeros, missing)
     nnonnzeros = 0
     X = tl.tensor_to_vec(X)
     for i in X:
@@ -144,31 +147,84 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, n_iter_max=1000, \
     nmissing = 0
     if W is not None:
         W = tl.tensor_to_vec(W)
-        for i in W:
-            if i > 0 : nmissing += 1
+        for i in range(tl.shape(W)[0]):
+            if W[i] > 0 : nmissing += 1
         W = tl.reshape(W,sz)
 
     # Set up function, gradient, and bounds
     if type:
         fh, gh, lb = validate_type(type)
 
-    # initialize CP-tensor
+    # initialize CP-tensor and make a copy to work with so as to have the starting guess
     M0 = initialize_cp(X, R, init=init, random_state=rng)
+    wghts0 = tl.copy(M0[0])
+    fcts0 = []
+    for i in range(nd):
+        f = tl.copy(M0[1][i])
+        fcts0.append(f)
+    M = CPTensor((wghts0,fcts0))
 
     # check optimization method
     if validate_opt(opt):
         print("Choose optimization method from: {lbfgsb}")
         sys.exit(1)
+    use_stoc = False
+    if opt != 'lbfgsb':
+        use_stoc = True
 
-    # TODO check dense vs sparse (currently only supports dense tensor format
-
+    # @@@@@ TODO: implement stochastic gradient optimization methods, this is were f and g sampling set-up will go
 
     # Welcome message
     if printitn > 0:
-        print("GCP-OPT-{} (Generalized CP Tensor Decomposition".format(opt))
+        print("GCP-OPT-{} (Generalized CP Tensor Decomposition\n".format(opt))
+        print("Tensor size: {} ({} total entries)".format(sz,tsz))
+        if nmissing > 0:
+            print("Missing entries: {} ({})".format(nmissing, 100*nmissing/tsz))
+        print("Generalized function Type: {}".format(type))
+        print("Objective function: {}".format(inspect.getsource(fh)))
+        print("Gradient function: {}".format(inspect.getsource(gh)))
+        print("Lower bound of factor matrices: {}".format(lb))
+        print("Optimization method: {}".format(opt))
+        if use_stoc:
+            print("Max iterations (epochs): {}".format(maxiters))
+            print("Iterations per epoch: {}".format(epciters))
+            print("Learning rate / decay / maxfails: {} {} {}".format(rate, decay, maxfails))
+            print("Function Sampler: ") # TODO sampling set up prepare string for this field
+            print("Gradient Sampler: ")  # TODO sampling set up prepare string for this field
+        else:
+            print("Max iterations: {}".format(maxiters))
+            print("Projected gradient tolerance: {}".format(pgtol))
+
+    # Make like a zombie and start decomposing
+    Mfin = None
+    if opt=='lbfgsb':
+        # set up bounds for l-bfgs-b if lb = 0
+        bounds = None
+        if lb == 0:
+            lb = tl.zeros(tsz)
+            ub = math.inf*tl.ones(tsz)
+        fcn = lambda x: tt_gcp_fg(vec2factors(x, sz, R, X_context), X, fh, gh)
+        m = factors2vec(M[1])
+        x, f, info_dict = fmin_l_bfgs_b(fcn, m, approx_grad=False, bounds=None, \
+                                        pgtol=pgtol, factr=factr, maxiter=maxiters)
+        if printitn > 0:
+            print("\nFinal objective: {}".format(f))
+            print("Setup time: ") # @@@@@ TODO attached to setting up timers
+            print("Main loop time: ") # @@@@@ TODO attached to setting up timers
+            print("Outer iterations:")
+            print("Total iterations: {}".format(info_dict['nit']))
+            print("L-BFGS-B exit message: {} ({})".format(info_dict['task'], info_dict['warnflag']))
+        Mfin = vec2factors(x, sz, R, X_context)
+
+    if use_stoc:
+        # TODO perform optimization with SGD/ADAM/ADAGRAD, yet to be implemented
+        pass
 
 
-def vec2factors(vec, shape, rank, context=None):
+
+
+
+def vec2factors(vec, shape, rank, context = None):
     """Wrapper function detailed in Appendix C [1]
     Builds a set of N matrices, where the k-th matrix is shape(k) x rank in dimension
 
@@ -183,21 +239,21 @@ def vec2factors(vec, shape, rank, context=None):
 
     Returns
     -------
-    factors : ndarrays
-        factor matrices update
+    M1 : CPTensor
+        CPTensor with factor matrices formed by 'vec'
     """
     numFacts = len(shape)
     factors = []
     place = 0
     for i in range(numFacts):
-        factor = np.zeros((rank * shape[i]), **context)
-        for j in range(shape[i] * rank):
-            factor[j] = vec[j + place]
-        factor = tl.tensor(factor.reshape((rank, shape[i])), **context)
-        factors.append(tl.transpose(factor))
-        place += shape[i] * rank
-
-    return factors
+      factor = np.zeros((rank*shape[i]), **context)
+      for j in range(shape[i]*rank):
+        factor[j] = vec[j+place]
+      factor = tl.tensor(factor.reshape((rank, shape[i])), **context)
+      factors.append(tl.transpose(factor))
+      place += shape[i]*rank
+    M1 = CPTensor((tl.ones(rank,), factors))
+    return M1
 
 
 def factors2vec(factors):
@@ -305,7 +361,6 @@ def validate_opt(opt):
 
     return status
 
-# TODO crush this out, crucial bit to the program
 def tt_gcp_fg(M, X, f, g, W = None, computeF = True, computeG = True, vectorG = True):
     """Loss function and gradient for generalized CP decomposition.
 
@@ -342,7 +397,7 @@ def tt_gcp_fg(M, X, f, g, W = None, computeF = True, computeG = True, vectorG = 
     Xv = tl.tensor_to_vec(X)
 
     F = None
-    G = None
+    G = []
     # calculate loss
     if computeF:
         Fvec = f(Xv,Mv)
@@ -360,8 +415,6 @@ def tt_gcp_fg(M, X, f, g, W = None, computeF = True, computeG = True, vectorG = 
             # TODO handle applying weight tensor, probably need to vec it then elementwise product
             pass
 
-        G = []
-
         for i in range(len(M[1])):
             mGrad = tl.unfolding_dot_khatri_rao(Y, M, i)
             G.append(mGrad)
@@ -369,5 +422,3 @@ def tt_gcp_fg(M, X, f, g, W = None, computeF = True, computeG = True, vectorG = 
             G = factors2vec(G)
 
     return F, G
-
-# TODO update -> index_update, either they are the same or I need to rewrite update from TToolbox
