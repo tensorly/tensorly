@@ -284,6 +284,10 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
     -------
     x : approximate solution such that Ux = M
 
+    Notes
+    -----
+    We solve the following problem :math: `1/2 ||m - Ux ||_2^2 + \\lambda |x|_1`
+
     Reference
     ----------
     [1] : Beck, A., & Teboulle, M. (2009). A fast iterative

@@ -85,12 +85,13 @@ def test_hals_nnls():
 
 def test_fista():
     """Test for fista operator"""
-    a = T.tensor(np.random.rand(10, 10))
+    a = T.tensor(np.random.rand(20, 10))
     true_res = T.tensor(np.random.rand(10, 1))
     b = T.dot(a, true_res)
     atb = T.dot(T.transpose(a), b)
     ata = T.dot(T.transpose(a), a)
-    x_fista = fista(atb, ata, tol=10e-10, n_iter_max=5000)
+    lr = 1 / (T.norm(ata))
+    x_fista = fista(atb, ata, tol=10e-16, n_iter_max=5000, lr=lr)
     assert_array_almost_equal(true_res, x_fista, decimal=2)
 
 
