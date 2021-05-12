@@ -255,7 +255,7 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
     
 
 def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
-          lr=10e-3, tol=10e-8):
+          lr=None, tol=10e-8):
     """
     Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
 
@@ -276,6 +276,7 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
                    if True, result will be non-negative
     lr : float
         learning rate
+        Default : None
     sparsity_coef : float or None
     tol : float
         stopping criterion
@@ -299,7 +300,8 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
     
     if x is None:
         x = tl.zeros(tl.shape(UtM), **tl.context(UtM))
-
+    if lr is None:
+        lr = 1 / (tl.partial_svd(UtU)[1][0])
     # Parameters
     momentum_old = tl.tensor(1.0)
     norm_0 = 0.0

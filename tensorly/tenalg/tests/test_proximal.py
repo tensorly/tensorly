@@ -90,8 +90,7 @@ def test_fista():
     b = T.dot(a, true_res)
     atb = T.dot(T.transpose(a), b)
     ata = T.dot(T.transpose(a), a)
-    lr = 1 / (T.norm(ata))
-    x_fista = fista(atb, ata, tol=10e-16, n_iter_max=5000, lr=lr)
+    x_fista = fista(atb, ata, tol=10e-16, n_iter_max=5000)
     assert_array_almost_equal(true_res, x_fista, decimal=2)
 
 
