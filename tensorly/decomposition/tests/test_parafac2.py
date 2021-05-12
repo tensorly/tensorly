@@ -35,13 +35,15 @@ def test_parafac2(normalize_factors, init):
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
-    rec = parafac2(
+    rec, err = parafac2(
         slices,
         rank,
         random_state=rng,
         init=init,
         n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
-        normalize_factors=normalize_factors
+        normalize_factors=normalize_factors,
+        return_errors=True,
+        n_iter_max=100
     )
     rec_tensor = parafac2_to_tensor(rec)
 
@@ -64,6 +66,33 @@ def test_parafac2(normalize_factors, init):
         rec_Bi = T.dot(rec_proj, rec.factors[1])*rec_A_sign[i]
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)
+    
+    # Test convergence criterion
+    rec, err = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        init=init,
+        normalize_factors=normalize_factors,
+        tol=1e-10,
+        absolute_tol=1e-4,
+        return_errors=True
+    )
+    assert err[-1]**2 < 1e-4
+
+    noisy_slices = [slice_ + tl.tensor(0.001*rng.standard_normal(T.shape(slice_))) for slice_ in slices]
+    rec, err = parafac2(
+        noisy_slices,
+        rank,
+        random_state=rng,
+        init=init,
+        normalize_factors=normalize_factors,
+        tol=1e-4,
+        absolute_tol=-1,
+        return_errors=True,
+        n_iter_max=1000
+    )
+    assert abs(err[-2]**2 - err[-1]**2) < (1e-4 * err[-2]**2)
 
 
 def test_parafac2_nn():
@@ -182,10 +211,10 @@ def test_parafac2_slice_and_tensor_input():
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
-    slice_rec = parafac2(slices, rank, random_state=1234, normalize_factors=False)
+    slice_rec = parafac2(slices, rank, random_state=1234, normalize_factors=False, n_iter_max=100)
     slice_rec_tensor = parafac2_to_tensor(slice_rec)
 
-    tensor_rec = parafac2(tensor, rank, random_state=1234, normalize_factors=False)
+    tensor_rec = parafac2(tensor, rank, random_state=1234, normalize_factors=False, n_iter_max=100)
     tensor_rec_tensor = parafac2_to_tensor(tensor_rec)
 
     assert tl.max(tl.abs(slice_rec_tensor - tensor_rec_tensor)) < 1e-8
@@ -207,7 +236,7 @@ def test_parafac2_normalize_factors():
 
     slices = parafac2_to_tensor(random_parafac2_tensor)
 
-    unnormalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=False)
+    unnormalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=False, n_iter_max=100)
     assert unnormalized_rec.weights[0] == 1
 
     normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True, n_iter_max=1000)
