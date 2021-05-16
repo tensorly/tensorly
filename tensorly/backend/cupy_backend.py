@@ -54,7 +54,7 @@ class CupyBackend(Backend):
 
 
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
-             'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye',
+             'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye', 'any', 
              'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip',
              'min', 'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'stack',
              'conj', 'diag', 'einsum', 'log2', 'tensordot']:

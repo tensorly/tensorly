@@ -198,7 +198,12 @@ _FUN_NAMES = [
     (tf.einsum, 'einsum'),
     (tf.tensordot, 'tensordot'),
     (tfm.sin, 'sin'),
+<<<<<<< HEAD
     (tfm.cos, 'cos')
+=======
+    (tfm.cos, 'cos'),
+    (tfm.reduce_any, 'any')
+>>>>>>> 6a6b75716f42a2652a961d9d6cb102fd9d175188
     ]
 for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)

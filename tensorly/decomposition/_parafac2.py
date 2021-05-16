@@ -1,8 +1,10 @@
+from warnings import warn
+
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from tensorly.random import random_parafac2
 from tensorly import backend as T
-from . import parafac
+from . import parafac, non_negative_parafac_hals
 from ..parafac2_tensor import parafac2_to_slice, Parafac2Tensor, _validate_parafac2_tensor
 from ..cp_tensor import CPTensor
 from ..base import unfold
@@ -132,8 +134,9 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition):
     return tl.sqrt(squared_error)
 
 
-def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, random_state=None, verbose=False, return_errors=False, n_iter_parafac=5):
+def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd', normalize_factors=False,
+             tol=1e-8, absolute_tol=1e-13, nn_modes=None, random_state=None, verbose=False, return_errors=False,
+             n_iter_parafac=5,):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
     Computes a rank-`rank` PARAFAC2 decomposition of the third-order tensor defined by 
@@ -156,6 +159,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
 
     where :math:`P_i` is a :math:`J_i \times R` orthogonal matrix and :math:`B` is a
     :math:`R \times R` matrix.
+    
 
     An alternative formulation of the PARAFAC2 decomposition is that the tensor element
     :math:`X_{ijk}` is given by
@@ -173,10 +177,14 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         Either a third order tensor or a list of second order tensors that may have different number of rows.
         Note that the second mode factor matrices are allowed to change over the first mode, not the
         third mode as some other implementations use (see note below).
-    rank  : int
+    rank : int
         Number of components.
-    n_iter_max : int
-        Maximum number of iteration
+    n_iter_max : int, optional
+        (Default: 2000) Maximum number of iteration
+
+        .. versionchanged:: 0.6.1
+
+            Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
@@ -186,15 +194,36 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
         of shape (rank, ), which will contain the norms of the factors. Note that
         there may be some inaccuracies in the component weights.
     tol : float, optional
-        (Default: 1e-8) Relative reconstruction error tolerance. The
-        algorithm is considered to have found the global minimum when the
-        reconstruction error is less than `tol`.
+        (Default: 1e-8) Relative reconstruction error decrease tolerance. The
+        algorithm is considered to have converged when
+        :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon \| X - \hat{X}_{n-1} \|^2`.
+        That is, when the relative change in sum of squared error is less
+        than the tolerance.
+
+        .. versionchanged:: 0.6.1
+
+            Previously, the stopping condition was
+            :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
+    absolute_tol : float, optional
+        (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
+        is considered to have converged when 
+        :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
+        That is, when the relative sum of squared error is less than the specified tolerance.
+        The absolute tolerance is necessary for stopping the algorithm when used on noise-free
+        data that follows the PARAFAC2 constraint.
+
+        If None, then the machine precision + 1000 will be used.
+    nn_modes: None, 'all' or array of integers
+        (Default: None) Used to specify which modes to impose non-negativity constraints on.
+        We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
+        algorithm, so if this mode is among the constrained modes, then a warning will be shown
+        (see notes for more info).
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         Level of verbosity
     return_errors : bool, optional
         Activate return of iteration errors
-    n_iter_parafac: int, optional
+    n_iter_parafac : int, optional
         Number of PARAFAC iterations to perform for each PARAFAC2 iteration
 
     Returns
@@ -224,12 +253,36 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
     [1]_, the second mode changes over the third mode. We made this change since that means
     that the function accept both lists of matrices and a single nd-array as input without
     any reordering of the modes.
+
+    Because of the reformulation above, :math:`B_i = P_i B`, the :math:`B_i` matrices
+    cannot be constrained to be non-negative with ALS. If this mode is constrained to be
+    non-negative, then :math:`B` will be non-negative, but not the orthogonal `P_i` matrices.
+    Consequently, the `B_i` matrices are unlikely to be non-negative.
     """
     weights, factors, projections = initialize_decomposition(tensor_slices, rank, init=init, svd=svd, random_state=random_state)
 
     rec_errors = []
     norm_tensor = tl.sqrt(sum(tl.norm(tensor_slice, 2)**2 for tensor_slice in tensor_slices))
     svd_fun = _get_svd(svd)
+
+    if absolute_tol is None:
+        absolute_tol = tl.eps(factors[0].dtype) * 1000
+
+    # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
+    if nn_modes is None:
+        def parafac_updates(X, w, f):
+                return parafac(X, rank, n_iter_max=n_iter_parafac,
+                               init=(w, f), svd=svd, orthogonalise=False, verbose=verbose,
+                               return_errors=False, normalize_factors=False, mask=None,
+                               random_state=random_state, tol=1e-100)[1]
+    else:
+        if nn_modes == 'all' or 1 in nn_modes:
+            warn("Mode `1` of PARAFAC2 fitted with ALS cannot be constrained to be truly non-negative. See the documentation for more info.")
+        def parafac_updates(X, w, f):
+                return non_negative_parafac_hals(
+                    X, rank, n_iter_max=n_iter_parafac, init=(w, f), svd=svd, nn_modes=nn_modes,
+                    verbose=verbose, return_errors=False, tol=1e-100)[1]
+
 
     projected_tensor = tl.zeros([factor.shape[0] for factor in factors], **T.context(factors[0]))
 
@@ -241,9 +294,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
 
         projections = _compute_projections(tensor_slices, factors, svd_fun, out=projections)
         projected_tensor = _project_tensor_slices(tensor_slices, projections, out=projected_tensor)
-        _, factors = parafac(projected_tensor, rank, n_iter_max=n_iter_parafac, init=(weights, factors),
-                             svd=svd, orthogonalise=False, verbose=verbose, return_errors=False,
-                             normalize_factors=False, mask=None, random_state=random_state, tol=1e-100)
+        factors = parafac_updates(projected_tensor, weights, factors)
 
         if normalize_factors:
             new_factors = []
@@ -268,7 +319,7 @@ def parafac2(tensor_slices, rank, n_iter_max=100, init='random', svd='numpy_svd'
                     print('PARAFAC2 reconstruction error={}, variation={}.'.format(
                         rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
 
-                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                if abs(rec_errors[-2]**2 - rec_errors[-1]**2) < (tol * rec_errors[-2]**2) or rec_errors[-1]**2 < absolute_tol:
                     if verbose:
                         print('converged in {} iterations.'.format(iteration))
                     break       
@@ -316,18 +367,17 @@ class Parafac2(DecompositionMixin):
         X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
     
     with the same constraints hold for :math:`B_i` as above.
-    
 
     Parameters
     ----------
-    tensor_slices : ndarray or list of ndarrays
-        Either a third order tensor or a list of second order tensors that may have different number of rows.
-        Note that the second mode factor matrices are allowed to change over the first mode, not the
-        third mode as some other implementations use (see note below).
-    rank  : int
+    rank : int
         Number of components.
-    n_iter_max : int
-        Maximum number of iteration
+    n_iter_max : int, optional
+        (Default: 2000) Maximum number of iteration
+
+        .. versionchanged:: 0.6.1
+
+            Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
@@ -337,13 +387,36 @@ class Parafac2(DecompositionMixin):
         of shape (rank, ), which will contain the norms of the factors. Note that
         there may be some inaccuracies in the component weights.
     tol : float, optional
-        (Default: 1e-8) Relative reconstruction error tolerance. The
-        algorithm is considered to have found the global minimum when the
-        reconstruction error is less than `tol`.
+        (Default: 1e-8) Relative reconstruction error decrease tolerance. The
+        algorithm is considered to have converged when
+        :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon \| X - \hat{X}_{n-1} \|^2`.
+        That is, when the relative change in sum of squared error is less
+        than the tolerance.
+
+        .. versionchanged:: 0.6.1
+
+            Previously, the stopping condition was
+            :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
+    absolute_tol : float, optional
+        (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
+        is considered to have converged when 
+        :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
+        That is, when the relative sum of squared error is less than the specified tolerance.
+        The absolute tolerance is necessary for stopping the algorithm when used on noise-free
+        data that follows the PARAFAC2 constraint.
+
+        If None, then the machine precision + 1000 will be used.
+    nn_modes: None, 'all' or array of integers
+        (Default: None) Used to specify which modes to impose non-negativity constraints on.
+        We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
+        algorithm, so if this mode is among the constrained modes, then a warning will be shown
+        (see notes for more info).
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         Level of verbosity
-    n_iter_parafac: int, optional
+    return_errors : bool, optional
+        Activate return of iteration errors
+    n_iter_parafac : int, optional
         Number of PARAFAC iterations to perform for each PARAFAC2 iteration
 
     Returns
@@ -371,27 +444,34 @@ class Parafac2(DecompositionMixin):
     that the function accept both lists of matrices and a single nd-array as input without
     any reordering of the modes.
     """
-    def __init__(self, rank, n_iter_max=100, init='random', svd='numpy_svd', normalize_factors=False,
-             tol=1e-8, random_state=None, verbose=False, n_iter_parafac=5):
+    def __init__(self, rank, n_iter_max=2000, init='random', svd='numpy_svd', normalize_factors=False,
+                 tol=1e-8, absolute_tol=1e-13, nn_modes=None, random_state=None, verbose=False,
+                 return_errors=False, n_iter_parafac=5,):
         self.rank = rank
-        self.n_iter_max=n_iter_max
-        self.init=init
-        self.svd=svd
-        self.normalize_factors=normalize_factors
-        self.tol=tol
-        self.random_state=random_state
-        self.verbose=verbose
+        self.n_iter_max = n_iter_max
+        self.init = init
+        self.svd = svd
+        self.normalize_factors = normalize_factors
+        self.tol = tol
+        self.absolute_tol = absolute_tol
+        self.nn_modes = nn_modes
+        self.random_state = random_state
+        self.verbose = verbose
+        self.return_errors = return_errors
         self.n_iter_parafac = n_iter_parafac
 
     def fit_transform(self, tensor):
-        self.decomposition_, self.errors_ = parafac2(tensor, rank = self.rank,
-                                       n_iter_max=self.n_iter_max,
-                                       init=self.init,
-                                       svd=self.svd,
-                                       normalize_factors=self.normalize_factors,
-                                       tol=self.tol,
-                                       random_state=self.random_state,
-                                       verbose=self.verbose,
-                                       return_errors=True,
-                                       n_iter_parafac = self.n_iter_parafac)
+        self.decomposition_, self.errors_ = parafac2(tensor, 
+                                                     rank=self.rank,
+                                                     n_iter_max=self.n_iter_max,
+                                                     init=self.init,
+                                                     svd=self.svd,
+                                                     normalize_factors=self.normalize_factors,
+                                                     tol=self.tol,
+                                                     absolute_tol=self.absolute_tol,
+                                                     nn_modes=self.nn_modes,
+                                                     random_state=self.random_state,
+                                                     verbose=self.verbose,
+                                                     return_errors=self.return_errors,
+                                                     n_iter_parafac=self.n_iter_parafac,)
         return self.decomposition_
