@@ -18,7 +18,7 @@ def vonneumann_entropy(tensor):
     -------
     von_neumann_entropy : order-0 tensor
     """
-    square_dim = int(tl.sqrt(tl.prod(tensor.shape)))
+    square_dim = int(tl.sqrt(tl.prod(tl.tensor(tensor.shape))))
     tensor = tl.reshape(tensor, (square_dim, square_dim))
     try:
         eig_vals = T.eigh(tensor)[0]
