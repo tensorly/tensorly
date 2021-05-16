@@ -18,6 +18,8 @@ def vonneumann_entropy(tensor):
     -------
     von_neumann_entropy : order-0 tensor
     """
+    square_dim = int(tl.sqrt(tl.prod(tensor.shape)))
+    tensor = tl.reshape(tensor, (square_dim, square_dim))
     try:
         eig_vals = T.eigh(tensor)[0]
     except:
@@ -43,10 +45,8 @@ def tt_vonneumann_entropy(tensor):
     -------
     tt_von_neumann_entropy : order-0 tensor
     """
-    square_dim = int(tl.sqrt(tl.prod(tl.tensor(tensor.shape))))
-    tensor = tl.reshape(tt_to_tensor(tensor), (square_dim, square_dim))
 
-    return vonneumann_entropy(tensor)
+    return vonneumann_entropy(tt_to_tensor(tensor))
 
 
 def cp_vonneumann_entropy(tensor):

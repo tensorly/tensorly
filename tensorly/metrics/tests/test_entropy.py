@@ -45,9 +45,12 @@ def test_vonneumann_entropy_mixed_state():
     state2 = tl.tensor([[0.84250089, 0.43429687, 0.26551928, 0.18262211, 0.55584835, 0.2565509 , 0.33197401, 0.97741178]])
     state2 = state2/tl.norm(state2)
     mat_mixed = tl.tensor((tl.dot(tl.transpose(state1), state1) + tl.dot(tl.transpose(state2), state2))/2.)
+    tensor_mixed = tl.reshape(mat_mixed, (4,2,4,2))
     actual_vne = 0.5546
     tl_vne = vonneumann_entropy(mat_mixed)
+    tl_tensor_vne = vonneumann_entropy(tensor_mixed)
     assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
+    assert_array_almost_equal(tl_tensor_vne, actual_vne, decimal=3)
 
 def test_tt_vonneumann_entropy_mixed_state():
     """Test for tt_vonneumann_entropy on TT tensors.
