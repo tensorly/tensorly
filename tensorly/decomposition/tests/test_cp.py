@@ -208,6 +208,14 @@ def test_non_negative_parafac_hals():
     assert_(tl.max(tl.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
 
+    # Regression test: used wrong variable for convergence checking
+    # Used mttkrp*factor instead of mttkrp*factors[-1], which resulted in
+    # error when mode 2 was not constrained and erroneous convergence checking
+    # when mode 2 was constrained.
+    tensor = tl.tensor(rng.random_sample((3, 3, 3))+1)
+    nn_estimate, errs = non_negative_parafac_hals(
+        tensor, rank=2, n_iter_max=2, tol=1e-10, init='svd', verbose=0, nn_modes={0,}, return_errors=True
+    )
 
 def test_non_negative_parafac_hals_one_unconstrained():
     """Test for non-negative PARAFAC HALS
