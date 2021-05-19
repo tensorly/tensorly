@@ -8,6 +8,270 @@ import tensorly as tl
 # License: BSD 3 clause
 
 
+def proximal_operator(H, constraint, reg_par=None, prox_par=None):
+    """
+    Proximal operator solves a convex optimization problem. Let f be a
+    convex function, proximal operator of f is :math:`\\argmin(f(x) + 1/2||x - v||_2^2)`.
+    This operator can be used to solve constrained optimization problems. Therefore, proximal gradients are used
+    for constrained tensor decomposition problems in the literature.
+
+    Parameters
+    ----------
+    H : ndarray
+    constraint : string
+             Constraint options : nonnegative, sparse_l1, l2, unimodality,
+                                  normalize, simplex, normalized_sparsity,
+                                  soft_sparsity, smoothness, monotonicity
+    reg_par : float, optional
+              Specifically, defined for sparse_l1 and l2.
+             Default : None
+    prox_par : float, optional
+              Specifically, defined for normalized_sparsity and soft_sparsity.
+             Default : None
+    Returns
+    -------
+    H : updated H according to the constraint. If constraints is None, function returns the same H.
+
+    References
+    ----------
+    .. [1]: Moreau, J. J. (1962). Fonctions convexes duales et points proximaux dans un espace hilbertien.
+            Comptes rendus hebdomadaires des séances de l'Académie des sciences, 255, 2897-2899.
+    .. [2]: Parikh, N., & Boyd, S. (2014). Proximal algorithms.
+            Foundations and Trends in optimization, 1(3), 127-239.
+    """
+    if reg_par is None:
+        reg_par = 1e-3
+    if prox_par is None:
+        prox_par = 1e-3
+    if constraint is None:
+        return H
+    elif constraint == 'nonnegative':
+        return tl.clip(H, 0, tl.max(H))
+    elif constraint == 'sparse_l1':
+        return soft_thresholding(H, reg_par)
+    elif constraint == 'l2':
+        return l2_prox(H, reg_par)
+    elif constraint == 'unimodality':
+        return unimodality(H)
+    elif constraint == 'normalize':
+        return H / tl.max(H)
+    elif constraint == 'simplex':
+        return simplex(H)
+    elif constraint == 'normalized_sparsity':
+        return normalized_sparsity(H, prox_par)
+    elif constraint == 'soft_sparsity':
+        return soft_sparsity(H, prox_par)
+    elif constraint == 'smoothness':
+        return smoothness(H)
+    elif constraint == 'monotoncity':
+        return monotonicity(H)
+
+def smoothness(tensor):
+    """
+
+    Parameters
+    ----------
+    tensor : ndarray
+
+    Returns
+    -------
+
+    References
+    ----------
+    .. [1]: Timmerman, M. E., & Kiers, H. A. (2002). Three-way component analysis with
+            smoothness constraints. Computational statistics & data analysis, 40(3), 447-470.
+
+    """
+    return tl.copy(tensor)
+
+def monotonicity(tensor, decreasing=True):
+    """
+    This function projects each column of array onto:
+          x[1] <= x[2] <= ... <= x[n] or x[1] => x[2] => ... => x[n]
+
+    Parameters
+    ----------
+    tensor : ndarray
+    decreasing : If it is True, function return monotone decreasing. Otherwise, returned array
+                 will be monotone increasing.
+               Default: True
+
+    Returns
+    -------
+    H : Monotonic ndarray
+
+    References
+    ----------
+    .. [1]: Schenker, C., Cohen, J. E., & Acar, E. (2020). A Flexible Optimization Framework for
+            Regularized Matrix-Tensor Factorizations with Linear Couplings.
+            IEEE Journal of Selected Topics in Signal Processing.
+    """
+    if decreasing is True:
+        tensor_mon = np.minimum.accumulate(tensor)
+    else:
+        tensor_mon = np.maximum.accumulate(tensor)
+    return tensor_mon
+
+
+def unimodality(tensor):
+    """
+
+    Parameters
+    ----------
+    tensor :
+
+    Returns
+    -------
+
+    References
+    ----------
+    .. [1]: Bro, R., & Sidiropoulos, N. D. (1998). Least squares algorithms under
+            unimodality and non‐negativity constraints. Journal of Chemometrics:
+            A Journal of the Chemometrics Society, 12(4), 223-247.
+    """
+    return tensor
+
+
+def l2_prox(tensor, parameter):
+    """
+    Proximal operator of the l2 (Euclidean) norm.
+
+    This proximal is also called as block soft thresholding.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    parameter : float
+
+    Returns
+    -------
+    ndarray
+
+    Notes
+    -----
+    .. math::
+        \\begin{equation}
+            prox_{\\gamma} ||x||_2 = (1 - \\gamma / \\max(|x||_2, \\gamma ))\\times x
+        \\end{equation}
+    """
+    norm = tl.norm(tensor)
+    bigger_value = tl.where(norm > parameter, norm, parameter)
+    return tensor - (tensor * parameter / bigger_value)
+
+
+def normalized_sparsity(tensor, threshold):
+    """
+
+    Parameters
+    ----------
+    tensor : ndarray
+    threshold
+
+    Returns
+    -------
+    ndarray
+
+    References
+    ----------
+    .. [1]: Le Magoarou, L., & Gribonval, R. (2016). Flexible multilayer
+            sparse approximations of matrices and applications.
+            IEEE Journal of Selected Topics in Signal Processing, 10(4), 688-700.
+
+    Notes
+    -----
+    .. math::
+        \\begin{equation}
+            prox_\\threshold (||tensor||_0) / ||prox_(\\threshold ||tensor||_0)||_2
+        \\end{equation}
+    """
+    tensor_hard = hard_thresholding(tensor, threshold)
+    return tensor_hard / tl.norm(tensor_hard)
+
+
+def soft_sparsity(tensor, parameter):
+    """
+
+    Parameters
+    ----------
+    tensor : ndarray
+    parameter:
+
+    Returns
+    -------
+    ndarray
+
+    References
+    ----------
+    .. [1]: Schenker, C., Cohen, J. E., & Acar, E. (2020). A Flexible Optimization Framework for
+            Regularized Matrix-Tensor Factorizations with Linear Couplings.
+            IEEE Journal of Selected Topics in Signal Processing.
+
+    Notes
+    -----
+    .. math::
+        \\begin{equation}
+           \\lambda: prox_\\lambda (||tensor||_1) = parameter
+        \\end{equation}
+    """
+    total_non_zero = np.count_nonzero(tensor)
+    current_l1 = tl.sum(tl.abs(tensor))
+    if current_l1 <= parameter:
+        return tensor
+    elif current_l1 > parameter:
+        difference = current_l1 - parameter
+        threshold = difference/total_non_zero
+
+    tensor_soft = soft_thresholding(tensor, threshold)
+    return tensor_soft
+
+
+def simplex(tensor):
+    """Proximal operator of simplex
+
+    Parameters
+    ----------
+    tensor: ndarray
+
+    Returns
+    -------
+    ndarray
+
+    References
+    ----------
+    .. [1]: Duchi, J., Shalev-Shwartz, S., Singer, Y., & Chandra, T. (2008, July).
+            Efficient projections onto the l 1-ball for learning in high dimensions.
+            In Proceedings of the 25th international conference on Machine learning (pp. 272-279).
+
+    """
+    _, col = tl.shape(tensor)
+    tensor = tl.clip(H, 0, tl.max(tensor))
+    tensor_sort = tl.sort(tensor, axis=0, descending=True)
+    tensor_cum = np.cumsum(tensor_sort, axis=0)
+
+    j = tl.sum(tensor_sort > (tensor_cum-1) / np.cumsum(tl.ones(tl.shape(tensor_cum)), axis=0), axis=0)
+    theta = tl.zeros(col)
+    for i in range(col):
+        if j[i] > 0:
+            theta[i] = tensor_cum[j[i]-1, i]
+    theta = (theta - 1)/j
+    return tl.clip(tensor, 0, tl.max(tensor - theta))
+
+
+def hard_thresholding(tensor, threshold):
+    """Proximal operator of l_0 norm.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    threshold :
+
+    Returns
+    -------
+    ndarray
+    """
+    tensor[tensor < threshold] = 0
+    return tensor
+
 
 def soft_thresholding(tensor, threshold):
     """Soft-thresholding operator
@@ -451,3 +715,58 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
             break
 
     return x_vec
+
+
+def ADMM(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, constraint=None, reg_par=None, prox_par=None, tol=1e-4):
+    """
+    Alternating direction method of multipliers (AO-ADMM) algorithm to solve linear equation.
+
+    Parameters
+    ----------
+    UtM: ndarray
+       Pre-computed product of the transposed of U and M.
+    pseudo_inverse: ndarray
+       Pre-computed product of the transposed of U and U.
+    x: init
+       Default: None
+    dual_var : ndarray
+               Dual variable to update x
+    n_iter_max : int
+        Maximum number of iteration
+        Default: 100
+    constraint : string, optional
+    constraint_parameter : float, optional
+    tol : float
+
+    Returns
+    -------
+    x : Updated ndarray
+    x_tilde :
+    dual_var :
+
+    References
+    ----------
+    .. [1] Huang, Kejun, Nicholas D. Sidiropoulos, and Athanasios P. Liavas.
+           "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization." IEEE Transactions on Signal Processing 64.19 (2016): 5052-5065.
+    """
+    if reg_par is None:
+        reg_par = 1
+    rho = np.trace(pseudo_inverse) / tl.shape(x)[1]
+    for iteration in range(n_iter_max):
+        x_old = tl.copy(x)
+        x_dual = tl.solve(tl.transpose(pseudo_inverse + rho * tl.eye(tl.shape(pseudo_inverse)[1])),
+                          tl.transpose(UtM + rho * (x + dual_var)))
+        if constraint is not None:
+            x = proximal_operator(tl.transpose(x_dual) - dual_var, constraint=constraint, reg_par=reg_par / rho,
+                                  prox_par=prox_par)
+        else:
+            x = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(UtM)))
+            return x, x_dual, dual_var
+        dual_var = dual_var + x - tl.transpose(x_dual)
+
+        dual_residual = x - tl.transpose(x_dual)
+        primal_residual = x - x_old
+
+        if tl.norm(dual_residual) < tol * tl.norm(x) and tl.norm(primal_residual) < tol * tl.norm(dual_var):
+            break
+    return x, x_dual, dual_var
