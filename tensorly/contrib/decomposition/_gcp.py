@@ -249,6 +249,8 @@ def gcp(X, R, type='normal', opt='lbfgsb', mask=None, maxiters=1000, \
         # TODO perform optimization with SGD/ADAM/ADAGRAD, yet to be implemented
         pass
 
+    return Mfin
+
 
 def vec2factors(vec, shape, rank, context = None):
     """Wrapper function detailed in Appendix C [1]
@@ -355,7 +357,7 @@ def validate_type(type):
         print("Type unsupported!!")
         sys.exit(1)
 
-        return fh, gh, lb
+    return fh, gh, lb
 
 
 def validate_opt(opt):
@@ -438,7 +440,10 @@ def tt_gcp_fg(M, X, f, g, W = None, computeF = True, computeG = True, vectorG = 
     if computeG:
 
         Y = g(Xv,Mv)
-        Y = tl.reshape(Y, tl.shape(X))
+        Y = tl.tensor(tl.reshape(Y, tl.shape(X)))
+
+        # scale intermediate grad, @@@@ NEEDS TO BE SCALED BY SIZE OF PRESENT DATA @@@
+        Y = (1 / X.size) * Y
 
         if W is not None:
             # TODO handle applying weight tensor, probably need to vec it then elementwise product

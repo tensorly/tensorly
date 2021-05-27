@@ -20,13 +20,15 @@ def test_gcp_1():
     ## Test 1 - shapes and dimensions
 
     # Create tensor with random elements
+    rng = tl.check_random_state(1234)
     d = 3
     n = 4
-    tensor = (np.arange(n**d, dtype=float).reshape((n,)*d))
-    tensor = tl.tensor(tensor)  # a 4 x 4 x 4 tensor
+    tensor = tl.tensor(rng.random((4, 5, 6)), dtype=tl.float32)
+    # tensor = (np.arange(n**d, dtype=float).reshape((n,)*d))
+    # tensor = tl.tensor(tensor)  # a 4 x 4 x 4 tensor
 
     tensor_shape = tensor.shape
-    rng = tl.check_random_state(1234)
+
 
     # Find gcp decomposition of the tensor
     rank = 2
