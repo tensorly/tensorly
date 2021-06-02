@@ -332,6 +332,34 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def trace(tensor):
+        """Returns sum of the elements on the diagonal of the tensor.
+
+        Parameters
+        ----------
+        tensor : tensor
+
+        Returns
+        -------
+        out : scalar or tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def cumsum(tensor, axis=None):
+        """Computes the cumulative sum of a tensor, optionally along an axis.
+
+        Parameters
+        ----------
+        tensor : tensor
+
+        Returns
+        -------
+        tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def where(condition, x, y):
         """Return elements, either from `x` or `y`, depending on `condition`.
 
