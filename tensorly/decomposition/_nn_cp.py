@@ -170,8 +170,6 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
     Uses multiplicative updates, see [2]_
 
-    This is the same as parafac(non_negative=True).
-
     Parameters
     ----------
     tensor : ndarray
