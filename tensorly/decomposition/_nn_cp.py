@@ -105,10 +105,6 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     nntype : {'nndsvd', 'nndsvda'}
         Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
-    nn_modes : None, 'all' or array of integers (between 0 and the number of modes)
-        Used to specify which modes to impose non-negativity constraints on.
-        If 'all', then non-negativity is imposed on all modes.
-        Default: 'all'
 
     Returns
     -------
@@ -117,10 +113,6 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
 
     """
     rng = tl.check_random_state(random_state)
-    if nn_modes == 'all':
-        nn_modes = set(range(tl.ndim(tensor)))
-    elif nn_modes is None:
-        nn_modes = set()
 
     if init == 'random':
         kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
@@ -138,8 +130,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
             U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
 
             # Apply nnsvd to make non-negative
-            if mode in nn_modes:
-                U = make_svd_non_negative(tensor, U, S, V, nntype)
+            U = make_svd_non_negative(tensor, U, S, V, nntype)
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
@@ -164,8 +155,8 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
     else:
         raise ValueError('Initialization method "{}" not recognized'.format(init))
 
-    # Make decomposition feasible
-    kt.factors = [tl.abs(f) for i, f in enumerate(kt[1]) if i in nn_modes]
+    # Make decomposition feasible by taking the absolute value of all factor matrices
+    kt.factors = [tl.abs(f) for f in kt[1]]
 
     if normalize_factors:
         kt = cp_normalize(kt)
