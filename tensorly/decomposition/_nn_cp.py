@@ -88,7 +88,7 @@ def make_svd_non_negative(tensor, U, S, V, nntype):
 
 
 def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
-                     normalize_factors=False, nntype='nndsvda'):
+                     normalize_factors=False, nntype='nndsvda', nn_modes='all'):
     r"""Initialize factors used in `parafac`.
 
     The type of initialization is set using `init`. If `init == 'random'` then
@@ -105,6 +105,10 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     nntype : {'nndsvd', 'nndsvda'}
         Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
+    nn_modes : None, 'all' or array of integers (between 0 and the number of modes)
+        Used to specify which modes to impose non-negativity constraints on.
+        If 'all', then non-negativity is imposed on all modes.
+        Default: 'all'
 
     Returns
     -------
@@ -113,6 +117,10 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
 
     """
     rng = tl.check_random_state(random_state)
+    if nn_modes == 'all':
+        nn_modes = set(range(tl.ndim(tensor)))
+    elif nn_modes is None:
+        nn_modes = set()
 
     if init == 'random':
         kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
@@ -130,7 +138,8 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
             U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
 
             # Apply nnsvd to make non-negative
-            U = make_svd_non_negative(tensor, U, S, V, nntype)
+            if mode in nn_modes:
+                U = make_svd_non_negative(tensor, U, S, V, nntype)
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
@@ -141,6 +150,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
 
         kt = CPTensor((None, factors))
 
+    # If the initialisation is a precomputed decomposition, we double check its validity and return it
     elif isinstance(init, (tuple, list, CPTensor)):
         # TODO: Test this
         try:
@@ -150,10 +160,12 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
                 'If initialization method is a mapping, then it must '
                 'be possible to convert it to a CPTensor instance'
             )
+        return kt
     else:
         raise ValueError('Initialization method "{}" not recognized'.format(init))
 
-    kt.factors = [tl.abs(f) for f in kt[1]]
+    # Make decomposition feasible
+    kt.factors = [tl.abs(f) for i, f in enumerate(kt[1]) if i in nn_modes]
 
     if normalize_factors:
         kt = cp_normalize(kt)
@@ -361,7 +373,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
     weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
                                         random_state=None,
-                                        normalize_factors=False)
+                                        normalize_factors=False,
+                                        nn_modes=nn_modes)
 
     norm_tensor = tl.norm(tensor, 2)
 
