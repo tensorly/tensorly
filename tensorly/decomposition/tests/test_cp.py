@@ -6,8 +6,8 @@ import tensorly as tl
 from .._cp import (
     parafac, initialize_cp,
     sample_khatri_rao, randomised_parafac)
-from .._nn_cp import non_negative_parafac, non_negative_parafac_hals
-from ...cp_tensor import cp_to_tensor
+from .._nn_cp import non_negative_parafac, non_negative_parafac_hals, initialize_nn_cp
+from ...cp_tensor import cp_to_tensor, CPTensor
 from ...random import random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
@@ -156,6 +156,17 @@ def test_non_negative_parafac():
             'norm 2 of difference between svd and random init too high')
     assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
+
+
+def test_initialize_nn_cp():
+    """Test that if we initialise with an existing init, then it isn't modified.
+    """
+    init = CPTensor([None, [-tl.ones((30, 3)), -tl.ones((20, 3)), -tl.ones((10, 3))]])
+    tensor = cp_to_tensor(init)
+    initialised_tensor = initialize_nn_cp(tensor, 3, init=init)
+    for factor_matrix, init_factor_matrix in zip(init[1], initialised_tensor[1]):
+        assert_array_equal(factor_matrix, init_factor_matrix)
+    assert_array_equal(tensor, cp_to_tensor(initialised_tensor))
 
 
 def test_non_negative_parafac_hals():
