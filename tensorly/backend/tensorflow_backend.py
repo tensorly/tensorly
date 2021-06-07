@@ -183,6 +183,7 @@ _FUN_NAMES = [
     (tf.sqrt, 'sqrt'),
     (tf.linalg.qr, 'qr'),
     (tf.linalg.eigh, 'eigh'),
+    (tf.linalg.trace, 'trace'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),
@@ -199,6 +200,7 @@ _FUN_NAMES = [
     (tf.tensordot, 'tensordot'),
     (tfm.sin, 'sin'),
     (tfm.cos, 'cos'),
+    (tfm.cumsum, 'cumsum'),
     (tfm.reduce_any, 'any')
     ]
 for source_fun, target_fun_name in _FUN_NAMES:
