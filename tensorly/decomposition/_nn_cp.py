@@ -88,7 +88,7 @@ def make_svd_non_negative(tensor, U, S, V, nntype):
 
 
 def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
-                     normalize_factors=False, nntype='nndsvda', nn_modes='all'):
+                     normalize_factors=False, nntype='nndsvda'):
     r"""Initialize factors used in `parafac`.
 
     The type of initialization is set using `init`. If `init == 'random'` then
