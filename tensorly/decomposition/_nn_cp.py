@@ -364,8 +364,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
     weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
                                         random_state=None,
-                                        normalize_factors=False,
-                                        nn_modes=nn_modes)
+                                        normalize_factors=False)
 
     norm_tensor = tl.norm(tensor, 2)
 
