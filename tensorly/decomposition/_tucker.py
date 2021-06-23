@@ -77,7 +77,8 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
     
 
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
-                   svd='numpy_svd', random_state=None, verbose=False, mask=None):
+                   svd='numpy_svd', random_state=None, verbose=False, mask=None,
+                   normalize_factors=False):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition exclusively along the provided modes.
@@ -108,6 +109,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         the values are missing and 1 everywhere else. Note:  if tensor is
         sparse, then mask should also be sparse with a fill value of 1 (or
         True).
+    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
 
     Returns
     -------
@@ -178,6 +180,13 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         rec_error = sqrt(abs(norm_tensor**2 - tl.norm(core, 2)**2)) / norm_tensor
         rec_errors.append(rec_error)
 
+        if normalize_factors:
+            for i, factor in enumerate(factors):
+                scales = tl.norm(factor, axis=0)
+                scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
+                core = tl.fold(tl.unfold(core, i) * tl.reshape(scales, (-1, 1)), i, core.shape)
+                factors[i] = factor / tl.reshape(scales_non_zero, (1, -1))
+
         if iteration > 1:
             if verbose:
                 print('reconstruction error={}, variation={}.'.format(
@@ -192,7 +201,8 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
 
 def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
-           svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False):
+           svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False,
+           normalize_factors=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition:
@@ -224,6 +234,7 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         True).
     verbose : int, optional
         level of verbosity
+    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
 
     Returns
     -------
@@ -250,8 +261,9 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         modes, factors = zip(*[(i, f) for (i, f) in enumerate(factors) if i not in fixed_factors])
         init = (core, list(factors))
 
-        core, new_factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
-                             svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
+        core, new_factors = partial_tucker_normalize(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
+                                                     svd=svd, tol=tol, random_state=random_state, mask=mask,
+                                                     verbose=verbose, normalize_factors=normalize_factors)
 
         factors = list(new_factors)
         for i, e in enumerate(fixed_factors):
@@ -265,12 +277,14 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         # TO-DO validate rank for partial tucker as well
         rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
-        core, factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
-                            svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
+        core, factors = partial_tucker_normalize(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
+                                                 svd=svd, tol=tol, random_state=random_state, mask=mask,
+                                                 verbose=verbose, normalize_factors=normalize_factors)
         return TuckerTensor((core, factors))
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
-                        random_state=None, verbose=False, return_errors=False):
+                        random_state=None, verbose=False, return_errors=False,
+                        normalize_factors=False):
     """Non-negative Tucker decomposition
 
         Iterative multiplicative update, see [2]_
@@ -289,6 +303,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         level of verbosity
     ranks : None or int list
     size of the core tensor
+    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
 
     Returns
     -------
@@ -356,7 +371,12 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
             if verbose:
                 print('converged in {} iterations.'.format(iteration))
             break
-
+        if normalize_factors:
+            for i, factor in enumerate(nn_factors):
+                scales = tl.norm(factor, axis=0)
+                scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
+                nn_core = tl.fold(tl.unfold(nn_core, i) * tl.reshape(scales, (-1, 1)), i, nn_core.shape)
+                nn_factors[i] = factor / tl.reshape(scales_non_zero, (1, -1))
     tensor = TuckerTensor((nn_core, nn_factors))
     if return_errors:
         return tensor, rec_errors
@@ -403,6 +423,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         Indicates whether the algorithm prints the successive
         reconstruction errors or not
         Default: False
+    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
     return_errors : boolean
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
@@ -542,7 +563,12 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
                 if verbose:
                     print('converged in {} iterations.'.format(iteration))
                 break
-
+        if normalize_factors:
+            for i, factor in enumerate(nn_factors):
+                scales = tl.norm(factor, axis=0)
+                scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
+                nn_core = tl.fold(tl.unfold(nn_core, i) * tl.reshape(scales, (-1, 1)), i, nn_core.shape)
+                nn_factors[i] = factor / tl.reshape(scales_non_zero, (1, -1))
     tensor = TuckerTensor((nn_core, nn_factors))
     if return_errors:
         return tensor, rec_errors
