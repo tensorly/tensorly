@@ -261,7 +261,7 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         modes, factors = zip(*[(i, f) for (i, f) in enumerate(factors) if i not in fixed_factors])
         init = (core, list(factors))
 
-        core, new_factors = partial_tucker_normalize(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
+        core, new_factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
                                                      svd=svd, tol=tol, random_state=random_state, mask=mask,
                                                      verbose=verbose, normalize_factors=normalize_factors)
 
@@ -277,7 +277,7 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         # TO-DO validate rank for partial tucker as well
         rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
-        core, factors = partial_tucker_normalize(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
+        core, factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
                                                  svd=svd, tol=tol, random_state=random_state, mask=mask,
                                                  verbose=verbose, normalize_factors=normalize_factors)
         return TuckerTensor((core, factors))
