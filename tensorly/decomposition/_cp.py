@@ -44,7 +44,7 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
     rng = tl.check_random_state(random_state)
 
     if init == 'random':
-        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
+        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, random_state=rng, **tl.context(tensor))
 
     elif init == 'svd':
         try:
