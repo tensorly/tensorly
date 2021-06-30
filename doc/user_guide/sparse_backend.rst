@@ -43,14 +43,13 @@ sparse tensor would use::
     >>> import numpy as np
     >>> import sparse
     >>> from tensorly.contrib.sparse import tensor, unfold
-    >>> import tensorly as tl
-    >>> coords = np.random.randint(0,100, size=[3, 24])
-    >>> data = list(range(1, 25))
-    >>> X = sparse.COO(coords, data, shape=(100, 100, 100))
-    >>> tensorly_tensor = tensor(X, dtype='float')
-    >>> tl.sort(unfold(tensorly_tensor, 0).data, axis=0) # mode-1 unfolding
-    array([ 1.,  2.,  3.,  4.,  5.,  6.,  7.,  8.,  9., 10., 11., 12., 13.,
-           14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.])
+    >>> X = sparse.COO(np.arange(24).reshape((3, 4, 2)))
+    >>> X = sparse.COO(X.coords, X.data, shape=(100, 100, 100))
+    >>> X = tensor(X, dtype='float')
+    >>> unfold(X, 0).data # mode-1 unfolding
+    array([[ 0,  1,  2,  3,  4,  5,  6,  7],
+           [ 8,  9, 10, 11, 12, 13, 14, 15],
+           [16, 17, 18, 19, 20, 21, 22, 23]])
 
 This separation makes it explicit whether a sparse or dense algorithm is
 being used.
