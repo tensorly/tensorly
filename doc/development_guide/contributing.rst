@@ -89,3 +89,43 @@ you should use :func:`tensorly.index_update` and :func:`tensorly.index`.
 For instance, the previous statement becomes, in TensorLy: 
 ``t = tensorly.index_update(t, tensorly.index[indices], values)``.
 
+
+Testing the class interface
+---------------------------
+
+Because TensorLy supports both a functional and an object-oriented interface, we should ensure that any
+change to one interface is also applied to the other interface. To automatically test for this, we have
+a test utility ``tensorly.testing.assert_class_wrapper_correctly_passes_arguments``, which checks that all
+keyword arguments of the functional interface are available from the object-oriented interface. 
+Here is an example that shows how you can use this utility:
+
+
+.. code-block:: python
+
+   from tensorly.decomposition import parafac, CP
+
+   def test_cp(monkeypatch):
+      assert_class_wrapper_correctly_passes_arguments(monkeypatch, parafac, CP, ignore_args={'return_errors'}, rank=3)
+
+This code will check that all arguments of the ``parafac`` function (except ``return_errors``) can also be
+passed to the CP class, and that the input arguments to the CP class are forwarded to the ``parafac`` function.
+Notice that the ``test_cp`` function takes an argument: ``monkeypatch``. This lets PyTest know that we
+are planning to perform monkeypatching (more about that later), and that it should give us a utility object
+for this purpose. It is therefore essential that one of the arguments of the test function is ``monkeypatch``
+and that this variable is passed as the first argument to ``assert_class_wrapper_correctly_passes_arguments``.
+
+
+How the class wrapper test works
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This test utility works because it uses the fact that the object-oriented interface calls the functional 
+interface behind the scenes. To automatically test the interfaces, the
+`tensorly.testing.assert_class_wrapper_correctly_passes_arguments` function inspects the functional interface 
+and notes down all possible arguments. Then, it *monkeypatches* the functional interface with a mock function.
+In other words, the functional interface is temporarily replaced with a mock function that, instead of fitting
+a tensor decomposition, asserts that every possible argument is given a particular placeholder value. 
+
+Since the object-oriented interface uses the functional one behind the scenes, we can then use the object-oriented
+interface to fit a model and send in placeholder values for each possible argument of the functional interface.
+Then, the monkeypatched code will check that the placeholder value is passed to the functional interface for each argument. 
+Finally, the functional interface is reset to normal behaviour (fitting a tensor decomposition). 
