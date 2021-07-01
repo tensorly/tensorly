@@ -3,10 +3,9 @@ import numpy as np
 import pytest
 
 import tensorly as tl
-from .._cp import (
-    parafac, initialize_cp,
-    sample_khatri_rao, randomised_parafac, CP, RandomizedCP)
-from .._nn_cp import non_negative_parafac, non_negative_parafac_hals, CP_NN, CP_NN_HALS
+from .._cp import parafac, initialize_cp, sample_khatri_rao, randomised_parafac, CP, RandomizedCP
+from .._nn_cp import non_negative_parafac, non_negative_parafac_hals, initialize_nn_cp, CP_NN, CP_NN_HALS
+from ...cp_tensor import cp_to_tensor, CPTensor
 from ...cp_tensor import cp_to_tensor
 from ...random import random_cp
 from ...tenalg import khatri_rao
@@ -162,6 +161,17 @@ def test_non_negative_parafac(monkeypatch):
     assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_parafac, CP_NN, ignore_args={'return_errors'}, rank=3)
 
 
+def test_initialize_nn_cp():
+    """Test that if we initialise with an existing init, then it isn't modified.
+    """
+    init = CPTensor([None, [-tl.ones((30, 3)), -tl.ones((20, 3)), -tl.ones((10, 3))]])
+    tensor = cp_to_tensor(init)
+    initialised_tensor = initialize_nn_cp(tensor, 3, init=init)
+    for factor_matrix, init_factor_matrix in zip(init[1], initialised_tensor[1]):
+        assert_array_equal(factor_matrix, init_factor_matrix)
+    assert_array_equal(tensor, cp_to_tensor(initialised_tensor))
+
+
 def test_non_negative_parafac_hals(monkeypatch):
     """Test for non-negative PARAFAC HALS
     TODO: more rigorous test
@@ -214,6 +224,15 @@ def test_non_negative_parafac_hals(monkeypatch):
 
     assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_parafac_hals, CP_NN_HALS, ignore_args={'return_errors'}, rank=3)
 
+
+    # Regression test: used wrong variable for convergence checking
+    # Used mttkrp*factor instead of mttkrp*factors[-1], which resulted in
+    # error when mode 2 was not constrained and erroneous convergence checking
+    # when mode 2 was constrained.
+    tensor = tl.tensor(rng.random_sample((3, 3, 3))+1)
+    nn_estimate, errs = non_negative_parafac_hals(
+        tensor, rank=2, n_iter_max=2, tol=1e-10, init='svd', verbose=0, nn_modes={0,}, return_errors=True
+    )
 
 def test_non_negative_parafac_hals_one_unconstrained():
     """Test for non-negative PARAFAC HALS

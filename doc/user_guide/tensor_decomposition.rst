@@ -90,7 +90,7 @@ Using the same tensor as previously, we will perform a rank [2, 3]-decomposition
 .. code::
 
    >>> from tensorly.decomposition import tucker
-   >>> core, factors = tucker(tensor, ranks=[2, 3])
+   >>> core, factors = tucker(tensor, rank=[2, 3])
    # The core is a smaller tensor of size (2, 3):
    >>> core.shape
    (2, 3)

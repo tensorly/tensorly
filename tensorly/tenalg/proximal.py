@@ -142,6 +142,9 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
         True if the lines of the V matrix can't be zero,
         False if they can be zero
         Default: False
+    exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
+        If it is False, the algorithm gives an approximate solution
+        Default: False
 
     Returns
     -------
@@ -195,10 +198,11 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
         # Scaling
         scale = tl.sum(UtM * V) / tl.sum(
                        UtU * tl.dot(V, tl.transpose(V)))
-        V = tl.dot(scale, V)
+        V = V * scale
+
     if exact:
-        n_iter_max = 5000
-        tol = 10e-12
+        n_iter_max = 50000
+        tol = 10e-16
 
     for iteration in range(n_iter_max):
         rec_error = 0
@@ -248,3 +252,202 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
                 break
 
     return V, rec_error, iteration, complexity_ratio
+    
+
+def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
+          lr=None, tol=10e-8):
+    """
+    Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
+
+    Computes an approximate (nonnegative) solution for Ux=M linear system.
+
+    Parameters
+    ----------
+    UtM : ndarray
+        Pre-computed product of the transposed of U and M
+    UtU : ndarray
+        Pre-computed product of the transposed of U and U
+    x : init
+       Default: None
+    n_iter_max : int
+        Maximum number of iteration
+        Default: 100
+    non_negative : bool, default is False
+                   if True, result will be non-negative
+    lr : float
+        learning rate
+        Default : None
+    sparsity_coef : float or None
+    tol : float
+        stopping criterion
+
+    Returns
+    -------
+    x : approximate solution such that Ux = M
+
+    Notes
+    -----
+    We solve the following problem :math: `1/2 ||m - Ux ||_2^2 + \\lambda |x|_1`
+
+    Reference
+    ----------
+    [1] : Beck, A., & Teboulle, M. (2009). A fast iterative
+          shrinkage-thresholding algorithm for linear inverse problems.
+          SIAM journal on imaging sciences, 2(1), 183-202.
+    """
+    if sparsity_coef is None:
+        sparsity_coef = 0
+    
+    if x is None:
+        x = tl.zeros(tl.shape(UtM), **tl.context(UtM))
+    if lr is None:
+        lr = 1 / (tl.partial_svd(UtU)[1][0])
+    # Parameters
+    momentum_old = tl.tensor(1.0)
+    norm_0 = 0.0
+    x_update = tl.copy(x)
+
+    for iteration in range(n_iter_max):
+        if isinstance(UtU, list):
+            x_gradient = - UtM + tl.tenalg.multi_mode_dot(x_update, UtU, transpose=False) + sparsity_coef
+        else:
+            x_gradient = - UtM + tl.dot(UtU, x_update) + sparsity_coef
+
+        if non_negative is True:
+            x_gradient = tl.where(lr * x_gradient < x_update, x_gradient, x_update/lr)
+
+        x_new = x_update - lr * x_gradient
+        momentum = (1 + tl.sqrt(1 + 4 * momentum_old ** 2)) / 2
+        x_update = x_new + ((momentum_old - 1) / momentum) * (x_new - x)
+        momentum_old = momentum
+        x = tl.copy(x_new)
+        norm = tl.norm(lr * x_gradient)
+        if iteration == 1:
+            norm_0 = norm
+        if norm < tol * norm_0:
+            break
+    return x
+
+
+def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
+    """
+     Active set algorithm for non-negative least square solution.
+
+     Computes an approximate non-negative solution for Ux=m linear system.
+
+     Parameters
+     ----------
+     Utm : vectorized ndarray
+        Pre-computed product of the transposed of U and m
+     UtU : ndarray
+        Pre-computed Kronecker product of the transposed of U and U
+     x : init
+        Default: None
+     n_iter_max : int
+         Maximum number of iteration
+         Default: 100
+     tol : float
+         Early stopping criterion
+
+     Returns
+     -------
+     x : ndarray
+
+     Notes
+     -----
+     This function solves following problem:
+     .. math::
+        \\begin{equation}
+             \\min_{x} ||Ux - m||^2
+        \\end{equation}
+
+     According to [1], non-negativity-constrained least square estimation problem becomes:
+     .. math::
+        \\begin{equation}
+             x' = (Utm) - (UTU)\\times x
+        \\end{equation}
+
+     Reference
+     ----------
+     [1] : Bro, R., & De Jong, S. (1997). A fast non‐negativity‐constrained
+           least squares algorithm. Journal of Chemometrics: A Journal of
+           the Chemometrics Society, 11(5), 393-401.
+     """
+    if tl.get_backend() == 'tensorflow':
+        raise ValueError(
+            "Active set is not supported with the tensorflow backend. Consider using fista method with tensorflow.")
+
+    if x is None:
+        x_vec = tl.zeros(tl.shape(UtU)[1], **tl.context(UtU))
+    else:
+        x_vec = tl.base.tensor_to_vec(x)
+
+    x_gradient = Utm - tl.dot(UtU, x_vec)
+    passive_set = x_vec > 0
+    active_set = x_vec <= 0
+    support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
+
+    for iteration in range(n_iter_max):
+
+        if iteration > 0 or tl.all(x_vec == 0):
+            indice = tl.argmax(x_gradient)
+            passive_set = tl.index_update(passive_set, tl.index[indice], True)
+            active_set = tl.index_update(active_set, tl.index[indice], False)
+        # To avoid singularity error when initial x exists
+        try:
+            passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
+            indice_list = []
+            for i in range(tl.shape(support_vec)[0]):
+                if passive_set[i]:
+                    indice_list.append(i)
+                    support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
+                else:
+                    support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
+        # Start from zeros if solve is not achieved  
+        except:
+            x_vec = tl.zeros(tl.shape(UtU)[1])
+            support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
+            passive_set = x_vec > 0
+            active_set = x_vec <= 0
+            if tl.any(active_set)==True:
+                indice = tl.argmax(x_gradient)
+                passive_set = tl.index_update(passive_set, tl.index[indice], True)
+                active_set = tl.index_update(active_set, tl.index[indice], False)
+            passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
+            indice_list = []
+            for i in range(tl.shape(support_vec)[0]):
+                if passive_set[i]:
+                    indice_list.append(i)
+                    support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
+                else:
+                    support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
+
+        # update support vector if it is necessary
+        if tl.min(support_vec[passive_set]) <= 0:
+            for i in range(len(passive_set)):
+                alpha = tl.min(x_vec[passive_set][support_vec[passive_set] <= 0] / (x_vec[passive_set][support_vec[passive_set] <= 0] - support_vec[passive_set][support_vec[passive_set] <= 0]))
+                update = alpha * (support_vec - x_vec)
+                x_vec = x_vec + update
+                passive_set = x_vec > 0
+                active_set = x_vec <= 0
+                passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
+                indice_list = []
+                for i in range(tl.shape(support_vec)[0]):
+                    if passive_set[i]:
+                        indice_list.append(i)
+                        support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
+                    else:
+                        support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
+
+                if tl.any(passive_set)!=True or tl.min(support_vec[passive_set]) > 0:
+                    break
+        # set x to s
+        x_vec = tl.clip(support_vec, 0, tl.max(support_vec))
+
+        # gradient update
+        x_gradient = Utm - tl.dot(UtU, x_vec)
+
+        if tl.any(active_set)!=True or tl.max(x_gradient[active_set]) <= tol:
+            break
+
+    return x_vec

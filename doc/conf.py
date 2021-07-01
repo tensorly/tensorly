@@ -57,6 +57,10 @@ templates_path = ['templates']
 autosummary_generate = True
 autoclass_content = 'class'
 autodoc_default_flags = ['members', 'inherited-members']
+autosummary_filename_map = {
+    'tensorly.decomposition.parafac2': 'parafac2-function',
+    'tensorly.decomposition.tucker': 'tucker-function'
+}
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
