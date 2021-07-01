@@ -378,6 +378,7 @@ class Parafac2(DecompositionMixin):
         .. versionchanged:: 0.6.1
 
             Previously, the default maximum number of iterations was 100.
+
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
@@ -397,6 +398,7 @@ class Parafac2(DecompositionMixin):
 
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
+
     absolute_tol : float, optional
         (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
         is considered to have converged when 
@@ -461,6 +463,16 @@ class Parafac2(DecompositionMixin):
         self.n_iter_parafac = n_iter_parafac
 
     def fit_transform(self, tensor):
+        """Decompose an input tensor
+        
+        Parameters
+        ----------
+        tensor : tensorly.tensor
+        
+        Returns
+        -------
+        self
+        """
         self.decomposition_, self.errors_ = parafac2(tensor, 
                                                      rank=self.rank,
                                                      n_iter_max=self.n_iter_max,
