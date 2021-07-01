@@ -45,8 +45,8 @@ sparse tensor would use::
     >>> from tensorly.contrib.sparse import tensor, unfold
     >>> X = sparse.COO(np.arange(24).reshape((3, 4, 2)))
     >>> X = sparse.COO(X.coords, X.data, shape=(100, 100, 100))
-    >>> X = tl.tensor(X)
-    >>> unfold(X, 0) # mode-1 unfolding
+    >>> X = tensor(X, dtype='float')
+    >>> unfold(X, 0).data # mode-1 unfolding
     array([[ 0,  1,  2,  3,  4,  5,  6,  7],
            [ 8,  9, 10, 11, 12, 13, 14, 15],
            [16, 17, 18, 19, 20, 21, 22, 23]])
