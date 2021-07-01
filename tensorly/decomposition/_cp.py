@@ -44,7 +44,7 @@ def initialize_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None, 
     rng = tl.check_random_state(random_state)
 
     if init == 'random':
-        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
+        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, random_state=rng, **tl.context(tensor))
 
     elif init == 'svd':
         try:
@@ -208,8 +208,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         Number of components.
     n_iter_max : int
         Maximum number of iteration
-    init : {'svd', 'random'}, optional
-        Type of factor matrix initialization. See `initialize_factors`.
+    init : {'svd', 'random', CPTensor}, optional
+        Type of factor matrix initialization.
+        If a CPTensor is passed, this is directly used for initalization.
+        See `initialize_factors`.
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor

@@ -115,7 +115,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
     rng = tl.check_random_state(random_state)
 
     if init == 'random':
-        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
+        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, random_state=rng, **tl.context(tensor))
 
     elif init == 'svd':
         try:
@@ -141,6 +141,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
 
         kt = CPTensor((None, factors))
 
+    # If the initialisation is a precomputed decomposition, we double check its validity and return it
     elif isinstance(init, (tuple, list, CPTensor)):
         # TODO: Test this
         try:
@@ -150,9 +151,11 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
                 'If initialization method is a mapping, then it must '
                 'be possible to convert it to a CPTensor instance'
             )
+        return kt
     else:
         raise ValueError('Initialization method "{}" not recognized'.format(init))
 
+    # Make decomposition feasible by taking the absolute value of all factor matrices
     kt.factors = [tl.abs(f) for f in kt[1]]
 
     if normalize_factors:
