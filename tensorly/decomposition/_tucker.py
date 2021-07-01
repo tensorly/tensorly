@@ -587,13 +587,14 @@ class Tucker(DecompositionMixin):
 
     References
     ----------
-    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
     SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
     def __init__(self, rank=None, n_iter_max=100,
                  init='svd', svd='numpy_svd', tol=10e-5, fixed_factors=None,
                  random_state=None, mask=None, verbose=False):
         self.rank = rank
+        self.fixed_factors = fixed_factors
         self.n_iter_max = n_iter_max
         self.init = init
         self.svd = svd
@@ -603,14 +604,18 @@ class Tucker(DecompositionMixin):
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        tucker_tensor = tucker(tensor, rank=self.rank,
-                            n_iter_max=self.n_iter_max,
-                            init=self.init,
-                            svd=self.svd,
-                            tol=self.tol,
-                            random_state=self.random_state,
-                            mask=self.mask,
-                            verbose=self.verbose)        
+        tucker_tensor = tucker(
+            tensor,
+            rank=self.rank,
+            fixed_factors=self.fixed_factors,
+            n_iter_max=self.n_iter_max,
+            init=self.init,
+            svd=self.svd,
+            tol=self.tol,
+            random_state=self.random_state,
+            mask=self.mask,
+            verbose=self.verbose,
+        )        
         self.decomposition_ = tucker_tensor
         return tucker_tensor
 
@@ -680,13 +685,15 @@ class Tucker_NN(DecompositionMixin):
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        tucker_tensor = non_negative_tucker(tensor, rank=self.rank,
+        tucker_tensor, errors = non_negative_tucker(tensor, rank=self.rank,
                             n_iter_max=self.n_iter_max,
                             init=self.init,
                             tol=self.tol,
                             random_state=self.random_state,
-                            verbose=self.verbose)
+                            verbose=self.verbose,
+                            return_errors=True)
         self.decomposition_ = tucker_tensor
+        self.errors_ = errors
         return tucker_tensor
 
     # def transform(self, tensor):

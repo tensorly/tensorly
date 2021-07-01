@@ -1,11 +1,11 @@
 import tensorly as tl
-from .._tt import tensor_train, tensor_train_matrix
+from .._tt import tensor_train, tensor_train_matrix, TensorTrain
 from ...tt_matrix import tt_matrix_to_tensor
 from ...random import random_tt
-from ...testing import assert_, assert_array_almost_equal
+from ...testing import assert_, assert_array_almost_equal, assert_class_wrapper_correctly_passes_arguments
 
 
-def test_tensor_train():
+def test_tensor_train(monkeypatch):
     """ Test for tensor_train """
     rng = tl.check_random_state(1234)
 
@@ -59,6 +59,8 @@ def test_tensor_train():
     error /= tl.norm(tensor, 2)
     assert_(error < tol,
               'norm 2 of reconstruction higher than tol')
+
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, tensor_train, TensorTrain, ignore_args={}, rank=3)
 
 
 def test_tensor_train_matrix():

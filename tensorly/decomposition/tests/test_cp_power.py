@@ -1,11 +1,11 @@
 import tensorly as tl
 from ...random import random_cp
-from ...testing import assert_
+from ...testing import assert_, assert_class_wrapper_correctly_passes_arguments
 
-from .._cp_power import parafac_power_iteration
+from .._cp_power import parafac_power_iteration, CPPower
 
 
-def test_parafac_power_iteration():
+def test_parafac_power_iteration(monkeypatch):
     """Test for symmetric Parafac optimized with robust tensor power iterations"""
     rng = tl.check_random_state(1234)
     tol_norm_2 = 10e-1
@@ -23,3 +23,6 @@ def test_parafac_power_iteration():
     error = tl.max(tl.abs(rec - tensor))
     assert_(error < tol_max_abs,
             f'Absolute norm of reconstruction error={error} higher than tol={tol_max_abs}.')
+
+    
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, parafac_power_iteration, CPPower, ignore_args={}, rank=3)
