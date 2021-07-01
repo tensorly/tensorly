@@ -29,7 +29,7 @@ def assert_equal(actual, desired, *args, **kwargs):
 
 
 def _get_defaultkwargs(func):
-    """Returns a Parameter instance for the specified argument.
+    """Returns a dictionary containing all of the input function's arguments with default values.
     """
     argspec = getfullargspec(func)
 
@@ -49,6 +49,24 @@ def _get_defaultkwargs(func):
 
 
 def _get_decomposition_checker(supposed_kwargs, output_length):
+    """Factory function whose output asserts that all entries in ``supposed_kwargs`` match entries in the kwargs-dictionary.
+
+    This is a utility function used to automate testing of the object oriented interface.
+
+    Arguments
+    ---------
+    supposed_kwargs : dict
+        All keyword arguments that should be in the kwargs dict whenever the output function is called
+        and their supposed value.
+    output_length : int
+        The number of outputs from the function
+    
+    Returns
+    -------
+    function
+        Function that iterates over the supposed_kwarg dictionary and checks that each key and value
+        matches those of the function call.
+    """
     def decomposition_function(*args, **kwargs):
         for argument, supposed_default in supposed_kwargs.items():
             np.testing.assert_(argument in kwargs, "All arguments with a default must be passed as keyword argument when the decomposition class calls the decomposition function")
@@ -61,6 +79,8 @@ def assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, decomposition_function, DecompositionClass, ignore_args=None, decomposition_output_length=2, **extra_args
     ):
     """Used to ensure that all arguments are passed correctly from the decomposition class to the decomposition function
+
+    This code must be used in a test ran with the PyTest framework.
 
     Arguments:
     ----------
@@ -76,6 +96,15 @@ def assert_class_wrapper_correctly_passes_arguments(
         Number of outputs from the decomposition function
     **extra_args
         Extra keyword-arguments passed to the decomposition class
+
+    Example:
+    --------
+
+    Here is a simple example to check that the CP class' arguments match that of the parafac function.
+
+    >>> from tensorly.decomposition import parafac, CP
+    ... def test_cp(monkeypatch):
+    ...     assert_class_wrapper_correctly_passes_arguments(monkeypatch, parafac, CP, ignore_args={'return_errors'}, rank=3)
     """
     kwargs = _get_defaultkwargs(decomposition_function)
     test_kwargs = {argument: 'this_is_used_to_test_correct_passing_of_arguments' for argument in kwargs}
