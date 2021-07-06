@@ -72,14 +72,14 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
     """
 
     if tl.is_tensor(tensor_3d):
-        X = tensor_3d
+        X = tl.copy(tensor_3d)
     else:
         _, _ = tl.cp_tensor._validate_cp_tensor(
             tensor_3d)  # this will fail if it isn't a valid tuple or CPTensor
         X = tl.cp_tensor.cp_to_tensor(tensor_3d)
 
     if tl.is_tensor(matrix):
-        Y = matrix
+        Y = tl.copy(matrix)
     else:
         _, _ = tl.cp_tensor._validate_cp_tensor(
             matrix)  # this will fail if it isn't a valid tuple or CPTensor
@@ -118,8 +118,8 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
         norm_V = tl.norm(V, axis=0)
         V /= norm_V
         gamma *= norm_V
-        error_new = 1 / 2 * tl.norm(
-            X - tl.cp_tensor.cp_to_tensor((lambda_, [A, B, C]))) ** 2 + 1 / 2 * tl.norm(
+        error_new = tl.norm(
+            X - tl.cp_tensor.cp_to_tensor((lambda_, [A, B, C]))) ** 2 + tl.norm(
             Y - tl.cp_tensor.cp_to_tensor((gamma, [A, V]))) ** 2
 
         if iteration > 0 and (tl.abs(error_new - error_old) / error_old <= 1e-8 or error_new <

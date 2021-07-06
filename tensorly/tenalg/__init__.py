@@ -15,6 +15,7 @@ from .core_tenalg import contract
 from .core_tenalg import tensor_dot, batched_tensor_dot
 from .core_tenalg import higher_order_moment
 from .core_tenalg import _tt_matrix_to_tensor
+from .core_tenalg import solve_least_squares
 
 from . import core_tenalg as core
 from . import einsum_tenalg
@@ -132,5 +133,6 @@ outer = dynamically_dispatch_tenalg(outer)
 tensor_dot = dynamically_dispatch_tenalg(tensor_dot)
 batched_tensor_dot = dynamically_dispatch_tenalg(batched_tensor_dot)
 higher_order_moment = dynamically_dispatch_tenalg(higher_order_moment)
+solve_least_squares = dynamically_dispatch_tenalg(solve_least_squares)
 
 initialize_tenalg_backend()
