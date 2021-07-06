@@ -7,7 +7,8 @@ from ..cp_tensor import (cp_to_tensor, cp_to_unfolded,
                               cp_normalize, CPTensor,
                               cp_mode_dot, unfolding_dot_khatri_rao,
                               cp_norm, cp_flip_sign,
-                              _cp_n_param, validate_cp_rank
+                              _cp_n_param, validate_cp_rank,
+                              cp_lstsq_grad
                         )
 from ..base import unfold, tensor_to_vec
 from tensorly.random import random_cp
@@ -263,3 +264,14 @@ def testvalidate_cp_rank():
     n_param = _cp_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)
 
+def test_cp_lstsq_grad():
+    """Validate the gradient calculation between a CP and dense tensor."""
+    shape = (3, 4, 5)
+    rank = 4
+    cp_tensor = random_cp(shape, rank, normalise_factors=False)
+    tensor = cp_to_tensor(cp_tensor)
+
+    cp_grad = cp_lstsq_grad(cp_tensor, tensor)
+
+    # If we're taking the gradient of comparison with self it should be 0
+    assert_(cp_norm(cp_grad) <= 10e-5)

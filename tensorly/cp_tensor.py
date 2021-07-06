@@ -8,7 +8,6 @@ from ._factorized_tensor import FactorizedTensor
 from .tenalg import khatri_rao, multi_mode_dot, inner
 from .utils import DefineDeprecated
 
-from collections.abc import Mapping
 import numpy as np
 
 # Author: Jean Kossaifi
@@ -353,6 +352,36 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
     weights = T.abs(weights)
 
     return CPTensor((weights, factors))
+
+
+def cp_lstsq_grad(cp_tensor, tensor, mask=None):
+    """Returns the gradient of the least squares difference between a CP and dense tensor.
+    
+    Parameters
+    ----------
+    cp_tensor : CPTensor = (weight, factors)
+        factors is a list of factor matrices, all with the same number of columns
+        i.e. for all matrix U in factor_matrices:
+        U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
+
+    mask : ndarray a mask to be applied to the final tensor. It should be
+        broadcastable to the shape of the final tensor, that is
+        ``(U[1].shape[0], ... U[-1].shape[0])``.
+
+    Returns
+    -------
+    
+    """
+    _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
+
+    diff = tensor - cp_to_tensor(cp_tensor)
+
+    if mask is not None:
+        diff = diff * mask
+
+    grad_fac = [-unfolding_dot_khatri_rao(diff, cp_tensor, ii) for ii in range(len(factors))]
+    return CPTensor((weights, grad_fac))
 
 
 def cp_to_tensor(cp_tensor, mask=None):
