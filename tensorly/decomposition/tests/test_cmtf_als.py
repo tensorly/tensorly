@@ -1,7 +1,7 @@
 import numpy as np
 import tensorly as tl
 
-from ..cmtf_als import coupled_matrix_tensor_3d_factorization
+from .._cmtf_als import coupled_matrix_tensor_3d_factorization
 from ...cp_tensor import cp_to_tensor, CPTensor
 from ...testing import assert_
 
