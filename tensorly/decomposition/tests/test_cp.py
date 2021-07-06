@@ -1,23 +1,24 @@
+import itertools
 import numpy as np
 import pytest
 
 import tensorly as tl
-from .._cp import (
-    parafac, initialize_cp,
-    sample_khatri_rao, randomised_parafac)
-from .._nn_cp import non_negative_parafac, non_negative_parafac_hals
+from .._cp import parafac, initialize_cp, sample_khatri_rao, randomised_parafac, CP, RandomizedCP
+from .._nn_cp import non_negative_parafac, non_negative_parafac_hals, initialize_nn_cp, CP_NN, CP_NN_HALS
+from ...cp_tensor import cp_to_tensor, CPTensor
 from ...cp_tensor import cp_to_tensor
 from ...random import random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
-from ...testing import assert_array_equal, assert_
+from ...testing import assert_array_equal, assert_, assert_class_wrapper_correctly_passes_arguments
+from ...metrics.factors import congruence_coefficient
 
 
 @pytest.mark.parametrize("linesearch", [True, False])
 @pytest.mark.parametrize("orthogonalise", [True, False])
 @pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 5)])
 @pytest.mark.parametrize("init", ['svd', 'random'])
-def test_parafac(linesearch, orthogonalise, true_rank, rank, init):
+def test_parafac(linesearch, orthogonalise, true_rank, rank, init, monkeypatch):
     """Test for the CANDECOMP-PARAFAC decomposition
     """
     rng = tl.check_random_state(1234)
@@ -62,6 +63,8 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init):
     with np.testing.assert_raises(ValueError):
         _, _ = initialize_cp(tensor, rank, init='bogus init type')
 
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, parafac, CP, ignore_args={'return_errors'}, rank=3)
+
 
 @pytest.mark.parametrize("linesearch", [True, False])
 def test_masked_parafac(linesearch):
@@ -104,7 +107,7 @@ def test_parafac_linesearch():
                                              'CP with line-search seems to have converged more slowly.')
 
 
-def test_non_negative_parafac():
+def test_non_negative_parafac(monkeypatch):
     """Test for non-negative PARAFAC
 
     TODO: more rigorous test
@@ -155,8 +158,21 @@ def test_non_negative_parafac():
     assert_(T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
 
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_parafac, CP_NN, ignore_args={'return_errors'}, rank=3)
 
-def test_non_negative_parafac_hals():
+
+def test_initialize_nn_cp():
+    """Test that if we initialise with an existing init, then it isn't modified.
+    """
+    init = CPTensor([None, [-tl.ones((30, 3)), -tl.ones((20, 3)), -tl.ones((10, 3))]])
+    tensor = cp_to_tensor(init)
+    initialised_tensor = initialize_nn_cp(tensor, 3, init=init)
+    for factor_matrix, init_factor_matrix in zip(init[1], initialised_tensor[1]):
+        assert_array_equal(factor_matrix, init_factor_matrix)
+    assert_array_equal(tensor, cp_to_tensor(initialised_tensor))
+
+
+def test_non_negative_parafac_hals(monkeypatch):
     """Test for non-negative PARAFAC HALS
     TODO: more rigorous test
     """
@@ -205,6 +221,47 @@ def test_non_negative_parafac_hals():
             'norm 2 of difference between svd and random init too high')
     assert_(tl.max(tl.abs(rec_svd - rec_random)) < tol_max_abs,
             'abs norm of difference between svd and random init too high')
+
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_parafac_hals, CP_NN_HALS, ignore_args={'return_errors'}, rank=3)
+
+
+    # Regression test: used wrong variable for convergence checking
+    # Used mttkrp*factor instead of mttkrp*factors[-1], which resulted in
+    # error when mode 2 was not constrained and erroneous convergence checking
+    # when mode 2 was constrained.
+    tensor = tl.tensor(rng.random_sample((3, 3, 3))+1)
+    nn_estimate, errs = non_negative_parafac_hals(
+        tensor, rank=2, n_iter_max=2, tol=1e-10, init='svd', verbose=0, nn_modes={0,}, return_errors=True
+    )
+
+def test_non_negative_parafac_hals_one_unconstrained():
+    """Test for non-negative PARAFAC HALS
+    TODO: more rigorous test
+    """
+    rng = tl.check_random_state(1234)
+    t_shape = (8, 9, 10)
+    rank = 3
+    weights = T.tensor(rng.uniform(size=rank))
+    A = T.tensor(rng.uniform(size=(t_shape[0], rank)))
+    B = T.tensor(rng.standard_normal(size=(t_shape[1], rank)))
+    C = T.tensor(rng.uniform(0.1, 1.1, size=(t_shape[2], rank)))
+    cp_tensor = (weights, (A, B, C))
+    X = cp_to_tensor(cp_tensor)
+
+    nn_estimate, errs = non_negative_parafac_hals(
+        X, rank=3, n_iter_max=100, tol=0, init='svd', verbose=0, nn_modes={0, 2}, return_errors=True
+    )
+    X_hat = cp_to_tensor(nn_estimate)
+    assert_(tl.norm(X - X_hat,) < 1e-3, "Error was too high")
+    
+    assert_(congruence_coefficient(A, nn_estimate[1][0], absolute_value=True)[0] > 0.99, "Factor recovery not high enough")
+    assert_(congruence_coefficient(B, nn_estimate[1][1], absolute_value=True)[0] > 0.99, "Factor recovery not high enough")
+    assert_(congruence_coefficient(C, nn_estimate[1][2], absolute_value=True)[0] > 0.99, "Factor recovery not high enough")
+
+    assert_(T.all(nn_estimate[1][0] > -1e-10))
+    assert_(T.all(nn_estimate[1][2] > -1e-10))
+
+
 @pytest.mark.xfail(tl.get_backend() == 'tensorflow', reason='Fails on tensorflow')
 def test_sample_khatri_rao():
     """ Test for sample_khatri_rao
@@ -232,7 +289,7 @@ def test_sample_khatri_rao():
 
 
 @pytest.mark.xfail(tl.get_backend() == 'tensorflow', reason='Fails on tensorflow')
-def test_randomised_parafac():
+def test_randomised_parafac(monkeypatch):
     """ Test for randomised_parafac
     """
     rng = tl.check_random_state(1234)
@@ -253,3 +310,5 @@ def test_randomised_parafac():
     reconstruction = cp_to_tensor(cp_tensor)
     error = float(T.norm(reconstruction - tensor, 2)/T.norm(tensor, 2))
     assert_(error < tolerance, msg='reconstruction of {} (higher than tolerance of {})'.format(error, tolerance))
+
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, randomised_parafac, RandomizedCP, ignore_args={'return_errors'}, rank=3, n_samples=100)

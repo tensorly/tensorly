@@ -119,25 +119,26 @@ def test_tt_to_tensor_random():
 
 def test_tt_n_param():
     """Test for _tt_n_param"""
-    tensor_shape = (2, 3, 4, 1, 5)
+    tensor_shape = (4, 5, 4, 8, 5)
     rank = (1, 3, 2, 2, 4, 1)
     factors = random_tt(shape=tensor_shape, rank=rank)
     true_n_param = np.sum([np.prod(tl.shape(f)) for f in factors])
     n_param = _tt_n_param(tensor_shape, rank)
     assert_equal(n_param, true_n_param)
 
-def testvalidate_tt_rank():
+def test_validate_tt_rank():
     """Test for validate_tt_rank with random sizes"""
-    tensor_shape = tuple(np.random.randint(1, 100, size=4))
+    tensor_shape = tuple(np.random.randint(5, 10, size=4))
     n_param_tensor = np.prod(tensor_shape)
+    coef = 0.2
 
     # Rounding = floor
-    rank = validate_tt_rank(tensor_shape, rank='same', rounding='floor')
+    rank = validate_tt_rank(tensor_shape, rank=coef, rounding='floor')
     n_param = _tt_n_param(tensor_shape, rank)
-    assert_(n_param <= n_param_tensor)
+    assert_(n_param <= n_param_tensor*coef)
 
     # Rounding = ceil
-    rank = validate_tt_rank(tensor_shape, rank='same', rounding='ceil')
+    rank = validate_tt_rank(tensor_shape, rank=coef, rounding='ceil')
     n_param = _tt_n_param(tensor_shape, rank)
-    assert_(n_param >= n_param_tensor)
+    assert_(n_param >= n_param_tensor*coef)
 

@@ -61,10 +61,10 @@ class NumpyBackend(Backend):
             return np.sort(tensor, axis=axis)
 
 for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
-             'reshape', 'moveaxis',
+             'reshape', 'moveaxis', 'any', 'trace',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'flip',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min',
-             'all', 'mean', 'sum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
+             'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'conj', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
     NumpyBackend.register_method(name, getattr(np, name))
 
