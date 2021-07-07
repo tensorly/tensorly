@@ -5,7 +5,7 @@ Core operations on CP tensors.
 from . import backend as T
 from .base import fold, tensor_to_vec
 from ._factorized_tensor import FactorizedTensor
-from .tenalg import khatri_rao, multi_mode_dot, inner
+from .tenalg import khatri_rao, multi_mode_dot
 from .utils import DefineDeprecated
 
 import numpy as np

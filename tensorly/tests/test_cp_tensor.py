@@ -269,9 +269,19 @@ def test_cp_lstsq_grad():
     shape = (3, 4, 5)
     rank = 4
     cp_tensor = random_cp(shape, rank, normalise_factors=False)
-    tensor = cp_to_tensor(cp_tensor)
-
-    cp_grad = cp_lstsq_grad(cp_tensor, tensor)
 
     # If we're taking the gradient of comparison with self it should be 0
+    cp_grad = cp_lstsq_grad(cp_tensor, cp_to_tensor(cp_tensor))
     assert_(cp_norm(cp_grad) <= 10e-5)
+
+    # Check that we can solve for a direction of descent
+    dense = random_cp(shape, rank, full=True, normalise_factors=False)
+    cost_before = tl.norm(cp_to_tensor(cp_tensor) - dense)
+
+    cp_grad = cp_lstsq_grad(cp_tensor, dense)
+    cp_new = CPTensor(cp_tensor)
+    for ii in range(len(shape)):
+        cp_new.factors[ii] = cp_tensor.factors[ii] - 1e-9 * cp_grad.factors[ii]
+
+    cost_after = tl.norm(cp_to_tensor(cp_new) - dense)
+    assert_(cost_before > cost_after)
