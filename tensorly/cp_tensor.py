@@ -356,6 +356,8 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
 
 def cp_lstsq_grad(cp_tensor, tensor, mask=None):
     """Returns the gradient of the least squares difference between a CP and dense tensor.
+
+    Note that this does not return the gradient with respect to the weights even if CP is normalized.
     
     Parameters
     ----------
@@ -370,10 +372,13 @@ def cp_lstsq_grad(cp_tensor, tensor, mask=None):
 
     Returns
     -------
-    
+    cp_gradient : CPTensor = (None, factors)
+        factors is a list of factor matrix gradients, all with the same number of columns
+        i.e. for all matrix U in factor_matrices:
+        U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
     """
     _validate_cp_tensor(cp_tensor)
-    weights, factors = cp_tensor
+    _, factors = cp_tensor
 
     diff = tensor - cp_to_tensor(cp_tensor)
 
@@ -381,7 +386,7 @@ def cp_lstsq_grad(cp_tensor, tensor, mask=None):
         diff = diff * mask
 
     grad_fac = [-unfolding_dot_khatri_rao(diff, cp_tensor, ii) for ii in range(len(factors))]
-    return CPTensor((weights, grad_fac))
+    return CPTensor((None, grad_fac))
 
 
 def cp_to_tensor(cp_tensor, mask=None):
