@@ -1,4 +1,4 @@
-import tensorly as tl 
+import tensorly as tl
 from . import batched_tensor_dot
 
 def higher_order_moment(tensor, order):

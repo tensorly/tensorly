@@ -1,4 +1,4 @@
-from numpy.linalg import lstsq
+import tensorly as tl
 
 
 def solve_least_squares(A, B):
@@ -16,5 +16,4 @@ def solve_least_squares(A, B):
 
     """
 
-    #TODO: implement leastsquares for all backends
-    return lstsq(A, B)[0]
+    return tl.lstsq(A, B)[0]

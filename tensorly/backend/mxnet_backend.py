@@ -107,5 +107,5 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'argmax', 'stack', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
     MxnetBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr', 'eigh']:
+for name in ['solve', 'qr', 'eigh', 'lstsq']:
     MxnetBackend.register_method(name, getattr(np.linalg, name))

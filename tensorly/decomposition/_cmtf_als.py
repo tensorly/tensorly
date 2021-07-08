@@ -1,9 +1,7 @@
-import numpy as np
-
 import tensorly as tl
 from ..tenalg import khatri_rao
 from ..tenalg import solve_least_squares
-from ..cp_tensor import CPTensor
+from ..cp_tensor import CPTensor, validate_cp_rank, cp_to_tensor
 from ._cp import initialize_cp
 
 
@@ -70,26 +68,13 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
     tensor_3d_pred, matrix_pred = cmtf_als_for_third_order_tensor(X, Y, R)
 
     """
-
-    if tl.is_tensor(tensor_3d):
-        X = tl.copy(tensor_3d)
-    else:
-        _, _ = tl.cp_tensor._validate_cp_tensor(
-            tensor_3d)  # this will fail if it isn't a valid tuple or CPTensor
-        X = tl.cp_tensor.cp_to_tensor(tensor_3d)
-
-    if tl.is_tensor(matrix):
-        Y = tl.copy(matrix)
-    else:
-        _, _ = tl.cp_tensor._validate_cp_tensor(
-            matrix)  # this will fail if it isn't a valid tuple or CPTensor
-        Y = tl.cp_tensor.cp_to_tensor(matrix)
+    rank = validate_cp_rank(tl.shape(tensor_3d), rank=rank)
 
     # initialize values
-    A, B, C = initialize_cp(tl.tensor(X, dtype=tl.float32), rank, init=init).factors
-    V = tl.transpose(solve_least_squares(A, Y))
-    lambda_ = tl.ones(rank)
-    gamma = tl.ones(rank)
+    A, B, C = initialize_cp(tensor_3d, rank, init=init).factors
+    V = tl.transpose(solve_least_squares(A, matrix))
+    lambda_ = tl.ones(rank, **tl.context(tensor_3d))
+    gamma = tl.ones(rank, **tl.context(tensor_3d))
     rec_errors = []
 
     # alternating least squares
@@ -97,30 +82,30 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
     # than assumed in paper
     for iteration in range(n_iter_max):
         A = tl.transpose(solve_least_squares(
-            tl.transpose(tl.concatenate((tl.dot(np.diag(lambda_), tl.transpose(khatri_rao([B, C]))),
-                                         tl.dot(np.diag(gamma), tl.transpose(V))), axis=1)),
-            tl.transpose(tl.concatenate((tl.unfold(X, 0), Y), axis=1))))
+            tl.transpose(tl.concatenate((tl.dot(tl.diag(lambda_), tl.transpose(khatri_rao([B, C]))),
+                                         tl.dot(tl.diag(gamma), tl.transpose(V))), axis=1)),
+            tl.transpose(tl.concatenate((tl.unfold(tensor_3d, 0), matrix), axis=1))))
         norm_A = tl.norm(A, axis=0)
         A /= norm_A
         lambda_ *= norm_A
         gamma *= norm_A
-        B = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, C]), np.diag(lambda_)),
-                                             tl.transpose(tl.unfold(X, 1))))
+        B = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, C]), tl.diag(lambda_)),
+                                             tl.transpose(tl.unfold(tensor_3d, 1))))
         norm_B = tl.norm(B, axis=0)
         B /= norm_B
         lambda_ *= norm_B
-        C = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, B]), np.diag(lambda_)),
-                                             tl.transpose(tl.unfold(X, 2))))
+        C = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, B]), tl.diag(lambda_)),
+                                             tl.transpose(tl.unfold(tensor_3d, 2))))
         norm_C = tl.norm(C, axis=0)
         C /= norm_C
         lambda_ *= norm_C
-        V = tl.transpose(solve_least_squares(tl.dot(A, np.diag(gamma)), Y))
+        V = tl.transpose(solve_least_squares(tl.dot(A, tl.diag(gamma)), matrix))
         norm_V = tl.norm(V, axis=0)
         V /= norm_V
         gamma *= norm_V
         error_new = tl.norm(
-            X - tl.cp_tensor.cp_to_tensor((lambda_, [A, B, C]))) ** 2 + tl.norm(
-            Y - tl.cp_tensor.cp_to_tensor((gamma, [A, V]))) ** 2
+            tensor_3d - cp_to_tensor((lambda_, [A, B, C]))) ** 2 + tl.norm(
+            matrix - cp_to_tensor((gamma, [A, V]))) ** 2
 
         if iteration > 0 and (tl.abs(error_new - error_old) / error_old <= 1e-8 or error_new <
                               1e-5):

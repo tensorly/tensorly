@@ -207,5 +207,5 @@ else:
     for name in ['kron', 'moveaxis']:
         PyTorchBackend.register_method(name, getattr(torch, name))
 
-    for name in ['solve', 'qr', 'svd', 'eigh']:
+    for name in ['solve', 'qr', 'svd', 'eigh', 'lstsq']:
         PyTorchBackend.register_method(name, getattr(torch.linalg, name))
