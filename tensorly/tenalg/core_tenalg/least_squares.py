@@ -15,5 +15,4 @@ def solve_least_squares(A, B):
     -------
 
     """
-
     return tl.lstsq(A, B)[0]

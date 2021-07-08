@@ -1,7 +1,7 @@
 import tensorly as tl
 from ..tenalg import khatri_rao
 from ..tenalg import solve_least_squares
-from ..cp_tensor import CPTensor, validate_cp_rank, cp_to_tensor
+from ..cp_tensor import CPTensor, validate_cp_rank, cp_to_tensor, cp_normalize
 from ._cp import initialize_cp
 
 
@@ -11,7 +11,7 @@ from ._cp import initialize_cp
 
 
 
-def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', n_iter_max=100):
+def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', n_iter_max=100, normalize_factors=False):
     """
     Calculates a coupled matrix and tensor factorization of 3rd order tensor and matrix which are
     coupled in first mode.
@@ -71,41 +71,30 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
     rank = validate_cp_rank(tl.shape(tensor_3d), rank=rank)
 
     # initialize values
-    A, B, C = initialize_cp(tensor_3d, rank, init=init).factors
-    V = tl.transpose(solve_least_squares(A, matrix))
-    lambda_ = tl.ones(rank, **tl.context(tensor_3d))
-    gamma = tl.ones(rank, **tl.context(tensor_3d))
+    tensor_cp = initialize_cp(tensor_3d, rank, init=init)
     rec_errors = []
 
     # alternating least squares
     # note that the order of the khatri rao product is reversed since tl.unfold has another order
     # than assumed in paper
     for iteration in range(n_iter_max):
-        A = tl.transpose(solve_least_squares(
-            tl.transpose(tl.concatenate((tl.dot(tl.diag(lambda_), tl.transpose(khatri_rao([B, C]))),
-                                         tl.dot(tl.diag(gamma), tl.transpose(V))), axis=1)),
-            tl.transpose(tl.concatenate((tl.unfold(tensor_3d, 0), matrix), axis=1))))
-        norm_A = tl.norm(A, axis=0)
-        A /= norm_A
-        lambda_ *= norm_A
-        gamma *= norm_A
-        B = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, C]), tl.diag(lambda_)),
-                                             tl.transpose(tl.unfold(tensor_3d, 1))))
-        norm_B = tl.norm(B, axis=0)
-        B /= norm_B
-        lambda_ *= norm_B
-        C = tl.transpose(solve_least_squares(tl.dot(khatri_rao([A, B]), tl.diag(lambda_)),
-                                             tl.transpose(tl.unfold(tensor_3d, 2))))
-        norm_C = tl.norm(C, axis=0)
-        C /= norm_C
-        lambda_ *= norm_C
-        V = tl.transpose(solve_least_squares(tl.dot(A, tl.diag(gamma)), matrix))
-        norm_V = tl.norm(V, axis=0)
-        V /= norm_V
-        gamma *= norm_V
+        V = tl.transpose(solve_least_squares(tensor_cp.factors[0], matrix))
+
+        # Loop over modes of the tensor
+        for ii in range(tl.ndim(tensor_3d)):
+            kr = khatri_rao(tensor_cp.factors, skip_matrix=ii)
+            unfolded = tl.unfold(tensor_3d, ii)
+
+            # If we are at the coupled mode, concat the matrix
+            if ii == 0:
+                kr = tl.concatenate((kr, V), axis=0)
+                unfolded = tl.concatenate((unfolded, matrix), axis=1)
+
+            tensor_cp.factors[ii] = tl.transpose(solve_least_squares(kr, tl.transpose(unfolded)))
+
         error_new = tl.norm(
-            tensor_3d - cp_to_tensor((lambda_, [A, B, C]))) ** 2 + tl.norm(
-            matrix - cp_to_tensor((gamma, [A, V]))) ** 2
+            tensor_3d - cp_to_tensor(tensor_cp)) ** 2 + tl.norm(
+            matrix - cp_to_tensor((None, [tensor_cp.factors[0], V]))) ** 2
 
         if iteration > 0 and (tl.abs(error_new - error_old) / error_old <= 1e-8 or error_new <
                               1e-5):
@@ -113,7 +102,10 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
         error_old = error_new
         rec_errors.append(error_new)
 
-    tensor_3d_pred = CPTensor((lambda_, [A, B, C]))
-    matrix_pred = CPTensor((gamma, [A, V]))
+    matrix_pred = CPTensor((None, [tensor_cp.factors[0], V]))
 
-    return tensor_3d_pred, matrix_pred, rec_errors
+    if normalize_factors:
+        tensor_cp = cp_normalize(tensor_cp)
+        matrix_pred = cp_normalize(matrix_pred)
+
+    return tensor_cp, matrix_pred, rec_errors
