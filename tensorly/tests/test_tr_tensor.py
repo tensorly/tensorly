@@ -48,7 +48,8 @@ def test_tr_to_tensor():
         for j in range(5):
             for k in range(6):
                 product = tl.dot(tl.dot(factors[0][:, i, :], factors[1][:, j, :]), factors[2][:, k, :])
-                tensor[i, j, k] = tl.sum(product * tl.eye(product.shape[0]))  # TODO: add trace to backend instead of this
+                # TODO: add trace to backend instead of this
+                tensor = tl.index_update(tensor, tl.index[i, j, k], tl.sum(product * tl.eye(product.shape[0])))
 
     # Check that TR factors re-assemble to the original tensor
     assert_array_almost_equal(tensor, tr_to_tensor(factors))

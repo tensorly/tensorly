@@ -23,7 +23,7 @@ def test_tensor_ring():
             assert_(r_prev_k == r_prev_iteration, "Incorrect ranks")
         r_prev_iteration = r_k
 
-    assert_array_almost_equal(tr_tensor.to_tensor(), tensor)
+    assert_array_almost_equal(tr_tensor.to_tensor(), tensor, decimal=2)
 
 
 def test_tensor_ring_mode():
@@ -46,7 +46,7 @@ def test_tensor_ring_mode():
             assert_(r_prev_k == r_prev_iteration, "Incorrect ranks")
         r_prev_iteration = r_k
 
-    assert_array_almost_equal(tr_tensor.to_tensor(), tensor)
+    assert_array_almost_equal(tr_tensor.to_tensor(), tensor, decimal=2)
 
     with assert_raises(ValueError):
         tensor_ring(tensor, rank=(12, 2, 10, 3, 6, 12), mode=1)
