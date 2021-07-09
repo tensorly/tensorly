@@ -116,6 +116,28 @@ def _validate_tr_tensor(tr_tensor):
     return tuple(shape), tuple(rank)
 
 
+def _tr_n_param(tensor_shape, rank):
+    """Number of parameters of a TR decomposition for a given `rank` and full `tensor_shape`.
+
+    Parameters
+    ----------
+    tensor_shape : int tuple
+        shape of the full tensor to decompose (or approximate)
+
+    rank : tuple
+        rank of the TR decomposition
+
+    Returns
+    -------
+    n_params : int
+        Number of parameters of a TR decomposition of rank `rank` of a full tensor of shape `tensor_shape`
+    """
+    factor_params = []
+    for i, s in enumerate(tensor_shape):
+        factor_params.append(rank[i] * s * rank[i + 1])
+    return np.sum(factor_params)
+
+
 def validate_tr_rank(tensor_shape, rank='same', rounding='round'):
     """Returns the rank of a Tensor Ring Decomposition
 
