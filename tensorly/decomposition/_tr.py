@@ -10,7 +10,7 @@ def tensor_ring(input_tensor, rank, mode=0, verbose=False):
     Parameters
     ----------
     input_tensor : tensorly.tensor
-    rank : {int, int list}
+    rank : Union[int, List[int]]
             maximum allowable TR rank of the factors
             if int, then this is the same for all the factors
             if int list, then rank[k] is the rank of the kth factor
@@ -45,12 +45,11 @@ def tensor_ring(input_tensor, rank, mode=0, verbose=False):
     unfolding = tl.reshape(input_tensor, (tensor_size[0], -1))
 
     n_row, n_column = unfolding.shape
-    # TODO: Proper warning message
     if rank[0] * rank[1] > min(n_row, n_column):
-        raise ValueError(f'rank[{mode}] * rank[{mode + 1}] = {rank[0] * rank[1]} is larger than'
-                         'first matricization dimensions.\n'
-                         'Failed to compute first factor with specified rank'
-                         'Try with another mode or reduce ranks')
+        raise ValueError(f'rank[{mode}] * rank[{mode + 1}] = {rank[0] * rank[1]} is larger than '
+                         f'first matricization dimension {n_row}×{n_column}.\n'
+                         'Failed to compute first factor with specified rank. '
+                         'Reduce specified ranks or change first matricization `mode`.')
 
     # SVD of unfolding matrix
     U, S, V = tl.partial_svd(unfolding, rank[0] * rank[1])
