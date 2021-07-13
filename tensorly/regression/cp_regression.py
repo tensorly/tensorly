@@ -23,7 +23,7 @@ class CPRegressor:
         rank of the CP decomposition of the regression weights
     tol : float
         convergence value
-    reg_W : int, optional, default is 1
+    reg_W : float, optional, default is 1
         l2 regularisation constant for the regression weights (:math:`reg_W * \sum_i ||factors[i]||_F^2`)
     n_iter_max : int, optional, default is 100
         maximum number of iteration
@@ -89,16 +89,17 @@ class CPRegressor:
                     phi = T.transpose(T.reshape(phi, (X.shape[0], X.shape[i + 1], -1, self.weight_rank)), (0, 2, 1, 3))
                     phi = T.reshape(phi, (-1, X.shape[i + 1] * self.weight_rank))
                     y_reshaped = T.reshape(y, (-1,))
+                    inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X))
+                    W[i] = T.reshape(
+                        T.solve(inv_term, T.dot(T.transpose(phi), y_reshaped)),
+                        (-1, self.weight_rank))
                 else:
                     X_unfolded = partial_tensor_to_vec(X, skip_begin=1)
                     phi = T.dot(X_unfolded, T.reshape(khatri_rao(W, skip_matrix=i), (X_unfolded.shape[-1], -1)))
                     phi = T.reshape(phi, (-1, self.weight_rank))
-                    y_reshaped = T.reshape(T.moveaxis(y, i - T.ndim(X), -1), (-1, y.shape[i - T.ndim(X)]))
-
-                inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X))
-                W[i] = T.reshape(
-                    T.solve(inv_term, T.dot(T.transpose(phi), y_reshaped)),
-                    (X.shape[i + 1], self.weight_rank))
+                    y_reshaped = T.reshape(T.moveaxis(y, i - T.ndim(X) + 2, -1), (-1, y.shape[i - T.ndim(X) + 2]))
+                    inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X))
+                    W[i] = T.transpose(T.solve(inv_term, T.dot(T.transpose(phi), y_reshaped)))
 
             weight_tensor_ = cp_to_tensor((weights, W))
             norm_W.append(T.norm(weight_tensor_, 2))
@@ -129,8 +130,12 @@ class CPRegressor:
         X : ndarray
             tensor data of shape (n_samples, I_1, ..., I_p)
         """
-        new_shape = (-1, *self.weight_tensor_.shape[T.ndim(X) - 1:])
-        return T.dot(partial_tensor_to_vec(X), T.reshape(self.weight_tensor_, new_shape))
+        out_shape = (-1, *self.weight_tensor_.shape[T.ndim(X) - 1:])
+        if T.ndim(self.weight_tensor_) > T.ndim(X) - 1:
+            weight_shape = (-1, int(np.prod(self.weight_tensor_.shape[T.ndim(X) - 1:])))
+        else:
+            weight_shape = (-1,)
+        return T.reshape(T.dot(partial_tensor_to_vec(X), T.reshape(self.weight_tensor_, weight_shape)), out_shape)
 
 
 KruskalRegressor = DefineDeprecated('KruskalRegressor', CPRegressor)
