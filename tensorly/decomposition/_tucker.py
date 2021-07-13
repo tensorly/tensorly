@@ -393,7 +393,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         If set to None, the algorithm is computed without sparsity
         Default: None
     core_sparsity_coefficient : array of float. This coefficient imposes sparsity on core
-        when it is udpated with fista.
+        when it is updated with fista.
         Default: None
     fixed_modes : array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
