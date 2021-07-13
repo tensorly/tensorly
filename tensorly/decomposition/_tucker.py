@@ -7,6 +7,7 @@ import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
+from collections.abc import Iterable
 from tensorly.decomposition._nn_cp import make_svd_non_negative
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -464,7 +465,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     """
     rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
     n_modes = tl.ndim(tensor)
-    if sparsity_coefficients is None or isinstance(sparsity_coefficients, float):
+    if sparsity_coefficients is None or not isinstance(sparsity_coefficients, Iterable):
         sparsity_coefficients = [sparsity_coefficients] * n_modes
 
     if fixed_modes is None:
