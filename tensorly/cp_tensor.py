@@ -393,7 +393,7 @@ def cp_to_tensor(cp_tensor, mask=None):
 
     weights, factors = cp_tensor
     if len(shape) == 1: # just a vector
-        return weights.tl.sum(factors, axis=1)
+        return T.sum(weights*factors[0], axis=1)
 
     if weights is None:
         weights = 1
