@@ -10,8 +10,9 @@
 .. image:: https://codecov.io/gh/tensorly/tensorly/branch/master/graph/badge.svg?token=mnZ234sGSA
     :target: https://codecov.io/gh/tensorly/tensorly
 
-.. image:: https://badges.gitter.im/tensorly/tensorly.svg
-    :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+.. image:: https://img.shields.io/badge/Slack-join-brightgreen
+    :target: https://join.slack.com/t/newworkspace-bh44369/shared_invite/zt-u21984bp-O7jOb3pSOr4hzMLoDME0wA
+
 
 ========
 TensorLy
