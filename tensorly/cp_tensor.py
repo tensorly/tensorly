@@ -359,13 +359,13 @@ def cp_lstsq_grad(cp_tensor, tensor, return_loss=False, mask=None):
 
     .. math::
 
-        \nabla 0.5 ||\mathcal{X} - [\mathbf{w}; \mathbf{A}, \mathbf{B}, \mathbf{C}]||^2
+        \nabla 0.5 ||\\mathcal{X} - [\\mathbf{w}; \\mathbf{A}, \\mathbf{B}, \\mathbf{C}]||^2
 
-    where :math:`[\mathbf{w}; \mathbf{A}, \mathbf{B}, \mathbf{C}]` is the CP decomposition with weights
-    :math:`\mathbf{w}` and factor matrices :math:`\mathbf{A}`, :math:`\mathbf{B}` and :math:`\mathbf{C}`.
+    where :math:`[\\mathbf{w}; \\mathbf{A}, \\mathbf{B}, \\mathbf{C}]` is the CP decomposition with weights
+    :math:`\\mathbf{w}` and factor matrices :math:`\\mathbf{A}`, :math:`\\mathbf{B}` and :math:`\\mathbf{C}`.
 
     Note that this does not return the gradient with respect to the weights even if CP is normalized.
-    
+
     Parameters
     ----------
     cp_tensor : CPTensor = (weight, factors)
