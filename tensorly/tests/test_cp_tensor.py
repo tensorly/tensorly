@@ -7,7 +7,8 @@ from ..cp_tensor import (cp_to_tensor, cp_to_unfolded,
                               cp_normalize, CPTensor,
                               cp_mode_dot, unfolding_dot_khatri_rao,
                               cp_norm, cp_flip_sign,
-                              _cp_n_param, validate_cp_rank
+                              _cp_n_param, validate_cp_rank,
+                              cp_lstsq_grad
                         )
 from ..base import unfold, tensor_to_vec
 from tensorly.random import random_cp
@@ -263,3 +264,24 @@ def testvalidate_cp_rank():
     n_param = _cp_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)
 
+def test_cp_lstsq_grad():
+    """Validate the gradient calculation between a CP and dense tensor."""
+    shape = (2, 3, 4)
+    rank = 2
+    cp_tensor = random_cp(shape, rank, normalise_factors=False)
+
+    # If we're taking the gradient of comparison with self it should be 0
+    cp_grad = cp_lstsq_grad(cp_tensor, cp_to_tensor(cp_tensor))
+    assert_(cp_norm(cp_grad) <= 10e-5)
+
+    # Check that we can solve for a direction of descent
+    dense = random_cp(shape, rank, full=True, normalise_factors=False)
+    cost_before = tl.norm(cp_to_tensor(cp_tensor) - dense)
+
+    cp_grad = cp_lstsq_grad(cp_tensor, dense)
+    cp_new = CPTensor(cp_tensor)
+    for ii in range(len(shape)):
+        cp_new.factors[ii] = cp_tensor.factors[ii] - 1e-3 * cp_grad.factors[ii]
+
+    cost_after = tl.norm(cp_to_tensor(cp_new) - dense)
+    assert_(cost_before > cost_after)

@@ -5,10 +5,9 @@ Core operations on CP tensors.
 from . import backend as T
 from .base import fold, tensor_to_vec
 from ._factorized_tensor import FactorizedTensor
-from .tenalg import khatri_rao, multi_mode_dot, inner
+from .tenalg import khatri_rao, multi_mode_dot
 from .utils import DefineDeprecated
 
-from collections.abc import Mapping
 import numpy as np
 
 # Author: Jean Kossaifi
@@ -353,6 +352,60 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
     weights = T.abs(weights)
 
     return CPTensor((weights, factors))
+
+
+def cp_lstsq_grad(cp_tensor, tensor, return_loss=False, mask=None):
+    """This function computes (for a third-order tensor)
+
+    .. math::
+
+        \nabla 0.5 ||\\mathcal{X} - [\\mathbf{w}; \\mathbf{A}, \\mathbf{B}, \\mathbf{C}]||^2
+
+    where :math:`[\\mathbf{w}; \\mathbf{A}, \\mathbf{B}, \\mathbf{C}]` is the CP decomposition with weights
+    :math:`\\mathbf{w}` and factor matrices :math:`\\mathbf{A}`, :math:`\\mathbf{B}` and :math:`\\mathbf{C}`.
+
+    Note that this does not return the gradient with respect to the weights even if CP is normalized.
+
+    Parameters
+    ----------
+    cp_tensor : CPTensor = (weight, factors)
+        factors is a list of factor matrices, all with the same number of columns
+        i.e. for all matrix U in factor_matrices:
+        U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
+
+    mask : ndarray
+        A mask to be applied to the final tensor. It should be
+        broadcastable to the shape of the final tensor, that is
+        ``(U[1].shape[0], ... U[-1].shape[0])``.
+
+    return_loss : bool
+        Optionally return the scalar loss function along with the gradient.
+
+    Returns
+    -------
+    cp_gradient : CPTensor = (None, factors)
+        factors is a list of factor matrix gradients, all with the same number of columns
+        i.e. for all matrix U in factor_matrices:
+        U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
+
+    loss : float
+        Scalar quantity of the loss function corresponding to cp_gradient. Only returned
+        if return_loss = True.
+    """
+    _validate_cp_tensor(cp_tensor)
+    _, factors = cp_tensor
+
+    diff = tensor - cp_to_tensor(cp_tensor)
+
+    if mask is not None:
+        diff = diff * mask
+
+    grad_fac = [-unfolding_dot_khatri_rao(diff, cp_tensor, ii) for ii in range(len(factors))]
+
+    if return_loss:
+        return CPTensor((None, grad_fac)), 0.5*T.sum(diff**2)
+
+    return CPTensor((None, grad_fac))
 
 
 def cp_to_tensor(cp_tensor, mask=None):
