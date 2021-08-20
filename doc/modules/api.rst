@@ -123,6 +123,8 @@ Algebraic operations
     :template: function.rst
 
     dot
+    matmul
+    tensordot
     kron
     solve
     qr
