@@ -13,6 +13,8 @@ import numpy as np
 
 from .core import Backend
 
+linalg_lstsq_avail = LooseVersion(torch.__version__) >= LooseVersion('1.9.0')
+
 
 class PyTorchBackend(Backend):
     backend_name = 'pytorch'
@@ -182,6 +184,13 @@ class PyTorchBackend(Backend):
         else:
             solution, _ = torch.solve(matrix2, matrix1)
         return solution
+
+    @staticmethod
+    def lstsq(a, b):
+        if linalg_lstsq_avail:
+            return torch.linalg.lstsq(a, b, rcond=None)[0]
+        else:
+            return torch.lstsq(b, a)[0][:a.shape[1]]
 
     @staticmethod
     def eigh(tensor):

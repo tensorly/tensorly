@@ -37,6 +37,10 @@ class NumpyBackend(Backend):
     def dot(a, b):
         return a.dot(b)
 
+    @staticmethod
+    def lstsq(a, b):
+        return np.linalg.lstsq(a, b, rcond=None)[0]
+
     def kr(self, matrices, weights=None, mask=None):
         n_columns = matrices[0].shape[1]
         n_factors = len(matrices)

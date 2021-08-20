@@ -144,7 +144,13 @@ class TensorflowBackend(Backend):
             return tf.reverse(tensor, axis=[i for i in range(self.ndim(tensor))])
         else:
             return tf.reverse(tensor, axis=axis)
-    
+
+    @staticmethod
+    def lstsq(a, b):
+        if tf.rank(b) == 1:
+            return tf.squeeze(tf.linalg.lstsq(a, tf.expand_dims(b, -1)), -1)
+        return tf.linalg.lstsq(a, b)
+
     def svd(self, matrix, full_matrices):
         """ Correct for the atypical return order of tf.linalg.svd. """
         S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)

@@ -311,6 +311,23 @@ def test_where():
         assert_array_equal(result, expected)
 
 
+def test_lstsq():
+    m, n, k = 4, 3, 2
+
+    # test dimensions
+    a = T.randn((m, n))
+    b = T.randn((m, k))
+    x = T.lstsq(a, b)
+    assert_equal(x.shape, (n, k))
+
+    # test least squares solution
+    a = T.randn((m, n))
+    x = T.randn((n, ))
+    b = T.dot(a, x)
+    x_lstsq = T.lstsq(a, b)
+    assert_array_almost_equal(T.dot(a, x_lstsq), b)
+
+
 def test_qr():
     M = 8; N = 5
     A = T.tensor(np.random.random((M,N)))
