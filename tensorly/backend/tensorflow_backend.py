@@ -198,6 +198,7 @@ _FUN_NAMES = [
     (tf.reduce_all, 'all'),
     (tf.einsum, 'einsum'),
     (tf.tensordot, 'tensordot'),
+    (tf.linalg.matmul, 'matmul'),
     (tfm.sin, 'sin'),
     (tfm.cos, 'cos'),
     (tfm.cumsum, 'cumsum'),

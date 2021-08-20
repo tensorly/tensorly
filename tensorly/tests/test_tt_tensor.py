@@ -43,11 +43,11 @@ def test_validate_tt_tensor():
 def test_tt_to_tensor():
     """ Test for tt_to_tensor
 
-        References
-        ----------
-        .. [1] Anton Rodomanov. "Introduction to the Tensor Train Decomposition
-           and Its Applications in Machine Learning", HSE Seminar on Applied
-           Linear Algebra, Moscow, Russia, March 2016.
+    References
+    ----------
+    .. [1] Anton Rodomanov. "Introduction to the Tensor Train Decomposition
+        and Its Applications in Machine Learning", HSE Seminar on Applied
+        Linear Algebra, Moscow, Russia, March 2016.
     """
 
     # Create tensor

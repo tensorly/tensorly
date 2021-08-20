@@ -336,6 +336,7 @@ def test_prod():
     x = T.to_numpy(T.prod(v))
     assert_equal(x, 60)
 
+
 def test_index_update():
     np_tensor = np.random.random((3, 5)).astype(dtype=np.float32)
     tensor = tl.tensor(np.copy(np_tensor))
@@ -351,3 +352,4 @@ def test_index_update():
     np_tensor[2, :] = 2
     tensor = tl.index_update(tensor, tl.index[2, :], 2)
     assert_array_equal(np_tensor, tensor)
+
