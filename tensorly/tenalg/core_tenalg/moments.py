@@ -1,5 +1,5 @@
 import tensorly as tl 
-from . import batched_tensor_dot
+from . import batched_outer
 
 def higher_order_moment(tensor, order):
     """Computes the Higher-Order Momemt
@@ -21,7 +21,7 @@ def higher_order_moment(tensor, order):
     """    
     moment = tensor
     for _ in range(order - 1):
-        moment = batched_tensor_dot(moment, tensor)
+        moment = batched_outer(moment, tensor)
         
     return tl.mean(moment, axis=0)
 
