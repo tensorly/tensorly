@@ -2,7 +2,7 @@ import numpy as np
 from numpy.linalg import matrix_rank
 
 from ... import backend as T
-from ..base import random_cp, random_tucker, random_tt
+from ..base import random_cp, random_tucker, random_tt, random_tr
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...base import unfold
@@ -121,3 +121,28 @@ def test_random_tt():
         shape = (10, 11, 12)
         rank = (1, 3, 3, 3)
         _ = random_tt(shape, rank)
+
+
+def test_random_tr():
+    """test for random.random_tr"""
+    shape = (10, 11, 12)
+    rank = (2, 4, 3, 2)
+    true_shapes = [(2, 10, 4), (4, 11, 3), (3, 12, 2)]
+
+    factors = random_tr(shape, rank, full=False)
+    for i, (true_shape, factor) in enumerate(zip(true_shapes, factors)):
+        assert_equal(factor.shape, true_shape,
+                err_msg=('{}-th factor has shape {}, expected {}'.format(
+                     i, factor.shape, true_shape)))
+
+    # Missing a rank
+    with np.testing.assert_raises(ValueError):
+        shape = (10, 11, 12)
+        rank = (2, 4, 2)
+        _ = random_tr(shape, rank)
+
+    # Not respecting the boundary rank conditions
+    with np.testing.assert_raises(ValueError):
+        shape = (10, 11, 12)
+        rank = (2, 3, 3, 3)
+        _ = random_tr(shape, rank)
