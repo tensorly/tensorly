@@ -11,8 +11,8 @@ def test_outer_product():
     rng = tl.check_random_state(1234)
 
     X = tl.tensor(rng.random_sample((4, 5, 6)))
-    Y = tl.tensor(rng.random_sample((3, 4, 7)))
-    Z = tl.tensor(rng.random_sample((2, 2)))
+    Y = tl.tensor(rng.random_sample((3, 4)))
+    Z = tl.tensor(rng.random_sample((2)))
     tdot = outer([X, Y, Z])
     true_dot = tenalg.batched_tensor_dot(X, Y, ())
     true_dot = tenalg.batched_tensor_dot(true_dot, Z, ())
@@ -31,8 +31,8 @@ def test_batched_outer_product():
     batch_size = 3
     
     X = tl.tensor(rng.random_sample((batch_size, 4, 5, 6)))
-    Y = tl.tensor(rng.random_sample((batch_size, 3, 7)))
-    Z = tl.tensor(rng.random_sample((batch_size, 2, 3)))
+    Y = tl.tensor(rng.random_sample((batch_size, 3)))
+    Z = tl.tensor(rng.random_sample((batch_size, 2)))
     res = batched_outer([X, Y, Z])
     true_res = tenalg.batched_tensor_dot(X, Y, (), batched_modes=0)
     true_res = tenalg.batched_tensor_dot(true_res, Z, (), batched_modes=0)

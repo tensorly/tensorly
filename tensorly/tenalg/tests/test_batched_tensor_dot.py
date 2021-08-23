@@ -3,6 +3,7 @@ import tensorly as tl
 from ...testing import assert_array_almost_equal, assert_raises, assert_
 from ... import random
 from ..import batched_tensor_dot
+import pytest
 
 
 def test_batched_tensor_dot():
@@ -46,9 +47,9 @@ def test_batched_tensor_dot():
         assert_array_almost_equal(res[i], true_res, decimal=5)
         
     # Test for actual tensordot
-    tensor = random.random_tensor((4, 2, 3, 3))
-    tensor2 = random.random_tensor((3, 4, 2, 3))
+    tensor = random.random_tensor((4, 3, 3))
+    tensor2 = random.random_tensor((3, 4, 2))
     res = batched_tensor_dot(tensor, tensor2, modes=(), batched_modes=())
-    assert_(res.shape == (4, 2, 3, 3, 3, 4, 2, 3))
+    assert_(res.shape == (4, 3, 3, 3, 4, 2))
     res = batched_tensor_dot(tensor, tensor2, modes=(), batched_modes=((0, ), (1, )))
-    assert_(res.shape == (4, 2, 3, 3, 3, 2, 3))
+    assert_(res.shape == (4, 3, 3, 3, 2))
