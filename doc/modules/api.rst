@@ -278,8 +278,8 @@ TensorLy provides you with all the tensor algebra functions you need:
     proximal.svd_thresholding
     proximal.procrustes
     inner
-    contract
-    tensor_dot
+    outer
+    batched_outer
     batched_tensor_dot
     higher_order_moment
 
