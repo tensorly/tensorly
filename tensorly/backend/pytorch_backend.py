@@ -188,7 +188,7 @@ class PyTorchBackend(Backend):
 # Register the other functions
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
              'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'tensordot',
-             'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 
+             'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 'matmul',
              'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
