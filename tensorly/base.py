@@ -110,7 +110,7 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
         new_shape = [tensor.shape[i] for i in range(skip_begin)] + new_shape
 
     if skip_end:
-        new_shape += [tensor.shape[-i] for i in range(skip_end)]
+        new_shape += [tensor.shape[-i] for i in range(1, 1 + skip_end)]
 
     return T.reshape(T.moveaxis(tensor, mode+skip_begin, skip_begin), new_shape)
 
