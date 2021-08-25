@@ -181,9 +181,10 @@ class PyTorchBackend(Backend):
         return torch.symeig(tensor, eigenvectors=True)
 
     @staticmethod
-    def svd(matrix, full_matrices=False):
-        full_matrices = (not full_matrices)
-        return torch.svd(matrix, some=full_matrices, compute_uv=True)
+    def svd(matrix, full_matrices=True):
+        some = not full_matrices
+        u, s, v = torch.svd(matrix, some=some, compute_uv=True)
+        return u, s, v.transpose(-2, -1).conj()
 
 # Register the other functions
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
