@@ -92,8 +92,17 @@ class TensorflowBackend(Backend):
             order = np.inf
         return tf.norm(tensor=tensor, ord=order, axis=axis)
 
-    def dot(self, tensor1, tensor2):
-        return tf.tensordot(tensor1, tensor2, axes=([self.ndim(tensor1) - 1], [0]))
+    def dot(self, a, b):
+        if self.ndim(a) > 2 and self.ndim(b) > 2:
+            return tf.tensordot(a, b, axes=([-1], [-2]))
+        if not self.ndim(a) or not self.ndim(b):
+            return a * b
+        return self.matmul(a, b)
+
+    def matmul(self, a, b):
+        if self.ndim(a) == 1 or self.ndim(b) == 1:
+            return tf.tensordot(a, b, 1)
+        return tf.linalg.matmul(a, b)
 
     @staticmethod
     def conj(x, *args, **kwargs):
@@ -198,7 +207,6 @@ _FUN_NAMES = [
     (tf.reduce_all, 'all'),
     (tf.einsum, 'einsum'),
     (tf.tensordot, 'tensordot'),
-    (tf.linalg.matmul, 'matmul'),
     (tfm.sin, 'sin'),
     (tfm.cos, 'cos'),
     (tfm.cumsum, 'cumsum'),
