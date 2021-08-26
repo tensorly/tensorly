@@ -280,7 +280,7 @@ TensorLy provides you with all the tensor algebra functions you need:
     inner
     outer
     batched_outer
-    batched_tensor_dot
+    tensordot
     higher_order_moment
 
 Tensor Algebra Backend
