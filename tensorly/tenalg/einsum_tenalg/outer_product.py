@@ -1,4 +1,4 @@
-from ._batched_tensor_dot import batched_tensor_dot
+from ._batched_tensordot import tensordot
 
 # Author: Jean Kossaifi
 
@@ -17,7 +17,7 @@ def outer(tensors):
     """
     for i, tensor in enumerate(tensors):
         if i:
-            res = batched_tensor_dot(res, tensor, modes=(), batched_modes=())
+            res = tensordot(res, tensor, modes=(), batched_modes=())
         else:
             res = tensor
     return res
@@ -36,7 +36,7 @@ def batched_outer(tensors):
     """
     for i, tensor in enumerate(tensors):
         if i:
-            res = batched_tensor_dot(res, tensor, modes=(), batched_modes=())
+            res = tensordot(res, tensor, modes=(), batched_modes=())
         else:
             res = tensor
     return res

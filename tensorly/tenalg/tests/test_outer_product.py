@@ -14,8 +14,8 @@ def test_outer_product():
     Y = tl.tensor(rng.random_sample((3, 4)))
     Z = tl.tensor(rng.random_sample((2)))
     tdot = outer([X, Y, Z])
-    true_dot = tenalg.batched_tensor_dot(X, Y, ())
-    true_dot = tenalg.batched_tensor_dot(true_dot, Z, ())
+    true_dot = tenalg.tensordot(X, Y, ())
+    true_dot = tenalg.tensordot(true_dot, Z, ())
     testing.assert_array_almost_equal(tdot, true_dot)
 
 
@@ -34,7 +34,7 @@ def test_batched_outer_product():
     Y = tl.tensor(rng.random_sample((batch_size, 3)))
     Z = tl.tensor(rng.random_sample((batch_size, 2)))
     res = batched_outer([X, Y, Z])
-    true_res = tenalg.batched_tensor_dot(X, Y, (), batched_modes=0)
-    true_res = tenalg.batched_tensor_dot(true_res, Z, (), batched_modes=0)
+    true_res = tenalg.tensordot(X, Y, (), batched_modes=0)
+    true_res = tenalg.tensordot(true_res, Z, (), batched_modes=0)
 
     testing.assert_array_almost_equal(res, true_res)

@@ -3,8 +3,8 @@ import tensorly as tl
 from math import prod
 
 
-def batched_tensor_dot(tensor1, tensor2, modes, batched_modes=()):
-    """Tensor contraction between two tensors on specified modes
+def tensordot(tensor1, tensor2, modes, batched_modes=()):
+    """Batched tensor contraction between two tensors on specified modes
     
     Parameters
     ----------

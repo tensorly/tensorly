@@ -14,7 +14,7 @@ from .core_tenalg import inner
 from .core_tenalg import outer, batched_outer
 from .core_tenalg import higher_order_moment
 from .core_tenalg import _tt_matrix_to_tensor
-from .core_tenalg import batched_tensor_dot
+from .core_tenalg import tensordot
 
 from . import core_tenalg as core
 from . import einsum_tenalg
@@ -129,7 +129,7 @@ khatri_rao = dynamically_dispatch_tenalg(khatri_rao)
 inner = dynamically_dispatch_tenalg(inner)
 outer = dynamically_dispatch_tenalg(outer)
 batched_outer = dynamically_dispatch_tenalg(batched_outer)
-batched_tensor_dot = dynamically_dispatch_tenalg(batched_tensor_dot)
+tensordot = dynamically_dispatch_tenalg(tensordot)
 higher_order_moment = dynamically_dispatch_tenalg(higher_order_moment)
 
 initialize_tenalg_backend()
