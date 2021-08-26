@@ -1,15 +1,40 @@
-from .. import outer
-from ... import cp_to_tensor
-from ...random import random_cp
-from ...testing import assert_array_almost_equal
+import tensorly as tl
+from tensorly import testing
+from tensorly import random
+from tensorly import tenalg
 
-def test_outer():
-    """Test for outer
+from .. import outer, batched_outer
+
+
+def test_outer_product():
+    """Test outer_dot"""
+    rng = tl.check_random_state(1234)
+
+    X = tl.tensor(rng.random_sample((4, 5, 6)))
+    Y = tl.tensor(rng.random_sample((3, 4)))
+    Z = tl.tensor(rng.random_sample((2)))
+    tdot = outer([X, Y, Z])
+    true_dot = tenalg.tensordot(X, Y, ())
+    true_dot = tenalg.tensordot(true_dot, Z, ())
+    testing.assert_array_almost_equal(tdot, true_dot)
+
+
+def test_batched_outer_product():
+    """Test batched_outer_dot
+
+    Notes
+    -----
+    At the time of writing, MXNet doesn't support transpose 
+    for tensors of order higher than 6
     """
-    rank = 3
-    weigths, factors = random_cp((3, 4, 2), rank=rank, normalise_factors=False)
-    true_rec = cp_to_tensor((weigths, factors))
-    rec = 0
-    for r in range(rank):
-        rec = rec + outer([f[:, r] for f in factors])
-    assert_array_almost_equal(true_rec, rec)
+    rng = tl.check_random_state(1234)
+    batch_size = 3
+    
+    X = tl.tensor(rng.random_sample((batch_size, 4, 5, 6)))
+    Y = tl.tensor(rng.random_sample((batch_size, 3)))
+    Z = tl.tensor(rng.random_sample((batch_size, 2)))
+    res = batched_outer([X, Y, Z])
+    true_res = tenalg.tensordot(X, Y, (), batched_modes=0)
+    true_res = tenalg.tensordot(true_res, Z, (), batched_modes=0)
+
+    testing.assert_array_almost_equal(res, true_res)
