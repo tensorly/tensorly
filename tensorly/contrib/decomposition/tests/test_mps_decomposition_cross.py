@@ -28,7 +28,7 @@ def test_tensor_train_cross_1():
 
     # Find TT decomposition of the tensor
     rank = [1, 3, 3, 1]
-    factors = tensor_train_cross(tensor, rank, tol=1e-5, n_iter_max=10)
+    factors = tensor_train_cross(tensor, rank, tol=1e-5, n_iter_max=10, random_state=1234)
     assert(len(factors) == d), "Number of factors should be 4, currently has " + str(len(factors))
 
     # Check that the ranks are correct and that the second mode of each factor
@@ -52,7 +52,7 @@ def test_tensor_train_cross_2():
 
     # Find TT decomposition of the tensor
     rank = [1, 2, 2, 3, 2, 2, 1]
-    factors = tensor_train_cross(tensor, rank)
+    factors = tensor_train_cross(tensor, rank, random_state=rng)
 
     for k in range(6):
         (r_prev, n_k, r_k) = factors[k].shape
@@ -75,7 +75,7 @@ def test_tensor_train_cross_3():
     ## Test 3
     tol = 10e-5
     tensor = tl.tensor(rng.random_sample([3, 3, 3]))
-    factors = tensor_train_cross(tensor, (1, 3, 3, 1))
+    factors = tensor_train_cross(tensor, (1, 3, 3, 1), random_state=rng)
     reconstructed_tensor = tt_to_tensor(factors)
     error = tl.norm(reconstructed_tensor - tensor, 2)
     error /= tl.norm(tensor, 2)
@@ -129,7 +129,7 @@ def test_tensor_train_cross_4():
 
     # Find TT decomposition of the tensor
     rank = [1, 4, 4, 4, 1]
-    factors = tensor_train_cross(value, rank, tol=tol)
+    factors = tensor_train_cross(value, rank, tol=tol, random_state=rng)
 
     approx = tt_to_tensor(factors)
     error = tl.norm(approx-value,2)

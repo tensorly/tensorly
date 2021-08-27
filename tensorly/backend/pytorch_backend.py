@@ -99,6 +99,14 @@ class PyTorchBackend(Backend):
         return torch.norm(tensor, **kwds)
 
     @staticmethod
+    def dot(a, b):
+        if a.ndim > 2 and b.ndim > 2:
+            return torch.tensordot(a, b, dims=([-1], [-2]))
+        if not a.ndim or not b.ndim:
+            return a * b
+        return torch.matmul(a, b)
+
+    @staticmethod
     def mean(tensor, axis=None):
         if axis is None:
             return torch.mean(tensor)
@@ -181,18 +189,18 @@ class PyTorchBackend(Backend):
         return torch.symeig(tensor, eigenvectors=True)
 
     @staticmethod
-    def svd(matrix, full_matrices=False):
-        full_matrices = (not full_matrices)
-        return torch.svd(matrix, some=full_matrices, compute_uv=True)
+    def svd(matrix, full_matrices=True):
+        some = not full_matrices
+        u, s, v = torch.svd(matrix, some=some, compute_uv=True)
+        return u, s, v.transpose(-2, -1).conj()
 
 # Register the other functions
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
-             'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum',
-             'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 
+             'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'tensordot',
+             'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 'matmul',
              'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
-PyTorchBackend.register_method('dot', torch.matmul)
 
 # PyTorch 1.8.0 has a much better NumPy interface but somoe haven't updated yet
 if LooseVersion(torch.__version__) < LooseVersion('1.8.0'):

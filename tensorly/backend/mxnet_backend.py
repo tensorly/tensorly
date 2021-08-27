@@ -102,7 +102,7 @@ class MxnetBackend(Backend):
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'trace', 'any',
-             'zeros_like', 'eye', 'concatenate', 'max', 'min', 'flip',
+             'zeros_like', 'eye', 'concatenate', 'max', 'min', 'flip', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
     MxnetBackend.register_method(name, getattr(np, name))

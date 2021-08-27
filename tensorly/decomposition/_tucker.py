@@ -7,6 +7,7 @@ import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
+from collections.abc import Iterable
 from tensorly.decomposition._nn_cp import make_svd_non_negative
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -363,7 +364,8 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         return tensor
     
 def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-8,
-                             sparsity_coefficients=None, fixed_modes=None, random_state=None,
+                             sparsity_coefficients=None, core_sparsity_coefficient=None,
+                             fixed_modes=None, random_state=None,
                              verbose=False, normalize_factors=False, return_errors=False, exact=False, 
                              algorithm='fista'):
     """
@@ -375,8 +377,9 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     Parameters
     ----------
     tensor : ndarray
-    rank   : int
-            number of components
+    rank : None, int or int list
+        size of the core tensor, ``(len(ranks) == tensor.ndim)``
+        if int, the same rank is used for all modes
     n_iter_max : int
             maximum number of iteration
     init : {'svd', 'random'}, optional
@@ -388,8 +391,10 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         Default: 1e-8
     sparsity_coefficients : array of float (as much as the number of modes)
         The sparsity coefficients are used for each factor
-        If algorithm is fista, last coefficient is used when updating core
         If set to None, the algorithm is computed without sparsity
+        Default: None
+    core_sparsity_coefficient : array of float. This coefficient imposes sparsity on core
+        when it is updated with fista.
         Default: None
     fixed_modes : array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
@@ -406,8 +411,8 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         If it is False, the algorithm gives an approximate solution.
         Default: False
     algorithm : {'fista', 'active_set'}
-         Non negative least square solution to update the core. 
-         Default: 'fista'
+        Non negative least square solution to update the core. 
+        Default: 'fista'
     Returns
     -------
     factors : ndarray list
@@ -460,7 +465,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     """
     rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
     n_modes = tl.ndim(tensor)
-    if sparsity_coefficients is None or len(sparsity_coefficients) != n_modes:
+    if sparsity_coefficients is None or not isinstance(sparsity_coefficients, Iterable):
         sparsity_coefficients = [sparsity_coefficients] * n_modes
 
     if fixed_modes is None:
@@ -511,7 +516,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
             for MtM in pseudo_inverse:
                 learning_rate *= 1 / (tl.partial_svd(MtM)[1][0])
             nn_core = fista(core_estimation, pseudo_inverse, x=nn_core, n_iter_max=n_iter_max,
-                            sparsity_coef=sparsity_coefficients[-1], lr=learning_rate,)
+                            sparsity_coef=core_sparsity_coefficient, lr=learning_rate,)
         if algorithm == 'active_set':
             pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
             core_estimation_vec = tl.base.tensor_to_vec(tl.tenalg.mode_dot(tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]))

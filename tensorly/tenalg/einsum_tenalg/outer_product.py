@@ -1,25 +1,42 @@
-from ... import backend as tl
+from ._batched_tensordot import tensordot
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
 
-def outer(vectors, weights=None):
-    """Returns the outer product of vectors
+def outer(tensors):
+    """Returns the outer product of tensors
 
     Parameters
     ----------
-    vectors : 1-D tensor list
-        list of vectors
+    tensors : tensor list
 
     Returns
     -------
-    tensor of order len(vectors) with tensor.shape[i] == len(vectors[i])
+    outer (tensor) product of the tensors
     """
-    if weights is not None:
-        vec, *vectors = vectors
-        vectors = [vec*weights, *vectors]
-    start = ord('a')
-    symbols = [chr(start + i) for i in range(len(vectors))]
-    equation = ','.join(symbols) + '->' + ''.join(symbols)
-    return tl.einsum(equation, *vectors)
+    for i, tensor in enumerate(tensors):
+        if i:
+            res = tensordot(res, tensor, modes=(), batched_modes=())
+        else:
+            res = tensor
+    return res
+
+def batched_outer(tensors):
+    """Returns the outer product of tensors
+
+    Parameters
+    ----------
+    tensors : tensor list
+        list of tensors of shape (batch-size, I_1, ..., I_N)
+
+    Returns
+    -------
+    batched outer (tensor) product of the tensors
+    """
+    for i, tensor in enumerate(tensors):
+        if i:
+            res = tensordot(res, tensor, modes=(), batched_modes=())
+        else:
+            res = tensor
+    return res

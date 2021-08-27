@@ -625,6 +625,59 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def matmul(a, b):
+        """Matrix multiplication of tensors representing (batches of) matrices
+
+        Parameters
+        ----------
+        a : tl.tensor
+            [description]
+        b : tl.tensor
+            tensors representing the matrices to contract
+
+        Returns
+        -------
+        a @ b
+            matrix product of a and b
+
+        Notes
+        -----
+        The behavior depends on the arguments in the following way.
+
+            * If both arguments are 2-D they are multiplied like conventional matrices.
+
+            * If either argument is N-D, N > 2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
+
+            * If the first argument is 1-D, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
+
+            * If the second argument is 1-D, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+        
+        `matmul` differs from dot in two important ways:
+
+           * Multiplication by scalars is not allowed, use * instead.
+
+           * Stacks of matrices are broadcast together as if the matrices were elements, respecting the signature ``(n,k),(k,m)->(n,m)``:
+
+           .. code-block:: python
+
+              >>> a = np.ones([9, 5, 7, 4])
+
+              >>> c = np.ones([9, 5, 4, 3])
+
+              >>> np.dot(a, c).shape
+              (9, 5, 7, 9, 5, 3)
+
+              >>> np.matmul(a, c).shape
+              (9, 5, 7, 3)
+
+              >>> # n is 7, k is 4, m is 3
+
+        The matmul function implements the semantics of the ``@`` operator introduced in Python 3.5 following `PEP 465 <https://www.python.org/dev/peps/pep-0465/>`_.
+        """
+        raise NotImplementedError
+
+
+    @staticmethod
     def tensordot(a, b, axes=2):
         """
         Compute tensor dot product along specified axes.

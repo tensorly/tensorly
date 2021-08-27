@@ -3,7 +3,7 @@ from ...tt_tensor import tt_to_tensor
 import numpy as np
 
 
-def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
+def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_state=None):
     """TT (tensor-train) decomposition via cross-approximation (TTcross) [1]
 
     Decomposes `input_tensor` into a sequence of order-3 tensors of given rank. (factors/cores)
@@ -30,6 +30,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
             accuracy threshold for outer while-loop
     n_iter_max : int
             maximum iterations of outer while-loop (the 'crosses' or 'sweeps' sampled)
+    random_state : {None, int, np.random.RandomState}
 
     Returns
     -------
@@ -115,8 +116,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100):
     # list row_idx: row indices    (left indices)  for skeleton-decomposition: indicate which rows used in each core.
 
     # Initialize indice: random selection of column indices
-    random_seed = None
-    rng = tl.check_random_state(random_seed)
+    rng = tl.check_random_state(random_state)
 
     col_idx = [None] * tensor_order
     for k_col_idx in range(tensor_order - 1):

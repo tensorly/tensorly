@@ -10,12 +10,12 @@ import warnings
 from .core_tenalg import mode_dot, multi_mode_dot
 from .core_tenalg import kronecker
 from .core_tenalg import khatri_rao
-from .core_tenalg import inner, outer
-from .core_tenalg import contract
-from .core_tenalg import tensor_dot, batched_tensor_dot
+from .core_tenalg import inner
+from .core_tenalg import outer, batched_outer
 from .core_tenalg import higher_order_moment
 from .core_tenalg import _tt_matrix_to_tensor
 from .core_tenalg import solve_least_squares
+from .core_tenalg import tensordot
 
 from . import core_tenalg as core
 from . import einsum_tenalg
@@ -128,10 +128,9 @@ multi_mode_dot = dynamically_dispatch_tenalg(multi_mode_dot)
 kronecker = dynamically_dispatch_tenalg(kronecker)
 khatri_rao = dynamically_dispatch_tenalg(khatri_rao)
 inner = dynamically_dispatch_tenalg(inner)
-contract = dynamically_dispatch_tenalg(contract)
 outer = dynamically_dispatch_tenalg(outer)
-tensor_dot = dynamically_dispatch_tenalg(tensor_dot)
-batched_tensor_dot = dynamically_dispatch_tenalg(batched_tensor_dot)
+batched_outer = dynamically_dispatch_tenalg(batched_outer)
+tensordot = dynamically_dispatch_tenalg(tensordot)
 higher_order_moment = dynamically_dispatch_tenalg(higher_order_moment)
 solve_least_squares = dynamically_dispatch_tenalg(solve_least_squares)
 

@@ -4,6 +4,7 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 from ..tt_tensor import tt_to_tensor, TTTensor, validate_tt_rank
 from ..tt_matrix import tt_matrix_to_tensor, TTMatrix, validate_tt_matrix_rank
+from ..tr_tensor import TRTensor, tr_to_tensor, validate_tr_rank
 from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor
 from .. import backend as T
 from ..utils import DefineDeprecated
@@ -237,6 +238,51 @@ def random_tt_matrix(shape, rank, full=False, random_state=None, **context):
         return tt_matrix_to_tensor(factors)
     else:
         return TTMatrix(factors)
+
+
+def random_tr(shape, rank, full=False, random_state=None, **context):
+    """Generates a random TR tensor
+
+    Parameters
+    ----------
+    shape : tuple
+        shape of the tensor to generate
+    rank : List[int]
+        rank of the TR decomposition
+        must verify rank[0] == rank[-1] (boundary conditions)
+        and len(rank) == len(shape)+1
+    full : bool, optional, default is False
+        if True, a full tensor is returned
+        otherwise, the decomposed tensor is returned
+    random_state : `np.random.RandomState`
+    context : dict
+        context in which to create the tensor
+
+    Returns
+    -------
+    TR_tensor : ND-array or 3D-array list
+        * ND-array : full tensor if `full` is True
+        * 3D-array list : list of factors otherwise
+    """
+    n_dim = len(shape)
+
+    rank = validate_tr_rank(shape, rank)
+
+    # Make sure it's not a tuple but a list
+    rank = list(rank)
+
+    # Initialization
+    if rank[0] != rank[-1]:
+        message = f'Provided rank[0] == {rank[0]} and rank[-1] == {rank[-1]} but boundary conditions dictatate rank[0] == rank[-1].'
+        raise ValueError(message)
+
+    rns = T.check_random_state(random_state)
+    factors = [T.tensor(rns.random_sample((rank[i], s, rank[i + 1])), **context) for i, s in enumerate(shape)]
+
+    if full:
+        return tr_to_tensor(factors)
+    else:
+        return TRTensor(factors)
 
 
 random_kruskal = DefineDeprecated(deprecated_name='random_kruskal', use_instead=random_cp)
