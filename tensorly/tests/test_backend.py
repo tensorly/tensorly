@@ -173,10 +173,12 @@ def test_svd():
 
         # Test for singular matrices (some eigenvals will be zero)
         # Rank at most 5
-        matrix = T.tensor(np.dot(np.random.random((20, 5)), np.random.random((5, 20))))
-        U, S, V = tl.partial_svd(matrix, n_eigenvecs=n)
+        matrix = tl.dot(tl.randn((20, 5), seed=12), tl.randn((5, 20), seed=23))
+        U, S, V = tl.partial_svd(matrix, n_eigenvecs=6, random_state=0)
         true_rec_error = tl.sum((matrix - tl.dot(U, tl.reshape(S, (-1, 1))*V))**2)
         assert_(true_rec_error <= tol)
+        assert_(np.isfinite(T.to_numpy(U)).all(), msg="Left singular vectors are not finite")
+        assert_(np.isfinite(T.to_numpy(V)).all(), msg="Right singular vectors are not finite")
 
         # Test if partial_svd returns the same result for the same setting
         matrix = T.tensor(np.random.random((20, 5)))
