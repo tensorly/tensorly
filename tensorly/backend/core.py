@@ -1076,13 +1076,15 @@ class Backend(object):
                 S, U = scipy.sparse.linalg.eigsh(
                     np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
                 )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+                S = np.sqrt(np.clip(S, 0, None))
+                S = np.clip(S, np.finfo(S.dtype).eps, None)  # To avoid divide by zero warning on next line
                 V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
             else:
                 S, V = scipy.sparse.linalg.eigsh(
                     np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
                 )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+                S = np.sqrt(np.clip(S, 0, None))
+                S = np.clip(S, np.finfo(S.dtype).eps, None)
                 U = np.dot(matrix, V) * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
 
             # WARNING: here, V is still the transpose of what it should be
