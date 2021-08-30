@@ -161,7 +161,7 @@ def test_svd():
             assert_(left_orthogonality_error <= tol_orthogonality,
                 msg='Left eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                         name, tl.get_backend(), n, s))
-            right_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+            right_orthogonality_error = T.norm(T.dot(fV, T.transpose(fV)) - T.eye(n))
             assert_(right_orthogonality_error <= tol_orthogonality,
                 msg='Right eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                     name, tl.get_backend(), n, s))
