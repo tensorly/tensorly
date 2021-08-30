@@ -91,7 +91,12 @@ class MxnetBackend(Backend):
             U, S, V = np.linalg.svd(X)
         
         return U, S, V
-    
+
+    @staticmethod
+    def lstsq(a, b):
+        x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None)
+        return x, residuals
+
     @staticmethod
     def sort(tensor, axis, descending = False):
         if descending:

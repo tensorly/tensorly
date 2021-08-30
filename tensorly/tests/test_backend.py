@@ -119,7 +119,7 @@ def test_svd_time():
     _ = tl.partial_svd(M, 4)
     t = time() - t
     assert_(t <= 0.1, f'Partial_SVD took too long, maybe full_matrices set wrongly')
-    
+
     M = tl.tensor(np.random.random_sample((10000, 4)))
     t = time()
     _ = tl.partial_svd(M, 4)
@@ -309,6 +309,30 @@ def test_where():
         result = T.where(*args)
         expected = np.where(*map(T.to_numpy, args))
         assert_array_equal(result, expected)
+
+
+def test_lstsq():
+    m, n, k = 4, 3, 2
+
+    # test dimensions
+    a = T.randn((m, n))
+    b = T.randn((m, k))
+    x, res = T.lstsq(a, b)
+    assert_equal(x.shape, (n, k))
+
+    # test residuals
+    assert_array_almost_equal(T.norm(T.dot(a, x) - b, axis=0) ** 2, res)
+    rank = 2
+    a = T.dot(T.randn((m, rank)), T.randn((rank, n)))
+    _, res = T.lstsq(a, b)
+    assert_array_almost_equal(tl.tensor([]), res)
+
+    # test least squares solution
+    a = T.randn((m, n))
+    x = T.randn((n, ))
+    b = T.dot(a, x)
+    x_lstsq, res = T.lstsq(a, b)
+    assert_array_almost_equal(T.dot(a, x_lstsq), b, decimal=5)
 
 
 def test_qr():

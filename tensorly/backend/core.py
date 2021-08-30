@@ -746,6 +746,30 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def lstsq(a, b):
+        """Computes a solution to the least squares problem :math:`||ax-b||_F`
+
+        If the coefficient martix is underdetermined (m<n) and multiple
+        solutions exist, the min norm solution is returned.
+
+        Parameters
+        ----------
+        a : tensor, shape (M, N)
+            The coefficient matrix.
+        b : tensor, shape (M,) or (M, K)
+             The ordinate values.
+
+        Returns
+        -------
+        x : tensor, shape (N,) or (N, K)
+            Solution to the least squares problem :math:`||ax-b||_F`.
+        residuals : tensor, shape (K,)
+            Sums of squared residuals: Squared Euclidean 2-norm for each column in ax-b.
+            If the rank of a is < N or M <= N, this is an empty tensor.
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def qr(a):
         """Compute the qr factorization of a matrix.
 
