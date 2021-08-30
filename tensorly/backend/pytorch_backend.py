@@ -121,7 +121,7 @@ class PyTorchBackend(Backend):
             return torch.sum(tensor)
         else:
             return torch.sum(tensor, dim=axis)
-    
+
     @staticmethod
     def flip(tensor, axis=None):
         if isinstance(axis, int):
@@ -147,7 +147,7 @@ class PyTorchBackend(Backend):
     @staticmethod
     def stack(arrays, axis=0):
         return torch.stack(arrays, dim=axis)
-    
+
     @staticmethod
     def sort(tensor, axis, descending = False):
         if axis is None:
@@ -188,9 +188,14 @@ class PyTorchBackend(Backend):
     @staticmethod
     def lstsq(a, b):
         if linalg_lstsq_avail:
-            return torch.linalg.lstsq(a, b, rcond=None)[0]
+            x, residuals, _, _ = torch.linalg.lstsq(a, b, rcond=None, driver='gelsd')
+            return x, residuals
         else:
-            return torch.lstsq(b, a)[0][:a.shape[1]]
+            n = a.shape[1]
+            sol = torch.lstsq(b, a)[0]
+            x = sol[:n]
+            residuals = torch.norm(sol[n:], dim=0) ** 2
+            return x, residuals if torch.matrix_rank(a) == n else torch.tensor([], device=x.device)
 
     @staticmethod
     def eigh(tensor):

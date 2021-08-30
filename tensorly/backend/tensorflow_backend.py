@@ -147,9 +147,13 @@ class TensorflowBackend(Backend):
 
     @staticmethod
     def lstsq(a, b):
+        n = a.shape[1]
         if tf.rank(b) == 1:
-            return tf.squeeze(tf.linalg.lstsq(a, tf.expand_dims(b, -1)), -1)
-        return tf.linalg.lstsq(a, b)
+            x = tf.squeeze(tf.linalg.lstsq(a, tf.expand_dims(b, -1), fast=False), -1)
+        else:
+            x = tf.linalg.lstsq(a, b, fast=False)
+        residuals = tf.norm(tf.tensordot(a, x, 1) - b, axis=0) ** 2
+        return x, residuals if tf.linalg.matrix_rank(a) == n else tf.constant([])
 
     def svd(self, matrix, full_matrices):
         """ Correct for the atypical return order of tf.linalg.svd. """

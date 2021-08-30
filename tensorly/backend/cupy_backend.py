@@ -47,7 +47,8 @@ class CupyBackend(Backend):
 
     @staticmethod
     def lstsq(a, b):
-        return cp.linalg.lstsq(a, b, rcond=None)[0]
+        x, residuals, _, _ = cp.linalg.lstsq(a, b, rcond=None)
+        return x, residuals
 
     @staticmethod
     def sort(tensor, axis, descending = False):

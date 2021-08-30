@@ -763,6 +763,9 @@ class Backend(object):
         -------
         x : tensor, shape (N,) or (N, K)
             Solution to the least squares problem :math:`||ax-b||_F`.
+        residuals : tensor, shape (K,)
+            Sums of squared residuals: Squared Euclidean 2-norm for each column in ax-b.
+            If the rank of a is < N or M <= N, this is an empty tensor.
         """
         raise NotImplementedError
 
