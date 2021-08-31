@@ -149,6 +149,10 @@ class PyTorchBackend(Backend):
         return torch.stack(arrays, dim=axis)
 
     @staticmethod
+    def diag(tensor, k=0):
+        return torch.diag(tensor, diagonal=k)
+
+    @staticmethod
     def sort(tensor, axis, descending = False):
         if axis is None:
             tensor = tensor.flatten()
@@ -212,7 +216,7 @@ class PyTorchBackend(Backend):
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
              'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'tensordot',
              'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 'matmul',
-             'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
+             'sqrt', 'sign', 'where', 'conj', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 
