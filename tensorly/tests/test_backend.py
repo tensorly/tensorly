@@ -161,7 +161,7 @@ def test_svd():
             assert_(left_orthogonality_error <= tol_orthogonality,
                 msg='Left eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                         name, tl.get_backend(), n, s))
-            right_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+            right_orthogonality_error = T.norm(T.dot(fV, T.transpose(fV)) - T.eye(n))
             assert_(right_orthogonality_error <= tol_orthogonality,
                 msg='Right eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                     name, tl.get_backend(), n, s))
@@ -179,6 +179,14 @@ def test_svd():
         assert_(true_rec_error <= tol)
         assert_(np.isfinite(T.to_numpy(U)).all(), msg="Left singular vectors are not finite")
         assert_(np.isfinite(T.to_numpy(V)).all(), msg="Right singular vectors are not finite")
+
+        # Test orthonormality when  max_dim > n_eigenvecs > matrix_rank
+        matrix = tl.dot(tl.randn((4, 2), seed=1), tl.randn((2, 4), seed=12))
+        U, S, V = tl.partial_svd(matrix, n_eigenvecs=3, random_state=0)
+        left_orthogonality_error = T.norm(T.dot(T.transpose(U), U) - T.eye(3))
+        assert_(left_orthogonality_error <= tol_orthogonality)
+        right_orthogonality_error = T.norm(T.dot(V, T.transpose(V)) - T.eye(3))
+        assert_(right_orthogonality_error <= tol_orthogonality)
 
         # Test if partial_svd returns the same result for the same setting
         matrix = T.tensor(np.random.random((20, 5)))

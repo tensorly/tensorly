@@ -1079,6 +1079,9 @@ class Backend(object):
                 S = np.sqrt(np.clip(S, 0, None))
                 S = np.clip(S, np.finfo(S.dtype).eps, None)  # To avoid divide by zero warning on next line
                 V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
+                U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+                V, R = np.linalg.qr(V)
+                V = V * (2*(np.diag(R) >= 0) - 1)  # we can't use np.sign because np.sign(0) == 0
             else:
                 S, V = scipy.sparse.linalg.eigsh(
                     np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
@@ -1086,9 +1089,11 @@ class Backend(object):
                 S = np.sqrt(np.clip(S, 0, None))
                 S = np.clip(S, np.finfo(S.dtype).eps, None)
                 U = np.dot(matrix, V) * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
+                U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+                U, R = np.linalg.qr(U)
+                U = U * (2*(np.diag(R) >= 0) - 1)
 
             # WARNING: here, V is still the transpose of what it should be
-            U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
             V = V.T.conj()
 
         if flip:
