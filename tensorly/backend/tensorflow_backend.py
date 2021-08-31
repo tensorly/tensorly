@@ -191,7 +191,7 @@ _FUN_NAMES = [
     (np.complex64, 'complex64'),
     (tf.ones, 'ones'),
     (tf.zeros, 'zeros'),
-    (tf.linalg.tensor_diag, 'diag'),
+    (tf.linalg.diag, 'diag'),
     (tf.zeros_like, 'zeros_like'),
     (tf.eye, 'eye'),
     (tf.reshape, 'reshape'),
