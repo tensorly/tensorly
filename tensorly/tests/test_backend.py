@@ -321,6 +321,24 @@ def test_where():
         assert_array_equal(result, expected)
 
 
+def test_matmul():
+    # 1-dim x n-dim
+    a = tl.randn((4,))
+    b = tl.randn((2, 3, 4, 5))
+    res = tl.matmul(a, b)
+    assert_equal(res.shape, (2, 3, 5))
+
+    # n_dim x 1-dim
+    a = tl.randn((5,))
+    res = tl.matmul(b, a)
+    assert_equal(res.shape, (2, 3, 4))
+
+    # n-dim x n-dim
+    a = tl.randn((2, 3, 6, 4))
+    res = tl.matmul(a, b)
+    assert_equal(res.shape, (2, 3, 6, 5))
+
+
 def test_lstsq():
     m, n, k = 4, 3, 2
 
