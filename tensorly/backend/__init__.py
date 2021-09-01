@@ -181,6 +181,7 @@ def dispatch(method):
 
 # Generic methods, exposed as part of the public API
 check_random_state = dispatch(Backend.check_random_state)
+randn = dispatch(Backend.randn)
 context = dispatch(Backend.context)
 tensor = dispatch(Backend.tensor)
 is_tensor = dispatch(Backend.is_tensor)
@@ -213,6 +214,7 @@ abs = dispatch(Backend.abs)
 sqrt = dispatch(Backend.sqrt)
 norm = dispatch(Backend.norm)
 dot = dispatch(Backend.dot)
+matmul = dispatch(Backend.matmul)
 kron = dispatch(Backend.kron)
 solve = dispatch(Backend.solve)
 lstsq = dispatch(Backend.lstsq)
