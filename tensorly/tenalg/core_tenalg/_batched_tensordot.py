@@ -1,7 +1,6 @@
 from ..tenalg_utils import _validate_contraction_modes
 from ...utils import prod
 import tensorly as tl
-from math import prod
 
 
 def tensordot(tensor1, tensor2, modes, batched_modes=()):
