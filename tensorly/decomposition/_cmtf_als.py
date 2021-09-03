@@ -1,6 +1,5 @@
 import tensorly as tl
 from ..tenalg import khatri_rao
-from ..tenalg import solve_least_squares
 from ..cp_tensor import CPTensor, validate_cp_rank, cp_to_tensor, cp_normalize
 from ._cp import initialize_cp
 
@@ -78,7 +77,7 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
     # note that the order of the khatri rao product is reversed since tl.unfold has another order
     # than assumed in paper
     for iteration in range(n_iter_max):
-        V = tl.transpose(solve_least_squares(tensor_cp.factors[0], matrix))
+        V = tl.transpose(tl.lstsq(tensor_cp.factors[0], matrix)[0])
 
         # Loop over modes of the tensor
         for ii in range(tl.ndim(tensor_3d)):
@@ -90,7 +89,7 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
                 kr = tl.concatenate((kr, V), axis=0)
                 unfolded = tl.concatenate((unfolded, matrix), axis=1)
 
-            tensor_cp.factors[ii] = tl.transpose(solve_least_squares(kr, tl.transpose(unfolded)))
+            tensor_cp.factors[ii] = tl.transpose(tl.lstsq(kr, tl.transpose(unfolded))[0])
 
         error_new = tl.norm(
             tensor_3d - cp_to_tensor(tensor_cp)) ** 2 + tl.norm(
