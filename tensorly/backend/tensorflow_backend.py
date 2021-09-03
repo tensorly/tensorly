@@ -100,8 +100,10 @@ class TensorflowBackend(Backend):
         return self.matmul(a, b)
 
     def matmul(self, a, b):
-        if self.ndim(a) == 1 or self.ndim(b) == 1:
+        if self.ndim(b) == 1:
             return tf.tensordot(a, b, 1)
+        if self.ndim(a) == 1:
+            return tf.tensordot(a, b, axes=([-1], [-2]))
         return tf.linalg.matmul(a, b)
 
     @staticmethod
