@@ -1,5 +1,6 @@
-import tensorly as tl 
+import tensorly as tl
 from . import batched_outer
+
 
 def higher_order_moment(tensor, order):
     """Computes the Higher-Order Momemt
