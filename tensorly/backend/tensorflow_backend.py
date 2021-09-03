@@ -203,7 +203,6 @@ _FUN_NAMES = [
     (tf.linalg.qr, 'qr'),
     (tf.linalg.eigh, 'eigh'),
     (tf.linalg.trace, 'trace'),
-    (tf.linalg.lstsq, 'lstsq'),
     (tf.argmin, 'argmin'),
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),

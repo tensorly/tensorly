@@ -89,7 +89,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
              'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
     JaxBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr', 'svd', 'eigh', 'lstsq']:
+for name in ['solve', 'qr', 'svd', 'eigh']:
     JaxBackend.register_method(name, getattr(np.linalg, name))
 
 for name in ['index', 'index_update']:
