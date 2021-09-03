@@ -14,7 +14,6 @@ from .core_tenalg import inner
 from .core_tenalg import outer, batched_outer
 from .core_tenalg import higher_order_moment
 from .core_tenalg import _tt_matrix_to_tensor
-from .core_tenalg import solve_least_squares
 from .core_tenalg import tensordot
 
 from . import core_tenalg as core
@@ -132,6 +131,5 @@ outer = dynamically_dispatch_tenalg(outer)
 batched_outer = dynamically_dispatch_tenalg(batched_outer)
 tensordot = dynamically_dispatch_tenalg(tensordot)
 higher_order_moment = dynamically_dispatch_tenalg(higher_order_moment)
-solve_least_squares = dynamically_dispatch_tenalg(solve_least_squares)
 
 initialize_tenalg_backend()

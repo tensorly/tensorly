@@ -5,5 +5,4 @@ from .generalised_inner_product import inner
 from .outer_product import outer, batched_outer
 from .moments import higher_order_moment
 from ._tt_matrix import tt_matrix_to_tensor as _tt_matrix_to_tensor
-from .least_squares import solve_least_squares
 from ._batched_tensordot import tensordot
