@@ -13,6 +13,8 @@ import numpy as np
 
 from .core import Backend
 
+linalg_lstsq_avail = LooseVersion(torch.__version__) >= LooseVersion('1.9.0')
+
 
 class PyTorchBackend(Backend):
     backend_name = 'pytorch'
@@ -119,7 +121,7 @@ class PyTorchBackend(Backend):
             return torch.sum(tensor)
         else:
             return torch.sum(tensor, dim=axis)
-    
+
     @staticmethod
     def flip(tensor, axis=None):
         if isinstance(axis, int):
@@ -145,7 +147,11 @@ class PyTorchBackend(Backend):
     @staticmethod
     def stack(arrays, axis=0):
         return torch.stack(arrays, dim=axis)
-    
+
+    @staticmethod
+    def diag(tensor, k=0):
+        return torch.diag(tensor, diagonal=k)
+
     @staticmethod
     def sort(tensor, axis, descending = False):
         if axis is None:
@@ -184,6 +190,18 @@ class PyTorchBackend(Backend):
         return solution
 
     @staticmethod
+    def lstsq(a, b):
+        if linalg_lstsq_avail:
+            x, residuals, _, _ = torch.linalg.lstsq(a, b, rcond=None, driver='gelsd')
+            return x, residuals
+        else:
+            n = a.shape[1]
+            sol = torch.lstsq(b, a)[0]
+            x = sol[:n]
+            residuals = torch.norm(sol[n:], dim=0) ** 2
+            return x, residuals if torch.matrix_rank(a) == n else torch.tensor([], device=x.device)
+
+    @staticmethod
     def eigh(tensor):
         """Legacy only, deprecated from PyTorch 1.8.0"""
         return torch.symeig(tensor, eigenvectors=True)
@@ -198,7 +216,7 @@ class PyTorchBackend(Backend):
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
              'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'tensordot',
              'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 'matmul',
-             'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
+             'sqrt', 'sign', 'where', 'conj', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 

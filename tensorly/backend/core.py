@@ -746,6 +746,30 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def lstsq(a, b):
+        """Computes a solution to the least squares problem :math:`||ax-b||_F`
+
+        If the coefficient martix is underdetermined (m<n) and multiple
+        solutions exist, the min norm solution is returned.
+
+        Parameters
+        ----------
+        a : tensor, shape (M, N)
+            The coefficient matrix.
+        b : tensor, shape (M,) or (M, K)
+             The ordinate values.
+
+        Returns
+        -------
+        x : tensor, shape (N,) or (N, K)
+            Solution to the least squares problem :math:`||ax-b||_F`.
+        residuals : tensor, shape (K,)
+            Sums of squared residuals: Squared Euclidean 2-norm for each column in ax-b.
+            If the rank of a is < N or M <= N, this is an empty tensor.
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def qr(a):
         """Compute the qr factorization of a matrix.
 
@@ -1052,17 +1076,24 @@ class Backend(object):
                 S, U = scipy.sparse.linalg.eigsh(
                     np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
                 )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+                S = np.sqrt(np.clip(S, 0, None))
+                S = np.clip(S, np.finfo(S.dtype).eps, None)  # To avoid divide by zero warning on next line
                 V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
+                U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+                V, R = np.linalg.qr(V)
+                V = V * (2*(np.diag(R) >= 0) - 1)  # we can't use np.sign because np.sign(0) == 0
             else:
                 S, V = scipy.sparse.linalg.eigsh(
                     np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
                 )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
+                S = np.sqrt(np.clip(S, 0, None))
+                S = np.clip(S, np.finfo(S.dtype).eps, None)
                 U = np.dot(matrix, V) * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
+                U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
+                U, R = np.linalg.qr(U)
+                U = U * (2*(np.diag(R) >= 0) - 1)
 
             # WARNING: here, V is still the transpose of what it should be
-            U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
             V = V.T.conj()
 
         if flip:

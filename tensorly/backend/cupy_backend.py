@@ -46,6 +46,11 @@ class CupyBackend(Backend):
         return cp.clip(tensor, a_min, a_max)
 
     @staticmethod
+    def lstsq(a, b):
+        x, residuals, _, _ = cp.linalg.lstsq(a, b, rcond=None)
+        return x, residuals
+
+    @staticmethod
     def sort(tensor, axis, descending = False):
         if descending:
             return cp.flip(cp.sort(tensor, axis=axis), axis = axis)

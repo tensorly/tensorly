@@ -119,7 +119,7 @@ def test_svd_time():
     _ = tl.partial_svd(M, 4)
     t = time() - t
     assert_(t <= 0.1, f'Partial_SVD took too long, maybe full_matrices set wrongly')
-    
+
     M = tl.tensor(np.random.random_sample((10000, 4)))
     t = time()
     _ = tl.partial_svd(M, 4)
@@ -161,7 +161,7 @@ def test_svd():
             assert_(left_orthogonality_error <= tol_orthogonality,
                 msg='Left eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                         name, tl.get_backend(), n, s))
-            right_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+            right_orthogonality_error = T.norm(T.dot(fV, T.transpose(fV)) - T.eye(n))
             assert_(right_orthogonality_error <= tol_orthogonality,
                 msg='Right eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                     name, tl.get_backend(), n, s))
@@ -173,10 +173,20 @@ def test_svd():
 
         # Test for singular matrices (some eigenvals will be zero)
         # Rank at most 5
-        matrix = T.tensor(np.dot(np.random.random((20, 5)), np.random.random((5, 20))))
-        U, S, V = tl.partial_svd(matrix, n_eigenvecs=n)
+        matrix = tl.dot(tl.randn((20, 5), seed=12), tl.randn((5, 20), seed=23))
+        U, S, V = tl.partial_svd(matrix, n_eigenvecs=6, random_state=0)
         true_rec_error = tl.sum((matrix - tl.dot(U, tl.reshape(S, (-1, 1))*V))**2)
         assert_(true_rec_error <= tol)
+        assert_(np.isfinite(T.to_numpy(U)).all(), msg="Left singular vectors are not finite")
+        assert_(np.isfinite(T.to_numpy(V)).all(), msg="Right singular vectors are not finite")
+
+        # Test orthonormality when  max_dim > n_eigenvecs > matrix_rank
+        matrix = tl.dot(tl.randn((4, 2), seed=1), tl.randn((2, 4), seed=12))
+        U, S, V = tl.partial_svd(matrix, n_eigenvecs=3, random_state=0)
+        left_orthogonality_error = T.norm(T.dot(T.transpose(U), U) - T.eye(3))
+        assert_(left_orthogonality_error <= tol_orthogonality)
+        right_orthogonality_error = T.norm(T.dot(V, T.transpose(V)) - T.eye(3))
+        assert_(right_orthogonality_error <= tol_orthogonality)
 
         # Test if partial_svd returns the same result for the same setting
         matrix = T.tensor(np.random.random((20, 5)))
@@ -309,6 +319,30 @@ def test_where():
         result = T.where(*args)
         expected = np.where(*map(T.to_numpy, args))
         assert_array_equal(result, expected)
+
+
+def test_lstsq():
+    m, n, k = 4, 3, 2
+
+    # test dimensions
+    a = T.randn((m, n))
+    b = T.randn((m, k))
+    x, res = T.lstsq(a, b)
+    assert_equal(x.shape, (n, k))
+
+    # test residuals
+    assert_array_almost_equal(T.norm(T.dot(a, x) - b, axis=0) ** 2, res)
+    rank = 2
+    a = T.dot(T.randn((m, rank)), T.randn((rank, n)))
+    _, res = T.lstsq(a, b)
+    assert_array_almost_equal(tl.tensor([]), res)
+
+    # test least squares solution
+    a = T.randn((m, n))
+    x = T.randn((n, ))
+    b = T.dot(a, x)
+    x_lstsq, res = T.lstsq(a, b)
+    assert_array_almost_equal(T.dot(a, x_lstsq), b, decimal=5)
 
 
 def test_qr():
