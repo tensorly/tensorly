@@ -20,7 +20,7 @@ def test_smoothness():
     copy_tensor = T.copy(tensor)
     parameter = 0.2
     tol = 0.5
-    res = smooth(tensor, parameter)
+    res = smooth(copy_tensor, parameter)
     true_res = T.tensor([[1.2, 0.83, 0.98], [3.11, -4.12, 0.57], [0.58, 0.26, -2.51]])
     error = T.norm(true_res - res, 2) / T.norm(true_res, 2)
     assert_(error < tol)

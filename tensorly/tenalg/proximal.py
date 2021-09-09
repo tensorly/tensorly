@@ -10,10 +10,9 @@ import warnings
 # License: BSD 3 clause
 
 
-def proximal_operator(tensor, n_const=None, order=None, non_negative=None, l1_reg=None,
-                      l2_reg=None, l2_square=None, unimodality=None, normalize=None,
+def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_square=None, unimodality=None, normalize=None,
                       simplex=None, normalized_sparsity=None, soft_sparsity=None,
-                      smoothness=None, monotonicity=None, hard_sparsity=None):
+                      smoothness=None, monotonicity=None, hard_sparsity=None, n_const=1, order=0):
     """
     Proximal operator solves a convex optimization problem. Let f be a
     convex proper lower-semicontinuous function, the proximal operator of f is :math:`\\argmin_x(f(x) + 1/2||x - v||_2^2)`.
@@ -23,9 +22,6 @@ def proximal_operator(tensor, n_const=None, order=None, non_negative=None, l1_re
     Parameters
     ----------
     tensor : ndarray
-    n_const : int
-             Number of constraints
-    order : int
     non_negative : bool or dictionary
         This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
@@ -42,6 +38,12 @@ def proximal_operator(tensor, n_const=None, order=None, non_negative=None, l1_re
     smoothness : float or list or dictionary, optional
     monotonicity : bool or dictionary, optional
     hard_sparsity : float or list or dictionary, optional
+    n_const : int
+        Number of constraints. If it is None, function returns input tensor.
+        Default : 1
+    order : int
+        Specifies which constraint to implement if several constraints are selected as input
+        Default : 0
     Returns
     -------
     tensor : updated tensor according to the selected constraint, which is the solutio of the optimization problem above.
@@ -1032,7 +1034,9 @@ def admm(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, n_const=None, order=N
         Maximum number of iteration
         Default: 100
     n_const : int
+        Default : None
     order : int
+        Default : None
     non_negative : bool or dictionary
         This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
@@ -1068,12 +1072,11 @@ def admm(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, n_const=None, order=N
         x_old = tl.copy(x)
         x_dual = tl.solve(tl.transpose(pseudo_inverse + rho * tl.eye(tl.shape(pseudo_inverse)[1])),
                           tl.transpose(UtM + rho * (x + dual_var)))
-        x = proximal_operator(tl.transpose(x_dual) - dual_var, n_const=n_const,
-                              order=order, non_negative=non_negative, l1_reg=l1_reg,
+        x = proximal_operator(tl.transpose(x_dual) - dual_var, non_negative=non_negative, l1_reg=l1_reg,
                               l2_reg=l2_reg, l2_square=l2_square, unimodality=unimodality, normalize=normalize,
                               simplex=simplex, normalized_sparsity=normalized_sparsity,
                               soft_sparsity=soft_sparsity, smoothness=smoothness, monotonicity=monotonicity,
-                              hard_sparsity=hard_sparsity)
+                              hard_sparsity=hard_sparsity, n_const=n_const, order=order)
         if n_const is None:
             x = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(UtM)))
             return x, x_dual, dual_var
