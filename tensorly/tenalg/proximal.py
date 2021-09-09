@@ -281,8 +281,8 @@ def smooth(tensor, parameter):
 
     """
     diag_matrix = tl.diag(2 * parameter * tl.ones(tl.shape(tensor)[0]) + 1) + \
-                  tl.diag(-parameter * tl.ones(tl.shape(tensor)[0] - 1), -1) + \
-                  tl.diag(-parameter * tl.ones(tl.shape(tensor)[0] - 1), 1)
+                  tl.diag(-parameter * tl.ones(tl.shape(tensor)[0] - 1), k=-1) + \
+                  tl.diag(-parameter * tl.ones(tl.shape(tensor)[0] - 1), k=1)
     return tl.solve(diag_matrix, tensor)
 
 

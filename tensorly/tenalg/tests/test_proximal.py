@@ -169,7 +169,7 @@ def test_procrustes():
 
 def test_hals_nnls():
     """Test for hals_nnls operator"""
-    a = T.tensor(np.random.rand(10, 10))
+    a = T.tensor(np.random.rand(20, 10))
     true_res = T.tensor(np.random.rand(10, 1))
     b = T.dot(a, true_res)
     atb = T.dot(T.transpose(a), b)
@@ -205,7 +205,7 @@ def test_admm():
 @skip_tensorflow
 def test_active_set_nnls():
     """Test for active_set_nnls operator"""
-    a = T.tensor(np.random.rand(10, 10))
+    a = T.tensor(np.random.rand(20, 10))
     true_res = T.tensor(np.random.rand(10, 1))
     b = T.dot(a, true_res)
     atb = T.dot(T.transpose(a), b)
