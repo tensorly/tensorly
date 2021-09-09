@@ -1,36 +1,51 @@
 import tensorly as tl
+import numpy as np
+import warnings
 
 # Author: Jean Kossaifi
 #         Jeremy Cohen <jeremy.cohen@irisa.fr>
 #         Axel Marmoret <axel.marmoret@inria.fr>
-#         Caglayan TUna <caglayantun@gmail.com>
+#         Caglayan Tuna <caglayantun@gmail.com>
 
 # License: BSD 3 clause
 
 
-def proximal_operator(H, constraint, reg_par=None, prox_par=None):
+def proximal_operator(tensor, n_const=None, order=None, non_negative=None, l1_reg=None,
+                      l2_reg=None, l2_square=None, unimodality=None, normalize=None,
+                      simplex=None, normalized_sparsity=None, soft_sparsity=None,
+                      smoothness=None, monotonicity=None, hard_sparsity=None):
     """
     Proximal operator solves a convex optimization problem. Let f be a
-    convex function, proximal operator of f is :math:`\\argmin(f(x) + 1/2||x - v||_2^2)`.
-    This operator can be used to solve constrained optimization problems. Therefore, proximal gradients are used
-    for constrained tensor decomposition problems in the literature.
+    convex proper lower-semicontinuous function, the proximal operator of f is :math:`\\argmin_x(f(x) + 1/2||x - v||_2^2)`.
+    This operator can be used to solve constrained optimization problems as a generalization to projections on convex sets.
+    Therefore, proximal gradients are used for constrained tensor decomposition problems in the literature.
 
     Parameters
     ----------
-    H : ndarray
-    constraint : string
-             Constraint options : nonnegative, sparse_l1, l2, unimodality,
-                                  normalize, simplex, normalized_sparsity,
-                                  soft_sparsity, smoothness, monotonicity
-    reg_par : float, optional
-              Specifically, defined for sparse_l1 and l2.
-             Default : None
-    prox_par : float, optional
-              Specifically, defined for normalized_sparsity and soft_sparsity.
-             Default : None
+    tensor : ndarray
+    n_const : int
+             Number of constraints
+    order : int
+    non_negative : bool or dictionary
+        This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
+    l1_reg : float or list or dictionary, optional
+    l2_reg : float or list or dictionary, optional
+    l2_square : float or list or dictionary, optional
+    unimodality : bool or dictionary, optional
+        If it is True unimodality constraint is applied to all modes.
+    normalize : bool or dictionary, optional
+        This constraint divides all the values by maximum value of the input array. If it is True normalize constraint
+        is applied to all modes.
+    simplex : float or list or dictionary, optional
+    normalized_sparsity : float or list or dictionary, optional
+    soft_sparsity : float or list or dictionary, optional
+    smoothness : float or list or dictionary, optional
+    monotonicity : bool or dictionary, optional
+    hard_sparsity : float or list or dictionary, optional
     Returns
     -------
-    H : updated H according to the constraint. If constraints is None, function returns the same H.
+    tensor : updated tensor according to the selected constraint, which is the solutio of the optimization problem above.
+             If constraint is None, function returns the same tensor.
 
     References
     ----------
@@ -39,89 +54,301 @@ def proximal_operator(H, constraint, reg_par=None, prox_par=None):
     .. [2]: Parikh, N., & Boyd, S. (2014). Proximal algorithms.
             Foundations and Trends in optimization, 1(3), 127-239.
     """
-    if reg_par is None:
-        reg_par = 1e-3
-    if prox_par is None:
-        prox_par = 1e-3
-    if constraint is None:
-        return H
-    elif constraint == 'nonnegative':
-        return tl.clip(H, 0, tl.max(H))
-    elif constraint == 'sparse_l1':
-        return soft_thresholding(H, reg_par)
-    elif constraint == 'l2':
-        return l2_prox(H, reg_par)
-    elif constraint == 'unimodality':
-        return unimodality(H)
-    elif constraint == 'normalize':
-        return H / tl.max(H)
-    elif constraint == 'simplex':
-        return simplex(H)
-    elif constraint == 'normalized_sparsity':
-        return normalized_sparsity(H, prox_par)
-    elif constraint == 'soft_sparsity':
-        return soft_sparsity(H, prox_par)
-    elif constraint == 'smoothness':
-        return smoothness(H)
-    elif constraint == 'monotoncity':
-        return monotonicity(H)
+    if n_const is None:
+        return tensor
+    constraints = [None] * n_const
+    parameters = [None] * n_const
+    if non_negative:
+        if isinstance(non_negative, dict):
+            modes = list(non_negative)
+            for i in range(len(modes)):
+                constraints[modes[i]] = 'non_negative'
+        else:
+            for i in range(len(constraints)):
+                constraints[i] = 'non_negative'
+    if l1_reg:
+        if isinstance(l1_reg, dict):
+            modes = list(l1_reg)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'sparse_l1'
+                parameters[modes[i]] = l1_reg[modes[i]]
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'sparse_l1'
+                if isinstance(l1_reg, list):
+                    parameters[i] = l1_reg[i]
+                else:
+                    parameters[i] = l1_reg
+    if l2_reg:
+        if isinstance(l2_reg, dict):
+            modes = list(l2_reg)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'l2'
+                parameters[modes[i]] = l2_reg[modes[i]]
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'l2'
+                if isinstance(l2_reg, list):
+                    parameters[i] = l2_reg[i]
+                else:
+                    parameters[i] = l2_reg
 
-def smoothness(tensor):
+    if l2_square:
+        if isinstance(l2_square, dict):
+            modes = list(l2_square)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'l2_square'
+                parameters[modes[i]] = l2_square[modes[i]]
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'l2_square'
+                if isinstance(l2_square, list):
+                    parameters[i] = l2_square[i]
+                else:
+                    parameters[i] = l2_square
+    if normalized_sparsity:
+        if isinstance(normalized_sparsity, dict):
+            modes = list(normalized_sparsity)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'normalized_sparsity'
+                parameters[modes[i]] = normalized_sparsity[modes[i]]
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'normalized_sparsity'
+                if isinstance(normalized_sparsity, list):
+                    parameters[i] = normalized_sparsity[i]
+                else:
+                    parameters[i] = normalized_sparsity
+    if soft_sparsity:
+        if isinstance(soft_sparsity, dict):
+            modes = list(soft_sparsity)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'soft_sparsity'
+                parameters[modes[i]] = soft_sparsity[modes[i]]
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'soft_sparsity'
+                if isinstance(soft_sparsity, list):
+                    parameters[i] = soft_sparsity[i]
+                else:
+                    parameters[i] = soft_sparsity
+    if hard_sparsity:
+        if isinstance(hard_sparsity, dict):
+            modes = list(hard_sparsity)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'hard_sparsity'
+                parameters[modes[i]] = hard_sparsity[modes[i]]
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'hard_sparsity'
+                if isinstance(hard_sparsity, list):
+                    parameters[i] = hard_sparsity[i]
+                else:
+                    parameters[i] = hard_sparsity
+    if simplex:
+        if isinstance(simplex, dict):
+            modes = list(simplex)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'simplex'
+                parameters[modes[i]] = simplex[modes[i]]
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'simplex'
+                if isinstance(simplex, list):
+                    parameters[i] = simplex[i]
+                else:
+                    parameters[i] = simplex
+    if smoothness:
+        if isinstance(smoothness, dict):
+            modes = list(smoothness)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'smoothness'
+                parameters[modes[i]] = smoothness[modes[i]]
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'smoothness'
+                if isinstance(smoothness, list):
+                    parameters[i] = smoothness[i]
+                else:
+                    parameters[i] = smoothness
+    if unimodality:
+        if isinstance(unimodality, dict):
+            modes = list(unimodality)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'unimodality'
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'unimodality'
+    if monotonicity:
+        if isinstance(monotonicity, dict):
+            modes = list(monotonicity)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'monotonicity'
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'monotonicity'
+    if normalize:
+        if isinstance(normalize, dict):
+            modes = list(normalize)
+            for i in range(len(modes)):
+                if constraints[modes[i]] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[modes[i]] = 'normalize'
+        else:
+            for i in range(len(constraints)):
+                if constraints[i] is not None:
+                    warnings.warn('You selected two constraints for the same mode. Consider to check your input')
+                constraints[i] = 'normalize'
+    if constraints[order] is None:
+        return tensor
+    elif constraints[order] == 'non_negative':
+        return tl.clip(tensor, 0, tl.max(tensor))
+    elif constraints[order] == 'sparse_l1':
+        return soft_thresholding(tensor, parameters[order])
+    elif constraints[order] == 'l2':
+        return l2_prox(tensor, parameters[order])
+    elif constraints[order] == 'l2_square':
+        return squared_l2_prox(tensor, parameters[order])
+    elif constraints[order] == 'unimodality':
+        return unimodal(tensor)
+    elif constraints[order] == 'normalize':
+        return tensor / tl.max(tensor)
+    elif constraints[order] == 'simplex':
+        return simplexity(tensor, parameters[order])
+    elif constraints[order] == 'normalized_sparsity':
+        return normalized_sparse(tensor, parameters[order])
+    elif constraints[order] == 'soft_sparsity':
+        return soft_sparse(tensor, parameters[order])
+    elif constraints[order] == 'smoothness':
+        return smooth(tensor, parameters[order])
+    elif constraints[order] == 'monotonicity':
+        return monotone(tensor)
+    elif constraints[order] == 'hard_sparsity':
+        return hard_thresholding(tensor, parameters[order])
+
+
+def smooth(tensor, parameter):
     """
-
+    Proximal operator for smoothness
     Parameters
     ----------
-    tensor : ndarray
+    tensor : ndarray   
+    parameter : float
 
     Returns
     -------
-
-    References
-    ----------
-    .. [1]: Timmerman, M. E., & Kiers, H. A. (2002). Three-way component analysis with
-            smoothness constraints. Computational statistics & data analysis, 40(3), 447-470.
+    tensor : ndarray
 
     """
-    return tl.copy(tensor)
+    diag_matrix = tl.diag(2 * parameter * tl.ones(tl.shape(tensor)[0]) + 1) + \
+                  tl.diag(-parameter * tl.ones(tl.shape(tensor)[0] - 1), -1) + \
+                  tl.diag(-parameter * tl.ones(tl.shape(tensor)[0] - 1), 1)
+    return tl.solve(diag_matrix, tensor)
 
-def monotonicity(tensor, decreasing=True):
+
+def monotone(tensor, decreasing=False):
     """
-    This function projects each column of array onto:
-          x[1] <= x[2] <= ... <= x[n] or x[1] => x[2] => ... => x[n]
+    This function projects each column of the input array on the set of arrays so that
+          x[1] <= x[2] <= ... <= x[n] (decreasing=False)
+                        or
+          x[1] => x[2] => ... => x[n] (decreasing=True)
+    is satisfied columnwise.
 
     Parameters
     ----------
     tensor : ndarray
-    decreasing : If it is True, function return monotone decreasing. Otherwise, returned array
+    decreasing : If it is True, function returns columnwise
+                 monotone decreasing tensor. Otherwise, returned array
                  will be monotone increasing.
-               Default: True
+                 Default: True
 
     Returns
     -------
-    H : Monotonic ndarray
+    tensor : Monotonic ndarray
 
     References
     ----------
-    .. [1]: Schenker, C., Cohen, J. E., & Acar, E. (2020). A Flexible Optimization Framework for
-            Regularized Matrix-Tensor Factorizations with Linear Couplings.
-            IEEE Journal of Selected Topics in Signal Processing.
+    .. [1]: G. Chierchia, E. Chouzenoux, P. L. Combettes, and J.-C. Pesquet. 
+            "The Proximity Operator Repository. User's guide"
     """
-    if decreasing is True:
-        tensor_mon = np.minimum.accumulate(tensor)
-    else:
-        tensor_mon = np.maximum.accumulate(tensor)
+    if tl.ndim(tensor) == 1:
+        tensor = tl.reshape(tensor, [tl.shape(tensor)[0], 1])
+    tensor_to_modify = tl.copy(tensor)
+    if decreasing:
+        tensor_to_modify = tl.flip(tensor_to_modify, axis=0)
+    r, c = tl.shape(tensor_to_modify)
+    assisted_tensor = tl.zeros([r, r, c])
+
+    for i in range(r):
+        for j in range(r):
+            if j >= i:
+                assisted_tensor = tl.index_update(assisted_tensor, tl.index[i, j, :], tl.sum(tensor_to_modify[i: j + 1, :],
+                                                  axis=0) / (j - i + 1))
+    tensor_modified = tl.max(assisted_tensor, axis=0)
+    reversed_tensor = tl.flip(tensor_modified, axis=0)
+    for i in range(r - 1):
+        for j in range(c):
+            if reversed_tensor[i + 1, j] > reversed_tensor[i, j]:
+                reversed_tensor = tl.index_update(reversed_tensor, tl.index[i + 1, j], reversed_tensor[i, j])
+    tensor_mon = tl.flip(reversed_tensor, axis=0)
+    if decreasing:
+        tensor_mon = tl.flip(tensor_mon, axis=0)
     return tensor_mon
 
 
-def unimodality(tensor):
+def unimodal(tensor):
     """
+    This function projects each column of the input array on the set of arrays so that
+          x[1] <= x[2] <= x[j] >= x[j+1]... >= x[n]
+    is satisfied columnwise.
 
     Parameters
     ----------
-    tensor :
+    tensor : ndarray
 
     Returns
     -------
+    tensor : ndarray
 
     References
     ----------
@@ -129,14 +356,66 @@ def unimodality(tensor):
             unimodality and non‐negativity constraints. Journal of Chemometrics:
             A Journal of the Chemometrics Society, 12(4), 223-247.
     """
-    return tensor
+    if tl.ndim(tensor) == 2:
+        _, col = tl.shape(tensor)
+    elif tl.ndim(tensor) == 1:
+        tensor = tl.vec_to_tensor(tensor, [tl.shape(tensor)[0], 1])
+        col = 1
+
+    tensor_unimodal = tl.copy(tensor)
+
+    for i in range(col):
+        values = []
+        difference = []
+        monotone_increasing = tl.tensor(tl.tensor_to_vec(monotone(tensor[:, i])), **tl.context(tensor))
+        monotone_decreasing = tl.tensor(tl.tensor_to_vec(monotone(tensor[:, i], decreasing=True)), **tl.context(tensor))
+        for j in range(tensor.shape[0] - 1):
+            if tensor[j, i] >= monotone_increasing[j - 1] and tensor[j, i] >= monotone_decreasing[j + 1]:
+                values.append(j)
+        if len(values) == 0:
+            if tl.argmax(tensor[:, i]) == 0:
+                tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[:, i], monotone_decreasing[:])
+            elif tl.argmax(tensor[:, i]) == (tl.shape(tensor)[0] - 1):
+                tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[:, i], monotone_increasing[:])
+        else:
+            tensor_new = tl.zeros([tl.shape(tensor)[0], len(values)])
+            for m in range(len(values)):
+                tensor_new = tl.index_update(tensor_new, tl.index[:values[m], m], monotone_increasing[:values[m]])
+                tensor_new = tl.index_update(tensor_new, tl.index[values[m], m], tensor[values[m], i])
+                tensor_new = tl.index_update(tensor_new, tl.index[values[m]+1:, m], monotone_decreasing[values[m]+1:])
+                difference.append(tl.sum(tl.abs(tensor[:, i] - tensor_new[:, m])))
+            best_location = tl.argmin(tl.tensor(difference))
+            tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[:, i], tensor_new[:, best_location])
+    return tensor_unimodal
+
+
+def squared_l2_prox(tensor, parameter):
+    """
+    Proximal operator of (parameter * ||.||_2^2) (squared l2 norm).
+
+    Parameters
+    ----------
+    tensor : ndarray
+    parameter : float
+
+    Returns
+    -------
+    ndarray
+
+    References
+    ----------
+    .. [1]: Combettes, P. L., & Pesquet, J. C. (2011). Proximal splitting methods in signal processing.
+            In Fixed-point algorithms for inverse problems in science and engineering (pp. 185-212).
+            Springer, New York, NY.
+    """
+    return tensor/(1 + 2 * parameter)
 
 
 def l2_prox(tensor, parameter):
     """
-    Proximal operator of the l2 (Euclidean) norm.
+    Proximal operator of (parameter*|| ||_2) (l2 norm).
 
-    This proximal is also called as block soft thresholding.
+    This proximal operator is sometimes called block soft thresholding.
 
     Parameters
     ----------
@@ -155,17 +434,24 @@ def l2_prox(tensor, parameter):
         \\end{equation}
     """
     norm = tl.norm(tensor)
-    bigger_value = tl.where(norm > parameter, norm, parameter)
+    if norm > parameter:
+        bigger_value = norm
+    else:
+        bigger_value = parameter
     return tensor - (tensor * parameter / bigger_value)
 
 
-def normalized_sparsity(tensor, threshold):
+def normalized_sparse(tensor, threshold):
     """
+    Normalized sparsity operator by using hard thresholding.
+    The input is projected on the intersection of the unit l2 ball with the set of threshold-sparse vectors
+    \\{||x||_2^2=1 and ||x||_0\\leq threshold \\}
 
     Parameters
     ----------
     tensor : ndarray
-    threshold
+    threshold : int
+                target sparsity level
 
     Returns
     -------
@@ -188,8 +474,9 @@ def normalized_sparsity(tensor, threshold):
     return tensor_hard / tl.norm(tensor_hard)
 
 
-def soft_sparsity(tensor, parameter):
+def soft_sparse(tensor, parameter):
     """
+    Projects the input tensor on the set of tensors with l1 norm smaller than parameter, using Soft Thresholding.
 
     Parameters
     ----------
@@ -210,23 +497,15 @@ def soft_sparsity(tensor, parameter):
     -----
     .. math::
         \\begin{equation}
-           \\lambda: prox_\\lambda (||tensor||_1) = parameter
+           \\lambda: prox_\\lambda (||tensor||_1) \\leq parameter
         \\end{equation}
     """
-    total_non_zero = np.count_nonzero(tensor)
-    current_l1 = tl.sum(tl.abs(tensor))
-    if current_l1 <= parameter:
-        return tensor
-    elif current_l1 > parameter:
-        difference = current_l1 - parameter
-        threshold = difference/total_non_zero
-
-    tensor_soft = soft_thresholding(tensor, threshold)
-    return tensor_soft
+    return simplexity(tl.abs(tensor), parameter) * tl.sign(tensor)
 
 
-def simplex(tensor):
-    """Proximal operator of simplex
+def simplexity(tensor, parameter):
+    """
+    Projects the input tensor on the simplex of radius parameter.
 
     Parameters
     ----------
@@ -241,36 +520,51 @@ def simplex(tensor):
     .. [1]: Duchi, J., Shalev-Shwartz, S., Singer, Y., & Chandra, T. (2008, July).
             Efficient projections onto the l 1-ball for learning in high dimensions.
             In Proceedings of the 25th international conference on Machine learning (pp. 272-279).
-
     """
     _, col = tl.shape(tensor)
-    tensor = tl.clip(H, 0, tl.max(tensor))
+    tensor = tl.clip(tensor, 0, tl.max(tensor))
     tensor_sort = tl.sort(tensor, axis=0, descending=True)
-    tensor_cum = np.cumsum(tensor_sort, axis=0)
+    tensor_cum = tl.cumsum(tensor_sort, axis=0)
 
-    j = tl.sum(tensor_sort > (tensor_cum-1) / np.cumsum(tl.ones(tl.shape(tensor_cum)), axis=0), axis=0)
+    j = tl.sum(tl.where(tensor_sort > (tensor_cum - parameter), 1.0, 0.0), axis=0)
     theta = tl.zeros(col)
     for i in range(col):
         if j[i] > 0:
-            theta[i] = tensor_cum[j[i]-1, i]
-    theta = (theta - 1)/j
-    return tl.clip(tensor, 0, tl.max(tensor - theta))
+            theta = tl.index_update(theta, tl.index[i], tensor_cum[int(j[i] - 1), i])
+    theta = (theta - parameter) / j
+    return tl.clip(tensor - theta, a_min=0)
 
 
-def hard_thresholding(tensor, threshold):
-    """Proximal operator of l_0 norm.
+def hard_thresholding(tensor, number_of_non_zero):
+    """
+    Proximal operator of the l0 ``norm''
+    Keeps greater "number_of_non_zero" elements untouched and sets other elements to zero.
 
     Parameters
     ----------
     tensor : ndarray
-    threshold :
+    number_of_non_zero : int
 
     Returns
     -------
     ndarray
     """
-    tensor[tensor < threshold] = 0
-    return tensor
+    tensor_vec = tl.copy(tl.tensor_to_vec(tensor))
+    sorted_vector = tl.sort(tl.abs(tensor_vec), axis=0, descending=True)
+    threshold = sorted_vector[number_of_non_zero]
+    tensor_hard = tl.where(tl.abs(tensor) > threshold, tensor, tl.abs(tensor) - tl.abs(tensor))
+    # next lines solve if there are some values equal to the threshold but should not be changed
+    if tl.count_nonzero(tensor_hard) != number_of_non_zero:
+        current_nonzeros = tl.count_nonzero(tensor_hard)
+        to_change = number_of_non_zero - current_nonzeros
+        tensor_temp = tl.where(tl.abs(tensor_vec) <= threshold, tensor_vec, tl.abs(tensor_vec) - tl.abs(tensor_vec))
+        tensor_hard_vec = tl.copy(tl.tensor_to_vec(tensor_hard))
+        for i in range(to_change):
+            max_indice = tl.argmax(tl.abs(tensor_temp))
+            tensor_hard_vec = tl.index_update(tensor_hard_vec, tl.index[max_indice], tensor_vec[max_indice])
+            tensor_temp = tl.index_update(tensor_temp, tl.index[max_indice], tensor_temp[max_indice] - tensor_temp[max_indice])
+        tensor_hard = tl.reshape(tensor_hard_vec, tl.shape(tensor))
+    return tensor_hard
 
 
 def soft_thresholding(tensor, threshold):
@@ -516,7 +810,7 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
                 break
 
     return V, rec_error, iteration, complexity_ratio
-    
+
 
 def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
           lr=None, tol=10e-8):
@@ -561,7 +855,7 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
     """
     if sparsity_coef is None:
         sparsity_coef = 0
-    
+
     if x is None:
         x = tl.zeros(tl.shape(UtM), **tl.context(UtM))
     if lr is None:
@@ -667,7 +961,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                     support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
                 else:
                     support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
-        # Start from zeros if solve is not achieved  
+        # Start from zeros if solve is not achieved
         except:
             x_vec = tl.zeros(tl.shape(UtU)[1])
             support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
@@ -717,9 +1011,12 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     return x_vec
 
 
-def ADMM(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, constraint=None, reg_par=None, prox_par=None, tol=1e-4):
+def admm(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, n_const=None, order=None, non_negative=None, l1_reg=None,
+         l2_reg=None, l2_square=None, unimodality=None, normalize=None,
+         simplex=None, normalized_sparsity=None, soft_sparsity=None,
+         smoothness=None, monotonicity=None, hard_sparsity=None, tol=1e-4):
     """
-    Alternating direction method of multipliers (AO-ADMM) algorithm to solve linear equation.
+    Alternating direction method of multipliers (ADMM) algorithm to minimize a quadratic function under convex constraints.
 
     Parameters
     ----------
@@ -734,32 +1031,50 @@ def ADMM(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, constraint=None, reg_
     n_iter_max : int
         Maximum number of iteration
         Default: 100
-    constraint : string, optional
-    constraint_parameter : float, optional
+    n_const : int
+    order : int
+    non_negative : bool or dictionary
+        This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
+    l1_reg : float or list or dictionary, optional
+    l2_reg : float or list or dictionary, optional
+    l2_square : float or list or dictionary, optional
+    unimodality : bool or dictionary, optional
+        If it is True unimodality constraint is applied to all modes.
+    normalize : bool or dictionary, optional
+        This constraint divides all the values by maximum value of the input array. If it is True normalize constraint
+        is applied to all modes.
+    simplex : float or list or dictionary, optional
+    normalized_sparsity : float or list or dictionary, optional
+    soft_sparsity : float or list or dictionary, optional
+    smoothness : float or list or dictionary, optional
+    monotonicity : bool or dictionary, optional
+    hard_sparsity : float or list or dictionary, optional
     tol : float
 
     Returns
     -------
     x : Updated ndarray
-    x_tilde :
-    dual_var :
+    x_dual : Updated ndarray
+    dual_var : Updated ndarray
 
     References
     ----------
     .. [1] Huang, Kejun, Nicholas D. Sidiropoulos, and Athanasios P. Liavas.
-           "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization." IEEE Transactions on Signal Processing 64.19 (2016): 5052-5065.
+           "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization."
+           IEEE Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
-    if reg_par is None:
-        reg_par = 1
-    rho = np.trace(pseudo_inverse) / tl.shape(x)[1]
+    rho = tl.trace(pseudo_inverse) / tl.shape(x)[1]
     for iteration in range(n_iter_max):
         x_old = tl.copy(x)
         x_dual = tl.solve(tl.transpose(pseudo_inverse + rho * tl.eye(tl.shape(pseudo_inverse)[1])),
                           tl.transpose(UtM + rho * (x + dual_var)))
-        if constraint is not None:
-            x = proximal_operator(tl.transpose(x_dual) - dual_var, constraint=constraint, reg_par=reg_par / rho,
-                                  prox_par=prox_par)
-        else:
+        x = proximal_operator(tl.transpose(x_dual) - dual_var, n_const=n_const,
+                              order=order, non_negative=non_negative, l1_reg=l1_reg,
+                              l2_reg=l2_reg, l2_square=l2_square, unimodality=unimodality, normalize=normalize,
+                              simplex=simplex, normalized_sparsity=normalized_sparsity,
+                              soft_sparsity=soft_sparsity, smoothness=smoothness, monotonicity=monotonicity,
+                              hard_sparsity=hard_sparsity)
+        if n_const is None:
             x = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(UtM)))
             return x, x_dual, dual_var
         dual_var = dual_var + x - tl.transpose(x_dual)

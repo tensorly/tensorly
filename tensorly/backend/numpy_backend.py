@@ -69,7 +69,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64',
              'reshape', 'moveaxis', 'any', 'trace',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'flip',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
-             'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
+             'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'conj', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
     NumpyBackend.register_method(name, getattr(np, name))
 

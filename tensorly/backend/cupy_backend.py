@@ -61,7 +61,7 @@ class CupyBackend(Backend):
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye', 'trace', 'any',
              'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip', 'matmul',
-             'min', 'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'stack',
+             'min', 'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'stack',
              'conj', 'diag', 'einsum', 'log2', 'tensordot']:
     CupyBackend.register_method(name, getattr(cp, name))
 

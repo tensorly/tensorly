@@ -123,6 +123,13 @@ class PyTorchBackend(Backend):
             return torch.sum(tensor, dim=axis)
 
     @staticmethod
+    def max(tensor, axis=None):
+        if axis is None:
+            return torch.max(tensor)
+        else:
+            return torch.max(tensor, dim=axis)[0]
+            
+    @staticmethod
     def flip(tensor, axis=None):
         if isinstance(axis, int):
             axis = [axis]
@@ -214,8 +221,8 @@ class PyTorchBackend(Backend):
 
 # Register the other functions
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
-             'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'tensordot',
-             'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 'matmul',
+             'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'count_nonzero', 'tensordot',
+             'zeros_like', 'reshape', 'eye', 'min', 'prod', 'abs', 'matmul',
              'sqrt', 'sign', 'where', 'conj', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
