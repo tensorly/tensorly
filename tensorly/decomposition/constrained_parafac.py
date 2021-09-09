@@ -114,11 +114,11 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
         raise ValueError('Initialization method "{}" not recognized'.format(init))
 
     for i in range(n_modes):
-        factors[i] = proximal_operator(factors[i], n_modes, order=i, non_negative=non_negative, l1_reg=l1_reg,
+        factors[i] = proximal_operator(factors[i], non_negative=non_negative, l1_reg=l1_reg,
                                        l2_reg=l2_reg, l2_square=l2_square, unimodality=unimodality, normalize=normalize,
                                        simplex=simplex, normalized_sparsity=normalized_sparsity,
                                        soft_sparsity=soft_sparsity, smoothness=smoothness,
-                                       monotonicity=monotonicity, hard_sparsity=hard_sparsity)
+                                       monotonicity=monotonicity, hard_sparsity=hard_sparsity, n_const=n_modes, order=i)
     kt = CPTensor((None, factors))
     return kt
 
