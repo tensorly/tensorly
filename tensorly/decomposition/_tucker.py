@@ -623,10 +623,11 @@ class Tucker(DecompositionMixin):
     """
     def __init__(self, rank=None, n_iter_max=100,
                  init='svd', svd='numpy_svd', tol=10e-5, fixed_factors=None,
-                 random_state=None, mask=None, verbose=False):
+                 random_state=None, mask=None, verbose=False, normalize_factors=False):
         self.rank = rank
         self.fixed_factors = fixed_factors
         self.n_iter_max = n_iter_max
+        self.normalize_factors = normalize_factors
         self.init = init
         self.svd = svd
         self.tol = tol
@@ -640,6 +641,7 @@ class Tucker(DecompositionMixin):
             rank=self.rank,
             fixed_factors=self.fixed_factors,
             n_iter_max=self.n_iter_max,
+            normalize_factors=self.normalize_factors,
             init=self.init,
             svd=self.svd,
             tol=self.tol,
@@ -706,9 +708,10 @@ class Tucker_NN(DecompositionMixin):
     """
     def __init__(self, rank=None, n_iter_max=100,
                  init='svd', svd='numpy_svd', tol=10e-5, 
-                 random_state=None, verbose=False):
+                 random_state=None, verbose=False, normalize_factors=False):
         self.rank = rank
         self.n_iter_max = n_iter_max
+        self.normalize_factors = normalize_factors
         self.init = init
         self.svd = svd
         self.tol = tol
@@ -718,6 +721,7 @@ class Tucker_NN(DecompositionMixin):
     def fit_transform(self, tensor):
         tucker_tensor, errors = non_negative_tucker(tensor, rank=self.rank,
                             n_iter_max=self.n_iter_max,
+                            normalize_factors=self.normalize_factors,
                             init=self.init,
                             tol=self.tol,
                             random_state=self.random_state,
