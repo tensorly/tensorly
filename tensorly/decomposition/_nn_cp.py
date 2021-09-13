@@ -652,7 +652,7 @@ class CP_NN_HALS(DecompositionMixin):
 
     def __init__(self, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
                  sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
-                 verbose=False, cvg_criterion='abs_rec_error'):
+                 verbose=False, normalize_factors=False, cvg_criterion='abs_rec_error'):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
@@ -663,6 +663,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.nn_modes = nn_modes
         self.exact = exact
         self.verbose = verbose
+        self.normalize_factors = normalize_factors
         self.cvg_criterion = cvg_criterion
 
     def fit_transform(self, tensor):
@@ -691,6 +692,7 @@ class CP_NN_HALS(DecompositionMixin):
             nn_modes=self.nn_modes,
             exact=self.exact,
             verbose=self.verbose,
+            normalize_factors=self.normalize_factors,
             return_errors=True,
             cvg_criterion=self.cvg_criterion,
         )
