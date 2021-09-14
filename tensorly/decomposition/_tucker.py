@@ -77,8 +77,7 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
     
 
 def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
-                   svd='numpy_svd', random_state=None, verbose=False, mask=None,
-                   normalize_factors=False):
+                   svd='numpy_svd', random_state=None, verbose=False, mask=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition exclusively along the provided modes.
@@ -109,7 +108,6 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         the values are missing and 1 everywhere else. Note:  if tensor is
         sparse, then mask should also be sparse with a fill value of 1 (or
         True).
-    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
 
     Returns
     -------
@@ -180,13 +178,6 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
         rec_error = sqrt(abs(norm_tensor**2 - tl.norm(core, 2)**2)) / norm_tensor
         rec_errors.append(rec_error)
 
-        if normalize_factors:
-            for i, factor in enumerate(factors):
-                scales = tl.norm(factor, axis=0)
-                scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
-                core = tl.fold(tl.unfold(core, i) * tl.reshape(scales, (-1, 1)), i, core.shape)
-                factors[i] = factor / tl.reshape(scales_non_zero, (1, -1))
-
         if iteration > 1:
             if verbose:
                 print('reconstruction error={}, variation={}.'.format(
@@ -201,8 +192,7 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
 
 
 def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
-           svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False,
-           normalize_factors=False):
+           svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
         Decomposes `tensor` into a Tucker decomposition:
@@ -234,7 +224,6 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         True).
     verbose : int, optional
         level of verbosity
-    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
 
     Returns
     -------
@@ -262,8 +251,8 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         init = (core, list(factors))
 
         core, new_factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
-                                                     svd=svd, tol=tol, random_state=random_state, mask=mask,
-                                                     verbose=verbose, normalize_factors=normalize_factors)
+                                           svd=svd, tol=tol, random_state=random_state, mask=mask,
+                                           verbose=verbose)
 
         factors = list(new_factors)
         for i, e in enumerate(fixed_factors):
@@ -278,8 +267,8 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
         core, factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
-                                                 svd=svd, tol=tol, random_state=random_state, mask=mask,
-                                                 verbose=verbose, normalize_factors=normalize_factors)
+                                       svd=svd, tol=tol, random_state=random_state, mask=mask,
+                                       verbose=verbose)
         return TuckerTensor((core, factors))
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
@@ -623,11 +612,10 @@ class Tucker(DecompositionMixin):
     """
     def __init__(self, rank=None, n_iter_max=100,
                  init='svd', svd='numpy_svd', tol=10e-5, fixed_factors=None,
-                 random_state=None, mask=None, verbose=False, normalize_factors=False):
+                 random_state=None, mask=None, verbose=False):
         self.rank = rank
         self.fixed_factors = fixed_factors
         self.n_iter_max = n_iter_max
-        self.normalize_factors = normalize_factors
         self.init = init
         self.svd = svd
         self.tol = tol
@@ -641,7 +629,6 @@ class Tucker(DecompositionMixin):
             rank=self.rank,
             fixed_factors=self.fixed_factors,
             n_iter_max=self.n_iter_max,
-            normalize_factors=self.normalize_factors,
             init=self.init,
             svd=self.svd,
             tol=self.tol,
