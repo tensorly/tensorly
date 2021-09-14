@@ -2,7 +2,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
-from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
+from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank, tucker_normalize
 import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
@@ -361,11 +361,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
                 print('converged in {} iterations.'.format(iteration))
             break
         if normalize_factors:
-            for i, factor in enumerate(nn_factors):
-                scales = tl.norm(factor, axis=0)
-                scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
-                nn_core = tl.fold(tl.unfold(nn_core, i) * tl.reshape(scales, (-1, 1)), i, nn_core.shape)
-                nn_factors[i] = factor / tl.reshape(scales_non_zero, (1, -1))
+            nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
     tensor = TuckerTensor((nn_core, nn_factors))
     if return_errors:
         return tensor, rec_errors
@@ -553,11 +549,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
                     print('converged in {} iterations.'.format(iteration))
                 break
         if normalize_factors:
-            for i, factor in enumerate(nn_factors):
-                scales = tl.norm(factor, axis=0)
-                scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
-                nn_core = tl.fold(tl.unfold(nn_core, i) * tl.reshape(scales, (-1, 1)), i, nn_core.shape)
-                nn_factors[i] = factor / tl.reshape(scales_non_zero, (1, -1))
+            nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
     tensor = TuckerTensor((nn_core, nn_factors))
     if return_errors:
         return tensor, rec_errors
