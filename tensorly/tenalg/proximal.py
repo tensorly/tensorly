@@ -10,18 +10,15 @@ import warnings
 # License: BSD 3 clause
 
 
-def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_square=None, unimodality=None, normalize=None,
-                      simplex=None, normalized_sparsity=None, soft_sparsity=None,
-                      smoothness=None, monotonicity=None, hard_sparsity=None, n_const=1, order=0):
+def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square=None, unimodality=None, normalize=None,
+                         simplex=None, normalized_sparsity=None, soft_sparsity=None, smoothness=None, monotonicity=None,
+                         hard_sparsity=None, n_const=1, order=0):
     """
-    Proximal operator solves a convex optimization problem. Let f be a
-    convex proper lower-semicontinuous function, the proximal operator of f is :math:`\\argmin_x(f(x) + 1/2||x - v||_2^2)`.
-    This operator can be used to solve constrained optimization problems as a generalization to projections on convex sets.
-    Therefore, proximal gradients are used for constrained tensor decomposition problems in the literature.
+    Validates input constraints for constrained parafac decomposition and returns a constraint and a parameter for
+    proximal operator.
 
     Parameters
     ----------
-    tensor : ndarray
     non_negative : bool or dictionary
         This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
@@ -46,18 +43,9 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
         Default : 0
     Returns
     -------
-    tensor : updated tensor according to the selected constraint, which is the solutio of the optimization problem above.
-             If constraint is None, function returns the same tensor.
-
-    References
-    ----------
-    .. [1]: Moreau, J. J. (1962). Fonctions convexes duales et points proximaux dans un espace hilbertien.
-            Comptes rendus hebdomadaires des séances de l'Académie des sciences, 255, 2897-2899.
-    .. [2]: Parikh, N., & Boyd, S. (2014). Proximal algorithms.
-            Foundations and Trends in optimization, 1(3), 127-239.
+    constraint : string
+    parameter : float
     """
-    if n_const is None:
-        return tensor
     constraints = [None] * n_const
     parameters = [None] * n_const
     if non_negative:
@@ -102,7 +90,6 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
                     parameters[i] = l2_reg[i]
                 else:
                     parameters[i] = l2_reg
-
     if l2_square:
         if isinstance(l2_square, dict):
             modes = list(l2_square)
@@ -241,32 +228,89 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
                 if constraints[i] is not None:
                     warnings.warn('You selected two constraints for the same mode. Consider to check your input')
                 constraints[i] = 'normalize'
-    if constraints[order] is None:
+    return constraints[order], parameters[order]
+
+
+def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_square=None, unimodality=None,
+                      normalize=None, simplex=None, normalized_sparsity=None, soft_sparsity=None,
+                      smoothness=None, monotonicity=None, hard_sparsity=None, n_const=1, order=0):
+    """
+    Proximal operator solves a convex optimization problem. Let f be a
+    convex proper lower-semicontinuous function, the proximal operator of f is :math:`\\argmin_x(f(x) + 1/2||x - v||_2^2)`.
+    This operator can be used to solve constrained optimization problems as a generalization to projections on convex sets.
+    Therefore, proximal gradients are used for constrained tensor decomposition problems in the literature.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    non_negative : bool or dictionary
+        This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
+    l1_reg : float or list or dictionary, optional
+    l2_reg : float or list or dictionary, optional
+    l2_square : float or list or dictionary, optional
+    unimodality : bool or dictionary, optional
+        If it is True unimodality constraint is applied to all modes.
+    normalize : bool or dictionary, optional
+        This constraint divides all the values by maximum value of the input array. If it is True normalize constraint
+        is applied to all modes.
+    simplex : float or list or dictionary, optional
+    normalized_sparsity : float or list or dictionary, optional
+    soft_sparsity : float or list or dictionary, optional
+    smoothness : float or list or dictionary, optional
+    monotonicity : bool or dictionary, optional
+    hard_sparsity : float or list or dictionary, optional
+    n_const : int
+        Number of constraints. If it is None, function returns input tensor.
+        Default : 1
+    order : int
+        Specifies which constraint to implement if several constraints are selected as input
+        Default : 0
+    Returns
+    -------
+    tensor : updated tensor according to the selected constraint, which is the solution of the optimization problem above.
+             If constraint is None, function returns the same tensor.
+
+    References
+    ----------
+    .. [1]: Moreau, J. J. (1962). Fonctions convexes duales et points proximaux dans un espace hilbertien.
+            Comptes rendus hebdomadaires des séances de l'Académie des sciences, 255, 2897-2899.
+    .. [2]: Parikh, N., & Boyd, S. (2014). Proximal algorithms.
+            Foundations and Trends in optimization, 1(3), 127-239.
+    """
+    if n_const is None:
         return tensor
-    elif constraints[order] == 'non_negative':
+    constraint, parameter = validate_constraints(non_negative=non_negative, l1_reg=l1_reg, l2_reg=l2_reg,
+                                                 l2_square=l2_square, unimodality=unimodality, normalize=normalize,
+                                                 simplex=simplex, normalized_sparsity=normalized_sparsity,
+                                                 soft_sparsity=soft_sparsity, smoothness=smoothness,
+                                                 monotonicity=monotonicity, hard_sparsity=hard_sparsity,
+                                                 n_const=n_const, order=order)
+    if constraint is None:
+        return tensor
+    elif constraint == 'non_negative':
         return tl.clip(tensor, 0, tl.max(tensor))
-    elif constraints[order] == 'sparse_l1':
-        return soft_thresholding(tensor, parameters[order])
-    elif constraints[order] == 'l2':
-        return l2_prox(tensor, parameters[order])
-    elif constraints[order] == 'l2_square':
-        return squared_l2_prox(tensor, parameters[order])
-    elif constraints[order] == 'unimodality':
+    elif constraint == 'sparse_l1':
+        return soft_thresholding(tensor, parameter)
+    elif constraint == 'l2':
+        return l2_prox(tensor, parameter)
+    elif constraint == 'l2_square':
+        return squared_l2_prox(tensor, parameter)
+    elif constraint == 'unimodality':
         return unimodal(tensor)
-    elif constraints[order] == 'normalize':
+    elif constraint == 'normalize':
         return tensor / tl.max(tensor)
-    elif constraints[order] == 'simplex':
-        return simplexity(tensor, parameters[order])
-    elif constraints[order] == 'normalized_sparsity':
-        return normalized_sparse(tensor, parameters[order])
-    elif constraints[order] == 'soft_sparsity':
-        return soft_sparse(tensor, parameters[order])
-    elif constraints[order] == 'smoothness':
-        return smooth(tensor, parameters[order])
-    elif constraints[order] == 'monotonicity':
+    elif constraint == 'simplex':
+        return simplexity(tensor, parameter)
+    elif constraint == 'normalized_sparsity':
+        return normalized_sparse(tensor, parameter)
+    elif constraint == 'soft_sparsity':
+        return soft_sparse(tensor, parameter)
+    elif constraint == 'smoothness':
+        return smooth(tensor, parameter)
+    elif constraint == 'monotonicity':
         return monotone(tensor)
-    elif constraints[order] == 'hard_sparsity':
-        return hard_thresholding(tensor, parameters[order])
+    elif constraint == 'hard_sparsity':
+        return hard_thresholding(tensor, parameter)
 
 
 def smooth(tensor, parameter):

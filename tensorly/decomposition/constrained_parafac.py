@@ -6,7 +6,7 @@ from ..random import random_cp
 from ..base import unfold
 from ..cp_tensor import (CPTensor, unfolding_dot_khatri_rao, cp_norm,
                          validate_cp_rank)
-from ..tenalg.proximal import admm, proximal_operator
+from ..tenalg.proximal import admm, proximal_operator, validate_constraints
 
 # Author: Jean Kossaifi
 #         Jeremy Cohen <jeremy.cohen@irisa.fr>
@@ -206,6 +206,12 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
+
+    _, _ = validate_constraints(non_negative=non_negative, l1_reg=l1_reg, l2_reg=l2_reg, l2_square=l2_square,
+                                unimodality=unimodality, normalize=normalize, simplex=simplex,
+                                normalized_sparsity=normalized_sparsity, soft_sparsity=soft_sparsity,
+                                smoothness=smoothness, monotonicity=monotonicity, hard_sparsity=hard_sparsity,
+                                n_const=tl.ndim(tensor))
 
     weights, factors = initialize_constrained_parafac(tensor, rank, init=init, svd=svd,
                                                       random_state=random_state, non_negative=non_negative, l1_reg=l1_reg,
