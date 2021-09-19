@@ -770,6 +770,17 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def svd(a, full_matrices=True):
+        """Singular Value Decomposition.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def eigh(a):
+        """Return the eigenvalues and eigenvectors of a complex Hermitian (conjugate symmetric) or a real symmetric matrix."""
+        raise NotImplementedError
+
+    @staticmethod
     def qr(a):
         """Compute the qr factorization of a matrix.
 
@@ -1381,5 +1392,11 @@ class Backend(object):
     @staticmethod
     def cos(x):
         """Return the cos of x.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def flip(x, axis=None):
+        """Reverse the order of elements in an array along the given axis.
         """
         raise NotImplementedError
