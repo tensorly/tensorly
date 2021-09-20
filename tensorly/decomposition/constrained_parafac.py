@@ -206,7 +206,7 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
-
+    # Checks if input constraints are selected appropriately
     _, _ = validate_constraints(non_negative=non_negative, l1_reg=l1_reg, l2_reg=l2_reg, l2_square=l2_square,
                                 unimodality=unimodality, normalize=normalize, simplex=simplex,
                                 normalized_sparsity=normalized_sparsity, soft_sparsity=soft_sparsity,
