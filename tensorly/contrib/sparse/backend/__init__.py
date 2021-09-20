@@ -7,7 +7,18 @@ from .... import backend, base, cp_tensor, tucker_tensor, tt_tensor
 
 
 _KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
+# Mapping name: funs are stored here
 _LOADED_BACKENDS = {}
+
+dispatched_sparse = ['reshape', 'moveaxis', 'any', 'trace', 'shape', 'ndim',
+                        'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
+                        'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
+                        'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
+                        'argmax', 'stack', 'conj', 'diag', 'einsum', 'log2', 'dot', 'tensordot', 
+                        'sin', 'cos', 'clip', 'kr', 'kron', 'partial_svd',
+                        'solve', 'qr', 'svd', 'eigh', 'randn', 'check_random_state',
+                        'index_update', 'context', 'tensor', 'norm', 'to_numpy', 'is_tensor'
+                       ]
 
 
 @contextmanager
@@ -34,11 +45,11 @@ def register_sparse_backend(backend_name):
         If `backend_name` does not correspond to one listed
             in `_KNOWN_BACKEND`
     """
-
     if backend_name in _KNOWN_BACKENDS:
         module = importlib.import_module('tensorly.contrib.sparse.backend.{0}_backend'.format(backend_name))
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
-        _LOADED_BACKENDS[backend_name] = backend
+        default_backend_mapping = {name:getattr(backend, name) for name in dispatched_sparse}
+        _LOADED_BACKENDS[backend_name] = default_backend_mapping
     else:
         msg = "Unknown backend name {0!r}, known backends are [{1}]".format(
                 backend_name, ', '.join(map(repr, _KNOWN_BACKENDS)))
@@ -48,6 +59,7 @@ def _get_backend_method(method_name):
     backend_name = get_backend()
     if backend_name not in _LOADED_BACKENDS:
         register_sparse_backend(backend_name)
+
     return getattr(_LOADED_BACKENDS[backend_name], method_name)
 
 def _get_backend_dir():
@@ -60,6 +72,8 @@ def _get_backend_dir():
 override_module_dispatch(__name__, _get_backend_method, _get_backend_dir)
 
 def dispatch_sparse(func):
+    # global dispatched_sparse
+    # dispatched_sparse.append(func.__name__)
     @functools.wraps(func, assigned=('__name__', '__qualname__',
                                      '__doc__', '__annotations__'))
     def inner(*args, **kwargs):

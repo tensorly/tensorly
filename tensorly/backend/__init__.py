@@ -1,7 +1,5 @@
 import warnings
-from numpy.lib.function_base import disp
 
-from scipy.sparse.linalg import dsolve
 from tensorly.backend.core import Backend
 import importlib
 import os
@@ -9,11 +7,7 @@ import sys
 import threading
 from contextlib import contextmanager
 import inspect
-import copy
 from collections import ChainMap
-import tensorly as tl
-
-import tensorly.backend.pytorch_backend as pt
 
 # These store the global variables shared accross threads
 _DEFAULT_BACKEND = 'numpy'
@@ -26,27 +20,27 @@ _KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
 # Mapping name: funs are stored here
 _LOADED_BACKENDS = {}
 # Mapping for current backend
-_BACKEND_FUNS = dict()
+_BACKEND_MAPPING = dict()
 # User specified override
-_USER_DEFINED_FUNS = dict()
+_USER_DEFINED_MAPPING = dict()
 
 # Thread-safe variables: stores local backend mappings
 _LOCAL_STATE = threading.local()
-_LOCAL_STATE._USER_DEFINED_FUNS = dict()
-_LOCAL_STATE._BACKEND_FUNS = dict()
-
+_LOCAL_STATE._USER_DEFINED_MAPPING = dict()
+_LOCAL_STATE._BACKEND_MAPPING = dict()
 
 dispatched_functions = ['reshape', 'moveaxis', 'any', 'trace', 'shape', 'ndim',
                         'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
                         'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
                         'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
                         'argmax', 'stack', 'conj', 'diag', 'einsum', 'log2', 'dot', 'tensordot', 
-                        'sin', 'cos',
-                        'solve', 'qr', 'svd', 'eigh', 'randn', 'check_random_state',
-                        'index_update', 'context', 'tensor', 'norm'
+                        'sin', 'cos', 'clip', 'kr', 'kron', 'partial_svd', 'lstsq', 'eps', 'finfo',
+                        'solve', 'qr', 'svd', 'eigh', 'randn', 'check_random_state', 'sort',
+                        'index_update', 'context', 'tensor', 'norm', 'to_numpy', 'is_tensor',
+                        'randomized_range_finder', 'randomized_svd'
                        ]
 dispatched_attributes = ['int64', 'int32', 'float64', 'float32', 
-                         'complex128', 'complex64', 'SVD_FUNS', 'index']
+                         'complex128', 'complex64', 'SVD_FUNS', 'index', 'backend_name']
 
 
 def initialize_backend():
@@ -83,7 +77,9 @@ def register_backend(backend_name):
     if backend_name in _KNOWN_BACKENDS:
         module = importlib.import_module('tensorly.backend.{0}_backend'.format(backend_name))
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
-        mapping = {name:getattr(backend, name) for name in dispatched_functions+dispatched_attributes}
+        default_backend_mapping = {name:getattr(backend, name) for name in dispatched_functions+dispatched_attributes}
+        mapping = ChainMap(_LOCAL_STATE._USER_DEFINED_MAPPING, _USER_DEFINED_MAPPING, default_backend_mapping)
+        mapping = {name:mapping[name] for name in dispatched_functions+dispatched_attributes}
         _LOADED_BACKENDS[backend_name] = mapping
     else:
         msg = "Unknown backend name {0!r}, known backends are [{1}]".format(
@@ -100,23 +96,22 @@ def set_backend(backend_name, local_threadsafe=False):
     local_threadsafe : bool, optional, default is False
         If False, set the backend as default for all threads        
     """
-    try:
-        backend_funs = _LOADED_BACKENDS[backend_name]
-    except KeyError:
-        register_backend(backend_name)
-        backend_funs = _LOADED_BACKENDS[backend_name]
+    if isinstance(backend_name, dict):
+        backend_mapping = backend_name
+    else:
+        try:
+            backend_mapping = _LOADED_BACKENDS[backend_name]
+        except KeyError:
+            register_backend(backend_name)
+            backend_mapping = _LOADED_BACKENDS[backend_name]
     
-    lookup = ChainMap(_LOCAL_STATE._USER_DEFINED_FUNS, _USER_DEFINED_FUNS, backend_funs)
-    for name in dispatched_functions:
-        _LOCAL_STATE._BACKEND_FUNS[name] = lookup[name]
-    for name in dispatched_attributes:
-        _LOCAL_STATE._BACKEND_FUNS[name] = lookup[name]
+    _LOCAL_STATE._BACKEND_MAPPING = backend_mapping
 
     if not local_threadsafe:
         global _DEFAULT_BACKEND
-        global _BACKEND_FUNS
+        global _BACKEND_MAPPING
         _DEFAULT_BACKEND = backend_name
-        _BACKEND_FUNS = _LOCAL_STATE._BACKEND_FUNS
+        _BACKEND_MAPPING = backend_mapping
 
 def get_backend():
     """Returns the name of the current backend
@@ -124,7 +119,11 @@ def get_backend():
     return _get_backend_method('backend_name')
 
 def _get_backend_method(key):
-    return _LOCAL_STATE._BACKEND_FUNS.get(key, _BACKEND_FUNS.get(key))
+    return _LOCAL_STATE.__dict__.get('_BACKEND_MAPPING', _BACKEND_MAPPING)[key]
+    # if hasattr(_LOCAL_STATE, '_BACKEND_MAPPING'):
+    #     return _LOCAL_STATE._BACKEND_MAPPING[key]
+    # return _BACKEND_MAPPING[key]
+    # return _LOCAL_STATE._BACKEND_MAPPING.get(key, _BACKEND_MAPPING.get(key))
 
 def _get_backend_dir():
     return dispatched_functions + dispatched_attributes
@@ -135,7 +134,12 @@ def dispatch(method):
     name = method.__name__
 
     def dynamically_dispatched_method(*args, **kwargs):
-        return _BACKEND_FUNS.get(name, _LOCAL_STATE._BACKEND_FUNS.get(name))(*args, **kwargs)
+        return _LOCAL_STATE.__dict__.get('_BACKEND_MAPPING', _BACKEND_MAPPING)[name](*args, **kwargs)
+
+        # if hasattr(_LOCAL_STATE, '_BACKEND_MAPPING'):
+        #     return _LOCAL_STATE._BACKEND_MAPPING[name](*args, **kwargs)
+        # return _BACKEND_MAPPING[name](*args, **kwargs)
+        # return _LOCAL_STATE._BACKEND_MAPPING.get(name, _BACKEND_MAPPING.get(name))(*args, **kwargs)
 #         return _get_backend_method(name)(*args, **kwargs)
 
     # We don't use `functools.wraps` here because some of the dispatched
