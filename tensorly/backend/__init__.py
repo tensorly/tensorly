@@ -192,25 +192,10 @@ def override_module_dispatch(module_name, getter_fun, dir_fun):
         In Python >= 3.7, we use module's __getattr__ and __dir__
         On older versions, we override the sys.module[__name__].__class__
     """
-    if sys.version_info >= (3, 7, 0):
-        sys.modules[module_name].__getattr__ = getter_fun
-        sys.modules[module_name].__dir__ = dir_fun
+    sys.modules[module_name].__getattr__ = getter_fun
+    sys.modules[module_name].__dir__ = dir_fun
 
-    else:
-        import types
-
-        class BackendAttributeModuleType(types.ModuleType):
-            """A module type to dispatch backend generic attributes."""
-            def __getattr__(self, key):
-                return getter_fun(key)
-
-            def __dir__(self):
-                out = set(super().__dir__())
-                out.update({k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')})
-                return list(out)
-
-        sys.modules[module_name].__class__ = BackendAttributeModuleType
-
+# Define the dispatched-functions
 for name in dispatched_functions:
     exec(f'{name} = dispatch(Backend.{name})')
 
