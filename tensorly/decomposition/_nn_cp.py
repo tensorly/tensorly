@@ -257,6 +257,8 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             factor = factors[mode] * numerator / denominator
 
             factors[mode] = factor
+            if normalize_factors and mode != modes_list[-1]:
+                   weights, factors = cp_normalize((weights, factors))
 
         if tol:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
@@ -297,7 +299,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
         return cp_tensor
 
 
-def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
+def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8, random_state=None,
                               sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
                               normalize_factors=False, verbose=False, return_errors=False, cvg_criterion='abs_rec_error'):
     """
@@ -319,6 +321,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
           Default: 1e-8
+    random_state : {None, int, np.random.RandomState}
     sparsity_coefficients: array of float (of length the number of modes)
         The sparsity coefficients on each factor.
         If set to None, the algorithm is computed without sparsity
@@ -365,7 +368,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     """
 
     weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
-                                        random_state=None,
+                                        random_state=random_state,
                                         normalize_factors=normalize_factors)
 
     norm_tensor = tl.norm(tensor, 2)
@@ -418,6 +421,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             else:
                 factor = tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp))
                 factors[mode] = tl.transpose(factor)
+            if normalize_factors and mode != modes[-1]:
+                   weights, factors = cp_normalize((weights, factors))
         if tol:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
@@ -651,7 +656,7 @@ class CP_NN_HALS(DecompositionMixin):
     """
 
     def __init__(self, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
-                 sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
+                 sparsity_coefficients=None, random_state=None, fixed_modes=None, nn_modes='all', exact=False,
                  verbose=False, normalize_factors=False, cvg_criterion='abs_rec_error'):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -659,6 +664,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.svd = svd
         self.tol = tol
         self.sparsity_coefficients = sparsity_coefficients
+        self.random_state = random_state
         self.fixed_modes = fixed_modes
         self.nn_modes = nn_modes
         self.exact = exact
@@ -687,6 +693,7 @@ class CP_NN_HALS(DecompositionMixin):
             init=self.init,
             svd=self.svd,
             tol=self.tol,
+            random_state=self.random_state,
             sparsity_coefficients=self.sparsity_coefficients,
             fixed_modes=self.fixed_modes,
             nn_modes=self.nn_modes,

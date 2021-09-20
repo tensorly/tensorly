@@ -41,6 +41,17 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init, monkeypatch):
     assert_(T.max(T.abs(rec - tensor)) < tol_max_abs,
             f'abs norm of reconstruction error = {T.max(T.abs(rec - tensor))} higher than tolerance={tol_max_abs}')
 
+    # Test normalization
+    res = parafac(tensor, rank=rank, n_iter_max=200, normalize_factors=True, tol=10e-5, init='svd')
+    rec = cp_to_tensor(res)
+    error = T.norm(rec - tensor, 2)
+    error /= T.norm(tensor, 2)
+    assert_(error < tol_norm_2,
+            f'norm 2 of reconstruction higher = {error} than tolerance={tol_norm_2}')
+    # Test the max abs difference between the reconstruction and the tensor
+    assert_(T.max(T.abs(rec - tensor)) < tol_max_abs,
+            f'abs norm of reconstruction error = {T.max(T.abs(rec - tensor))} higher than tolerance={tol_max_abs}')
+
     # Test fixing mode 0 or 1 with given init
     fixed_tensor = random_cp((6, 8, 4), rank=true_rank, normalise_factors=False)
     rec_svd_fixed_mode_0 = parafac(tensor, rank=true_rank, n_iter_max=2, init=fixed_tensor, fixed_modes=[0], linesearch=linesearch)
@@ -135,6 +146,14 @@ def test_non_negative_parafac(monkeypatch):
     assert_(T.max(T.abs(reconstructed_tensor - nn_reconstructed_tensor)) < tol_max_abs,
             'abs norm of reconstruction error higher than tol')
 
+    # Test normalization
+    nn_res = non_negative_parafac(tensor, rank=3, normalize_factors=True, tol=10e-4, init='svd')
+    nn_reconstructed_tensor = cp_to_tensor(nn_res)
+    error = T.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
+    error /= T.norm(reconstructed_tensor, 2)
+    assert_(error < tol_norm_2,
+            'norm 2 of reconstruction higher than tol')
+
     # Test fixing mode 0 or 1 with given init
     fixed_tensor = random_cp((3, 3, 3), rank=2)
     for factor in fixed_tensor[1]:
@@ -198,6 +217,14 @@ def test_non_negative_parafac_hals(monkeypatch):
     # Test the max abs difference between the reconstruction and the tensor
     assert_(tl.max(tl.abs(reconstructed_tensor - nn_reconstructed_tensor)) < tol_max_abs,
             'abs norm of reconstruction error higher than tol')
+
+    # Test normalization
+    nn_res = non_negative_parafac_hals(tensor, rank=3, normalize_factors=True, tol=10e-4, init='svd')
+    nn_reconstructed_tensor = cp_to_tensor(nn_res)
+    error = T.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
+    error /= T.norm(reconstructed_tensor, 2)
+    assert_(error < tol_norm_2,
+            'norm 2 of reconstruction higher than tol')
 
     # Test fixing mode 0 or 1 with given init
     fixed_tensor = random_cp((3, 3, 3), rank=2)

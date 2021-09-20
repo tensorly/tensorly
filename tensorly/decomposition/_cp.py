@@ -338,6 +338,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
             factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse),
                                   tl.transpose(mttkrp)))
             factors[mode] = factor
+            if normalize_factors and mode != modes_list[-1]:
+                   weights, factors = cp_normalize((weights, factors))
 
         # Will we be performing a line search iteration
         if linesearch and iteration % 2 == 0 and iteration > 5:
