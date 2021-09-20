@@ -3,7 +3,7 @@ Core operations on Tucker tensors.
 """
 
 from ._factorized_tensor import FactorizedTensor
-from .base import unfold, tensor_to_vec
+from .base import unfold, tensor_to_vec, fold
 from .tenalg import multi_mode_dot, mode_dot
 from . import backend as tl
 import numpy as np
@@ -77,15 +77,13 @@ def tucker_normalize(tucker_tensor):
     TuckerTensor((core, factors))
     """
     core, factors = tucker_tensor
-    scales = tl.ones(tl.shape(core)[0])
     normalized_factors = []
-    updated_core = []
     for i, factor in enumerate(factors):
-        scales *= tl.norm(factor, axis=0)
-        scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales[i]), **tl.context(factor)), scales[i])
+        scales = tl.norm(factor, axis=0)
+        scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
+        core = fold(unfold(core, i) * tl.reshape(scales, (-1, 1)), i, core.shape)
         normalized_factors.append(factor / tl.reshape(scales_non_zero, (1, -1)))
-    updated_core = core * tl.reshape(scales_non_zero, (-1, 1))
-    return TuckerTensor((updated_core, factors))
+    return TuckerTensor((core, normalized_factors))
 
 
 def tucker_to_unfolded(tucker_tensor, mode=0, skip_factor=None, transpose_factors=False):

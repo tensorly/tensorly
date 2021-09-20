@@ -4,7 +4,7 @@ from .. import backend as tl
 from ..base import unfold, tensor_to_vec
 from ..tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
                              tucker_to_vec, _validate_tucker_tensor,
-                             tucker_mode_dot,
+                             tucker_mode_dot, tucker_normalize,
                              _tucker_n_param, validate_tucker_rank)
 from ..tenalg import kronecker, mode_dot
 from ..testing import (assert_array_equal, assert_array_almost_equal, 
@@ -186,4 +186,14 @@ def test_validate_tucker_rank():
     for mode in fixed_modes:
         assert_(rank[mode] == tensor_shape[mode])
     assert_(n_param >= n_param_tensor*0.5*(1 - tol))
+
+
+def test_tucker_normalize():
+    shape = (3, 4, 5)
+    rank = (3, 2, 4)
+    tucker_ten = random_tucker(shape, rank)
+    core, factors = tucker_normalize(tucker_ten)
+    for i in range(len(factors)):
+        assert_array_almost_equal(tl.norm(factors[i], axis=0), tl.ones(rank[i]))
+    assert_array_almost_equal(tucker_to_tensor((core, factors)), tucker_to_tensor(tucker_ten))
 
