@@ -302,6 +302,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         fixed_modes.remove(tl.ndim(tensor)-1)
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
+    if fixed_modes == range(tl.ndim(tensor)): # Check If all modes are fixed
+        cp_tensor = CPTensor((weights, factors)) # No need to run optimization algorithm, just return the initialization
+        return cp_tensor
+        
     if sparsity:
         sparse_component = tl.zeros_like(tensor)
         if isinstance(sparsity, float):
