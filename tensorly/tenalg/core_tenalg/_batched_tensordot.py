@@ -2,6 +2,7 @@ from ..tenalg_utils import _validate_contraction_modes
 from ...utils import prod
 import tensorly as tl
 
+
 def tensordot(tensor1, tensor2, modes, batched_modes=()):
     """Batched tensor contraction between two tensors on specified modes
     
