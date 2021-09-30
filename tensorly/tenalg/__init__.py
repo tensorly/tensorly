@@ -157,9 +157,10 @@ def dynamically_dispatch_tenalg(function):
 
     @wraps(function)
     def dynamically_dispatched_fun(*args, **kwargs):
-        if hasattr(_LOCAL_STATE, 'tenalg_backend'):
-            return _LOCAL_STATE.tenalg_backend[name](*args, **kwargs)
-        return _BACKEND_TENALG_MAPPING[name](*args, **kwargs)
+        return _LOCAL_STATE.__dict__.get('tenalg_backend', _BACKEND_TENALG_MAPPING)[name](*args, **kwargs)
+        # if hasattr(_LOCAL_STATE, 'tenalg_backend'):
+        #     return _LOCAL_STATE.tenalg_backend[name](*args, **kwargs)
+        # return _BACKEND_TENALG_MAPPING[name](*args, **kwargs)
 
     return dynamically_dispatched_fun
 
