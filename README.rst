@@ -11,7 +11,7 @@
     :target: https://codecov.io/gh/tensorly/tensorly
 
 .. image:: https://img.shields.io/badge/Slack-join-brightgreen
-    :target: https://join.slack.com/t/newworkspace-bh44369/shared_invite/zt-u21984bp-O7jOb3pSOr4hzMLoDME0wA
+    :target: https://join.slack.com/t/tensorly/shared_invite/zt-wqnts2sk-wbiRX6ml~Xt6~GDYWRPFfg
 
 
 ========
