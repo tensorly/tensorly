@@ -1,242 +1,224 @@
 import warnings
+
 from .core import Backend
 import importlib
 import os
-import sys
 import threading
 from contextlib import contextmanager
 import inspect
 
-_DEFAULT_BACKEND = 'numpy'
-_KNOWN_BACKENDS = {'numpy': 'NumpyBackend',
-                   'mxnet': 'MxnetBackend',
-                   'pytorch': 'PyTorchBackend',
-                   'tensorflow': 'TensorflowBackend',
-                   'cupy': 'CupyBackend',
-                   'jax': 'JaxBackend'}
+class dynamically_dispatched_class_attribute(object):
+    __slots__ = ['name']
 
-_LOADED_BACKENDS = {}
-_LOCAL_STATE = threading.local()
+    def __init__(self, name):
+        self.name = name
 
-def initialize_backend():
-    """Initialises the backend
-
-    1) retrieve the default backend name from the `TENSORLY_BACKEND` environment variable
-        if not found, use _DEFAULT_BACKEND
-    2) sets the backend to the retrieved backend name
-    """
-    backend_name = os.environ.get('TENSORLY_BACKEND', _DEFAULT_BACKEND)
-    if backend_name not in _KNOWN_BACKENDS:
-        msg = ("TENSORLY_BACKEND should be one of {}, got {}. Defaulting to {}'").format(
-            ', '.join(map(repr, _KNOWN_BACKENDS)),
-            backend_name, _DEFAULT_BACKEND)
-        warnings.warn(msg, UserWarning)
-        backend_name = _DEFAULT_BACKEND
-
-    set_backend(backend_name, local_threadsafe=False)
-
-def register_backend(backend_name):
-    """Registers a new backend by importing the corresponding module 
-        and adding the correspond `Backend` class in Backend._LOADED_BACKEND
-        under the key `backend_name`
-    
-    Parameters
-    ----------
-    backend_name : str, name of the backend to load
-    
-    Raises
-    ------
-    ValueError
-        If `backend_name` does not correspond to one listed
-            in `_KNOWN_BACKEND`
-    """
-    if backend_name in _KNOWN_BACKENDS:
-        module = importlib.import_module('tensorly.backend.{0}_backend'.format(backend_name))
-        backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
-        _LOADED_BACKENDS[backend_name] = backend
-    else:
-        msg = "Unknown backend name {0!r}, known backends are [{1}]".format(
-            backend_name, ', '.join(map(repr, _KNOWN_BACKENDS)))
-        raise ValueError(msg)
-
-def set_backend(backend, local_threadsafe=False):
-    """Changes the backend to the specified one
-    
-    Parameters
-    ----------
-    backend : tensorly.Backend or str
-        name of the backend to load or Backend Class
-    local_threadsafe : bool, optional, default is False
-        If False, set the backend as default for all threads        
-    """
-    if not isinstance(backend, Backend):
-        # Backend is a string
-        if backend not in _LOADED_BACKENDS:
-            register_backend(backend)
-
-        backend = _LOADED_BACKENDS[backend]
-
-    # Set the backend
-    _LOCAL_STATE.backend = backend
-
-    if not local_threadsafe:
-        global _DEFAULT_BACKEND
-        _DEFAULT_BACKEND = backend.backend_name
-
-def get_backend():
-    """Returns the name of the current backend
-    """
-    return _get_backend_method('backend_name')
-
-def _get_backend_method(key):
-    try:
-        return getattr(_LOCAL_STATE.backend, key)
-    except AttributeError:
-        return getattr(_LOADED_BACKENDS[_DEFAULT_BACKEND], key)
-
-def _get_backend_dir():
-    return [k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')]
-
-@contextmanager
-def backend_context(backend, local_threadsafe=False):
-    """Context manager to set the backend for TensorLy.
-
-    Parameters
-    ----------
-    backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
-        The name of the backend to use. Default is 'numpy'.
-    local_threadsafe : bool, optional
-        If True, the backend will not become the default backend for all threads.
-        Note that this only affects threads where the backend hasn't already
-        been explicitly set. If False (default) the backend is set for the
-        entire session.
-
-    Examples
-    --------
-    Set the backend to numpy globally for this thread:
-
-    >>> import tensorly as tl
-    >>> tl.set_backend('numpy')
-    >>> with tl.backend_context('pytorch'):
-    ...     pass
-    """
-    _old_backend = get_backend()
-    set_backend(backend, local_threadsafe=local_threadsafe)
-    try:
-        yield
-    finally:
-        set_backend(_old_backend)
-
-def override_module_dispatch(module_name, getter_fun, dir_fun):
-    """Override the module's dispatch mechanism
-
-        In Python >= 3.7, we use module's __getattr__ and __dir__
-        On older versions, we override the sys.module[__name__].__class__
-    """
-    if sys.version_info >= (3, 7, 0):
-        sys.modules[module_name].__getattr__ = getter_fun
-        sys.modules[module_name].__dir__ = dir_fun
-
-    else:
-        import types
-
-        class BackendAttributeModuleType(types.ModuleType):
-            """A module type to dispatch backend generic attributes."""
-            def __getattr__(self, key):
-                return getter_fun(key)
-
-            def __dir__(self):
-                out = set(super().__dir__())
-                out.update({k for k in dir(_LOCAL_STATE.backend) if not k.startswith('_')})
-                return list(out)
-
-        sys.modules[module_name].__class__ = BackendAttributeModuleType
-
-
-def dispatch(method):
-    """Create a dispatched function from a generic backend method."""
-    name = method.__name__
-
-    def inner(*args, **kwargs):
-        return _get_backend_method(name)(*args, **kwargs)
-
-    # We don't use `functools.wraps` here because some of the dispatched
-    # methods include the backend (`self`) as a parameter. Instead we manually
-    # copy over the needed information, and filter the signature for `self`.
-    for attr in ['__module__', '__name__', '__qualname__', '__doc__',
-                 '__annotations__']:
+    def __get__(self, instance, cls=None):
         try:
-            setattr(inner, attr, getattr(method, attr))
+            return getattr(instance.current_backend, self.name)
         except AttributeError:
+            return self
+        # if instance is None:
+        #     return self
+        # else:
+        #     return getattr(instance.current_backend, self.name)
+
+class BackendManager(): #types.ModuleType):
+    _functions = ['reshape', 'moveaxis', 'any', 'trace', 'shape', 'ndim',
+                  'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
+                  'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
+                  'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
+                  'argmax', 'stack', 'conj', 'diag', 'einsum', 'log2', 'dot', 'tensordot', 
+                  'sin', 'cos', 'clip', 'kr', 'kron', 'partial_svd', 'lstsq', 'eps', 'finfo',
+                  'solve', 'qr', 'randn', 'check_random_state', 'sort', 'eigh',
+                  'index_update', 'context', 'tensor', 'norm', 'to_numpy', 'is_tensor',
+                  'randomized_range_finder', 'randomized_svd'
+                 ]
+    _attributes = ['int64', 'int32', 'float64', 'float32', 
+                   'complex128', 'complex64', 'SVD_FUNS', 'index', 'backend_name']
+    available_backend_names = ['numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy', 'jax']
+    _default_backend = 'numpy'
+    _loaded_backends = dict()
+    _backend = None
+    _THREAD_LOCAL_DATA = threading.local()
+
+    def __init__(self):
+        self.initialize_backend()
+        self.use_dynamic_dispatch()
+
+    def use_dynamic_dispatch(self):
+        # Define class methods and attributes that dynamically dispatch to the backend
+        for name in self._functions:
+            if hasattr(self, name):
+                delattr(self, name)
+            setattr(self, name, self.dispatch_backend_method(name, getattr(self.current_backend, name)))
+        for name in self._attributes:
+            if hasattr(type(self), name):
+                delattr(type(self), name)
+            setattr(type(self), name, dynamically_dispatched_class_attribute(name))
+
+    def use_static_dispatch(self):
+        # Define class methods and attributes that dynamically dispatch to the backend
+        for name in self._functions:
+            setattr(self, name, getattr(self.current_backend, name))
+        for name in self._attributes:
+            setattr(self, name, getattr(self.current_backend, name))
+
+    @property
+    def current_backend(self):
+        """Returns the currently used backend instance
+
+        Returns
+        -------
+        backend : tensorly.backend.Backend
+            Backend instance currently in use
+        """
+        return self._THREAD_LOCAL_DATA.__dict__.get('backend', self._backend)
+
+    def get_backend(self):
+        """Returns the *name* (str) of the currently used backend
+        
+        Returns
+        -------
+        name : str
+        """
+        return self._THREAD_LOCAL_DATA.__dict__.get('backend', self._backend).backend_name
+
+    def get_backend_dir(self):
+        return self._attributes + self._functions
+
+    def dispatch_backend_method(self, name, method):
+        """Create a dispatched function from a generic backend method."""
+        
+        def wrapped_backend_method(*args, **kwargs):
+            return getattr(self._THREAD_LOCAL_DATA.__dict__.get('backend', self._backend), name)(*args, **kwargs)
+
+        # We don't use `functools.wraps` here because some of the dispatched
+        # methods include the backend (`self`) as a parameter. Instead we manually
+        # copy over the needed information, and filter the signature for `self`.
+        for attr in ['__module__', '__name__', '__qualname__', '__doc__',
+                     '__annotations__']:
+            try:
+                setattr(wrapped_backend_method, attr, getattr(method, attr))
+            except AttributeError:
+                pass
+    
+        getattr(wrapped_backend_method, '__dict__').update(getattr(method,  '__dict__', {}))
+        wrapped_backend_method.__wrapped__ = method
+        try:
+            sig = inspect.signature(method)
+            if 'self' in sig.parameters:
+                parameters = [v for k, v in sig.parameters.items() if k != 'self']
+                sig = sig.replace(parameters=parameters)
+            wrapped_backend_method.__signature__ = sig
+        except ValueError:
+            # If it doesn't have a signature we don't need to remove self
+            # This happens for NumPy (e.g. np.where) where inspect.signature(np.where) errors:
+            # ValueError: no signature found for builtin <built-in function where>
             pass
 
-    sig = inspect.signature(method)
-    if 'self' in sig.parameters:
-        parameters = [v for k, v in sig.parameters.items() if k != 'self']
-        sig = sig.replace(parameters=parameters)
-    inner.__signature__ = sig
+        return wrapped_backend_method
 
-    return inner
+    @contextmanager
+    def backend_context(self, backend, local_threadsafe=False):
+        """Context manager to set the backend for TensorLy.
+        Parameters
+        ----------
+        backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
+            The name of the backend to use. Default is 'numpy'.
+        local_threadsafe : bool, optional
+            If True, the backend will not become the default backend for all threads.
+            Note that this only affects threads where the backend hasn't already
+            been explicitly set. If False (default) the backend is set for the
+            entire session.
+        Examples
+        --------
+        Set the backend to numpy globally for this thread:
+        >>> import tensorly as tl
+        >>> tl.set_backend('numpy')
+        >>> with tl.backend_context('pytorch'):
+        ...     pass
+        """
+        _old_backend = self.current_backend
+        self.set_backend(backend, local_threadsafe=local_threadsafe)
+        try:
+            yield
+        finally:
+            self.set_backend(_old_backend)
 
+    def initialize_backend(self):
+        """Initialises the backend
 
-# Generic methods, exposed as part of the public API
-check_random_state = dispatch(Backend.check_random_state)
-randn = dispatch(Backend.randn)
-context = dispatch(Backend.context)
-tensor = dispatch(Backend.tensor)
-is_tensor = dispatch(Backend.is_tensor)
-shape = dispatch(Backend.shape)
-ndim = dispatch(Backend.ndim)
-to_numpy = dispatch(Backend.to_numpy)
-copy = dispatch(Backend.copy)
-concatenate = dispatch(Backend.concatenate)
-stack = dispatch(Backend.stack)
-reshape = dispatch(Backend.reshape)
-transpose = dispatch(Backend.transpose)
-moveaxis = dispatch(Backend.moveaxis)
-arange = dispatch(Backend.arange)
-ones = dispatch(Backend.ones)
-zeros = dispatch(Backend.zeros)
-zeros_like = dispatch(Backend.zeros_like)
-eye = dispatch(Backend.eye)
-where = dispatch(Backend.where)
-clip = dispatch(Backend.clip)
-max = dispatch(Backend.max)
-min = dispatch(Backend.min)
-argmax = dispatch(Backend.argmax)
-argmin = dispatch(Backend.argmin)
-all = dispatch(Backend.all)
-mean = dispatch(Backend.mean)
-sum = dispatch(Backend.sum)
-prod = dispatch(Backend.prod)
-sign = dispatch(Backend.sign)
-abs = dispatch(Backend.abs)
-sqrt = dispatch(Backend.sqrt)
-norm = dispatch(Backend.norm)
-dot = dispatch(Backend.dot)
-matmul = dispatch(Backend.matmul)
-kron = dispatch(Backend.kron)
-solve = dispatch(Backend.solve)
-lstsq = dispatch(Backend.lstsq)
-qr = dispatch(Backend.qr)
-kr = dispatch(Backend.kr)
-partial_svd = dispatch(Backend.partial_svd)
-randomized_svd = dispatch(Backend.randomized_svd)
-randomized_range_finder = dispatch(Backend.randomized_range_finder)
-sort = dispatch(Backend.sort)
-conj = dispatch(Backend.conj)
-eps = dispatch(Backend.eps)
-finfo = dispatch(Backend.finfo)
-index = Backend.index
-index_update = dispatch(Backend.index_update)
-log2 = dispatch(Backend.log2)
-sin = dispatch(Backend.sin)
-cos = dispatch(Backend.cos)
+        1) retrieve the default backend name from the `TENSORLY_BACKEND` environment variable
+            if not found, use _DEFAULT_BACKEND
+        2) sets the backend to the retrieved backend name
+        """
+        backend_name = os.environ.get('TENSORLY_BACKEND', self._default_backend)
+        if backend_name not in self.available_backend_names:
+            msg = (f"TENSORLY_BACKEND should be one of {''.join(map(repr, self.available_backend_names))}"
+                   f", got {backend_name}. Defaulting to {self._default_backend}'")
+            warnings.warn(msg, UserWarning)
+            backend_name = self._default_backend
+
+        self._default_backend = backend_name
+        self.set_backend(backend_name)
+
+    def load_backend(self, backend_name):
+        """Registers a new backend by importing the corresponding module 
+            and adding the correspond `Backend` class in Backend._LOADED_BACKEND
+            under the key `backend_name`
+
+        Parameters
+        ----------
+        backend_name : str, name of the backend to load
+
+        Raises
+        ------
+        ValueError
+            If `backend_name` does not correspond to one listed
+                in `_KNOWN_BACKEND`
+        """
+        if backend_name not in self.available_backend_names:
+            msg = f"Unknown backend name {backend_name!r}, known backends are {self.available_backend_names}"
+            raise ValueError(msg)
+        if backend_name not in Backend._available_backends:
+            importlib.import_module('tensorly.backend.{0}_backend'.format(backend_name))
+        if backend_name in Backend._available_backends:
+            backend = Backend._available_backends[backend_name]()
+            # backend = getattr(module, )()
+            self._loaded_backends[backend_name] = backend
+        
+        return backend
+
+    def set_backend(self, backend, local_threadsafe=False):
+        """Changes the backend to the specified one
+
+        Parameters
+        ----------
+        backend : tensorly.Backend or str
+            name of the backend to load or Backend Class
+        local_threadsafe : bool, optional, default is False
+            If False, set the backend as default for all threads        
+        """
+        if not isinstance(backend, Backend):
+            # Backend is a string
+            if backend not in self._loaded_backends:
+                backend = self.load_backend(backend)
+            else:
+                backend = self._loaded_backends[backend]
+
+        self._THREAD_LOCAL_DATA.backend = backend
+        if not local_threadsafe:
+            self._default_backend = backend.backend_name
+            self._backend = backend
+
+    def register_backend_method(self, name, fun_or_attr):
+        self.current_backend.register_method(name, fun_or_attr)
 
 # Initialise the backend to the default one
-initialize_backend()
+backend_manager = BackendManager()
 
-# dispatch non-callables (e.g. dtypes, index)
-override_module_dispatch(__name__, 
-                         _get_backend_method,
-                         _get_backend_dir)
+def __dir__():
+    additionals = ['dynamically_dispatched_class_attribute', 'backend_manager', 'BackendManager']
+    return backend_manager.get_backend_dir() + additionals
+__getattr__ = backend_manager.__getattribute__

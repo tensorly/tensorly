@@ -19,7 +19,11 @@ from .core_tenalg import tensordot
 from . import core_tenalg as core
 from . import einsum_tenalg
 
-from ..backend import _LOCAL_STATE
+# from ..backend import backend
+# _LOCAL_STATE = backend._THREAD_LOCAL_DATA
+from ..backend import backend_manager 
+_LOCAL_STATE = backend_manager._THREAD_LOCAL_DATA
+# _THREAD_LOCAL_DATA as _LOCAL_STATE
 
 _DEFAULT_TENALG_BACKEND = 'core'
 

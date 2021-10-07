@@ -12,8 +12,7 @@ import numpy as np
 from . import Backend
 
 
-class TensorflowBackend(Backend):
-    backend_name = 'tensorflow'
+class TensorflowBackend(Backend, backend_name='tensorflow'):
 
     @staticmethod
     def context(tensor):

@@ -21,8 +21,7 @@ def is_sparse(x):
     return isinstance(x, sparse.SparseArray)
 
 
-class NumpySparseBackend(Backend):
-    backend_name = 'numpy.sparse'
+class NumpySparseBackend(Backend, backend_name='numpy.sparse'):
 
     @staticmethod
     def context(tensor):

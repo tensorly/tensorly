@@ -1,4 +1,4 @@
-from ...backend import set_backend, get_backend, override_module_dispatch
+from ...backend import set_backend, get_backend
 from ... import backend, base, cp_tensor, tucker_tensor, tt_tensor
 
 from .backend import (tensor, is_tensor, context, shape, ndim, to_numpy, copy,
@@ -11,12 +11,18 @@ from .backend import (tensor, is_tensor, context, shape, ndim, to_numpy, copy,
 from .core import wrap
 
 import sys
-from ...backend import _get_backend_method, _get_backend_dir
+# from ...backend import _get_backend_method, _get_backend_dir
+# from ...backend import backend
+from ...backend import backend_manager
 static_items = list(sys.modules[__name__].__dict__.keys())
-def sparse_dir():
-    return _get_backend_dir() + static_items
 
-override_module_dispatch(__name__, _get_backend_method, sparse_dir)
+def __dir__():
+    return backend_manager.get_backend_dir() + static_items
+    # return _get_backend_dir() + static_items
+
+__getattr__ = backend_manager.__getattribute__
+# override_module_dispatch(__name__, backend_manager.__getattribute__, sparse_dir)
+# override_module_dispatch(__name__, _get_backend_method, sparse_dir)
 
 unfold = wrap(base.unfold)
 fold = wrap(base.fold)
