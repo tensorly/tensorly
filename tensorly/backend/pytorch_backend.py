@@ -16,8 +16,7 @@ from .core import Backend
 linalg_lstsq_avail = LooseVersion(torch.__version__) >= LooseVersion('1.9.0')
 
 
-class PyTorchBackend(Backend):
-    backend_name = 'pytorch'
+class PyTorchBackend(Backend, backend_name='pytorch'):
 
     @staticmethod
     def context(tensor):

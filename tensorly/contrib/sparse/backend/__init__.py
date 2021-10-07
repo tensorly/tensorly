@@ -2,13 +2,12 @@ import importlib
 from contextlib import contextmanager
 import functools
 
-from ....backend import backend_context, get_backend, override_module_dispatch
+from ....backend import backend_context, get_backend
 from .... import backend, base, cp_tensor, tucker_tensor, tt_tensor
 
 
 _KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
 _LOADED_BACKENDS = {}
-
 
 @contextmanager
 def sparse_context():
@@ -44,20 +43,18 @@ def register_sparse_backend(backend_name):
                 backend_name, ', '.join(map(repr, _KNOWN_BACKENDS)))
         raise ValueError(msg)
 
-def _get_backend_method(method_name):
+def __getattr__(method_name):
     backend_name = get_backend()
     if backend_name not in _LOADED_BACKENDS:
         register_sparse_backend(backend_name)
     return getattr(_LOADED_BACKENDS[backend_name], method_name)
 
-def _get_backend_dir():
+def __dir__():
     backend_name = get_backend()
     if backend_name not in _LOADED_BACKENDS:
         register_sparse_backend(backend_name)
 
     return [k for k in dir(_LOADED_BACKENDS[backend_name]) if not k.startswith('_')]
-
-override_module_dispatch(__name__, _get_backend_method, _get_backend_dir)
 
 def dispatch_sparse(func):
     @functools.wraps(func, assigned=('__name__', '__qualname__',

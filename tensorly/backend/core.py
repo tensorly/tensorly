@@ -32,12 +32,27 @@ class Index():
 
     def __getitem__(self, indices):
         return indices
+
     @property
     def __name__(self):
         return 'Index'
 
-
 class Backend(object):
+    _available_backends = dict()
+
+    def __init_subclass__(cls, backend_name, **kwargs):
+        """When a subclass is created, register it in _known_backends"""
+        super().__init_subclass__(**kwargs)
+
+        if backend_name != '':
+            cls._available_backends[backend_name.lower()] = cls
+            cls.backend_name = backend_name
+        else:
+            warnings.warn(f'Creating a subclass of BaseBackend ({cls.__name__}) with no name.')
+
+    def __repr__(self):
+        return f'TensorLy {self.backend_name}-backend'
+
     @classmethod
     def register_method(cls, name, func):
         """Register a method with the backend.
@@ -1013,6 +1028,12 @@ class Backend(object):
             U = U * signs[:self.shape(U)[1]]
 
         return U, V
+
+    def svd(self, matrix):
+        raise NotImplementedError
+    
+    def eigh(self, matrix):
+        raise NotImplementedError
 
     def partial_svd(self, matrix, n_eigenvecs=None, flip=False, random_state=None, **kwargs):
         """Computes a fast partial SVD on `matrix`

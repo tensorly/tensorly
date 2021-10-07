@@ -12,8 +12,7 @@ import numpy as np
 from .core import Backend
 
 
-class CupyBackend(Backend):
-    backend_name = 'cupy'
+class CupyBackend(Backend, backend_name='cupy'):
 
     @staticmethod
     def context(tensor):
