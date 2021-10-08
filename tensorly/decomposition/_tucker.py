@@ -2,7 +2,7 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..tenalg import multi_mode_dot, mode_dot
-from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
+from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank, tucker_normalize
 import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
@@ -251,7 +251,8 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         init = (core, list(factors))
 
         core, new_factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
-                             svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
+                                           svd=svd, tol=tol, random_state=random_state, mask=mask,
+                                           verbose=verbose)
 
         factors = list(new_factors)
         for i, e in enumerate(fixed_factors):
@@ -266,11 +267,13 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
         core, factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
-                            svd=svd, tol=tol, random_state=random_state, mask=mask, verbose=verbose)
+                                       svd=svd, tol=tol, random_state=random_state, mask=mask,
+                                       verbose=verbose)
         return TuckerTensor((core, factors))
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
-                        random_state=None, verbose=False, return_errors=False):
+                        random_state=None, verbose=False, return_errors=False,
+                        normalize_factors=False):
     """Non-negative Tucker decomposition
 
         Iterative multiplicative update, see [2]_
@@ -289,6 +292,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         level of verbosity
     ranks : None or int list
     size of the core tensor
+    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
 
     Returns
     -------
@@ -356,7 +360,8 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
             if verbose:
                 print('converged in {} iterations.'.format(iteration))
             break
-
+        if normalize_factors:
+            nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
     tensor = TuckerTensor((nn_core, nn_factors))
     if return_errors:
         return tensor, rec_errors
@@ -403,6 +408,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         Indicates whether the algorithm prints the successive
         reconstruction errors or not
         Default: False
+    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
     return_errors : boolean
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
@@ -542,7 +548,8 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
                 if verbose:
                     print('converged in {} iterations.'.format(iteration))
                 break
-
+        if normalize_factors:
+            nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
     tensor = TuckerTensor((nn_core, nn_factors))
     if return_errors:
         return tensor, rec_errors
@@ -680,9 +687,10 @@ class Tucker_NN(DecompositionMixin):
     """
     def __init__(self, rank=None, n_iter_max=100,
                  init='svd', svd='numpy_svd', tol=10e-5, 
-                 random_state=None, verbose=False):
+                 random_state=None, verbose=False, normalize_factors=False):
         self.rank = rank
         self.n_iter_max = n_iter_max
+        self.normalize_factors = normalize_factors
         self.init = init
         self.svd = svd
         self.tol = tol
@@ -692,6 +700,7 @@ class Tucker_NN(DecompositionMixin):
     def fit_transform(self, tensor):
         tucker_tensor, errors = non_negative_tucker(tensor, rank=self.rank,
                             n_iter_max=self.n_iter_max,
+                            normalize_factors=self.normalize_factors,
                             init=self.init,
                             tol=self.tol,
                             random_state=self.random_state,

@@ -63,6 +63,29 @@ def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False):
     return multi_mode_dot(core, factors, skip=skip_factor, transpose=transpose_factors)
 
 
+def tucker_normalize(tucker_tensor):
+    """Returns tucker_tensor with factors normalised to unit length with the normalizing constants absorbed into
+    `core`.
+
+    Parameters
+    ----------
+    tucker_tensor : tl.TuckerTensor or (core, factors)
+        core tensor and list of factor matrices
+
+    Returns
+    -------
+    TuckerTensor((core, factors))
+    """
+    core, factors = tucker_tensor
+    normalized_factors = []
+    for i, factor in enumerate(factors):
+        scales = tl.norm(factor, axis=0)
+        scales_non_zero = tl.where(scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
+        core = core * tl.reshape(scales, (1,)*i + (-1, ) + (1,)*(tl.ndim(core) - i - 1))
+        normalized_factors.append(factor / tl.reshape(scales_non_zero, (1, -1)))
+    return TuckerTensor((core, normalized_factors))
+
+
 def tucker_to_unfolded(tucker_tensor, mode=0, skip_factor=None, transpose_factors=False):
     """Converts the Tucker decomposition into an unfolded tensor (i.e. a matrix)
 
