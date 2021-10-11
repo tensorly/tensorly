@@ -3,6 +3,7 @@ from ._kronecker import kronecker
 from ._khatri_rao import khatri_rao
 from .generalised_inner_product import inner
 from .outer_product import outer, batched_outer
+from .moments import higher_order_moment
 from ._tt_matrix import tt_matrix_to_tensor
 from ._batched_tensordot import tensordot
 
@@ -18,5 +19,6 @@ EinsumBackend.register_method('khatri_rao', khatri_rao)
 EinsumBackend.register_method('inner', inner)
 EinsumBackend.register_method('outer', outer)
 EinsumBackend.register_method('batched_outer', batched_outer)
+EinsumBackend.register_method('higher_order_moment', higher_order_moment)
 EinsumBackend.register_method('_tt_matrix_to_tensor', tt_matrix_to_tensor)
 EinsumBackend.register_method('tensordot', tensordot)

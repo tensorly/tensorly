@@ -6,6 +6,8 @@ operations such as khatri-rao or kronecker product, n-mode product, etc.
 import sys
 import importlib
 import threading
+import os
+import warnings
 
 from ..backend import BackendManager, dynamically_dispatched_class_attribute
 from .base_tenalg import TenalgBackend
@@ -24,6 +26,7 @@ class TenalgBackendManager(BackendManager):
     _loaded_backends = dict()
     _backend = None
     _THREAD_LOCAL_DATA = threading.local()
+    _ENV_DEFAULT_VAR = 'TENSORLY_TENALG_BACKEND'
 
     @classmethod
     def use_dynamic_dispatch(cls):
@@ -40,7 +43,7 @@ class TenalgBackendManager(BackendManager):
             except AttributeError:
                 pass
             setattr(cls, name, dynamically_dispatched_class_attribute(name))
-
+    
     @classmethod
     def load_backend(cls, backend_name):
         """Registers a new backend by importing the corresponding module 

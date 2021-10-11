@@ -40,6 +40,7 @@ class BackendManager(types.ModuleType):
     _loaded_backends = dict()
     _backend = None
     _THREAD_LOCAL_DATA = threading.local()
+    _ENV_DEFAULT_VAR = 'TENSORLY_BACKEND'
 
     @classmethod
     def use_dynamic_dispatch(cls):
@@ -155,9 +156,9 @@ class BackendManager(types.ModuleType):
             if not found, use _DEFAULT_BACKEND
         2) sets the backend to the retrieved backend name
         """
-        backend_name = os.environ.get('TENSORLY_BACKEND', cls._default_backend)
+        backend_name = os.environ.get(cls._ENV_DEFAULT_VAR, cls._default_backend)
         if backend_name not in cls.available_backend_names:
-            msg = (f"TENSORLY_BACKEND should be one of {''.join(map(repr, cls.available_backend_names))}"
+            msg = (f"{cls._ENV_DEFAULT_VAR} should be one of {''.join(map(repr, cls.available_backend_names))}"
                    f", got {backend_name}. Defaulting to {cls._default_backend}'")
             warnings.warn(msg, UserWarning)
             backend_name = cls._default_backend
