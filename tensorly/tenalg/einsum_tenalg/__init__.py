@@ -9,16 +9,16 @@ from ._batched_tensordot import tensordot
 
 from ..base_tenalg import TenalgBackend
 
-class EinsumBackend(TenalgBackend, backend_name='einsum'):
+class EinsumTenalgBackend(TenalgBackend, backend_name='einsum'):
     pass
 
-EinsumBackend.register_method('mode_dot', mode_dot)
-EinsumBackend.register_method('multi_mode_dot', multi_mode_dot)
-EinsumBackend.register_method('kronecker', kronecker)
-EinsumBackend.register_method('khatri_rao', khatri_rao)
-EinsumBackend.register_method('inner', inner)
-EinsumBackend.register_method('outer', outer)
-EinsumBackend.register_method('batched_outer', batched_outer)
-EinsumBackend.register_method('higher_order_moment', higher_order_moment)
-EinsumBackend.register_method('_tt_matrix_to_tensor', tt_matrix_to_tensor)
-EinsumBackend.register_method('tensordot', tensordot)
+EinsumTenalgBackend.register_method('mode_dot', mode_dot)
+EinsumTenalgBackend.register_method('multi_mode_dot', multi_mode_dot)
+EinsumTenalgBackend.register_method('kronecker', kronecker)
+EinsumTenalgBackend.register_method('khatri_rao', khatri_rao)
+EinsumTenalgBackend.register_method('inner', inner)
+EinsumTenalgBackend.register_method('outer', outer)
+EinsumTenalgBackend.register_method('batched_outer', batched_outer)
+EinsumTenalgBackend.register_method('higher_order_moment', higher_order_moment)
+EinsumTenalgBackend.register_method('_tt_matrix_to_tensor', tt_matrix_to_tensor)
+EinsumTenalgBackend.register_method('tensordot', tensordot)
