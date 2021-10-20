@@ -65,6 +65,13 @@ class NumpyBackend(Backend):
         else:
             return np.sort(tensor, axis=axis)
 
+    @staticmethod
+    def argsort(tensor, axis, descending = False):
+        if descending:
+            return np.argsort(-1 * tensor, axis=axis)
+        else:
+            return np.argsort(tensor, axis=axis)
+
 for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
              'reshape', 'moveaxis', 'any', 'trace',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'flip',

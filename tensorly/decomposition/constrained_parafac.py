@@ -17,7 +17,7 @@ from ..tenalg.proximal import admm, proximal_operator, validate_constraints
 
 def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
                                    random_state=None, non_negative=None, l1_reg=None,
-                                   l2_reg=None, l2_square=None, unimodality=None, normalize=None,
+                                   l2_reg=None, l2_square_reg=None, unimodality=None, normalize=None,
                                    simplex=None, normalized_sparsity=None,
                                    soft_sparsity=None, smoothness=None, monotonicity=None,
                                    hard_sparsity=None):
@@ -46,7 +46,7 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
         This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
     l2_reg : float or list or dictionary, optional
-    l2_square : float or list or dictionary, optional
+    l2_square_reg : float or list or dictionary, optional
     unimodality : bool or dictionary, optional
         If it is True unimodality constraint is applied to all modes.
     normalize : bool or dictionary, optional
@@ -115,8 +115,8 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
 
     for i in range(n_modes):
         factors[i] = proximal_operator(factors[i], non_negative=non_negative, l1_reg=l1_reg,
-                                       l2_reg=l2_reg, l2_square=l2_square, unimodality=unimodality, normalize=normalize,
-                                       simplex=simplex, normalized_sparsity=normalized_sparsity,
+                                       l2_reg=l2_reg, l2_square_reg=l2_square_reg, unimodality=unimodality,
+                                       normalize=normalize, simplex=simplex, normalized_sparsity=normalized_sparsity,
                                        soft_sparsity=soft_sparsity, smoothness=smoothness,
                                        monotonicity=monotonicity, hard_sparsity=hard_sparsity, n_const=n_modes, order=i)
     kt = CPTensor((None, factors))
@@ -129,7 +129,7 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
                         verbose=0, return_errors=False,
                         cvg_criterion='abs_rec_error',
                         fixed_modes=None, non_negative=None, l1_reg=None,
-                        l2_reg=None, l2_square=None, unimodality=None, normalize=None,
+                        l2_reg=None, l2_square_reg=None, unimodality=None, normalize=None,
                         simplex=None, normalized_sparsity=None, soft_sparsity=None,
                         smoothness=None, monotonicity=None, hard_sparsity=None):
     """CANDECOMP/PARAFAC decomposition via alternating optimization of
@@ -170,7 +170,7 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
         This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
     l2_reg : float or list or dictionary, optional
-    l2_square : float or list or dictionary, optional
+    l2_square_reg : float or list or dictionary, optional
     unimodality : bool or dictionary, optional
         If it is True unimodality constraint is applied to all modes.
     normalize : bool or dictionary, optional
@@ -206,16 +206,15 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
-    # Checks if input constraints are selected appropriately
-    _, _ = validate_constraints(non_negative=non_negative, l1_reg=l1_reg, l2_reg=l2_reg, l2_square=l2_square,
+    _, _ = validate_constraints(non_negative=non_negative, l1_reg=l1_reg, l2_reg=l2_reg, l2_square_reg=l2_square_reg,
                                 unimodality=unimodality, normalize=normalize, simplex=simplex,
                                 normalized_sparsity=normalized_sparsity, soft_sparsity=soft_sparsity,
                                 smoothness=smoothness, monotonicity=monotonicity, hard_sparsity=hard_sparsity,
                                 n_const=tl.ndim(tensor))
 
     weights, factors = initialize_constrained_parafac(tensor, rank, init=init, svd=svd,
-                                                      random_state=random_state, non_negative=non_negative, l1_reg=l1_reg,
-                                                      l2_reg=l2_reg, l2_square=l2_square,
+                                                      random_state=random_state, non_negative=non_negative,
+                                                      l1_reg=l1_reg, l2_reg=l2_reg, l2_square_reg=l2_square_reg,
                                                       unimodality=unimodality, normalize=normalize,
                                                       simplex=simplex,
                                                       normalized_sparsity=normalized_sparsity,
@@ -236,10 +235,10 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
     # ADMM inits
-    dual_var = []
+    dual_variables = []
     factors_aux = []
     for i in range(len(factors)):
-        dual_var.append(tl.zeros(tl.shape(factors[i])))
+        dual_variables.append(tl.zeros(tl.shape(factors[i])))
         factors_aux.append(tl.transpose(tl.zeros(tl.shape(factors[i]))))
 
     for iteration in range(n_iter_max):
@@ -256,15 +255,15 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
-            factors[mode], factors_aux[mode], dual_var[mode] = admm(mttkrp, pseudo_inverse, factors[mode], dual_var[mode],
-                                                                    n_iter_max=n_iter_max_inner, n_const=tl.ndim(tensor),
-                                                                    order=mode, non_negative=non_negative, l1_reg=l1_reg,
-                                                                    l2_reg=l2_reg, l2_square=l2_square,
-                                                                    unimodality=unimodality, normalize=normalize,
-                                                                    simplex=simplex, normalized_sparsity=normalized_sparsity,
-                                                                    soft_sparsity=soft_sparsity,
-                                                                    smoothness=smoothness, monotonicity=monotonicity,
-                                                                    hard_sparsity=hard_sparsity, tol=tol_inner)
+            factors[mode], factors_aux[mode], dual_variables[mode] = admm(mttkrp, pseudo_inverse, factors[mode], dual_variables[mode],
+                                                                          n_iter_max=n_iter_max_inner, n_const=tl.ndim(tensor),
+                                                                          order=mode, non_negative=non_negative, l1_reg=l1_reg,
+                                                                          l2_reg=l2_reg, l2_square_reg=l2_square_reg,
+                                                                          unimodality=unimodality, normalize=normalize,
+                                                                          simplex=simplex, normalized_sparsity=normalized_sparsity,
+                                                                          soft_sparsity=soft_sparsity,
+                                                                          smoothness=smoothness, monotonicity=monotonicity,
+                                                                          hard_sparsity=hard_sparsity, tol=tol_inner)
 
         factors_norm = cp_norm((weights, factors))
         iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0) * weights)

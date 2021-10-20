@@ -57,6 +57,13 @@ class CupyBackend(Backend):
         else:
             return cp.sort(tensor, axis=axis)
 
+    @staticmethod
+    def argsort(tensor, axis, descending = False):
+        if descending:
+            return np.argsort(-1 * tensor, axis=axis)
+        else:
+            return np.argsort(tensor, axis=axis)
+
 
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye', 'trace', 'any',

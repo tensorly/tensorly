@@ -9,9 +9,9 @@ import numpy as np
 # License: BSD 3 clause
 
 
-def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square=None, unimodality=None, normalize=None,
-                         simplex=None, normalized_sparsity=None, soft_sparsity=None, smoothness=None, monotonicity=None,
-                         hard_sparsity=None, n_const=1, order=0):
+def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_reg=None, unimodality=None,
+                         normalize=None, simplex=None, normalized_sparsity=None, soft_sparsity=None, smoothness=None,
+                         monotonicity=None, hard_sparsity=None, n_const=1, order=0):
     """
     Validates input constraints for constrained parafac decomposition and returns a constraint and a parameter for
     proximal operator.
@@ -22,7 +22,7 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square=
         This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
     l2_reg : float or list or dictionary, optional
-    l2_square : float or list or dictionary, optional
+    l2_square_reg : float or list or dictionary, optional
     unimodality : bool or dictionary, optional
         If it is True unimodality constraint is applied to all modes.
     normalize : bool or dictionary, optional
@@ -61,13 +61,13 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square=
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
                     raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'sparse_l1'
+                constraints[modes[i]] = 'l1_reg'
                 parameters[modes[i]] = l1_reg[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
                     raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'sparse_l1'
+                constraints[i] = 'l1_reg'
                 if isinstance(l1_reg, list):
                     parameters[i] = l1_reg[i]
                 else:
@@ -78,34 +78,34 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square=
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
                     raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'l2'
+                constraints[modes[i]] = 'l2_reg'
                 parameters[modes[i]] = l2_reg[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
                     raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'l2'
+                constraints[i] = 'l2_reg'
                 if isinstance(l2_reg, list):
                     parameters[i] = l2_reg[i]
                 else:
                     parameters[i] = l2_reg
-    if l2_square:
-        if isinstance(l2_square, dict):
-            modes = list(l2_square)
+    if l2_square_reg:
+        if isinstance(l2_square_reg, dict):
+            modes = list(l2_square_reg)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
                     raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'l2_square'
-                parameters[modes[i]] = l2_square[modes[i]]
+                constraints[modes[i]] = 'l2_square_reg'
+                parameters[modes[i]] = l2_square_reg[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
                     raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'l2_square'
-                if isinstance(l2_square, list):
-                    parameters[i] = l2_square[i]
+                constraints[i] = 'l2_square_reg'
+                if isinstance(l2_square_reg, list):
+                    parameters[i] = l2_square_reg[i]
                 else:
-                    parameters[i] = l2_square
+                    parameters[i] = l2_square_reg
     if normalized_sparsity:
         if isinstance(normalized_sparsity, dict):
             modes = list(normalized_sparsity)
@@ -230,7 +230,7 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square=
     return constraints[order], parameters[order]
 
 
-def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_square=None, unimodality=None,
+def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_square_reg=None, unimodality=None,
                       normalize=None, simplex=None, normalized_sparsity=None, soft_sparsity=None,
                       smoothness=None, monotonicity=None, hard_sparsity=None, n_const=1, order=0):
     """
@@ -246,7 +246,7 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
         This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
     l2_reg : float or list or dictionary, optional
-    l2_square : float or list or dictionary, optional
+    l2_square_reg : float or list or dictionary, optional
     unimodality : bool or dictionary, optional
         If it is True unimodality constraint is applied to all modes.
     normalize : bool or dictionary, optional
@@ -279,8 +279,8 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
     if n_const is None:
         return tensor
     constraint, parameter = validate_constraints(non_negative=non_negative, l1_reg=l1_reg, l2_reg=l2_reg,
-                                                 l2_square=l2_square, unimodality=unimodality, normalize=normalize,
-                                                 simplex=simplex, normalized_sparsity=normalized_sparsity,
+                                                 l2_square_reg=l2_square_reg, unimodality=unimodality,
+                                                 normalize=normalize, simplex=simplex, normalized_sparsity=normalized_sparsity,
                                                  soft_sparsity=soft_sparsity, smoothness=smoothness,
                                                  monotonicity=monotonicity, hard_sparsity=hard_sparsity,
                                                  n_const=n_const, order=order)
@@ -288,55 +288,55 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
         return tensor
     elif constraint == 'non_negative':
         return tl.clip(tensor, 0, tl.max(tensor))
-    elif constraint == 'sparse_l1':
+    elif constraint == 'l1_reg':
         return soft_thresholding(tensor, parameter)
-    elif constraint == 'l2':
+    elif constraint == 'l2_reg':
         return l2_prox(tensor, parameter)
-    elif constraint == 'l2_square':
-        return squared_l2_prox(tensor, parameter)
+    elif constraint == 'l2_square_reg':
+        return l2_square_prox(tensor, parameter)
     elif constraint == 'unimodality':
-        return unimodal(tensor)
+        return unimodality_prox(tensor)
     elif constraint == 'normalize':
         return tensor / tl.max(tensor)
     elif constraint == 'simplex':
-        return simplexity(tensor, parameter)
+        return simplex_prox(tensor, parameter)
     elif constraint == 'normalized_sparsity':
-        return normalized_sparse(tensor, parameter)
+        return normalized_sparsity_prox(tensor, parameter)
     elif constraint == 'soft_sparsity':
-        return soft_sparse(tensor, parameter)
+        return soft_sparsity_prox(tensor, parameter)
     elif constraint == 'smoothness':
-        return smooth(tensor, parameter)
+        return smoothness_prox(tensor, parameter)
     elif constraint == 'monotonicity':
-        return monotone(tensor)
+        return monotonicity_prox(tensor)
     elif constraint == 'hard_sparsity':
         return hard_thresholding(tensor, parameter)
 
 
-def smooth(tensor, parameter):
-    """
-    Proximal operator for smoothness
+def smoothness_prox(tensor, regularizer):
+    """Proximal operator for smoothness
+
     Parameters
     ----------
-    tensor : ndarray   
-    parameter : float
+    tensor : ndarray
+    regularizer : float
 
     Returns
     -------
-    tensor : ndarray
+    ndarray
 
     """
-    diag_matrix = tl.diag(2 * parameter * tl.ones(tl.shape(tensor)[0]) + 1) + \
-                  tl.diag(-parameter * tl.ones(tl.shape(tensor)[0] - 1), k=-1) + \
-                  tl.diag(-parameter * tl.ones(tl.shape(tensor)[0] - 1), k=1)
+    diag_matrix = tl.diag(2 * regularizer * tl.ones(tl.shape(tensor)[0]) + 1) + \
+                  tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=-1) + \
+                  tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=1)
     return tl.solve(diag_matrix, tensor)
 
 
-def monotone(tensor, decreasing=False):
+def monotonicity_prox(tensor, decreasing=False):
     """
     This function projects each column of the input array on the set of arrays so that
           x[1] <= x[2] <= ... <= x[n] (decreasing=False)
                         or
-          x[1] => x[2] => ... => x[n] (decreasing=True)
+          x[1] >= x[2] >= ... >= x[n] (decreasing=True)
     is satisfied columnwise.
 
     Parameters
@@ -349,39 +349,42 @@ def monotone(tensor, decreasing=False):
 
     Returns
     -------
-    tensor : Monotonic ndarray
+    ndarray
+          A tensor of which columns' are monotonic.
 
     References
     ----------
-    .. [1]: G. Chierchia, E. Chouzenoux, P. L. Combettes, and J.-C. Pesquet. 
+    .. [1]: G. Chierchia, E. Chouzenoux, P. L. Combettes, and J.-C. Pesquet
             "The Proximity Operator Repository. User's guide"
     """
     if tl.ndim(tensor) == 1:
         tensor = tl.reshape(tensor, [tl.shape(tensor)[0], 1])
-    tensor_to_modify = tl.copy(tensor)
+    elif tl.ndim(tensor) > 2:
+        raise ValueError("Monotonicity prox doesn't support an input which has more than 2 dimensions.")
+    tensor_mon = tl.copy(tensor)
     if decreasing:
-        tensor_to_modify = tl.flip(tensor_to_modify, axis=0)
-    r, c = tl.shape(tensor_to_modify)
-    assisted_tensor = tl.zeros([r, r, c])
+        tensor_mon = tl.flip(tensor_mon, axis=0)
+    row, column = tl.shape(tensor_mon)
+    cum_sum = tl.cumsum(tensor_mon, axis=0)
+    for j in range(column):
+        assisted_tensor = tl.zeros([row, row])
+        for i in range(row):
+            if i == 0:
+                assisted_tensor = tl.index_update(assisted_tensor, tl.index[i, i:], cum_sum[i:, j]
+                                                  / tl.tensor(tl.arange(row - i) + 1, **tl.context(tensor)))
+            else:
+                assisted_tensor = tl.index_update(assisted_tensor, tl.index[i, i:], (cum_sum[i:, j] - cum_sum[i - 1, j])
+                                                  / tl.tensor(tl.arange(row - i) + 1, **tl.context(tensor)))
+        tensor_mon = tl.index_update(tensor_mon, tl.index[:, j], tl.max(assisted_tensor, axis=0))
 
-    for i in range(r):
-        for j in range(r):
-            if j >= i:
-                assisted_tensor = tl.index_update(assisted_tensor, tl.index[i, j, :], tl.sum(tensor_to_modify[i: j + 1, :],
-                                                  axis=0) / (j - i + 1))
-    tensor_modified = tl.max(assisted_tensor, axis=0)
-    reversed_tensor = tl.flip(tensor_modified, axis=0)
-    for i in range(r - 1):
-        for j in range(c):
-            if reversed_tensor[i + 1, j] > reversed_tensor[i, j]:
-                reversed_tensor = tl.index_update(reversed_tensor, tl.index[i + 1, j], reversed_tensor[i, j])
-    tensor_mon = tl.flip(reversed_tensor, axis=0)
-    if decreasing:
+    tensor_mon = tl.flip(tensor_mon, axis=0)
+    tensor_mon = tl.tensor(np.minimum.accumulate(tl.to_numpy(tensor_mon), 0), **tl.context(tensor))
+    if decreasing is False:
         tensor_mon = tl.flip(tensor_mon, axis=0)
     return tensor_mon
 
 
-def unimodal(tensor):
+def unimodality_prox(tensor):
     """
     This function projects each column of the input array on the set of arrays so that
           x[1] <= x[2] <= x[j] >= x[j+1]... >= x[n]
@@ -393,7 +396,8 @@ def unimodal(tensor):
 
     Returns
     -------
-    tensor : ndarray
+    ndarray
+         A tensor of which columns' distribution are unimodal.
 
     References
     ----------
@@ -401,47 +405,41 @@ def unimodal(tensor):
             unimodality and non‐negativity constraints. Journal of Chemometrics:
             A Journal of the Chemometrics Society, 12(4), 223-247.
     """
-    if tl.ndim(tensor) == 2:
-        _, col = tl.shape(tensor)
-    elif tl.ndim(tensor) == 1:
+    if tl.ndim(tensor) == 1:
         tensor = tl.vec_to_tensor(tensor, [tl.shape(tensor)[0], 1])
-        col = 1
+    elif tl.ndim(tensor) > 2:
+        raise ValueError("Unimodality prox doesn't support an input which has more than 2 dimensions.")
 
     tensor_unimodal = tl.copy(tensor)
+    monotone_increasing = tl.tensor(monotonicity_prox(tensor), **tl.context(tensor))
+    monotone_decreasing = tl.tensor(monotonicity_prox(tensor, decreasing=True),
+                                    **tl.context(tensor))
+    # Next line finds mutual peak points
+    values = tl.tensor(tl.to_numpy((tensor - monotone_decreasing >= 0)) * tl.to_numpy(
+        (tensor - monotone_increasing >= 0)), **tl.context(tensor))
 
-    for i in range(col):
-        values = []
-        difference = []
-        monotone_increasing = tl.tensor(tl.tensor_to_vec(monotone(tensor[:, i])), **tl.context(tensor))
-        monotone_decreasing = tl.tensor(tl.tensor_to_vec(monotone(tensor[:, i], decreasing=True)), **tl.context(tensor))
-        for j in range(tensor.shape[0] - 1):
-            if tensor[j, i] >= monotone_increasing[j - 1] and tensor[j, i] >= monotone_decreasing[j + 1]:
-                values.append(j)
-        if len(values) == 0:
-            if tl.argmax(tensor[:, i]) == 0:
-                tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[:, i], monotone_decreasing[:])
-            elif tl.argmax(tensor[:, i]) == (tl.shape(tensor)[0] - 1):
-                tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[:, i], monotone_increasing[:])
-        else:
-            tensor_new = tl.zeros([tl.shape(tensor)[0], len(values)])
-            for m in range(len(values)):
-                tensor_new = tl.index_update(tensor_new, tl.index[:values[m], m], monotone_increasing[:values[m]])
-                tensor_new = tl.index_update(tensor_new, tl.index[values[m], m], tensor[values[m], i])
-                tensor_new = tl.index_update(tensor_new, tl.index[values[m]+1:, m], monotone_decreasing[values[m]+1:])
-                difference.append(tl.sum(tl.abs(tensor[:, i] - tensor_new[:, m])))
-            best_location = tl.argmin(tl.tensor(difference))
-            tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[:, i], tensor_new[:, best_location])
+    sum_inc = tl.where(values == 1, tl.cumsum(tl.abs(tensor - monotone_increasing), axis=0), tl.tensor(0, **tl.context(tensor)))
+    sum_inc = tl.where(values == 1, sum_inc - tl.abs(tensor - monotone_increasing), tl.tensor(0, **tl.context(tensor)))
+    sum_dec = tl.where(tl.flip(values, axis=0) == 1, tl.cumsum(tl.abs(tl.flip(tensor, axis=0) - tl.flip(monotone_decreasing, axis=0)), axis=0), tl.tensor(0, **tl.context(tensor)))
+    sum_dec = tl.where(tl.flip(values, axis=0) == 1, sum_dec - tl.abs(tl.flip(tensor, axis=0) - tl.flip(monotone_decreasing, axis=0)), tl.tensor(0, **tl.context(tensor)))
+
+    difference = tl.where(values == 1, sum_inc + tl.flip(sum_dec, axis=0), tl.max(sum_inc + tl.flip(sum_dec, axis=0)))
+    min_indice = tl.argmin(tl.tensor(difference), axis=0)
+
+    for i in range(len(min_indice)):
+        tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[:int(min_indice[i]), i], monotone_increasing[:int(min_indice[i]), i])
+        tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[int(min_indice[i]+1):, i], monotone_decreasing[int(min_indice[i]+1):, i])
     return tensor_unimodal
 
 
-def squared_l2_prox(tensor, parameter):
+def l2_square_prox(tensor, regularizer):
     """
-    Proximal operator of (parameter * ||.||_2^2) (squared l2 norm).
+    Proximal operator of (regularizer * ||.||_2^2) (squared l2 norm).
 
     Parameters
     ----------
     tensor : ndarray
-    parameter : float
+    regularizer : float
 
     Returns
     -------
@@ -453,19 +451,19 @@ def squared_l2_prox(tensor, parameter):
             In Fixed-point algorithms for inverse problems in science and engineering (pp. 185-212).
             Springer, New York, NY.
     """
-    return tensor/(1 + 2 * parameter)
+    return tensor/(1 + 2 * regularizer)
 
 
-def l2_prox(tensor, parameter):
+def l2_prox(tensor, regularizer):
     """
-    Proximal operator of (parameter*|| ||_2) (l2 norm).
+    Proximal operator of (regularizer*|| ||_2) (l2 norm).
 
     This proximal operator is sometimes called block soft thresholding.
 
     Parameters
     ----------
     tensor : ndarray
-    parameter : float
+    regularizer : float
 
     Returns
     -------
@@ -479,14 +477,14 @@ def l2_prox(tensor, parameter):
         \\end{equation}
     """
     norm = tl.norm(tensor)
-    if norm > parameter:
+    if norm > regularizer:
         bigger_value = norm
     else:
-        bigger_value = parameter
-    return tensor - (tensor * parameter / bigger_value)
+        bigger_value = regularizer
+    return tensor - (tensor * regularizer / bigger_value)
 
 
-def normalized_sparse(tensor, threshold):
+def normalized_sparsity_prox(tensor, threshold):
     """
     Normalized sparsity operator by using hard thresholding.
     The input is projected on the intersection of the unit l2 ball with the set of threshold-sparse vectors
@@ -519,14 +517,14 @@ def normalized_sparse(tensor, threshold):
     return tensor_hard / tl.norm(tensor_hard)
 
 
-def soft_sparse(tensor, parameter):
+def soft_sparsity_prox(tensor, threshold):
     """
-    Projects the input tensor on the set of tensors with l1 norm smaller than parameter, using Soft Thresholding.
+    Projects the input tensor on the set of tensors with l1 norm smaller than threshold, using Soft Thresholding.
 
     Parameters
     ----------
     tensor : ndarray
-    parameter:
+    threshold :
 
     Returns
     -------
@@ -545,16 +543,17 @@ def soft_sparse(tensor, parameter):
            \\lambda: prox_\\lambda (||tensor||_1) \\leq parameter
         \\end{equation}
     """
-    return simplexity(tl.abs(tensor), parameter) * tl.sign(tensor)
+    return simplex_prox(tl.abs(tensor), threshold) * tl.sign(tensor)
 
 
-def simplexity(tensor, parameter):
+def simplex_prox(tensor, parameter):
     """
     Projects the input tensor on the simplex of radius parameter.
 
     Parameters
     ----------
-    tensor: ndarray
+    tensor : ndarray
+    parameter : float
 
     Returns
     -------
@@ -569,13 +568,12 @@ def simplexity(tensor, parameter):
     _, col = tl.shape(tensor)
     tensor = tl.clip(tensor, 0, tl.max(tensor))
     tensor_sort = tl.sort(tensor, axis=0, descending=True)
-    tensor_cum = tl.cumsum(tensor_sort, axis=0)
 
-    j = tl.sum(tl.where(tensor_sort > (tensor_cum - parameter), 1.0, 0.0), axis=0)
+    j = tl.sum(tl.where(tensor_sort > (tl.cumsum(tensor_sort, axis=0) - parameter), 1.0, 0.0), axis=0)
     theta = tl.zeros(col)
     for i in range(col):
         if j[i] > 0:
-            theta = tl.index_update(theta, tl.index[i], tensor_cum[int(j[i] - 1), i])
+            theta = tl.index_update(theta, tl.index[i], tl.cumsum(tensor_sort, axis=0)[int(j[i] - 1), i])
     theta = (theta - parameter) / j
     return tl.clip(tensor - theta, a_min=0)
 
@@ -593,23 +591,11 @@ def hard_thresholding(tensor, number_of_non_zero):
     Returns
     -------
     ndarray
+          Thresholded tensor on which the operator has been applied
     """
     tensor_vec = tl.copy(tl.tensor_to_vec(tensor))
-    sorted_vector = tl.sort(tl.abs(tensor_vec), axis=0, descending=True)
-    threshold = sorted_vector[number_of_non_zero]
-    tensor_hard = tl.where(tl.abs(tensor) > threshold, tensor, tl.abs(tensor) - tl.abs(tensor))
-    # next lines solve if there are some values equal to the threshold but should not be changed
-    if tl.count_nonzero(tensor_hard) != number_of_non_zero:
-        current_nonzeros = tl.count_nonzero(tensor_hard)
-        to_change = number_of_non_zero - current_nonzeros
-        tensor_temp = tl.where(tl.abs(tensor_vec) <= threshold, tensor_vec, tl.abs(tensor_vec) - tl.abs(tensor_vec))
-        tensor_hard_vec = tl.copy(tl.tensor_to_vec(tensor_hard))
-        for i in range(to_change):
-            max_indice = tl.argmax(tl.abs(tensor_temp))
-            tensor_hard_vec = tl.index_update(tensor_hard_vec, tl.index[max_indice], tensor_vec[max_indice])
-            tensor_temp = tl.index_update(tensor_temp, tl.index[max_indice], tensor_temp[max_indice] - tensor_temp[max_indice])
-        tensor_hard = tl.reshape(tensor_hard_vec, tl.shape(tensor))
-    return tensor_hard
+    sorted_indices = tl.argsort(tl.argsort(tl.abs(tensor_vec), axis=0, descending=True), axis=0)
+    return tl.reshape(tl.where(sorted_indices < number_of_non_zero, tensor_vec, tl.tensor(0, **tl.context(tensor_vec))), tensor.shape)
 
 
 def soft_thresholding(tensor, threshold):
@@ -1012,7 +998,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
             support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
             passive_set = x_vec > 0
             active_set = x_vec <= 0
-            if tl.any(active_set)==True:
+            if tl.any(active_set):
                 indice = tl.argmax(x_gradient)
                 passive_set = tl.index_update(passive_set, tl.index[indice], True)
                 active_set = tl.index_update(active_set, tl.index[indice], False)
@@ -1056,8 +1042,8 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     return x_vec
 
 
-def admm(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, n_const=None, order=None, non_negative=None, l1_reg=None,
-         l2_reg=None, l2_square=None, unimodality=None, normalize=None,
+def admm(UtM, UtU, x, dual_var, n_iter_max=100, n_const=None, order=None, non_negative=None, l1_reg=None,
+         l2_reg=None, l2_square_reg=None, unimodality=None, normalize=None,
          simplex=None, normalized_sparsity=None, soft_sparsity=None,
          smoothness=None, monotonicity=None, hard_sparsity=None, tol=1e-4):
     """
@@ -1067,7 +1053,7 @@ def admm(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, n_const=None, order=N
     ----------
     UtM: ndarray
        Pre-computed product of the transposed of U and M.
-    pseudo_inverse: ndarray
+    UtU: ndarray
        Pre-computed product of the transposed of U and U.
     x: init
        Default: None
@@ -1101,8 +1087,36 @@ def admm(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, n_const=None, order=N
     Returns
     -------
     x : Updated ndarray
-    x_dual : Updated ndarray
+    x_split : Updated ndarray
     dual_var : Updated ndarray
+
+    Notes
+    -----
+    ADMM solves the convex optimization problem :math:`\\min_ f(x) + g(z)` where :math: A(x_split) + Bx = c.
+
+    Following updates are iterated to solve the problem::
+
+    .. math::
+        \\begin{equation}
+            x_split = argmin_(x_split) f(x_split) + (rho/2)||A(x_split) + Bx - c||_2^2
+            x = argmin_x g(x) + (rho/2)||A(x_split) + Bx - c||_2^2
+            dual_var = dual_var + (Ax + B(x_split) - c)
+        \\end{equation}
+
+    where rho is a constant defined by the user.
+
+    Let us define a least square problem such as :math:`\\||Ux - M||^2 + r(x)`.
+
+    ADMM can be adapted to this least square problem as following::
+
+    .. math::
+        \\begin{equation}
+            x_split = (UtU + rho\times I)\times(UtM + rho\times(x + dual_var)^T)
+            x = argmin r(x) + (rho/2)||x - x_split^T + dual_var||_2^2
+            dual_var = dual_var + x - x_split^T
+        \\end{equation}
+    where r is the regularization operator. Here, x can be updated by using proximity operator
+    of :math:`x_split^T - dual_var`.
 
     References
     ----------
@@ -1110,24 +1124,24 @@ def admm(UtM, pseudo_inverse, x, dual_var, n_iter_max=100, n_const=None, order=N
            "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization."
            IEEE Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
-    rho = tl.trace(pseudo_inverse) / tl.shape(x)[1]
+    rho = tl.trace(UtU) / tl.shape(x)[1]
     for iteration in range(n_iter_max):
         x_old = tl.copy(x)
-        x_dual = tl.solve(tl.transpose(pseudo_inverse + rho * tl.eye(tl.shape(pseudo_inverse)[1])),
-                          tl.transpose(UtM + rho * (x + dual_var)))
-        x = proximal_operator(tl.transpose(x_dual) - dual_var, non_negative=non_negative, l1_reg=l1_reg,
-                              l2_reg=l2_reg, l2_square=l2_square, unimodality=unimodality, normalize=normalize,
+        x_split = tl.solve(tl.transpose(UtU + rho * tl.eye(tl.shape(UtU)[1])),
+                           tl.transpose(UtM + rho * (x + dual_var)))
+        x = proximal_operator(tl.transpose(x_split) - dual_var, non_negative=non_negative, l1_reg=l1_reg,
+                              l2_reg=l2_reg, l2_square_reg=l2_square_reg, unimodality=unimodality, normalize=normalize,
                               simplex=simplex, normalized_sparsity=normalized_sparsity,
                               soft_sparsity=soft_sparsity, smoothness=smoothness, monotonicity=monotonicity,
                               hard_sparsity=hard_sparsity, n_const=n_const, order=order)
         if n_const is None:
-            x = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(UtM)))
-            return x, x_dual, dual_var
-        dual_var = dual_var + x - tl.transpose(x_dual)
+            x = tl.transpose(tl.solve(tl.transpose(UtU), tl.transpose(UtM)))
+            return x, x_split, dual_var
+        dual_var = dual_var + x - tl.transpose(x_split)
 
-        dual_residual = x - tl.transpose(x_dual)
+        dual_residual = x - tl.transpose(x_split)
         primal_residual = x - x_old
 
         if tl.norm(dual_residual) < tol * tl.norm(x) and tl.norm(primal_residual) < tol * tl.norm(dual_var):
             break
-    return x, x_dual, dual_var
+    return x, x_split, dual_var

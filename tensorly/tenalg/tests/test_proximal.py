@@ -1,10 +1,10 @@
 import numpy as np
 
 from ... import backend as T
-from ..proximal import (svd_thresholding, smooth, soft_thresholding, hals_nnls, fista,
-                        active_set_nnls, procrustes, hard_thresholding, soft_sparse,
-                        simplexity, normalized_sparse, monotone, unimodal, l2_prox,
-                        squared_l2_prox, admm)
+from ..proximal import (svd_thresholding, smoothness_prox, soft_thresholding, hals_nnls, fista,
+                        active_set_nnls, procrustes, hard_thresholding, soft_sparsity_prox,
+                        simplex_prox, normalized_sparsity_prox, monotonicity_prox, unimodality_prox, l2_prox,
+                        l2_square_prox, admm)
 from ...testing import assert_, assert_array_equal, assert_array_almost_equal
 from tensorly import tensor_to_vec
 import pytest
@@ -20,7 +20,7 @@ def test_smoothness():
     copy_tensor = T.copy(tensor)
     parameter = 0.2
     tol = 0.5
-    res = smooth(copy_tensor, parameter)
+    res = smoothness_prox(copy_tensor, parameter)
     true_res = T.tensor([[1.2, 0.83, 0.98], [3.11, -4.12, 0.57], [0.58, 0.26, -2.51]])
     error = T.norm(true_res - res, 2) / T.norm(true_res, 2)
     assert_(error < tol)
@@ -44,7 +44,7 @@ def test_soft_sparsity():
     """Test for soft_sparsity operator"""
     tensor = T.tensor([[0.5, 1.3, 4.5], [0.8, 0.3, 2]])
     threshold = 2
-    res = soft_sparse(tensor, threshold)
+    res = soft_sparsity_prox(tensor, threshold)
     true_res = T.tensor([[0.85, 1.5, 2.], [1.15, 0.5, 0.]])
     assert_array_almost_equal(true_res, res)
 
@@ -52,7 +52,7 @@ def test_soft_sparsity():
 def test_simplex():
     """Test for simplex operator"""
     tensor = T.tensor([[0.5, 1.3, 4.5], [0.8, 0.3, 2]])
-    res = simplexity(tensor, 1)
+    res = simplex_prox(tensor, 1)
     true_res = T.tensor([[0.35, 1, 1], [0.65, 0, 0]])
     assert_array_almost_equal(true_res, res)
 
@@ -60,7 +60,7 @@ def test_simplex():
 def test_normalized_sparsity():
     """Test for normalized_sparsity operator"""
     tensor = T.tensor([2, 3, 4])
-    res = normalized_sparse(tensor, 2)
+    res = normalized_sparsity_prox(tensor, 2)
     true_res = T.tensor([0, 0.6, 0.8])
     assert_array_almost_equal(true_res, res)
 
@@ -69,17 +69,17 @@ def test_monotonicity():
     """Test for monotonicity operator"""
     tensor = T.tensor(np.random.rand(20, 10))
     # Monotone increasing
-    tensor_monoton = monotone(tensor)
+    tensor_monoton = monotonicity_prox(tensor)
     assert_(np.all(np.diff(tensor_monoton, axis=0) >= 0))
     # Monotone decreasing
-    tensor_monoton = monotone(tensor, decreasing=True)
+    tensor_monoton = monotonicity_prox(tensor, decreasing=True)
     assert_(np.all(np.diff(tensor_monoton, axis=0) <= 0))
 
 
 def test_unimodality():
     """Test for unimdality operator"""
     tensor = T.tensor(np.random.rand(10, 10))
-    tensor_unimodal = unimodal(tensor)
+    tensor_unimodal = unimodality_prox(tensor)
     for i in range(10):
         max_location = T.argmax(tensor_unimodal[:, i])
         if max_location == 0:
@@ -102,7 +102,7 @@ def test_l2_prox():
 def test_squared_l2_prox():
     """Test for squared l2 prox operator"""
     tensor = T.tensor([3, 6, 9])
-    res = squared_l2_prox(tensor, 0.5)
+    res = l2_square_prox(tensor, 0.5)
     true_res = T.tensor([1.5, 3, 4.5])
     assert_array_almost_equal(true_res, res)
 

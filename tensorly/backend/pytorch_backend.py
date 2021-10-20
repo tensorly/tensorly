@@ -148,6 +148,10 @@ class PyTorchBackend(Backend):
             return torch.argmin(input, dim=axis)
 
     @staticmethod
+    def argsort(input, axis=None, descending=False):
+            return torch.argsort(input, dim=axis, descending=descending)
+
+    @staticmethod
     def argmax(input, axis=None):
             return torch.argmax(input, dim=axis)
 

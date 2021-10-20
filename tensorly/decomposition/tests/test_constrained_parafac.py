@@ -92,13 +92,13 @@ def test_constrained_parafac_squared_l2():
     tol_max_abs = 0.5
     rank = 3
     init = 'random'
-    weights_init, factors_init = initialize_constrained_parafac(T.zeros([6, 8, 4]), rank, l2_square=1e-2,
+    weights_init, factors_init = initialize_constrained_parafac(T.zeros([6, 8, 4]), rank, l2_square_reg=1e-2,
                                                                 init=init)
     tensor = cp_to_tensor((weights_init, factors_init))
     for i in range(len(factors_init)):
         factors_init[i] += T.tensor(0.1 * rng.random_sample(T.shape(factors_init[i])), **T.context(factors_init[i]))
     tensor_init = CPTensor((weights_init, factors_init))
-    res, errors = constrained_parafac(tensor, l2_square=1e-2, rank=rank, init=tensor_init,
+    res, errors = constrained_parafac(tensor, l2_square_reg=1e-2, rank=rank, init=tensor_init,
                                       random_state=rng, return_errors=True, tol_outer=1-16)
     res = cp_to_tensor(res)
     error = T.norm(res - tensor, 2)
