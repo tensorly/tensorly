@@ -561,21 +561,21 @@ def simplex_prox(tensor, parameter):
 
     References
     ----------
-    .. [1]: Duchi, J., Shalev-Shwartz, S., Singer, Y., & Chandra, T. (2008, July).
-            Efficient projections onto the l 1-ball for learning in high dimensions.
-            In Proceedings of the 25th international conference on Machine learning (pp. 272-279).
+    .. [1]: Held, Michael, Philip Wolfe, and Harlan P. Crowder.
+            "Validation of subgradient optimization."
+            Mathematical programming 6.1 (1974): 62-88.
     """
     _, col = tl.shape(tensor)
     tensor = tl.clip(tensor, 0, tl.max(tensor))
     tensor_sort = tl.sort(tensor, axis=0, descending=True)
 
-    j = tl.sum(tl.where(tensor_sort > (tl.cumsum(tensor_sort, axis=0) - parameter), 1.0, 0.0), axis=0)
-    theta = tl.zeros(col)
+    to_change = tl.sum(tl.where(tensor_sort > (tl.cumsum(tensor_sort, axis=0) - parameter), 1.0, 0.0), axis=0)
+    difference = tl.zeros(col)
     for i in range(col):
-        if j[i] > 0:
-            theta = tl.index_update(theta, tl.index[i], tl.cumsum(tensor_sort, axis=0)[int(j[i] - 1), i])
-    theta = (theta - parameter) / j
-    return tl.clip(tensor - theta, a_min=0)
+        if to_change[i] > 0:
+            difference = tl.index_update(difference, tl.index[i], tl.cumsum(tensor_sort, axis=0)[int(to_change[i] - 1), i])
+    difference = (difference - parameter) / to_change
+    return tl.clip(tensor - difference, a_min=0)
 
 
 def hard_thresholding(tensor, number_of_non_zero):
