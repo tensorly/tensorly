@@ -3,7 +3,7 @@ from ...cp_tensor import cp_to_tensor, CPTensor
 from ..constrained_parafac import constrained_parafac, initialize_constrained_parafac
 from ... import backend as T
 from ...testing import assert_, assert_array_almost_equal
-
+from ...random import random_cp
 
 def test_constrained_parafac_nonnegative():
     """Test for the CANDECOMP-PARAFAC decomposition with ADMM under nonnegativity constraints
@@ -234,12 +234,12 @@ def test_constrained_parafac_smoothness():
     tol_max_abs = 0.5
     rank = 3
     init = 'svd'
-    weightsinit, facinit = initialize_constrained_parafac(T.zeros([6, 8, 4]), rank, smoothness=[0.1, 0.1, 0.1], init=init)
+    weightsinit, facinit = random_cp((6, 8, 4), rank)
     tensor = cp_to_tensor((weightsinit, facinit))
     for i in range(len(facinit)):
         facinit[i] += T.tensor(0.1 * rng.random_sample(T.shape(facinit[i])), **T.context(facinit[i]))
     tensorinit = CPTensor((weightsinit, facinit))
-    res, errors = constrained_parafac(tensor, smoothness=[0.1, 0.1, 0.1], rank=rank, init=tensorinit,
+    res, errors = constrained_parafac(tensor, smoothness=0.01, rank=rank, init=tensorinit,
                                       random_state=rng, return_errors=True)
     res = cp_to_tensor(res)
     error = T.norm(res - tensor, 2)
