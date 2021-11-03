@@ -7,7 +7,8 @@ from ..tt_tensor import tt_to_tensor
 
 
 def vonneumann_entropy(tensor):
-    """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix). 
+    """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix).
+    Note: The von Neumann entropy is - sum_i p_i ln(p_i), where p_i are the probabilities that each state is occupied (the eigenvalues of the density matrix).
 
     Parameters
     ----------
