@@ -11,8 +11,7 @@ def vonneumann_entropy(tensor):
 
     Parameters
     ----------
-    tensor : (matrix)
-        Data structure
+    tensor : Non-decomposed tensor with indices whose shapes are all a factor of two (represent one or more qubits)
 
     Returns
     -------
