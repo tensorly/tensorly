@@ -376,10 +376,10 @@ def monotonicity_prox(tensor, decreasing=False):
                 assisted_tensor = tl.index_update(assisted_tensor, tl.index[i, i:], (cum_sum[i:, j] - cum_sum[i - 1, j])
                                                   / tl.tensor(tl.arange(row - i) + 1, **tl.context(tensor)))
         tensor_mon = tl.index_update(tensor_mon, tl.index[:, j], tl.max(assisted_tensor, axis=0))
-
-    tensor_mon = tl.flip(tensor_mon, axis=0)
-    tensor_mon = tl.tensor(np.minimum.accumulate(tl.to_numpy(tensor_mon), 0), **tl.context(tensor))
-    if decreasing is False:
+        for i in reversed(range(row - 1)):
+            if tensor_mon[i, j] > tensor_mon[i + 1, j]:
+                tensor_mon = tl.index_update(tensor_mon, tl.index[i, j], tensor_mon[i + 1, j])
+    if decreasing:
         tensor_mon = tl.flip(tensor_mon, axis=0)
     return tensor_mon
 
