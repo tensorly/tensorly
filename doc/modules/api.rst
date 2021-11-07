@@ -295,9 +295,9 @@ If you have your own library implementing tensor algebraic functions, you could 
     :toctree: generated/
     :template: function.rst
 
-    set_tenalg_backend
-    get_tenalg_backend
-    tenalg_backend_context
+    set_backend
+    get_backend
+    backend_context
 
 
 :mod:`tensorly.decomposition`: Tensor Decomposition
@@ -350,6 +350,7 @@ Functions
     tensor_train
     tensor_train_matrix
     parafac2
+    constrained_parafac
 
 
 :mod:`tensorly.regression`: Tensor Regression

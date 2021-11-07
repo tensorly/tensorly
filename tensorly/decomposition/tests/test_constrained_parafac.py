@@ -1,6 +1,6 @@
 import numpy as np
 from ...cp_tensor import cp_to_tensor, CPTensor
-from ..constrained_parafac import constrained_parafac, initialize_constrained_parafac
+from .._constrained_cp import constrained_parafac, initialize_constrained_parafac
 from ... import backend as T
 from ...testing import assert_, assert_array_almost_equal
 from ...random import random_cp

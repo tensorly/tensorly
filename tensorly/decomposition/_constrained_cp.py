@@ -136,7 +136,9 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
     alternating direction method of multipliers (AO-ADMM):
 
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that::
+
         tensor = [|weights; factors[0], ..., factors[-1] |],
+
     where factors are either penalized or constrained according to the user-defined constraint.
 
     In order to compute the factors efficiently, the ADMM algorithm
@@ -197,6 +199,7 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
         * factors : List of factors of the CP decomposition element `i` is of shape ``(tensor.shape[i], rank)``
     errors : list
         A list of reconstruction errors at each iteration of the algorithms.
+
     References
     ----------
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications", SIAM

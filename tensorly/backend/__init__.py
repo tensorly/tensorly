@@ -124,6 +124,7 @@ class BackendManager(types.ModuleType):
     @contextmanager
     def backend_context(cls, backend, local_threadsafe=False):
         """Context manager to set the backend for TensorLy.
+
         Parameters
         ----------
         backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
@@ -133,6 +134,7 @@ class BackendManager(types.ModuleType):
             Note that this only affects threads where the backend hasn't already
             been explicitly set. If False (default) the backend is set for the
             entire session.
+
         Examples
         --------
         Set the backend to numpy globally for this thread:
