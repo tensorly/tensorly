@@ -1,14 +1,15 @@
+import math
 import tensorly as tl
 from .. import backend as T
-from ..cp_tensor import CPTensor, cp_normalize
+from ..cp_tensor import cp_normalize
 from ..tt_tensor import tt_to_tensor
+from ..utils import prod
 
-# Author: Taylor Lee Patti <taylorpatti@g.harvard.edu>
-
+# Authors: Taylor Lee Patti <taylorpatti@g.harvard.edu>
+#          Jean Kossaifi
 
 def vonneumann_entropy(tensor):
     """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix).
-    Note: The von Neumann entropy is - sum_i p_i ln(p_i), where p_i are the probabilities that each state is occupied (the eigenvalues of the density matrix).
 
     Parameters
     ----------
@@ -17,8 +18,14 @@ def vonneumann_entropy(tensor):
     Returns
     -------
     von_neumann_entropy : order-0 tensor
+
+    Notes
+    -----
+    The von Neumann entropy is :math:`- \\sum_i p_i ln(p_i)`, 
+    where p_i are the probabilities that each state is occupied 
+    (the eigenvalues of the density matrix).
     """
-    square_dim = int(tl.sqrt(tl.prod(tl.tensor(tensor.shape))))
+    square_dim = int(math.sqrt(prod(tensor.shape)))
     tensor = tl.reshape(tensor, (square_dim, square_dim))
     try:
         eig_vals = T.eigh(tensor)[0]
