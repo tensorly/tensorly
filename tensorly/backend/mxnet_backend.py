@@ -103,11 +103,17 @@ class MxnetBackend(Backend, backend_name='mxnet'):
         else:
             return np.sort(tensor, axis=axis)
 
+    @staticmethod
+    def argsort(tensor, axis, descending = False):
+        if descending:
+            return np.argsort(-1 * tensor, axis=axis)
+        else:
+            return np.argsort(tensor, axis=axis)
 
 for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'trace', 'any',
              'zeros_like', 'eye', 'concatenate', 'max', 'min', 'flip', 'matmul',
-             'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
+             'all', 'mean', 'sum', 'cumsum', 'count_nonzero',  'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
     MxnetBackend.register_method(name, getattr(np, name))
 

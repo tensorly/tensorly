@@ -64,11 +64,18 @@ class NumpyBackend(Backend, backend_name='numpy'):
         else:
             return np.sort(tensor, axis=axis)
 
+    @staticmethod
+    def argsort(tensor, axis, descending = False):
+        if descending:
+            return np.argsort(-1 * tensor, axis=axis)
+        else:
+            return np.argsort(tensor, axis=axis)
+
 for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
              'reshape', 'moveaxis', 'any', 'trace',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'flip',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
-             'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
+             'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'conj', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
     NumpyBackend.register_method(name, getattr(np, name))
 

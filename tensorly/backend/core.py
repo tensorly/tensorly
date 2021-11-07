@@ -345,6 +345,18 @@ class Backend(object):
             Number of rows in the output.
         """
         raise NotImplementedError
+        
+    @staticmethod
+    def count_nonzero(tensor):
+        """Returns number of non-zero elements in the tensor.
+        Parameters
+        ----------
+        tensor : tensor
+        Returns
+        -------
+        out : scalar
+        """
+        raise NotImplementedError
 
     @staticmethod
     def trace(tensor):
@@ -859,6 +871,25 @@ class Backend(object):
         -------
         sorted_tensor : tensor
             An N-D array, sorted copy of input tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def argsort(tensor, axis,  descending = False):
+        """Returns arguments of a sorted array
+
+        Parameters
+        ----------
+        tensor : tensor
+            An N-D tensor
+        axis : int or None
+            Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
+        descending : bool
+            If True, values are sorted in descending order, otherwise in ascending.
+
+        Returns
+        -------
+        list of scalar values
         """
         raise NotImplementedError
 

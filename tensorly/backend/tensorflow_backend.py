@@ -137,6 +137,19 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
 
         return tf.sort(tensor, axis=axis, direction = direction)
 
+    @staticmethod
+    def argsort(tensor, axis, descending=False):
+        if descending:
+            direction = 'DESCENDING'
+        else:
+            direction = 'ASCENDING'
+
+        if axis is None:
+            tensor = tf.reshape(tensor, [-1])
+            axis = -1
+
+        return tf.argsort(tensor, axis=axis, direction=direction)
+
     def flip(self, tensor, axis=None):
         if isinstance(axis, int):
             axis = [axis]
@@ -220,6 +233,7 @@ _FUN_NAMES = [
     (tf.tensordot, 'tensordot'),
     (tfm.sin, 'sin'),
     (tfm.cos, 'cos'),
+    (tfm.count_nonzero, 'count_nonzero'),
     (tfm.cumsum, 'cumsum'),
     (tfm.reduce_any, 'any')
     ]
