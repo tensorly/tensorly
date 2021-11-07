@@ -296,12 +296,16 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
     
     if fixed_modes is None:
         fixed_modes = []
+    
+    if fixed_modes == list(range(tl.ndim(tensor))): # Check If all modes are fixed
+        cp_tensor = CPTensor((weights, factors)) # No need to run optimization algorithm, just return the initialization
+        return cp_tensor
 
     if tl.ndim(tensor)-1 in fixed_modes:
         warnings.warn('You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()')
         fixed_modes.remove(tl.ndim(tensor)-1)
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
-
+        
     if sparsity:
         sparse_component = tl.zeros_like(tensor)
         if isinstance(sparsity, float):
