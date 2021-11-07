@@ -14,8 +14,7 @@ from .core import Backend
 mx.npx.set_np()
 
 
-class MxnetBackend(Backend):
-    backend_name = 'mxnet'
+class MxnetBackend(Backend, backend_name='mxnet'):
 
     @staticmethod
     def context(tensor):

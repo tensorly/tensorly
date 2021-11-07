@@ -1,6 +1,7 @@
 """Manipulation of matrices in the TT format"""
 
 import tensorly as tl
+from ._batched_tensordot import tensordot
 
 def tt_matrix_to_tensor(tt_matrix):
     """Returns the full tensor whose TT-Matrix decomposition is given by 'factors'
@@ -19,8 +20,7 @@ def tt_matrix_to_tensor(tt_matrix):
                    tensor whose TT-Matrix decomposition was given by 'factors'
     """
     # Each core is of shape (rank_left, size_in, size_out, rank_right)
-    rank, in_shape, out_shape, rank_right = zip(*(tl.shape(f) for f in tt_matrix))
-    rank += (rank_right[-1], )                           
+    _, in_shape, out_shape, _ = zip(*(tl.shape(f) for f in tt_matrix))
     ndim = len(in_shape)
     
     # Intertwine the dims 
@@ -30,10 +30,8 @@ def tt_matrix_to_tensor(tt_matrix):
 
     for i, factor in enumerate(tt_matrix):
         if not i:
-            # factor = factor.squeeze(0)
-            res = tl.reshape(factor, (factor.shape[1], -1))
+            res = factor
         else:
-            res = tl.dot(tl.reshape(res, (-1, rank[i])), tl.reshape(factor, (rank[i], -1)))
-    res = tl.reshape(res, full_shape)
-    
-    return tl.transpose(res, order)
+            res = tensordot(res, factor, ([-1], [0]))
+
+    return tl.transpose(tl.reshape(res, full_shape), order)

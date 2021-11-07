@@ -2,8 +2,7 @@ import numpy as np
 from .core import Backend
 
 
-class NumpyBackend(Backend):
-    backend_name = 'numpy'
+class NumpyBackend(Backend, backend_name='numpy'):
 
     @staticmethod
     def context(tensor):

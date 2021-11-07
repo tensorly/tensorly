@@ -19,8 +19,7 @@ from .core import Backend
 
 
 
-class JaxBackend(Backend):
-    backend_name = 'jax'
+class JaxBackend(Backend, backend_name='jax'):
 
     @staticmethod
     def context(tensor):
