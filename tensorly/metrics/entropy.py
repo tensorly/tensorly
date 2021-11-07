@@ -7,17 +7,19 @@ from ..tt_tensor import tt_to_tensor
 
 
 def vonneumann_entropy(tensor):
-    """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix). 
+    """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix).
+    Note: The von Neumann entropy is - sum_i p_i ln(p_i), where p_i are the probabilities that each state is occupied (the eigenvalues of the density matrix).
 
     Parameters
     ----------
-    tensor : (matrix)
-        Data structure
+    tensor : Non-decomposed tensor with indices whose shapes are all a factor of two (represent one or more qubits)
 
     Returns
     -------
     von_neumann_entropy : order-0 tensor
     """
+    square_dim = int(tl.sqrt(tl.prod(tl.tensor(tensor.shape))))
+    tensor = tl.reshape(tensor, (square_dim, square_dim))
     try:
         eig_vals = T.eigh(tensor)[0]
     except:
@@ -43,10 +45,8 @@ def tt_vonneumann_entropy(tensor):
     -------
     tt_von_neumann_entropy : order-0 tensor
     """
-    square_dim = int(tl.sqrt(tl.prod(tl.tensor(tensor.shape))))
-    tensor = tl.reshape(tt_to_tensor(tensor), (square_dim, square_dim))
 
-    return vonneumann_entropy(tensor)
+    return vonneumann_entropy(tt_to_tensor(tensor))
 
 
 def cp_vonneumann_entropy(tensor):
