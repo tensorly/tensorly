@@ -31,7 +31,7 @@ class BackendManager(types.ModuleType):
                   'sin', 'cos', 'clip', 'kr', 'kron', 'partial_svd', 'lstsq', 'eps', 'finfo',
                   'solve', 'qr', 'randn', 'check_random_state', 'sort', 'eigh',
                   'index_update', 'context', 'tensor', 'norm', 'to_numpy', 'is_tensor',
-                  'randomized_range_finder', 'randomized_svd'
+                  'randomized_range_finder', 'randomized_svd', 'argsort', 'flip', 'count_nonzero'
                  ]
     _attributes = ['int64', 'int32', 'float64', 'float32', 
                    'complex128', 'complex64', 'SVD_FUNS', 'index', 'backend_name']

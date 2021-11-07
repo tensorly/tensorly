@@ -1435,3 +1435,9 @@ class Backend(object):
         """Return the cos of x.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def flip(tensor, axis=None):
+        """Reverse the order of elements in an array along the given axis.
+        """
+        raise NotImplementedError
