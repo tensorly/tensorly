@@ -1,9 +1,12 @@
+import pytest
 import tensorly as tl
 from .._tt import tensor_train, tensor_train_matrix, TensorTrain
 from ...tt_matrix import tt_matrix_to_tensor
 from ...random import random_tt
 from ...testing import assert_, assert_array_almost_equal, assert_class_wrapper_correctly_passes_arguments
 
+skip_mxnet= pytest.mark.skipif(tl.get_backend() == "mxnet", 
+                 reason="MXNet currently does not support transpose for tensors of order > 6.")
 
 def test_tensor_train(monkeypatch):
     """ Test for tensor_train """
@@ -62,6 +65,9 @@ def test_tensor_train(monkeypatch):
 
     assert_class_wrapper_correctly_passes_arguments(monkeypatch, tensor_train, TensorTrain, ignore_args={}, rank=3)
 
+
+ # TODO: Remove once MXNet supports transpose for > 6th order tensors
+@skip_mxnet
 
 def test_tensor_train_matrix():
     """Test for tensor_train_matrix decomposition"""
