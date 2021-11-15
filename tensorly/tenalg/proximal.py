@@ -785,17 +785,14 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
 
         V = tl.clip(V, a_min=0, a_max=None)
         # Scaling
-        scale = tl.sum(UtM * V) / tl.sum(
-                       UtU * tl.dot(V, tl.transpose(V)))
+        scale = tl.sum(UtM * V) / tl.sum(UtU * tl.dot(V, tl.transpose(V)))
         V = V * scale
 
     if exact:
         n_iter_max = 50000
         tol = 10e-16
-
     for iteration in range(n_iter_max):
         rec_error = 0
-        rec_error0 = 0
         for k in range(rank):
 
             if UtU[k, k]:
@@ -825,21 +822,20 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
                 if norm != 0:
                     V[k, :] /= norm
                 else:
-                    sqrt_n = 1/n_col_M ** (1/2)
+                    sqrt_n = 1 / n_col_M ** (1 / 2)
                     V[k, :] = [sqrt_n for i in range(n_col_M)]
-        if iteration == 1:
+        if iteration == 0:
             rec_error0 = rec_error
 
-        numerator = tl.shape(V)[0]*tl.shape(V)[1]+tl.shape(V)[1]*rank
-        denominator = tl.shape(V)[0]*rank+tl.shape(V)[0]
-        complexity_ratio = 1+(numerator/denominator)
+        numerator = tl.shape(V)[0] * tl.shape(V)[1] + tl.shape(V)[1] * rank
+        denominator = tl.shape(V)[0] * rank + tl.shape(V)[0]
+        complexity_ratio = 1 + (numerator / denominator)
         if exact:
             if rec_error < tol * rec_error0:
                 break
         else:
             if rec_error < tol * rec_error0 or iteration > 1 + 0.5 * complexity_ratio:
                 break
-
     return V, rec_error, iteration, complexity_ratio
 
 
