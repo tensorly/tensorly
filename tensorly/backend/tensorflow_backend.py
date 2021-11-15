@@ -20,8 +20,8 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
 
     @staticmethod
     def tensor(data, dtype=np.float32, device=None, device_id=None):
-        if isinstance(data, tf.Tensor):
-            return data
+        if isinstance(data, tf.Tensor) or isinstance(data, tf.Variable):
+            return tf.cast(data, dtype=dtype)
 
         out = tf.Variable(data, dtype=dtype)
         return out.gpu(device_id) if device == 'gpu' else out
