@@ -1425,6 +1425,18 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def log(x):
+        """Return the logarithm of x.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def exp(x):
+        """Return the exponential of x.
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def sin(x):
         """Return the sin of x.
         """

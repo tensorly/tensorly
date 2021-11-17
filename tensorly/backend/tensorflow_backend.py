@@ -233,6 +233,8 @@ _FUN_NAMES = [
     (tf.tensordot, 'tensordot'),
     (tfm.sin, 'sin'),
     (tfm.cos, 'cos'),
+    (tfm.log, 'log'),
+    (tfm.exp, 'exp'),
     (tfm.count_nonzero, 'count_nonzero'),
     (tfm.cumsum, 'cumsum'),
     (tfm.reduce_any, 'any')

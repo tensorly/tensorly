@@ -114,7 +114,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'trace', 'any',
              'zeros_like', 'eye', 'concatenate', 'max', 'min', 'flip', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero',  'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
+             'argmax', 'stack', 'diag', 'einsum', 'log2', 'log', 'exp', 'tensordot', 'sin', 'cos']:
     MxnetBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'eigh']:
