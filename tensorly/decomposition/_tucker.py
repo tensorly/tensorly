@@ -292,7 +292,7 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
         level of verbosity
     ranks : None or int list
     size of the core tensor
-    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
+    normalize_factors : if True, aggregates the norms of the factors in the core.
 
     Returns
     -------
@@ -373,8 +373,7 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
                              fixed_modes=None, random_state=None,
                              verbose=False, normalize_factors=False, return_errors=False, exact=False, 
                              algorithm='fista'):
-    """
-    Non-negative Tucker decomposition
+    r"""Non-negative Tucker decomposition with HALS
 
     Uses HALS to update each factor columnwise and uses
     fista or active set algorithm to update the core, see [1]_ 
@@ -391,8 +390,8 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
-          tolerance: the algorithm stops when the variation in
-          the reconstruction error is less than the tolerance
+        tolerance: the algorithm stops when the variation in
+        the reconstruction error is less than the tolerance
         Default: 1e-8
     sparsity_coefficients : array of float (as much as the number of modes)
         The sparsity coefficients are used for each factor
@@ -408,17 +407,18 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
         Indicates whether the algorithm prints the successive
         reconstruction errors or not
         Default: False
-    normalize_factors : if True, aggregates the core which will contain the norms of the factors.
+    normalize_factors : if True, aggregates the norms of the factors in the core.
     return_errors : boolean
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
         Default: False
-    exact : If it is True, the HALS nnls subroutines give results with high precision but it needs high computational cost. 
+    exact : If it is True, the HALS nnls subroutines give results with high precision but it has a higher computational cost.
         If it is False, the algorithm gives an approximate solution.
         Default: False
     algorithm : {'fista', 'active_set'}
         Non negative least square solution to update the core. 
         Default: 'fista'
+
     Returns
     -------
     factors : ndarray list
@@ -430,43 +430,47 @@ def non_negative_tucker_hals(tensor, rank, n_iter_max=100, init="svd", svd='nump
     Notes
     -----
     Tucker decomposes a tensor into a core tensor and list of factors:
+
     .. math::
-        \\begin{equation}
-            tensor = [| core; factors[0], ... ,factors[-1] |]
-        \\end{equation}
+
+            tensor = [| core; factors[0], ... ,factors[-1] |],
 
     We solve the following problem for each factor:
+
     .. math::
-        \\begin{equation}
-            \\min_{tensor >= 0} ||tensor_[i] - factors[i]\\times core_[i] \\times (\\prod_{i\\neq j}(factors[j]))^T||^2
-        \\end{equation}
+
+            \min_{tensor >= 0} ||tensor_i - factors[i]\times core_i \times (\prod_{i\neq j}(factors[j]))^T||^2,
 
     If we define two variables such as:
+
     .. math::
-            U = core_[i] \\times (\\prod_{i\\neq j}(factors[j]\\times factors[j]^T)) \\
-            M = tensor_[i]
+
+            U = core_i \times (\prod_{i \neq j}(factors[j] \times factors[j]^T)), \\
+            M = tensor_i,
 
     Gradient of the problem becomes:
+
     .. math::
-        \\begin{equation}
-            \\delta = -U^TM + factors[i] \\times U^TU
-        \\end{equation}
+
+            \delta = -U^TM + factors[i] \times U^TU,
 
     In order to calculate UTU and UTM, we define two variables:
+
     .. math::
-        \\begin{equation}
-            core_cross = \prod_{i\\neq j}(core_[i] \\times (\\prod_{i\\neq j}(factors[j]\\times factors[j]^T)) \\
-            tensor_cross =  \prod_{i\\neq j} tensor_[i] \\times factors_[i]
-        \\end{equation}
+
+            CoreCross = \prod_{i\neq j}(core_i \times (\prod_{i\neq j}(factors[j]\times factors[j]^T)) \\
+            TensorCross =  \prod_{i\neq j} tensor_i \times factors[i],
+
     Then UTU and UTM becomes:
+
     .. math::
-        \\begin{equation}
-            UTU = core_cross_[j] \\times core_[j]^T  \\
-            UTM =  (tensor_cross_[j] \\times \\times core_[j]^T)^T
-        \\end{equation}
+
+            U^TU = CoreCross_j \times core_j^T, \\
+            U^TM = (TensorCross_j \times core_j^T)^T,
+
     References
     ----------
-    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+    .. [1] G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
     rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
@@ -717,6 +721,117 @@ class Tucker_NN(DecompositionMixin):
     # def inverse_transform(self, tensor):
     #     _, factors = self.decomposition_
     #     return tlg.multi_mode_dot(tensor, factors)
+
+    def __repr__(self):
+        return f'Rank-{self.rank} Non-Negative Tucker decomposition via multiplicative updates.'
+
+
+class Tucker_NN_HALS(DecompositionMixin):
+    """
+    Non-negative Tucker decomposition
+
+    Uses HALS to update each factor columnwise and uses
+    fista or active set algorithm to update the core, see [1]_
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank : None, int or int list
+        size of the core tensor, ``(len(ranks) == tensor.ndim)``
+        if int, the same rank is used for all modes
+    n_iter_max : int
+        maximum number of iteration
+    init : {'svd', 'random'}, optional
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    tol : float, optional
+        tolerance: the algorithm stops when the variation in
+        the reconstruction error is less than the tolerance
+        Default: 1e-8
+    sparsity_coefficients : array of float (as much as the number of modes)
+        The sparsity coefficients are used for each factor
+        If set to None, the algorithm is computed without sparsity
+        Default: None
+    core_sparsity_coefficient : array of float. This coefficient imposes sparsity on core
+        when it is updated with fista.
+        Default: None
+    fixed_modes : array of integers (between 0 and the number of modes)
+        Has to be set not to update a factor, 0 and 1 for U and V respectively
+        Default: None
+    verbose : boolean
+        Indicates whether the algorithm prints the successive
+        reconstruction errors or not
+        Default: False
+    normalize_factors : if True, aggregates the norms of the factors in the core.
+    return_errors : boolean
+        Indicates whether the algorithm should return all reconstruction errors
+        and computation time of each iteration or not
+        Default: False
+    exact : If it is True, the HALS nnls subroutines give results with high precision but it has a higher computational cost.
+        If it is False, the algorithm gives an approximate solution.
+        Default: False
+    algorithm : {'fista', 'active_set'}
+        Non negative least square solution to update the core.
+        Default: 'fista'
+
+    Returns
+    -------
+    core : ndarray of size `ranks`
+        core tensor of the Tucker decomposition
+    factors : ndarray list
+        list of factors of the Tucker decomposition.
+        Its ``i``-th element is of shape ``(tensor.shape[i], ranks[i])``
+
+    References
+    ----------
+    .. [1] tl.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
+    SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+    """
+
+    def __init__(self, rank=None, n_iter_max=100, init="svd", svd='numpy_svd', tol=1e-8,
+                 sparsity_coefficients=None, core_sparsity_coefficient=None,
+                 fixed_modes=None, random_state=None, verbose=False, normalize_factors=False,
+                 return_errors=False, exact=False, algorithm='fista'):
+        self.rank = rank
+        self.n_iter_max = n_iter_max
+        self.normalize_factors = normalize_factors
+        self.init = init
+        self.svd = svd
+        self.tol = tol
+        self.random_state = random_state
+        self.verbose = verbose
+        self.sparsity_coefficients = sparsity_coefficients
+        self.core_sparsity_coefficient = core_sparsity_coefficient
+        self.fixed_modes = fixed_modes
+        self.return_errors = return_errors
+        self.exact = exact
+        self.algorithm = algorithm
+
+    def fit_transform(self, tensor):
+        tucker_tensor, errors = non_negative_tucker_hals(tensor, rank=self.rank,
+                                                         n_iter_max=self.n_iter_max,
+                                                         normalize_factors=self.normalize_factors,
+                                                         init=self.init,
+                                                         svd=self.svd,
+                                                         tol=self.tol,
+                                                         random_state=self.random_state,
+                                                         verbose=self.verbose,
+                                                         return_errors=True,
+                                                         core_sparsity_coefficient=self.core_sparsity_coefficient,
+                                                         sparsity_coefficients=self.sparsity_coefficients,
+                                                         fixed_modes=self.fixed_modes,
+                                                         exact=self.exact, algorithm=self.algorithm)
+        self.decomposition_ = tucker_tensor
+        self.errors_ = errors
+        return tucker_tensor
+
+    # def transform(self, tensor):
+        #     _, factors = self.decomposition_
+        #     return tlg.multi_mode_dot(tensor, factors, transpose=True)
+
+        # def inverse_transform(self, tensor):
+        #     _, factors = self.decomposition_
+        #     return tlg.multi_mode_dot(tensor, factors)
 
     def __repr__(self):
         return f'Rank-{self.rank} Non-Negative Tucker decomposition via multiplicative updates.'
