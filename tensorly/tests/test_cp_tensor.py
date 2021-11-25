@@ -285,3 +285,12 @@ def test_cp_lstsq_grad():
 
     cost_after = tl.norm(cp_to_tensor(cp_new) - dense)
     assert_(cost_before > cost_after)
+
+def test_cp_copy():
+    shape = (3, 4, 5)
+    rank = 4
+    cp_tensor = random_cp(shape, rank)
+    weights, factors = cp_tensor
+    weights_normalized, factors_normalized = cp_normalize(cp_tensor.cp_copy())
+    # Check that modifying copy tensor doesn't change the original tensor
+    assert_array_almost_equal(cp_to_tensor((weights, factors)), cp_to_tensor(cp_tensor))

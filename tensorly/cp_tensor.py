@@ -71,6 +71,9 @@ class CPTensor(FactorizedTensor):
     def to_unfolded(self, mode):
         return cp_to_unfolded(self, mode)
 
+    def cp_copy(self):
+        return CPTensor((T.copy(self.weights), [T.copy(self.factors[i]) for i in range(len(self.factors))]))
+
     def mode_dot(self, matrix_or_vector, mode, keep_dim=False, copy=True):
         """n-mode product of a CP tensor and a matrix or vector at the specified mode
 
