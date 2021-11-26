@@ -299,7 +299,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
 def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
                               sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
-                              verbose=False, return_errors=False, cvg_criterion='abs_rec_error'):
+                              verbose=False, return_errors=False, cvg_criterion='abs_rec_error', random_state=None):
     """
     Non-negative CP decomposition via HALS
 
@@ -363,7 +363,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     """
 
     weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
-                                        random_state=None,
+                                        random_state=random_state,
                                         normalize_factors=False)
 
     norm_tensor = tl.norm(tensor, 2)
@@ -652,7 +652,7 @@ class CP_NN_HALS(DecompositionMixin):
 
     def __init__(self, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
                  sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
-                 verbose=False, cvg_criterion='abs_rec_error'):
+                 verbose=False, cvg_criterion='abs_rec_error', random_state=None):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
@@ -664,6 +664,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.exact = exact
         self.verbose = verbose
         self.cvg_criterion = cvg_criterion
+        self.random_state = random_state
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -693,6 +694,7 @@ class CP_NN_HALS(DecompositionMixin):
             verbose=self.verbose,
             return_errors=True,
             cvg_criterion=self.cvg_criterion,
+            random_state=self.random_state
         )
 
         self.decomposition_ = cp_tensor
