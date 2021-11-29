@@ -180,7 +180,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
 
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0) * weights)
+            iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
             unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
 
     return unnorml_rec_error, tensor, norm_tensor
@@ -332,18 +332,14 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                 if i != mode:
                     pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
             pseudo_inverse += Id
-
-            mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+            pseudo_inverse = tl.reshape(weights, (-1, 1)) * pseudo_inverse * tl.reshape(weights, (1, -1))
+            mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
             factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse),
                                   tl.transpose(mttkrp)))
-
-            if normalize_factors:
-                scales = tl.norm(factor, 2, axis=0)
-                weights = tl.where(scales==0, tl.ones(tl.shape(scales), **tl.context(factor)), scales)
-                factor = factor / tl.reshape(weights, (1, -1))
-
             factors[mode] = factor
+            if normalize_factors and mode != modes_list[-1]:
+                   weights, factors = cp_normalize((weights, factors))
 
         # Will we be performing a line search iteration
         if linesearch and iteration % 2 == 0 and iteration > 5:
@@ -415,7 +411,8 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
-
+        if normalize_factors:
+            weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
     
     if sparsity:

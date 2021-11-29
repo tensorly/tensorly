@@ -189,6 +189,8 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         level of verbosity
+    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+        of shape (rank, ), which will contain the norms of the factors
     fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
@@ -243,11 +245,11 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                     accum *= tl.dot(tl.transpose(factors[e]), factors[e])
                 else:
                     accum = tl.dot(tl.transpose(factors[e]), factors[e])
-
+            accum = tl.reshape(weights, (-1, 1)) * accum * tl.reshape(weights, (1, -1))
             if mask is not None:
-                tensor = tensor * mask + tl.cp_to_tensor((None, factors), mask=1 - mask)
+                tensor = tensor * mask + tl.cp_to_tensor((weights, factors), mask=1 - mask)
 
-            mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+            mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
             numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
             denominator = tl.dot(factors[mode], accum)
@@ -255,9 +257,8 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             factor = factors[mode] * numerator / denominator
 
             factors[mode] = factor
-
-        if normalize_factors:
-            weights, factors = cp_normalize((weights, factors))
+            if normalize_factors and mode != modes_list[-1]:
+                   weights, factors = cp_normalize((weights, factors))
 
         if tol:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
@@ -265,7 +266,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp * factor, axis=0) * weights)
+            iprod = tl.sum(tl.sum(mttkrp * factor, axis=0))
             rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
             rec_errors.append(rec_error)
             if iteration >= 1:
@@ -288,7 +289,8 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
-
+        if normalize_factors:
+            weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
 
     if return_errors:
@@ -297,9 +299,9 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
         return cp_tensor
 
 
-def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
+def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8, random_state=None,
                               sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
-                              verbose=False, return_errors=False, cvg_criterion='abs_rec_error', random_state=None):
+                              normalize_factors=False, verbose=False, return_errors=False, cvg_criterion='abs_rec_error'):
     """
     Non-negative CP decomposition via HALS
 
@@ -319,6 +321,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
           Default: 1e-8
+    random_state : {None, int, np.random.RandomState}
     sparsity_coefficients: array of float (of length the number of modes)
         The sparsity coefficients on each factor.
         If set to None, the algorithm is computed without sparsity
@@ -333,6 +336,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
         If it is False, the algorithm gives an approximate solution
         Default: False
+    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+        of shape (rank, ), which will contain the norms of the factors
     verbose: boolean
         Indicates whether the algorithm prints the successive
         reconstruction errors or not
@@ -365,7 +370,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
 
     weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
                                         random_state=random_state,
-                                        normalize_factors=False)
+                                        normalize_factors=normalize_factors)
 
     norm_tensor = tl.norm(tensor, 2)
 
@@ -405,24 +410,23 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
                 if i != mode:
                     pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
 
-            if not iteration and weights is not None:
-                # Take into account init weights
-                mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
-            else:
-                mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+            pseudo_inverse = tl.reshape(weights, (-1, 1)) * pseudo_inverse * tl.reshape(weights, (1, -1))
+            mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
             if mode in nn_modes:
                 # Call the hals resolution with nnls, optimizing the current mode
                 nn_factor, _, _, _ = hals_nnls(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
-                                            n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
-                                            exact=exact)
+                                               n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
+                                               exact=exact)
                 factors[mode] = tl.transpose(nn_factor)
             else:
                 factor = tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp))
                 factors[mode] = tl.transpose(factor)
+            if normalize_factors and mode != modes[-1]:
+                   weights, factors = cp_normalize((weights, factors))
         if tol:
             factors_norm = cp_norm((weights, factors))
-            iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0) * weights)
+            iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
             rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
             rec_errors.append(rec_error)
             if iteration >= 1:
@@ -445,7 +449,8 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             else:
                 if verbose:
                     print('reconstruction error={}'.format(rec_errors[-1]))
-
+        if normalize_factors:
+            weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
     if return_errors:
         return cp_tensor, rec_errors
@@ -653,17 +658,19 @@ class CP_NN_HALS(DecompositionMixin):
 
     def __init__(self, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
                  sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
-                 verbose=False, cvg_criterion='abs_rec_error', random_state=None):
+                 verbose=False, normalize_factors=False, cvg_criterion='abs_rec_error', random_state=None):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
         self.svd = svd
         self.tol = tol
         self.sparsity_coefficients = sparsity_coefficients
+        self.random_state = random_state
         self.fixed_modes = fixed_modes
         self.nn_modes = nn_modes
         self.exact = exact
         self.verbose = verbose
+        self.normalize_factors = normalize_factors
         self.cvg_criterion = cvg_criterion
         self.random_state = random_state
 
@@ -688,11 +695,13 @@ class CP_NN_HALS(DecompositionMixin):
             init=self.init,
             svd=self.svd,
             tol=self.tol,
+            random_state=self.random_state,
             sparsity_coefficients=self.sparsity_coefficients,
             fixed_modes=self.fixed_modes,
             nn_modes=self.nn_modes,
             exact=self.exact,
             verbose=self.verbose,
+            normalize_factors=self.normalize_factors,
             return_errors=True,
             cvg_criterion=self.cvg_criterion,
             random_state=self.random_state
