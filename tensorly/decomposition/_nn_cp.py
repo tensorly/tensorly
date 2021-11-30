@@ -351,6 +351,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
         If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
         If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
     sparsity : float or int
+    random_state : {None, int, np.random.RandomState}
 
     Returns
     -------
@@ -656,8 +657,8 @@ class CP_NN_HALS(DecompositionMixin):
     """
 
     def __init__(self, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
-                 sparsity_coefficients=None, random_state=None, fixed_modes=None, nn_modes='all', exact=False,
-                 verbose=False, normalize_factors=False, cvg_criterion='abs_rec_error'):
+                 sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
+                 verbose=False, normalize_factors=False, cvg_criterion='abs_rec_error', random_state=None):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
@@ -671,6 +672,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.verbose = verbose
         self.normalize_factors = normalize_factors
         self.cvg_criterion = cvg_criterion
+        self.random_state = random_state
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
