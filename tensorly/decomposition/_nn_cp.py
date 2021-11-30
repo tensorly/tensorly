@@ -704,7 +704,6 @@ class CP_NN_HALS(DecompositionMixin):
             normalize_factors=self.normalize_factors,
             return_errors=True,
             cvg_criterion=self.cvg_criterion,
-            random_state=self.random_state
         )
 
         self.decomposition_ = cp_tensor
