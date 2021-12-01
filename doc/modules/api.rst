@@ -346,6 +346,7 @@ Functions
     tucker
     partial_tucker
     non_negative_tucker
+    non_negative_tucker_hals
     robust_pca
     tensor_train
     tensor_train_matrix

@@ -1,6 +1,6 @@
 import numpy as np
 import tensorly as tl
-from .._tucker import tucker, partial_tucker, non_negative_tucker, non_negative_tucker_hals, Tucker, Tucker_NN
+from .._tucker import tucker, partial_tucker, non_negative_tucker, non_negative_tucker_hals, Tucker, Tucker_NN, Tucker_NN_HALS
 from ...tucker_tensor import tucker_to_tensor
 from ...tenalg import multi_mode_dot
 from ...random import random_tucker
@@ -167,7 +167,7 @@ def test_non_negative_tucker(monkeypatch):
     assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_tucker, Tucker_NN, ignore_args={'return_errors'}, rank=3)
 
 
-def test_non_negative_tucker_hals():
+def test_non_negative_tucker_hals(monkeypatch):
     """Test for non-negative Tucker wih HALS"""
     rng = tl.check_random_state(1234)
 
@@ -214,3 +214,4 @@ def test_non_negative_tucker_hals():
         expected_shape = (tl.shape(tensor)[i], rank)
         assert_(tl.shape(f) == expected_shape, '{}-th factor has the wrong shape, got {}, but expected {}.'.format(
                 i, tl.shape(f), expected_shape))
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, non_negative_tucker_hals, Tucker_NN_HALS, ignore_args={'return_errors'}, rank=3)
