@@ -3,7 +3,7 @@ Load example datasets.
 """
 
 import numpy as np
-
+from sklearn.utils import Bunch
 
 def IL2data():
     IL2mutants = ['IL2 (Mono)', 'IL15 (Mono)', 'WT N-term (Biv)', 'H16N N-term (Biv)',
@@ -13,4 +13,4 @@ def IL2data():
 
     cells = ['Treg IL2Ra_hi', 'Treg', 'Treg IL2Ra_lo', 'Thelper IL2Ra_hi', 'Thelper', 'Thelper IL2Ra_lo', 'CD8+', 'NK']
 
-    return np.load("datasets/IL2_Response_Tensor.npy"), (IL2mutants, cells)
+    return Bunch(data=np.load("data/IL2_Response_Tensor.npy"), ligands=IL2mutants, cells=cells)
