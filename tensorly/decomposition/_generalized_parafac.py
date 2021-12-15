@@ -3,7 +3,8 @@ from ..random import random_cp
 from ._base_decomposition import DecompositionMixin
 import tensorly as tl
 from ..cp_tensor import CPTensor, validate_cp_rank, unfolding_dot_khatri_rao
-from ..metrics.losses import loss_operator, gradient_operator
+from ..metrics import loss_operator, gradient_operator
+from . import sample_khatri_rao
 
 
 def initialize_generalized_parafac(tensor, rank, init='svd', svd='numpy_svd', loss=None, random_state=None):
@@ -82,38 +83,6 @@ def initialize_generalized_parafac(tensor, rank, init='svd', svd='numpy_svd', lo
     return kt
 
 
-def sampled_kr_product(matrices, indices_list, n_samples=None, skip_matrix=None):
-    '''
-    Khatri-Rao product of the given list of matrices and indices.
-
-    Parameters
-    ----------
-    matrices : ndarray list
-        list of matrices with the same number of columns, i.e.::
-            for i in len(matrices):
-                matrices[i].shape = (n_i, m)
-    indices_list : list
-    n_samples : int
-        number of samples to be taken from the Khatri-Rao product
-    skip_matrix : None or int, optional, default is None
-        if not None, index of a matrix to skip
-
-    Returns
-    -------
-    sampled_Khatri_Rao : ndarray
-        The sampled matricised tensor Khatri-Rao with `n_samples` rows
-    '''
-    if n_samples is None:
-        raise ValueError('n_samples')
-    if skip_matrix is not None:
-        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
-    rank = tl.shape(matrices[0])[1]
-    sampled_kr = tl.ones((n_samples, rank), **tl.context(matrices[0]))
-    for indices, matrix in zip(indices_list, matrices):
-        sampled_kr = sampled_kr * matrix[indices, :]
-    return sampled_kr
-
-
 def stochastic_gradient(tensor, factors, batch_size, loss='gaussian', random_state=None, mask=None):
     '''
     Computes stochastic gradient between given tensor and estimated factors according to the given loss and batch size.
@@ -153,7 +122,8 @@ def stochastic_gradient(tensor, factors, batch_size, loss='gaussian', random_sta
         indices_list_mode_rest = indices_list.copy()
         indices_list.insert(mode, slice(None, None, None))
         indices_list = tuple(indices_list)
-        sampled_kr = sampled_kr_product(factors, indices_list_mode_rest, n_samples=batch_size, skip_matrix=mode)
+        sampled_kr, _ = sample_khatri_rao(factors, indices_list=indices_list_mode_rest, n_samples=batch_size,
+                                          skip_matrix=mode)
         if mode:
             gradient_tensor = gradient_operator(tensor[indices_list], tl.dot(sampled_kr, tl.transpose(factors[mode])),
                                                 loss=loss, mask=mask)
@@ -347,8 +317,8 @@ def stochastic_generalized_parafac(tensor, rank, n_iter_max=1000, init='random',
     t_iter = 1
     indices_tuple = tuple([rng.randint(0, tl.shape(f)[0], size=batch_size, dtype=int) for f in factors])
     current_loss = loss_operator(tensor[indices_tuple],
-                                 tl.sum(sampled_kr_product(factors, indices_tuple, n_samples=batch_size), axis=1),
-                                 loss=loss, mask=mask)
+                                 tl.sum(sample_khatri_rao(factors, indices_list=indices_tuple, n_samples=batch_size)[0],
+                                 axis=1), loss=loss, mask=mask)
     # global loss
     current_loss = tl.sum(current_loss)
     for i in modes:
@@ -378,8 +348,8 @@ def stochastic_generalized_parafac(tensor, rank, n_iter_max=1000, init='random',
             t_iter += 1
         # Calculate the current error
         current_loss = loss_operator(tensor[indices_tuple],
-                                     tl.sum(sampled_kr_product(factors, indices_tuple, n_samples=batch_size), axis=1),
-                                     loss=loss, mask=mask)
+                                     tl.sum(sample_khatri_rao(factors, indices_list=indices_tuple, n_samples=batch_size)[0],
+                                     axis=1), loss=loss, mask=mask)
         # global loss
         current_loss = tl.sum(current_loss)
         if current_loss >= loss_old:

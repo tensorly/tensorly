@@ -31,7 +31,7 @@ def test_generalized_parafac(monkeypatch):
     loss = 'gamma'
     array = rng.gamma(1, initial_tensor, size=shape)
     tensor = T.tensor(array)
-    gcp_result = generalized_parafac(tensor, loss=loss, rank=rank, init=init, tol=1e-5)
+    gcp_result = generalized_parafac(tensor, loss=loss, rank=rank, init=init, tol=1e-8)
     reconstructed_tensor = cp_to_tensor(gcp_result)
     error = loss_operator(initial_tensor, reconstructed_tensor, loss)
     error = T.sum(error) / T.norm(initial_tensor, 2)
@@ -42,7 +42,7 @@ def test_generalized_parafac(monkeypatch):
     loss = 'rayleigh'
     array = rng.rayleigh(initial_tensor, size=shape)
     tensor = T.tensor(array)
-    gcp_result = generalized_parafac(tensor, loss=loss, rank=rank, init=init, tol=1e-8)
+    gcp_result = generalized_parafac(tensor, loss=loss, rank=rank, init=init, tol=1e-16)
     reconstructed_tensor = cp_to_tensor(gcp_result)
     error = loss_operator(initial_tensor, reconstructed_tensor, loss)
     error = T.sum(error) / T.norm(initial_tensor, 2)
