@@ -44,5 +44,5 @@ def test_TTOI(monkeypatch):
     # check total improvement of estimation error of TTOI from initialization (TTSVD) is larger than 10% of the norm of the true tensor
     assert_(np.all(estimation_errors[0]-estimation_errors[2*niter-1] >= 0.1))
 
-   assert_class_wrapper_correctly_passes_arguments(monkeypatch, TTOI, TensorTrain, ignore_args={}, rank=3)
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, TTOI, TensorTrain, ignore_args={}, rank=3)
     
