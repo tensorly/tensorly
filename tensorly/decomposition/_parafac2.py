@@ -1,6 +1,7 @@
 from warnings import warn
 
 import tensorly as tl
+from tensorly import backend as T
 from ._base_decomposition import DecompositionMixin
 from tensorly.random import random_parafac2
 from tensorly import backend as T
@@ -38,10 +39,10 @@ def initialize_decomposition(tensor_slices, rank, init='random', svd='numpy_svd'
                                **context)
     elif init == 'svd':
         try:
-            svd_fun = tl.SVD_FUNS[svd]
+            svd_fun = T.SVD_FUNS[svd]
         except KeyError:
             message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                    svd, tl.get_backend(), tl.SVD_FUNS)
+                    svd, tl.get_backend(), T.SVD_FUNS)
             raise ValueError(message)
         padded_tensor = _pad_by_zeros(tensor_slices)
         A = T.ones((padded_tensor.shape[0], rank), **context)
@@ -117,11 +118,11 @@ def _project_tensor_slices(tensor_slices, projections, out=None):
 
 
 def _get_svd(svd):
-    if svd in tl.SVD_FUNS:
-        return tl.SVD_FUNS[svd]
+    if svd in T.SVD_FUNS:
+        return T.SVD_FUNS[svd]
     else:
         message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                svd, tl.get_backend(), tl.SVD_FUNS)
+                svd, tl.get_backend(), T.SVD_FUNS)
         raise ValueError(message)
 
 
@@ -188,7 +189,7 @@ def parafac2(tensor_slices, rank, n_iter_max=2000, init='random', svd='numpy_svd
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
     normalize_factors : bool (optional)
         If True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors. Note that
@@ -382,7 +383,7 @@ class Parafac2(DecompositionMixin):
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
     normalize_factors : bool (optional)
         If True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors. Note that

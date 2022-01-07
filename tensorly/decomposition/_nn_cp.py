@@ -1,6 +1,7 @@
 import numpy as np
 import warnings
 import tensorly as tl
+from tensorly import backend as T
 from ._base_decomposition import DecompositionMixin
 from ..random import random_cp
 from ..base import unfold
@@ -102,7 +103,7 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
     rank : int
     init : {'svd', 'random'}, optional
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
     nntype : {'nndsvd', 'nndsvda'}
         Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
 
@@ -119,10 +120,10 @@ def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=Non
 
     elif init == 'svd':
         try:
-            svd_fun = tl.SVD_FUNS[svd]
+            svd_fun = T.SVD_FUNS[svd]
         except KeyError:
             message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                svd, tl.get_backend(), tl.SVD_FUNS)
+                svd, tl.get_backend(), T.SVD_FUNS)
             raise ValueError(message)
 
         factors = []
@@ -182,7 +183,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                  maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -316,7 +317,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
                  maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -476,7 +477,7 @@ class CP_NN(DecompositionMixin):
         init : {'svd', 'random'}, optional
             Type of factor matrix initialization. See `initialize_factors`.
         svd : str, default is 'numpy_svd'
-            function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+            function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
         normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
             of shape (rank, ), which will contain the norms of the factors
         tol : float, optional
@@ -601,7 +602,7 @@ class CP_NN_HALS(DecompositionMixin):
     init : {'svd', 'random'}, optional
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
     normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
     tol : float, optional

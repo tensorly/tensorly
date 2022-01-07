@@ -2,6 +2,7 @@ import numpy as np
 import warnings
 
 import tensorly as tl
+from tensorly import backend as T
 from ..random import random_cp
 from ..base import unfold
 from ..cp_tensor import (CPTensor, unfolding_dot_khatri_rao, cp_norm,
@@ -41,7 +42,7 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
     random_state : {None, int, np.random.RandomState}
     init : {'svd', 'random', cptensor}, optional
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
     non_negative : bool or dictionary
         This constraint is clipping negative values to '0'.
         If it is True, non-negative constraint is applied to all modes.
@@ -85,10 +86,10 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
 
     elif init == 'svd':
         try:
-            svd_fun = tl.SVD_FUNS[svd]
+            svd_fun = T.SVD_FUNS[svd]
         except KeyError:
             message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                svd, tl.get_backend(), tl.SVD_FUNS)
+                svd, tl.get_backend(), T.SVD_FUNS)
             raise ValueError(message)
 
         factors = []
@@ -170,7 +171,7 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
     init : {'svd', 'random', cptensor}, optional
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        function to use to compute the SVD, acceptable values in tensorly.backend.SVD_FUNS
     tol_outer : float, optional
         (Default: 1e-8) Relative reconstruction error tolerance for outer loop. The
         algorithm is considered to have found a local minimum when the
