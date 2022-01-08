@@ -46,7 +46,7 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
 
     @staticmethod
     def shape(tensor):
-        return tensor.shape
+        return tuple(tensor.shape)
 
     @staticmethod
     def ndim(tensor):
