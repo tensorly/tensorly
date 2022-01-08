@@ -294,6 +294,13 @@ def test_clip():
             assert tl.all(tl.clip(tensor, min_val, max_val) <= max_val), message
 
 
+def test_clips_all_negative_tensor_correctly():
+    # Regression test for bug found with the pytorch backend
+    negative_valued_tensor = tl.zeros((10, 10)) - 0.1
+    clipped_tensor = tl.clip(negative_valued_tensor, 0)
+    assert tl.all(clipped_tensor == 0)
+
+
 def test_where():
     # 1D
     shape = (2*3*4,); N = np.prod(shape)
