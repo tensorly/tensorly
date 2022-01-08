@@ -61,14 +61,10 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, inplace=False):
-        if a_max is None:
-            a_max = torch.max(tensor)
-        if a_min is None:
-            a_min = torch.min(tensor)
         if inplace:
-            return torch.clamp(tensor, a_min, a_max, out=tensor)
+            return torch.clip(tensor, a_min, a_max, out=tensor)
         else:
-            return torch.clamp(tensor, a_min, a_max)
+            return torch.clip(tensor, a_min, a_max)
 
     @staticmethod
     def all(tensor):
