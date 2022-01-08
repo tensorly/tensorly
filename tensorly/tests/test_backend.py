@@ -216,6 +216,8 @@ def test_shape():
     A2 = T.reshape(A, shape2)
     assert_equal(T.shape(A2), shape2)
 
+    assert type(T.shape(A2)) == tuple
+
 
 def test_ndim():
     A = T.arange(3*4*5)
