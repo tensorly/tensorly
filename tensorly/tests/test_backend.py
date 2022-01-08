@@ -269,10 +269,10 @@ def test_clip():
 
     # More extensive test with a larger random tensor
     rng = tl.check_random_state(0)
-    tensor = tl.tensor(rng.random_sample((10, 10, 10)))
+    tensor = tl.tensor(rng.random_sample((10, 10, 10)).astype('float32'))
 
-    val1 = rng.random_sample()
-    val2 = rng.random_sample()
+    val1 = np.float32(rng.random_sample())
+    val2 = np.float32(rng.random_sample())
     limits = [
         (min(val1, val2), max(val1, val2)),
         (-1, 2),
