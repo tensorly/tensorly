@@ -696,6 +696,35 @@ def cp_norm(cp_tensor):
     return T.sqrt(T.sum(norm))
 
 
+def cp_index(cp_tensor, index):
+    """Re-index the components of a CP tensor.
+    This can be used to duplicate, remove, or permute the components.
+
+    Parameters
+    ----------
+    cp_tensor : tl.CPTensor or (core, factors)
+    index : index of the components
+
+    Returns
+    -------
+    cp_tensor : tl.CPTensor
+
+    Notes
+    -----
+    Ensure that index includes each component once if you only wish to
+    permute the components (and not change how the reconstructed tensor would look).
+    """
+    _ = _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
+
+    factors = [f[:, index] for f in factors]
+    
+    if weights is not None:
+        weights = weights[index]
+
+    return CPTensor((weights, factors))
+
+
 # Deprecated classes and functions
 KruskalTensor = DefineDeprecated(deprecated_name='KruskalTensor', use_instead=CPTensor)
 kruskal_norm = DefineDeprecated(deprecated_name='kruskal_norm', use_instead=cp_norm)

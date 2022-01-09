@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 
 import tensorly as tl
@@ -8,7 +9,7 @@ from ..cp_tensor import (cp_to_tensor, cp_to_unfolded,
                               cp_mode_dot, unfolding_dot_khatri_rao,
                               cp_norm, cp_flip_sign,
                               _cp_n_param, validate_cp_rank,
-                              cp_lstsq_grad
+                              cp_lstsq_grad, cp_index
                         )
 from ..base import unfold, tensor_to_vec
 from tensorly.random import random_cp
@@ -294,3 +295,17 @@ def test_cp_copy():
     weights_normalized, factors_normalized = cp_normalize(cp_tensor.cp_copy())
     # Check that modifying copy tensor doesn't change the original tensor
     assert_array_almost_equal(cp_to_tensor((weights, factors)), cp_to_tensor(cp_tensor))
+
+@pytest.mark.parametrize("norml", [True, False])
+def test_cp_index(norml):
+    shape = (3, 4, 5)
+    rank = 4
+    cp_tensor = random_cp(shape, rank, normalise_factors=norml)
+    reconstruction = cp_to_tensor(cp_tensor)
+    cp_tensor_index = cp_index(cp_tensor, [1, 0, 3, 2])
+    # Check that permuting the components doesn't change the result
+    assert_array_almost_equal(cp_to_tensor(cp_tensor_index), reconstruction)
+
+    # Check that removing a component does change the result
+    cp_tensor_index = cp_index(cp_tensor, [1, 3, 2])
+    assert cp_tensor_index.rank == 3
