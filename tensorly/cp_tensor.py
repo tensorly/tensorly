@@ -716,7 +716,7 @@ def cp_index(cp_tensor, index):
     """
     _ = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
-    index = T.tensor(index, dtype=T.int32)
+    index = T.tensor(index, dtype=T.int64)
 
     factors = [f[:, index] for f in factors]
     
