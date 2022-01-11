@@ -83,3 +83,133 @@ def IL2data():
         task=task,
         DESC=DESC,
         LICENSE=LICENSE)
+
+
+def COVID19_data():
+    """
+    Load an example dataset of COVID-19 systems serology.
+    Formatted in a three-mode tensor of samples, antigens, and receptors
+    """
+
+    path_here = dirname(__file__)
+    tensor = np.load(path_here + "/data/COVID19_data.npy")
+
+    sampleLabels = np.array(['Negative', 'Negative', 'Negative', 'Negative', 'Negative',
+                             'Negative', 'Negative', 'Negative', 'Negative', 'Negative',
+                             'Negative', 'Negative', 'Negative', 'Negative', 'Negative',
+                             'Negative', 'Negative', 'Negative', 'Negative', 'Negative',
+                             'Negative', 'Negative', 'Negative', 'Negative', 'Negative',
+                             'Negative', 'Negative', 'Negative', 'Negative', 'Negative',
+                             'Negative', 'Negative', 'Negative', 'Negative', 'Negative',
+                             'Negative', 'Negative', 'Negative', 'Negative', 'Mild', 'Mild',
+                             'Mild', 'Mild', 'Mild', 'Mild', 'Mild', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Moderate', 'Moderate', 'Moderate', 'Moderate', 'Moderate',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Severe', 'Severe',
+                             'Severe', 'Severe', 'Severe', 'Severe', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased', 'Deceased', 'Deceased', 'Deceased',
+                             'Deceased', 'Deceased'], dtype=object)
+    antigenLabels = ["S", "RBD", "N", "S1", "S2", "S1 Trimer"]
+    receptorLabels = ["IgG1", "IgG2", "IgG3", "IgA1", "IgA2", "IgM", "FcRalpha", "FcR2A", "FcR2B", "FcR3A", "FcR3B"]
+
+    dims = ["samples", "antigens", "receptors"]
+    reference = ["Tan, Z. C., Murphy, M. C., Alpay, H. S., Taylor, S. D., & Meyer, A. S. (2021). Tensor‐structured decomposition improves systems serology analysis.  Molecular systems biology, 17(9), e10243.",
+                 "Zohar, T., Loos, C., Fischinger, S., Atyeo, C., Wang, C., Slein, M. D., ... & Alter, G. (2020). Compromised humoral functional evolution tracks with SARS-CoV-2 mortality. Cell, 183(6), 1508-1519."]
+    task = ["CP decomposition demonstration"]
+    DESC = "An example dataset of COVID-19 systems serology."
+    LICENSE = """Copyright 2022 The Regents of the University of California
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+            SOFTWARE."""
+
+    return Bunch(
+        tensor=tensor,
+        samples=sampleLabels,
+        antigens=antigenLabels,
+        receptors=receptorLabels,
+        dims=dims,
+        reference=reference,
+        task=task,
+        DESC=DESC,
+        LICENSE=LICENSE)
