@@ -593,17 +593,25 @@ def simplex_prox(tensor, parameter):
             "Validation of subgradient optimization."
             Mathematical programming 6.1 (1974): 62-88.
     """
-    _, col = tl.shape(tensor)
-    tensor = tl.clip(tensor, 0, tl.max(tensor))
+    # Making it work for 1-dimensional tensors as well
+    if tl.ndim(tensor) > 1:
+        row, col = tl.shape(tensor)
+    else:
+        row = tl.shape(tensor)[0]
+        col = 1
+        tensor = tl.reshape(tensor, [row, col])
     tensor_sort = tl.sort(tensor, axis=0, descending=True)
-
-    to_change = tl.sum(tl.where(tensor_sort > (tl.cumsum(tensor_sort, axis=0) - parameter), 1.0, 0.0), axis=0)
+    # Broadcasting is used to divide rows by 1,2,3...
+    cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(tl.ones([row, 1]), axis=0)
+    # Added -1 to correspond to a Python index
+    to_change = tl.sum(tl.where(tensor_sort > cumsum_min_param_by_k, 1.0, 0.0), axis=0) - 1
     difference = tl.zeros(col)
     for i in range(col):
-        if to_change[i] > 0:
-            difference = tl.index_update(difference, tl.index[i], tl.cumsum(tensor_sort, axis=0)[int(to_change[i] - 1), i])
-    difference = (difference - parameter) / to_change
-    return tl.clip(tensor - difference, a_min=0)
+        difference = tl.index_update(difference, tl.index[i], cumsum_min_param_by_k[int(to_change[i]), i])
+    if col > 1:
+        return tl.clip(tensor - difference, a_min=0)
+    else:
+        return tl.tensor_to_vec(tl.clip(tensor - difference, a_min=0))
 
 
 def hard_thresholding(tensor, number_of_non_zero):
