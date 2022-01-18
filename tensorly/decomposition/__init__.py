@@ -14,6 +14,7 @@ from ._symmetric_cp import symmetric_parafac_power_iteration, symmetric_power_it
 from ._cp_power import parafac_power_iteration, power_iteration, CPPower
 from ._cmtf_als import coupled_matrix_tensor_3d_factorization
 from ._constrained_cp import constrained_parafac
+from ._generalized_parafac import generalized_parafac, stochastic_generalized_parafac
 
 # Deprecated
 from ._tt import matrix_product_state
