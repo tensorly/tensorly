@@ -19,7 +19,7 @@ class CupyBackend(Backend, backend_name='cupy'):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=cp.float32):
+    def tensor(data, dtype=cp.float32, **kwargs):
         return cp.array(data, dtype=dtype)
 
     @staticmethod

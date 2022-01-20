@@ -21,10 +21,10 @@ class MxnetBackend(Backend, backend_name='mxnet'):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=None):
+    def tensor(data, dtype=None, device=None):
         if dtype is None and isinstance(data, numpy.ndarray):
             dtype = data.dtype
-        return np.array(data, dtype=dtype)
+        return np.array(data, dtype=dtype, device=device)
 
     @staticmethod
     def is_tensor(tensor):

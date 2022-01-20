@@ -9,7 +9,7 @@ class NumpyBackend(Backend, backend_name='numpy'):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=None):
+    def tensor(data, dtype=None, **kwargs):
         return np.array(data, dtype=dtype)
 
     @staticmethod
