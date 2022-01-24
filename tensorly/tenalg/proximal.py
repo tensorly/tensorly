@@ -604,10 +604,10 @@ def simplex_prox(tensor, parameter):
     # Broadcasting is used to divide rows by 1,2,3...
     cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(tl.ones([row, 1]), axis=0)
     # Added -1 to correspond to a Python index
-    to_change = tl.sum(tl.where(tensor_sort > cumsum_min_param_by_k, 1.0, 0.0), axis=0) - 1
+    to_change = tl.sum(tl.where(tensor_sort > cumsum_min_param_by_k, 1, 0), axis=0) - 1
     difference = tl.zeros(col)
     for i in range(col):
-        difference = tl.index_update(difference, tl.index[i], cumsum_min_param_by_k[int(to_change[i]), i])
+        difference = tl.index_update(difference, tl.index[i], cumsum_min_param_by_k[to_change[i], i])
     if col > 1:
         return tl.clip(tensor - difference, a_min=0)
     else:
