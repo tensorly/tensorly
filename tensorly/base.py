@@ -1,4 +1,5 @@
-from . import backend as T
+from . import backend as tl
+from .utils import prod
 
 def tensor_to_vec(tensor):
     """Vectorises a tensor
@@ -13,7 +14,7 @@ def tensor_to_vec(tensor):
     1D-array
         vectorised tensor of shape ``(i_1 * i_2 * ... * i_n)``
     """
-    return T.reshape(tensor, (-1, ))
+    return tl.reshape(tensor, (-1, ))
 
 
 def vec_to_tensor(vec, shape):
@@ -31,7 +32,7 @@ def vec_to_tensor(vec, shape):
     ndarray
         tensor of shape `shape` = ``(i_1, ..., i_n)``
     """
-    return T.reshape(vec, shape)
+    return tl.reshape(vec, shape)
 
 
 def unfold(tensor, mode):
@@ -48,7 +49,7 @@ def unfold(tensor, mode):
     ndarray
         unfolded_tensor of shape ``(tensor.shape[mode], -1)``
     """
-    return T.reshape(T.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1))
+    return tl.reshape(tl.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1))
 
 
 def fold(unfolded_tensor, mode, shape):
@@ -74,7 +75,7 @@ def fold(unfolded_tensor, mode, shape):
     full_shape = list(shape)
     mode_dim = full_shape.pop(mode)
     full_shape.insert(0, mode_dim)
-    return T.moveaxis(T.reshape(unfolded_tensor, full_shape), 0, mode)
+    return tl.moveaxis(tl.reshape(unfolded_tensor, full_shape), 0, mode)
 
 def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False):
     """Partially unfolds a tensor while ignoring the specified number of dimensions at the beginning and the end.                                       
@@ -112,7 +113,7 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
     if skip_end:
         new_shape += [tensor.shape[-i] for i in range(1, 1 + skip_end)]
 
-    return T.reshape(T.moveaxis(tensor, mode+skip_begin, skip_begin), new_shape)
+    return tl.reshape(tl.moveaxis(tensor, mode+skip_begin, skip_begin), new_shape)
 
 
 def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
@@ -139,7 +140,7 @@ def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
     transposed_shape = list(shape)
     mode_dim = transposed_shape.pop(skip_begin + mode)
     transposed_shape.insert(skip_begin, mode_dim)
-    return T.moveaxis(T.reshape(unfolded, transposed_shape), skip_begin, skip_begin + mode)
+    return tl.moveaxis(tl.reshape(unfolded, transposed_shape), skip_begin, skip_begin + mode)
 
 
 def partial_tensor_to_vec(tensor, skip_begin=1, skip_end=0):
@@ -184,3 +185,43 @@ def partial_vec_to_tensor(matrix, shape, skip_begin=1, skip_end=0):
     """
     return partial_fold(matrix, mode=0, shape=shape, skip_begin=skip_begin, skip_end=skip_end)
 
+
+def matricize(tensor, row_modes, column_modes=None):
+    """Matricizes the given tensor
+    
+    Parameters
+    ----------
+    tensor : tl.tensor
+    row_modes : tuple[int]
+        modes to use as row of the matrix (in the desired order)
+    column_modes : tuple[int], default is None
+        modes to use as column of the matrix, in the desired order
+        if None, the modes not in `row_modes` will be used in ascending order
+        
+    Returns
+    -------
+    matrix : tl.tensor of size (prod(tensor.shape[i] for i in row_modes), -1)
+    """
+    try:
+        row_indices = list(row_modes)
+    except TypeError:
+        row_indices = [row_modes]
+    
+    if column_modes is None:
+        column_indices = [i for i in range(tl.ndim(tensor)) if i not in row_indices]
+    else:
+        try:
+            column_indices = list(column_modes)
+        except TypeError:
+            column_indices = [column_modes]
+        if sorted(column_indices+row_indices) != list(range(tl.ndim(tensor))):
+            msg = ('If you provide both column and row modes for the matricization'
+                   ' then column_modes + row_modes must contain all the modes of the tensor.'
+                   f' Yet, got row_modes={row_modes} and column_modes={column_modes}.')
+            raise ValueError(msg)
+    
+    row_size = prod(tl.shape(tensor)[i] for i in row_indices)
+    column_size = prod(tl.shape(tensor)[i] for i in column_indices)
+
+    return tl.reshape(tl.transpose(tensor, row_indices+column_indices),
+                      (row_size, column_size))
