@@ -6,7 +6,8 @@ from ..base import fold, unfold
 from ..base import partial_fold, partial_unfold
 from ..base import tensor_to_vec, vec_to_tensor
 from ..base import partial_tensor_to_vec, partial_vec_to_tensor
-from ..testing import assert_array_equal
+from ..base import matricize
+from ..testing import assert_array_equal, assert_raises
 
 # Author: Jean Kossaifi
 
@@ -256,3 +257,30 @@ def test_partial_vec_to_tensor():
         vec = partial_tensor_to_vec(X, skip_begin=i, skip_end=(1-i))
         ten = partial_vec_to_tensor(vec, shape=shape, skip_begin=i, skip_end=(1-i))
         assert_array_equal(X, ten)
+
+
+def test_matricize():
+    t = T.randn((2, 3, 4, 3, 5))
+    
+    # Equivalence with unfolding
+    for i in range(T.ndim(t)):
+        res = matricize(t, i)
+        true_res = unfold(t, i)
+        assert_array_equal(res, true_res)
+        
+    # We're not changing anything:
+    res = matricize(t, [0, 1, 2])
+    true_res = T.reshape(t, (2*3*4, -1))
+    assert_array_equal(res, true_res)
+
+    # We're missing some modes of the tensor:
+    with assert_raises(ValueError):
+        matricize(t, [0, 1], [2, 3])
+    # We have a duplicate mode
+    with assert_raises(ValueError):
+        matricize(t, [0, 2, 3, 4], [1, 1])
+        
+    res = matricize(t, [1, 3])
+    assert res.shape == (3*3, 2*4*5)
+        
+test_matricize()
