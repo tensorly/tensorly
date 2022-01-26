@@ -4,3 +4,4 @@ create synthetic data, e.g. for testing purposes.
 """
 
 from .synthetic import gen_image
+from .data_imports import IL2data
