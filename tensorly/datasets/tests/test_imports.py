@@ -1,4 +1,4 @@
-from ..imports import IL2data
+from ..data_imports import IL2data
 
 
 def test_IL2data():
