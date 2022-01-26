@@ -2,14 +2,14 @@ import numpy as np
 
 import tensorly as tl
 from tensorly.testing import assert_equal
-from ..similarity import calc_corrindex
+from ..similarity import correlation_index
 
 
-def test_calc_corrindex():
-    """Test column permutation invariance and scaling invariance of calc_corrindex"""
+def test_correlation_index():
+    """Test column permutation invariance and scaling invariance of correlation_index"""
 
     # initialize random matrix
-    n = np.random.randint(2,100) # matrix shapes
+    n = np.random.randint(20,100) # possible matrix shapes
     X_1 = tl.random.random_tensor((n, n))
 
     X_perm = X_1[:,np.random.permutation(n)] # create a column permutation
@@ -19,24 +19,20 @@ def test_calc_corrindex():
         scalar = np.random.randint(-100,100) # ensures diagonal is not 0
     X_scaled = tl.matmul(X_1, tl.diag([scalar]*n)) # create a scaled matrix
 
-    # processing to get C as input
-    X_1 = X_1/tl.norm(X_1, axis = 0)
-    X_perm = X_perm/tl.norm(X_perm, axis = 0)
-    X_scaled = X_scaled/tl.norm(X_scaled, axis = 0)
+    # randomly create intervals to separate matrix into factors list
+    intervals = tl.tensor((1,1))
+    while tl.any(np.diff(intervals) < 3):
+        intervals = sorted(np.random.choice(range(3, n - 3), np.random.randint(3, 10), replace=False))
+    intervals = [0] + intervals + [n]
 
-    C_perm = tl.abs(tl.matmul(tl.conj(X_1.T), X_perm))
-    C_scaled = tl.abs(tl.matmul(tl.conj(X_1.T), X_scaled))
-
-    tol = 5e-15
+    factors_1 = [X_1[intervals[i - 1]:intervals[i], :] for i in range(1, len(intervals))]
+    factors_perm = [X_perm[intervals[i - 1]:intervals[i], :] for i in range(1, len(intervals))]
+    factors_scaled = [X_scaled[intervals[i - 1]:intervals[i], :] for i in range(1, len(intervals))]
 
     # test column permutation invariance
-    score_perm = calc_corrindex(C_perm)
-    if score_perm < tol:
-        score_perm = 0
+    score_perm = correlation_index(factors_1, factors_perm)
     assert_equal(score_perm, 0)
 
     # test scaling invariance
-    score_scaled = calc_corrindex(C_scaled)
-    if score_scaled < tol:
-        score_scaled = 0
+    score_scaled = correlation_index(factors_1, factors_scaled)
     assert_equal(score_scaled, 0)
