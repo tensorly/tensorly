@@ -83,10 +83,10 @@ tfac.factors[2][:, 0] *= -1
 # To evaluate the classifier, we plot a ROC-AUC curve
 
 def COVIDpredict(tfac):
-    subjj = np.isin(data.samples, ["Severe", "Deceased"])
+    subjj = np.isin(data.ticks[0], ["Severe", "Deceased"])
 
     X = tfac.factors[0][subjj, :]
-    y = pd.factorize(data.samples[subjj])[0]
+    y = pd.factorize(data.ticks[0][subjj])[0]
     aucs = []
 
     kf = KFold(n_splits=10, shuffle=True)
@@ -157,9 +157,9 @@ def comp_plot(factors, xlabel, ylabel, plotLabel, ax, d=False):
 components = [str(ii + 1) for ii in range(tfac.rank)]
 
 fig3, axes = plt.subplots(1, 3, figsize=(16,6))
-comp_plot(tfac.factors[0], components, list(data.samples), "Samples", axes[0], True)
-comp_plot(tfac.factors[1], components, data.antigens, "Antigens", axes[1])
-comp_plot(tfac.factors[2], components, data.receptors, "Receptors", axes[2])
+comp_plot(tfac.factors[0], components, list(data.ticks[0]), "Samples", axes[0], True)
+comp_plot(tfac.factors[1], components, data.ticks[1], "Antigens", axes[1])
+comp_plot(tfac.factors[2], components, data.ticks[2], "Receptors", axes[2])
 
 ##############################################################################
 # From the results, we can see that serum COVID-19 immunity separates into two distinct signals,
