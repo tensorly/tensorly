@@ -16,7 +16,7 @@ def test_COVID19_data():
     data = COVID19_data()
 
     tensor = data["tensor"]
-    assert tensor.shape[0] == len(data["samples"])
-    assert tensor.shape[1] == len(data["antigens"])
-    assert tensor.shape[2] == len(data["receptors"])
+    assert tensor.shape[0] == len(data["ticks"][0])
+    assert tensor.shape[1] == len(data["ticks"][1])
+    assert tensor.shape[2] == len(data["ticks"][2])
 

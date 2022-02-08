@@ -205,9 +205,7 @@ def COVID19_data():
 
     return Bunch(
         tensor=tensor,
-        samples=sampleLabels,
-        antigens=antigenLabels,
-        receptors=receptorLabels,
+        ticks=[sampleLabels, antigenLabels, receptorLabels],
         dims=dims,
         reference=reference,
         task=task,
