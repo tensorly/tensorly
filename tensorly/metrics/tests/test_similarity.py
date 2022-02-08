@@ -1,7 +1,8 @@
 import numpy as np
 
 import tensorly as tl
-from tensorly.testing import assert_equal
+from tensorly.random import random_tensor
+from tensorly.testing import assert_array_almost_equal
 from ..similarity import correlation_index
 
 
@@ -10,18 +11,23 @@ def test_correlation_index():
 
     # initialize random matrix
     n = np.random.randint(20,100) # possible matrix shapes
-    X_1 = tl.random.random_tensor((n, n))
+    X_1 = random_tensor((n, n))
 
-    X_perm = X_1[:,np.random.permutation(n)] # create a column permutation
+    # Workaround for tensorflow
+    X_perm = tl.to_numpy(X_1)
+    X_perm = X_perm[:, np.random.permutation(n)] # create a column permutation
+    X_perm = tl.tensor(X_perm)
 
     scalar = 0
     while scalar == 0:
         scalar = np.random.randint(-100,100) # ensures diagonal is not 0
-    X_scaled = tl.matmul(X_1, tl.diag([scalar]*n)) # create a scaled matrix
+
+    diag = tl.diag(tl.tensor([scalar]*n, **tl.context(X_1)))
+    X_scaled = tl.matmul(X_1, diag) # create a scaled matrix
 
     # randomly create intervals to separate matrix into factors list
-    intervals = tl.tensor((1,1))
-    while tl.any(np.diff(intervals) < 3):
+    intervals = tl.tensor((1, 1))
+    while np.any(np.diff(intervals) < 3):
         intervals = sorted(np.random.choice(range(3, n - 3), np.random.randint(3, 10), replace=False))
     intervals = [0] + intervals + [n]
 
@@ -31,8 +37,8 @@ def test_correlation_index():
 
     # test column permutation invariance
     score_perm = correlation_index(factors_1, factors_perm)
-    assert_equal(score_perm, 0)
+    assert_array_almost_equal(score_perm, 0)
 
     # test scaling invariance
     score_scaled = correlation_index(factors_1, factors_scaled)
-    assert_equal(score_scaled, 0)
+    assert_array_almost_equal(score_scaled, 0)
