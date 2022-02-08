@@ -21,7 +21,7 @@ class MxnetBackend(Backend, backend_name='mxnet'):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=None):
+    def tensor(data, dtype=None, **kwargs):
         if dtype is None and isinstance(data, numpy.ndarray):
             dtype = data.dtype
         return np.array(data, dtype=dtype)
