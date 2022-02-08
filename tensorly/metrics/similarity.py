@@ -29,8 +29,8 @@ def correlation_index(factors_1: list, factors_2: list, tol: float = 5e-16) -> f
             raise ValueError('Factors should be a list of loading matrices of the same rank')
 
     # vertically stack loading matrices -- shape sum(tensor.shape)xR)
-    X_1 = tl.concatenate(factors_1)
-    X_2 = tl.concatenate(factors_2)
+    X_1 = tl.concatenate(factors_1, 0)
+    X_2 = tl.concatenate(factors_2, 0)
 
     if tl.shape(X_1) != tl.shape(X_2):
         raise ValueError('Factor matrices should be of the same shapes')
@@ -44,7 +44,7 @@ def correlation_index(factors_1: list, factors_2: list, tol: float = 5e-16) -> f
     X_2 = X_2/col_norm_2
 
     # generate the correlation index input
-    c_prod_mtx = tl.abs(tl.matmul(tl.conj(X_1.T), X_2))
+    c_prod_mtx = tl.abs(tl.matmul(tl.conj(tl.transpose(X_1)), X_2))
 
     # correlation index scoring
     n_elements = tl.shape(c_prod_mtx)[1] + tl.shape(c_prod_mtx)[0]
