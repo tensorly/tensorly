@@ -15,7 +15,7 @@ from ...metrics.factors import congruence_coefficient
 
 
 @pytest.mark.parametrize("linesearch", [True, False])
-@pytest.mark.parametrize("orthogonalise", [False, True])
+@pytest.mark.parametrize("orthogonalise", [True, False])
 @pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 4)])
 @pytest.mark.parametrize("init", ['svd', 'random'])
 @pytest.mark.parametrize("normalize_factors", [False, True])
