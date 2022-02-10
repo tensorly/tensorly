@@ -77,26 +77,6 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init, normalize_fac
     assert_class_wrapper_correctly_passes_arguments(monkeypatch, parafac, CP, ignore_args={'return_errors'}, rank=3)
 
 
-@pytest.mark.parametrize("init", ['svd', 'random'])
-@pytest.mark.parametrize("random_state", [1, 1234])
-@pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 4)])
-@pytest.mark.parametrize("normalize_factors", [False, True])
-def test_initialize_cp(init, random_state, true_rank, rank, normalize_factors):
-    """ Test various properties of the CP initialization. """
-    rng = tl.check_random_state(random_state)
-    tensor = random_cp((6, 8, 4), rank=true_rank, full=True, random_state=rng)
-
-    rng = tl.check_random_state(random_state)
-    weights, factors = initialize_cp(tensor, rank, init=init, random_state=rng, normalize_factors=normalize_factors)
-    rng = tl.check_random_state(random_state)
-    weightsTwo, factorsTwo = initialize_cp(tensor, rank, init=init, random_state=rng, normalize_factors=normalize_factors)
-
-    assert_array_almost_equal(weights, weightsTwo)
-    assert_array_almost_equal(factors[0], factorsTwo[0])
-    assert_array_almost_equal(factors[1], factorsTwo[1])
-    assert_array_almost_equal(factors[2], factorsTwo[2])
-
-
 @pytest.mark.parametrize("linesearch", [True, False])
 def test_masked_parafac(linesearch):
     """Test for the masked CANDECOMP-PARAFAC decomposition.
