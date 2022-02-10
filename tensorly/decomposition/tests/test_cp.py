@@ -27,10 +27,13 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init, normalize_fac
     tol_norm_2 = 0.01
     tol_max_abs = 0.05
     tensor = random_cp((6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=True, random_state=rng)
-    fac, errors = parafac(tensor, rank=rank, n_iter_max=100, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
+
+    rng = tl.check_random_state(random_state)
+    fac, errors = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
 
     # Given all the random seed is set, this should provide the same answer
-    facTwo, errorsTwo = parafac(tensor, rank=rank, n_iter_max=100, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
+    rng = tl.check_random_state(random_state)
+    facTwo, errorsTwo = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
     assert_array_almost_equal(errors, errorsTwo)
     assert_array_almost_equal(fac.factors[0], facTwo.factors[0])
     assert_array_almost_equal(fac.factors[1], facTwo.factors[1])
@@ -72,6 +75,26 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init, normalize_fac
         _, _ = initialize_cp(tensor, rank, init='bogus init type')
 
     assert_class_wrapper_correctly_passes_arguments(monkeypatch, parafac, CP, ignore_args={'return_errors'}, rank=3)
+
+
+@pytest.mark.parametrize("init", ['svd', 'random'])
+@pytest.mark.parametrize("random_state", [1, 1234])
+@pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 4)])
+@pytest.mark.parametrize("normalize_factors", [False, True])
+def test_initialize_cp(init, random_state, true_rank, rank, normalize_factors):
+    """ Test various properties of the CP initialization. """
+    rng = tl.check_random_state(random_state)
+    tensor = random_cp((6, 8, 4), rank=true_rank, full=True, random_state=rng)
+
+    rng = tl.check_random_state(random_state)
+    weights, factors = initialize_cp(tensor, rank, init=init, random_state=rng, normalize_factors=normalize_factors)
+    rng = tl.check_random_state(random_state)
+    weightsTwo, factorsTwo = initialize_cp(tensor, rank, init=init, random_state=rng, normalize_factors=normalize_factors)
+
+    assert_array_almost_equal(weights, weightsTwo)
+    assert_array_almost_equal(factors[0], factorsTwo[0])
+    assert_array_almost_equal(factors[1], factorsTwo[1])
+    assert_array_almost_equal(factors[2], factorsTwo[2])
 
 
 @pytest.mark.parametrize("linesearch", [True, False])
