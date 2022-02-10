@@ -31,13 +31,14 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init, normalize_fac
     rng = tl.check_random_state(random_state)
     fac, errors = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
 
-    # Given all the random seed is set, this should provide the same answer
-    rng = tl.check_random_state(random_state)
-    facTwo, errorsTwo = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
-    assert_array_almost_equal(errors, errorsTwo)
-    assert_array_almost_equal(fac.factors[0], facTwo.factors[0])
-    assert_array_almost_equal(fac.factors[1], facTwo.factors[1])
-    assert_array_almost_equal(fac.factors[2], facTwo.factors[2])
+    # Given all the random seed is set, this should provide the same answer for random initialization
+    if init == "random":
+        rng = tl.check_random_state(random_state)
+        facTwo, errorsTwo = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
+        assert_array_almost_equal(errors, errorsTwo)
+        assert_array_almost_equal(fac.factors[0], facTwo.factors[0])
+        assert_array_almost_equal(fac.factors[1], facTwo.factors[1])
+        assert_array_almost_equal(fac.factors[2], facTwo.factors[2])
 
     # Check that the error monotonically decreases
     if not orthogonalise:
