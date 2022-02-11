@@ -115,11 +115,10 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
             return torch.mean(tensor, dim=axis)
 
     @staticmethod
-    def sum(tensor, axis=None):
+    def sum(tensor, axis=None, keepdims=False):
         if axis is None:
-            return torch.sum(tensor)
-        else:
-            return torch.sum(tensor, dim=axis)
+            axis = tuple(range(tensor.ndim))
+        return torch.sum(tensor, dim=axis, keepdim=keepdims)
 
     @staticmethod
     def max(tensor, axis=None):
