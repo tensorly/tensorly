@@ -42,7 +42,7 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init, normalize_fac
 
     # Check that the error monotonically decreases
     if not orthogonalise:
-        assert_(np.all(np.diff(errors) <= 1.0e-4))
+        assert_(np.all(np.diff(errors) <= 1.0e-3))
 
     rec = cp_to_tensor(fac)
     error = T.norm(rec - tensor, 2)
