@@ -262,12 +262,45 @@ def test_norm():
 
 
 def test_clip():
-    """Test that clip can work with single arguments"""
+    # Test that clip can work with single arguments
     X = T.tensor([0.0, -1.0, 1.0])
     X_low = T.tensor([0.0, 0.0, 1.0])
     X_high = T.tensor([0.0, -1.0, 0.0])
     assert_array_equal(tl.clip(X, a_min=0.0), X_low)
     assert_array_equal(tl.clip(X, a_max=0.0), X_high)
+
+    # More extensive test with a larger random tensor
+    rng = tl.check_random_state(0)
+    tensor = tl.tensor(rng.random_sample((10, 10, 10)).astype('float32'))
+
+    val1 = np.float32(rng.random_sample())
+    val2 = np.float32(rng.random_sample())
+    limits = [
+        (min(val1, val2), max(val1, val2)),
+        (-1, 2),
+        (tl.max(tensor) + 1, None),
+        (None, tl.min(tensor) - 1),
+        (tl.max(tensor), None),
+        (tl.min(tensor), None),
+        (None, tl.max(tensor)),
+        (None, tl.min(tensor))
+    ]
+
+    for min_val, max_val in limits:
+        message = f"Tensor clipped incorrectly with min_val={min_val} and max_val={max_val}. Tensor bounds are ({tl.to_numpy(tl.min(tensor))}, {tl.to_numpy(tl.max(tensor))}"
+        if min_val is not None:
+            assert tl.all(tl.clip(tensor, min_val, None) >= min_val), message
+            assert tl.all(tl.clip(tensor, min_val, max_val) >= min_val), message
+        if max_val is not None:
+            assert tl.all(tl.clip(tensor, None, max_val) <= max_val), message
+            assert tl.all(tl.clip(tensor, min_val, max_val) <= max_val), message
+
+
+def test_clips_all_negative_tensor_correctly():
+    # Regression test for bug found with the pytorch backend
+    negative_valued_tensor = tl.zeros((10, 10)) - 0.1
+    clipped_tensor = tl.clip(negative_valued_tensor, 0)
+    assert tl.all(clipped_tensor == 0)
 
 
 def test_where():
