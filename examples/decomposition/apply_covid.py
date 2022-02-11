@@ -22,7 +22,16 @@ Apply CP decomposition to COVID-19 Serology Dataset
 
 import numpy as np
 import pandas as pd
+import tensorly as tl
+from tensorly.decomposition import parafac
 from tensorly.datasets.imports import COVID19_data
+from matplotlib import pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.model_selection import KFold
+from itertools import groupby
+import seaborn as sns
+from scipy.stats import sem
 
 data = COVID19_data()
 
@@ -30,9 +39,6 @@ data = COVID19_data()
 # Apply CP decomposition to this dataset with Tensorly
 # -----------------------
 # Now we apply CP decomposition to this dataset.
-
-import tensorly as tl
-from tensorly.decomposition import parafac
 
 comps = np.arange(1, 7)
 CMTFfacs = [parafac(data.tensor, cc, tol=1e-10, n_iter_max=1000,
@@ -42,18 +48,17 @@ CMTFfacs = [parafac(data.tensor, cc, tol=1e-10, n_iter_max=1000,
 # To evaluate how well CP decomposition explains the variance in the dataset, we plot the percent
 # variance reconstructed (R2X) for a range of ranks.
 
-def calcR2X(tFac, tIn=None):
+def reconstructed_variance(tFac, tIn=None):
+    """ This function calculates the amount of variance captured (R2X) by the tensor method. """
     tMask = np.isfinite(tIn)
     vTop = np.sum(np.square(tl.cp_to_tensor(tFac) * tMask - np.nan_to_num(tIn)))
     vBottom = np.sum(np.square(np.nan_to_num(tIn)))
     return 1.0 - vTop / vBottom
 
-import matplotlib
-from matplotlib import pyplot as plt
 
 fig1 = plt.figure()
 ax1 = fig1.add_axes([0,0,1,1])
-CMTFR2X = np.array([calcR2X(f, data.tensor) for f in CMTFfacs])
+CMTFR2X = np.array([reconstructed_variance(f, data.tensor) for f in CMTFfacs])
 print(CMTFR2X)
 ax1.plot(comps, CMTFR2X, "bo")
 ax1.set_ylabel("R2X")
@@ -69,10 +74,6 @@ ax1.set_xlim(0.0, np.amax(comps) + 0.5)
 # An important function of CP decomposition here is to reduce data while keeping significant
 # information.
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_curve, roc_auc_score
-from sklearn.model_selection import KFold
-
 tfac = CMTFfacs[1]
 
 # Ensure that factors are negative on at most one direction.
@@ -82,7 +83,7 @@ tfac.factors[2][:, 0] *= -1
 ##############################################################################
 # To evaluate the classifier, we plot a ROC-AUC curve
 
-def COVIDpredict(tfac):
+def calculateROCcurve(tfac):
     subjj = np.isin(data.ticks[0], ["Severe", "Deceased"])
 
     X = tfac.factors[0][subjj, :]
@@ -107,11 +108,9 @@ def COVIDpredict(tfac):
 
     return ipl, aucs
 
-roc_df, auc = COVIDpredict(tfac)
+roc_df, auc = calculateROCcurve(tfac)
 roc_sum = roc_df.groupby(['FPR'], as_index=False).agg({'TPR': ['mean', 'sem']})
 
-import seaborn as sns
-from scipy.stats import sem
 
 fig2 = plt.figure()
 ax2 = sns.lineplot(x=roc_sum["FPR"], y=roc_sum["TPR"]["mean"], color='b')
@@ -131,9 +130,8 @@ ax2.set_title("Severe vs. Deceased ROC (AUC={}±{})".format(np.around(np.mean(au
 # case, revealing the underlying trend of COVID-19 serum-level immunity. To do this, we can inspect
 # how each component looks like on weights
 
-from itertools import groupby
 
-def comp_plot(factors, xlabel, ylabel, plotLabel, ax, d=False):
+def component_plot(factors, xlabel, ylabel, plotLabel, ax, d=False):
     """ Creates heatmap plots for each input dimension by component. """
     scales = np.linalg.norm(factors, ord=np.inf, axis=0)
     factors /= scales
@@ -157,9 +155,9 @@ def comp_plot(factors, xlabel, ylabel, plotLabel, ax, d=False):
 components = [str(ii + 1) for ii in range(tfac.rank)]
 
 fig3, axes = plt.subplots(1, 3, figsize=(16,6))
-comp_plot(tfac.factors[0], components, list(data.ticks[0]), "Samples", axes[0], True)
-comp_plot(tfac.factors[1], components, data.ticks[1], "Antigens", axes[1])
-comp_plot(tfac.factors[2], components, data.ticks[2], "Receptors", axes[2])
+component_plot(tfac.factors[0], components, list(data.ticks[0]), "Samples", axes[0], True)
+component_plot(tfac.factors[1], components, data.ticks[1], "Antigens", axes[1])
+component_plot(tfac.factors[2], components, data.ticks[2], "Receptors", axes[2])
 
 ##############################################################################
 # From the results, we can see that serum COVID-19 immunity separates into two distinct signals,
