@@ -21,17 +21,11 @@ Apply CP decomposition to COVID-19 Serology Dataset
 # We first import this dataset of a panel of COVID-19 patients:
 
 import numpy as np
-import pandas as pd
 import tensorly as tl
 from tensorly.decomposition import parafac
 from tensorly.datasets.imports import COVID19_data
 from matplotlib import pyplot as plt
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_curve, roc_auc_score
-from sklearn.model_selection import KFold
-from itertools import groupby
-import seaborn as sns
-from scipy.stats import sem
+from matplotlib.cm import ScalarMappable
 
 data = COVID19_data()
 
@@ -55,72 +49,13 @@ def reconstructed_variance(tFac, tIn=None):
     vBottom = np.sum(np.square(np.nan_to_num(tIn)))
     return 1.0 - vTop / vBottom
 
-
 fig1 = plt.figure()
-ax1 = fig1.add_axes([0,0,1,1])
 CMTFR2X = np.array([reconstructed_variance(f, data.tensor) for f in CMTFfacs])
-print(CMTFR2X)
-ax1.plot(comps, CMTFR2X, "bo")
-ax1.set_ylabel("R2X")
-ax1.set_xlabel("Number of Components")
-ax1.set_xticks([x for x in comps])
-ax1.set_xticklabels([x for x in comps])
-ax1.set_ylim(0, 1)
-ax1.set_xlim(0.0, np.amax(comps) + 0.5)
-
-##############################################################################
-# Build a Logistic Regression classifier to predict severe versus deceased COVID-19 patients
-# -----------------------
-# An important function of CP decomposition here is to reduce data while keeping significant
-# information.
-
-tfac = CMTFfacs[1]
-
-# Ensure that factors are negative on at most one direction.
-tfac.factors[1][:, 0] *= -1
-tfac.factors[2][:, 0] *= -1
-
-##############################################################################
-# To evaluate the classifier, we plot a ROC-AUC curve
-
-def calculateROCcurve(tfac):
-    subjj = np.isin(data.ticks[0], ["Severe", "Deceased"])
-
-    X = tfac.factors[0][subjj, :]
-    y = pd.factorize(data.ticks[0][subjj])[0]
-    aucs = []
-
-    kf = KFold(n_splits=10, shuffle=True)
-    outt = pd.DataFrame(columns=["fold", "FPR", "TPR"])
-    for ii, (train, test) in enumerate(kf.split(X)):
-        model = LogisticRegression().fit(X[train], y[train])
-        y_score = model.predict_proba(X[test])
-        fpr, tpr, _ = roc_curve(y[test], y_score[:, 1])
-        aucs.append(roc_auc_score(y[test], y_score[:, 1]))
-        outt = pd.concat([outt, pd.DataFrame(data={"fold": [ii+1] * len(fpr), "FPR": fpr, "TPR": tpr})])
-
-    xs = pd.unique(outt["FPR"])
-    ipl = pd.DataFrame(columns=["fold", "FPR", "TPR"])
-    for ii in range(kf.n_splits):
-        ys = np.interp(xs, outt.loc[outt["fold"]==(ii+1), "FPR"], outt.loc[outt["fold"]==(ii+1), "TPR"])
-        ys[0] = 0
-        ipl = pd.concat([ipl, pd.DataFrame(data={"fold": [(ii+1)] * len(xs), "FPR": xs, "TPR": ys})])
-
-    return ipl, aucs
-
-roc_df, auc = calculateROCcurve(tfac)
-roc_sum = roc_df.groupby(['FPR'], as_index=False).agg({'TPR': ['mean', 'sem']})
-
-
-fig2 = plt.figure()
-ax2 = sns.lineplot(x=roc_sum["FPR"], y=roc_sum["TPR"]["mean"], color='b')
-sns.lineplot(x=[0, 1], y=[0, 1], color="black", ax=ax2)
-tprs_upper = np.minimum(roc_sum["TPR"]["mean"] + roc_sum["TPR"]["sem"], 1)
-tprs_lower = np.maximum(roc_sum["TPR"]["mean"] - roc_sum["TPR"]["sem"], 0)
-ax2.fill_between(roc_sum["FPR"], tprs_lower,
-                   tprs_upper, color='grey', alpha=.2)
-ax2.set_title("Severe vs. Deceased ROC (AUC={}±{})".format(np.around(np.mean(auc), decimals=2),
-                                                             np.around(sem(auc), decimals=2)))
+plt.plot(comps, CMTFR2X, "bo")
+plt.xlabel("Number of Components")
+plt.ylabel("Variance Explained (R2X)")
+plt.gca().set_xlim([0.0, np.amax(comps) + 0.5])
+plt.gca().set_ylim([0, 1])
 
 
 ##############################################################################
@@ -130,34 +65,31 @@ ax2.set_title("Severe vs. Deceased ROC (AUC={}±{})".format(np.around(np.mean(au
 # case, revealing the underlying trend of COVID-19 serum-level immunity. To do this, we can inspect
 # how each component looks like on weights
 
+tfac = CMTFfacs[1]
 
-def component_plot(factors, xlabel, ylabel, plotLabel, ax, d=False):
-    """ Creates heatmap plots for each input dimension by component. """
-    scales = np.linalg.norm(factors, ord=np.inf, axis=0)
-    factors /= scales
-    if d:
-        b = [list(g) for _, g in groupby(ylabel)]
-        newLabels = []
-        for i, c in enumerate(b):
-            newLabels.append([x + "  " if i == len(c)//2 else "–" if i ==
-                              0 or i == len(c) - 1 else "·" for (i, x) in enumerate(c)])
+# Ensure that factors are negative on at most one direction.
+tfac.factors[1][:, 0] *= -1
+tfac.factors[2][:, 0] *= -1
 
-        newLabels = [item for sublist in newLabels for item in sublist]
+fig2, ax = plt.subplots(1, 3, figsize=(16,6))
+for ii in [0,1,2]:
+    fac = tfac.factors[ii]
+    scales = np.linalg.norm(fac, ord=np.inf, axis=0)
+    fac /= scales
 
-        sns.heatmap(factors, cmap="PiYG", center=0,
-                    xticklabels=xlabel, yticklabels=newLabels, ax=ax)
+    ax[ii].imshow(fac, cmap="PiYG", vmin=-1, vmax=1)
+    ax[ii].set_xticks([0, 1])
+    ax[ii].set_xticklabels(["Comp. 1", "Comp. 2"])
+    ax[ii].set_yticks(range(len(data.ticks[ii])))
+    if ii == 0:
+        ax[0].set_yticklabels([data.ticks[0][i] if i==0 or data.ticks[0][i]!=data.ticks[0][i-1]
+                               else "" for i in range(len(data.ticks[0]))])
     else:
-        sns.heatmap(factors, cmap="PiYG", center=0,
-                    xticklabels=xlabel, yticklabels=ylabel, ax=ax)
-    ax.set_xlabel("Components")
-    ax.set_title(plotLabel)
+        ax[ii].set_yticklabels(data.ticks[ii])
+    ax[ii].set_title(data.dims[ii])
+    ax[ii].set_aspect('auto')
 
-components = [str(ii + 1) for ii in range(tfac.rank)]
-
-fig3, axes = plt.subplots(1, 3, figsize=(16,6))
-component_plot(tfac.factors[0], components, list(data.ticks[0]), "Samples", axes[0], True)
-component_plot(tfac.factors[1], components, data.ticks[1], "Antigens", axes[1])
-component_plot(tfac.factors[2], components, data.ticks[2], "Receptors", axes[2])
+fig2.colorbar(ScalarMappable(norm=plt.Normalize(-1, 1), cmap="PiYG"))
 
 ##############################################################################
 # From the results, we can see that serum COVID-19 immunity separates into two distinct signals,
