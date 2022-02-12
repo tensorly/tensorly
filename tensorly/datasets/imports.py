@@ -85,7 +85,7 @@ def IL2data():
         LICENSE=LICENSE)
 
 
-def COVID19_data():
+def load_covid19_serology():
     """
     Load an example dataset of COVID-19 systems serology.
     Formatted in a three-mode tensor of samples, antigens, and receptors
@@ -181,8 +181,11 @@ def COVID19_data():
     dims = ["samples", "antigens", "receptors"]
     reference = ["Tan, Z. C., Murphy, M. C., Alpay, H. S., Taylor, S. D., & Meyer, A. S. (2021). Tensor‐structured decomposition improves systems serology analysis.  Molecular systems biology, 17(9), e10243.",
                  "Zohar, T., Loos, C., Fischinger, S., Atyeo, C., Wang, C., Slein, M. D., ... & Alter, G. (2020). Compromised humoral functional evolution tracks with SARS-CoV-2 mortality. Cell, 183(6), 1508-1519."]
-    task = ["CP decomposition demonstration"]
-    DESC = "An example dataset of COVID-19 systems serology."
+    DESC = """ A demonstration on applying CP decomposition to a COVID-19 systems serology dataset.
+            Here, serum antibodies of 438 samples were systematically profiled by their binding behavior
+            to SARS-CoV-2 (the virus that causes COVID-19) antigens and Fc receptors (a type of receptors 
+            that expressed by immune cells) activities. Samples are labeled by the status of the patients.
+            """
     LICENSE = """Copyright 2022 The Regents of the University of California
 
             Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -208,6 +211,5 @@ def COVID19_data():
         ticks=[sampleLabels, antigenLabels, receptorLabels],
         dims=dims,
         reference=reference,
-        task=task,
         DESC=DESC,
         LICENSE=LICENSE)
