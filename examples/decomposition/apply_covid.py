@@ -13,7 +13,10 @@ Apply CP decomposition to COVID-19 Serology Dataset
 # to comprehensively profile the interactions between the antibodies and
 # [Fc receptors](https://en.wikipedia.org/wiki/Fc_receptor) alongside other types of immunological
 # and demographic data. Here, we will apply CP decomposition to a [COVID-19 system serology dataset]
-# (https://www.sciencedirect.com/science/article/pii/S0092867420314598).
+# (https://www.sciencedirect.com/science/article/pii/S0092867420314598). In this dataset, serum antibodies
+# of 438 samples collected from COVID-19 patients were systematically profiled by their binding behavior
+# to SARS-CoV-2 (the virus that causes COVID-19) antigens and Fc receptors (a type of receptors that is
+# expressed by immune cells) activities. Samples are labeled by the status of the patients.
 #
 # Details of this analysis as well as more in-depth biological implication can be found in
 # [this work](https://www.embopress.org/doi/full/10.15252/msb.202110243).
@@ -23,11 +26,11 @@ Apply CP decomposition to COVID-19 Serology Dataset
 import numpy as np
 import tensorly as tl
 from tensorly.decomposition import parafac
-from tensorly.datasets.imports import COVID19_data
+from tensorly.datasets.imports import load_covid19_serology
 from matplotlib import pyplot as plt
 from matplotlib.cm import ScalarMappable
 
-data = COVID19_data()
+data = load_covid19_serology()
 
 ##############################################################################
 # Apply CP decomposition to this dataset with Tensorly
