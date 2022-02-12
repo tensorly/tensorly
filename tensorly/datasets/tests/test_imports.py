@@ -1,4 +1,4 @@
-from ..imports import IL2data, COVID19_data
+from ..imports import IL2data, load_covid19_serology
 
 
 def test_IL2data():
@@ -13,7 +13,7 @@ def test_IL2data():
 
 def test_COVID19_data():
     """ Test that data import dimensions match. """
-    data = COVID19_data()
+    data = load_covid19_serology()
 
     tensor = data["tensor"]
     assert tensor.shape[0] == len(data["ticks"][0])
