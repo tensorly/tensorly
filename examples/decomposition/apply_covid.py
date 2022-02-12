@@ -15,11 +15,12 @@ Apply CP decomposition to COVID-19 Serology Dataset
 # and demographic data. Here, we will apply CP decomposition to a [COVID-19 system serology dataset]
 # (https://www.sciencedirect.com/science/article/pii/S0092867420314598). In this dataset, serum antibodies
 # of 438 samples collected from COVID-19 patients were systematically profiled by their binding behavior
-# to SARS-CoV-2 (the virus that causes COVID-19) antigens and Fc receptors (a type of receptors that is
-# expressed by immune cells) activities. Samples are labeled by the status of the patients.
+# to SARS-CoV-2 (the virus that causes COVID-19) antigens and Fc receptors activities. Samples are
+# labeled by the status of the patients.
 #
-# Details of this analysis as well as more in-depth biological implication can be found in
-# [this work](https://www.embopress.org/doi/full/10.15252/msb.202110243).
+# Details of this analysis as well as more in-depth biological implications can be found in
+# [this work](https://www.embopress.org/doi/full/10.15252/msb.202110243). It also includes applying
+# tensor methods to HIV systems serology measurements and using them to predict patient status.
 #
 # We first import this dataset of a panel of COVID-19 patients:
 
@@ -64,9 +65,9 @@ plt.gca().set_ylim([0, 1])
 ##############################################################################
 # Inspect the biological insights from CP components
 # -----------------------
-# Eventually, we wish CP decomposition can bring insights to this data set. For example, in this
+# Eventually, we wish CP decomposition can bring insights to this dataset. For example, in this
 # case, revealing the underlying trend of COVID-19 serum-level immunity. To do this, we can inspect
-# how each component looks like on weights
+# how each component looks like on weights.
 
 tfac = CMTFfacs[1]
 
@@ -97,7 +98,7 @@ fig2.colorbar(ScalarMappable(norm=plt.Normalize(-1, 1), cmap="PiYG"))
 ##############################################################################
 # From the results, we can see that serum COVID-19 immunity separates into two distinct signals,
 # represented by two CP components: a clear acute response with IgG3, IgM, and IgA, and a long-term,
-# IgG1-specific response. Samples from patients with different symptoms can be distinguish from
+# IgG1-specific response. Samples from patients with different symptoms can be distinguished from
 # these two components. This indicates that CP decomposition is a great tool to find these biologically
 # significant signals.
 
