@@ -216,6 +216,8 @@ def test_shape():
     A2 = T.reshape(A, shape2)
     assert_equal(T.shape(A2), shape2)
 
+    assert type(T.shape(A2)) == tuple
+
 
 def test_ndim():
     A = T.arange(3*4*5)
@@ -260,12 +262,45 @@ def test_norm():
 
 
 def test_clip():
-    """Test that clip can work with single arguments"""
+    # Test that clip can work with single arguments
     X = T.tensor([0.0, -1.0, 1.0])
     X_low = T.tensor([0.0, 0.0, 1.0])
     X_high = T.tensor([0.0, -1.0, 0.0])
     assert_array_equal(tl.clip(X, a_min=0.0), X_low)
     assert_array_equal(tl.clip(X, a_max=0.0), X_high)
+
+    # More extensive test with a larger random tensor
+    rng = tl.check_random_state(0)
+    tensor = tl.tensor(rng.random_sample((10, 10, 10)).astype('float32'))
+
+    val1 = np.float32(rng.random_sample())
+    val2 = np.float32(rng.random_sample())
+    limits = [
+        (min(val1, val2), max(val1, val2)),
+        (-1, 2),
+        (tl.max(tensor) + 1, None),
+        (None, tl.min(tensor) - 1),
+        (tl.max(tensor), None),
+        (tl.min(tensor), None),
+        (None, tl.max(tensor)),
+        (None, tl.min(tensor))
+    ]
+
+    for min_val, max_val in limits:
+        message = f"Tensor clipped incorrectly with min_val={min_val} and max_val={max_val}. Tensor bounds are ({tl.to_numpy(tl.min(tensor))}, {tl.to_numpy(tl.max(tensor))}"
+        if min_val is not None:
+            assert tl.all(tl.clip(tensor, min_val, None) >= min_val), message
+            assert tl.all(tl.clip(tensor, min_val, max_val) >= min_val), message
+        if max_val is not None:
+            assert tl.all(tl.clip(tensor, None, max_val) <= max_val), message
+            assert tl.all(tl.clip(tensor, min_val, max_val) <= max_val), message
+
+
+def test_clips_all_negative_tensor_correctly():
+    # Regression test for bug found with the pytorch backend
+    negative_valued_tensor = tl.zeros((10, 10)) - 0.1
+    clipped_tensor = tl.clip(negative_valued_tensor, 0)
+    assert tl.all(clipped_tensor == 0)
 
 
 def test_where():
@@ -405,3 +440,69 @@ def test_index_update():
     tensor = tl.index_update(tensor, tl.index[2, :], 2)
     assert_array_equal(np_tensor, tensor)
 
+
+def test_sum():
+    rng = tl.check_random_state(0)
+    tensor = tl.tensor(rng.random_sample((5, 6, 7)))
+    all_kwargs = [
+        {},
+        {'axis': 1},
+        {'axis': 1, 'keepdims': True},
+        {'axis': 1, 'keepdims': False},
+        {'keepdims': True},
+        {'keepdims': False},
+        {'axis': None, 'keepdims': True},
+        {'axis': (0, 2), 'keepdims': True},
+        {'axis': (0, 2), 'keepdims': False},
+        {'axis': (0, 2)}
+    ]
+    for kwargs in all_kwargs:
+        np.testing.assert_allclose(
+            tl.to_numpy(tl.sum(tensor, **kwargs)),
+            np.sum(tl.to_numpy(tensor), **kwargs),
+            rtol=1e-5,  # Single precision
+            err_msg=f"Sum not same as numpy with kwargs: {kwargs}"
+        )
+
+
+def test_sum_keepdims():
+    rng = tl.check_random_state(0)
+    random_matrix = tl.tensor(rng.random_sample((10, 20)))
+
+    summed_matrix1 = tl.sum(random_matrix, axis=0)
+    assert tl.shape(summed_matrix1) == (20,)
+    summed_matrix2 = tl.sum(random_matrix, axis=0, keepdims=False)
+    assert tl.shape(summed_matrix2) == (20,)
+    summed_matrix3 = tl.sum(random_matrix, axis=0, keepdims=True)
+    assert tl.shape(summed_matrix3) == (1, 20)
+
+    summed_matrix4 = tl.sum(random_matrix, axis=1)
+    assert tl.shape(summed_matrix4) == (10,)
+    summed_matrix5 = tl.sum(random_matrix, axis=1, keepdims=False)
+    assert tl.shape(summed_matrix5) == (10,)
+    summed_matrix6 = tl.sum(random_matrix, axis=1, keepdims=True)
+    assert tl.shape(summed_matrix6) == (10, 1)
+
+    # Third order tensor
+    random_tensor = tl.tensor(rng.random_sample((10, 20, 30)))
+
+    summed_tensor1 = tl.sum(random_tensor, axis=0)
+    assert tl.shape(summed_tensor1) == (20, 30)
+    summed_tensor2 = tl.sum(random_tensor, axis=0, keepdims=False)
+    assert tl.shape(summed_tensor2) == (20, 30)
+    summed_tensor3 = tl.sum(random_tensor, axis=0, keepdims=True)
+    assert tl.shape(summed_tensor3) == (1, 20, 30)
+
+    summed_tensor4 = tl.sum(random_tensor, axis=1)
+    assert tl.shape(summed_tensor4) == (10, 30)
+    summed_tensor5 = tl.sum(random_tensor, axis=1, keepdims=False)
+    assert tl.shape(summed_tensor5) == (10, 30)
+    summed_tensor6 = tl.sum(random_tensor, axis=1, keepdims=True)
+    assert tl.shape(summed_tensor6) == (10, 1, 30)
+
+    summed_tensor7 = tl.sum(random_tensor, axis=2)
+    assert tl.shape(summed_tensor7) == (10, 20)
+    summed_tensor8 = tl.sum(random_tensor, axis=2, keepdims=False)
+    assert tl.shape(summed_tensor8) == (10, 20)
+    summed_tensor9 = tl.sum(random_tensor, axis=2, keepdims=True)
+    assert tl.shape(summed_tensor9) == (10, 20, 1)

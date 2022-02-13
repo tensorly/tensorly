@@ -197,3 +197,11 @@ def test_tucker_normalize():
         assert_array_almost_equal(tl.norm(factors[i], axis=0), tl.ones(rank[i]))
     assert_array_almost_equal(tucker_to_tensor((core, factors)), tucker_to_tensor(tucker_ten))
 
+def test_tucker_copy():
+    shape = (3, 4, 5)
+    rank = 4
+    tucker_tensor = random_tucker(shape, rank)
+    core, factors = tucker_tensor
+    core_normalized, factors_normalized = tucker_normalize(tucker_tensor.tucker_copy())
+    # Check that modifying copy tensor doesn't change the original tensor
+    assert_array_almost_equal(tucker_to_tensor((core, factors)), tucker_to_tensor(tucker_tensor))

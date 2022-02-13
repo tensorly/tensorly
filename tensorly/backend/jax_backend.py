@@ -26,7 +26,7 @@ class JaxBackend(Backend, backend_name='jax'):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=None):
+    def tensor(data, dtype=None, **kwargs):
         return np.array(data, dtype=dtype)
 
     @staticmethod
