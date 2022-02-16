@@ -221,7 +221,8 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
              'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'count_nonzero', 'tensordot',
              'zeros_like', 'reshape', 'eye', 'min', 'prod', 'abs', 'matmul',
-             'sqrt', 'sign', 'where', 'conj', 'finfo', 'einsum', 'log2', 'sin', 'cos', 'exp']:
+             'sqrt', 'sign', 'where', 'conj', 'finfo', 'einsum',
+             'log2', 'sin', 'cos', 'exp', 'digamma']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 

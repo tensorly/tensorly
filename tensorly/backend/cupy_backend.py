@@ -1,5 +1,7 @@
 try:
     import cupy as cp
+    import cupyx.scipy.special
+
 except ImportError as error:
     message = ('Impossible to import cupy.\n'
                'To use TensorLy with the cupy backend, '
@@ -73,3 +75,6 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 
 
 for name in ['svd', 'qr', 'eigh', 'solve']:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
+
+for name in ['gammad']:
+    CupyBackend.register_method(name, getattr(cupyx.scipy.special, name))
