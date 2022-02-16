@@ -1425,6 +1425,11 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def exp(x):
+        """Calculate the exponential of all elements in the input array."""
+        raise NotImplementedError
+
+    @staticmethod
     def sin(x):
         """Return the sin of x.
         """
