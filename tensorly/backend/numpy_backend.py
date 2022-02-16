@@ -1,6 +1,6 @@
 import numpy as np
 from .core import Backend
-
+import scipy.special
 
 class NumpyBackend(Backend, backend_name='numpy'):
 
@@ -81,3 +81,6 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64',
 
 for name in ['solve', 'qr', 'svd', 'eigh']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
+
+for name in ['digamma']:
+    NumpyBackend.register_method(name, getattr(scipy.special, name))

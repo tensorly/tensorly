@@ -6,6 +6,7 @@ try:
     from jax.config import config
     config.update("jax_enable_x64", True)
     import jax.numpy as np
+    import jax.scipy.special
 except ImportError as error:
     message = ('Impossible to import Jax.\n'
                'To use TensorLy with the Jax backend, '
@@ -100,3 +101,6 @@ for name in ['solve', 'qr', 'svd', 'eigh']:
 
 for name in ['index', 'index_update']:
     JaxBackend.register_method(name, getattr(jax.ops, name))
+
+for name in ['digamma']:
+    JaxBackend.register_method(name, getattr(jax.scipy.special, name))
