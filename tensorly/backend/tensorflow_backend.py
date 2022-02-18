@@ -234,6 +234,7 @@ _FUN_NAMES = [
     (tfm.sin, 'sin'),
     (tfm.cos, 'cos'),
     (tfm.exp, 'exp'),
+    (tfm.log, 'log'),
     (tfm.digamma, 'digamma'),
     (tfm.count_nonzero, 'count_nonzero'),
     (tfm.cumsum, 'cumsum'),
