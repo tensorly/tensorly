@@ -1426,6 +1426,11 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def log(x):
+        """Calculate the natural logarithm of all elements in the input array."""
+        raise
+
+    @staticmethod
     def exp(x):
         """Calculate the exponential of all elements in the input array."""
         raise NotImplementedError

@@ -93,7 +93,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
              'where', 'transpose', 'arange', 'ones', 'zeros', 'flip', 'trace', 'any',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log2', 'tensordot', 'sin', 'cos', 'exp']:
+             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log', 'log2', 'tensordot', 'sin', 'cos', 'exp']:
     JaxBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'svd', 'eigh']:
