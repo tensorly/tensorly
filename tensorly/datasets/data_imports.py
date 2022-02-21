@@ -74,10 +74,7 @@ def IL2data():
 
     return Bunch(
         tensor=tensor,
-        ligands=ligands,
-        cells=cells,
-        times=times,
-        doses=doses,
+        ticks=[ligands, times, doses, cells],
         dims=dims,
         reference=reference,
         task=task,

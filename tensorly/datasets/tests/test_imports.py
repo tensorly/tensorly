@@ -1,4 +1,4 @@
-from ..imports import IL2data, load_covid19_serology
+from ..data_imports import IL2data, load_covid19_serology
 
 
 def test_IL2data():
