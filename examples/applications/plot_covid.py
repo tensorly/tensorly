@@ -1,25 +1,31 @@
 """
+COVID-19 Serology Dataset Analysis with CP
+==========================================
+
 Apply CP decomposition to COVID-19 Serology Dataset
 """
 
+# sphinx_gallery_thumbnail_number = 2
+
 ##############################################################################
 # Introduction
-# -----------------------
+# ------------
 # PARAFAC (CP) decomposition is extremely useful in dimensionality reduction, allowing us
 # to develop models that are both representative and compact while retaining crucial patterns
 # between subjects. Here, we provide an example of how it can be applied to biomedical research.
 #
 # Systems serology is a new technology that examines the antibodies from a patient's serum, aiming
 # to comprehensively profile the interactions between the antibodies and
-# [Fc receptors](https://en.wikipedia.org/wiki/Fc_receptor) alongside other types of immunological
-# and demographic data. Here, we will apply CP decomposition to a [COVID-19 system serology dataset]
-# (https://www.sciencedirect.com/science/article/pii/S0092867420314598). In this dataset, serum antibodies
+# `Fc receptors <https://en.wikipedia.org/wiki/Fc_receptor>`_ alongside other types of immunological
+# and demographic data. Here, we will apply CP decomposition to a
+# `COVID-19 system serology dataset <https://www.sciencedirect.com/science/article/pii/S0092867420314598>`_. 
+# In this dataset, serum antibodies
 # of 438 samples collected from COVID-19 patients were systematically profiled by their binding behavior
 # to SARS-CoV-2 (the virus that causes COVID-19) antigens and Fc receptors activities. Samples are
 # labeled by the status of the patients.
 #
 # Details of this analysis as well as more in-depth biological implications can be found in
-# [this work](https://www.embopress.org/doi/full/10.15252/msb.202110243). It also includes applying
+# `this work <https://www.embopress.org/doi/full/10.15252/msb.202110243>`_. It also includes applying
 # tensor methods to HIV systems serology measurements and using them to predict patient status.
 #
 # We first import this dataset of a panel of COVID-19 patients:
@@ -35,7 +41,7 @@ data = load_covid19_serology()
 
 ##############################################################################
 # Apply CP decomposition to this dataset with Tensorly
-# -----------------------
+# ----------------------------------------------------
 # Now we apply CP decomposition to this dataset.
 
 comps = np.arange(1, 7)
@@ -64,7 +70,7 @@ plt.gca().set_ylim([0, 1])
 
 ##############################################################################
 # Inspect the biological insights from CP components
-# -----------------------
+# --------------------------------------------------
 # Eventually, we wish CP decomposition can bring insights to this dataset. For example, in this
 # case, revealing the underlying trend of COVID-19 serum-level immunity. To do this, we can inspect
 # how each component looks like on weights.
@@ -107,8 +113,8 @@ fig2.colorbar(ScalarMappable(norm=plt.Normalize(-1, 1), cmap="PiYG"))
 # ----------
 # [1] Tan, Z. C., Murphy, M. C., Alpay, H. S., Taylor, S. D., & Meyer, A. S. (2021). Tensor‐structured
 # decomposition improves systems serology analysis. Molecular systems biology, 17(9), e10243.
-# <https://www.embopress.org/doi/full/10.15252/msb.202110243>
+# `https://www.embopress.org/doi/full/10.15252/msb.202110243`_
 #
 # [2] Zohar, T., Loos, C., Fischinger, S., Atyeo, C., Wang, C., Slein, M. D., ... & Alter, G. (2020).
 # Compromised humoral functional evolution tracks with SARS-CoV-2 mortality. Cell, 183(6), 1508-1519.
-# <https://www.sciencedirect.com/science/article/pii/S0092867420314598>
+# `https://www.sciencedirect.com/science/article/pii/S0092867420314598`_
