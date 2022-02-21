@@ -244,6 +244,9 @@ class TuckerTensor(FactorizedTensor):
     
     def to_unfolded(self, mode):
         return tucker_to_unfolded(self, mode)
+
+    def tucker_copy(self):
+        return TuckerTensor((tl.copy(self.core), [tl.copy(self.factors[i]) for i in range(len(self.factors))]))
     
     def to_vec(self):
         return tucker_to_vec(self)

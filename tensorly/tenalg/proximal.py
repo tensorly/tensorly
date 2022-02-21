@@ -19,21 +19,35 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
     Parameters
     ----------
     non_negative : bool or dictionary
-        This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
+        This constraint is clipping negative values to '0'.
+        If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
+        Penalizes the factor with the l1 norm using the input value as regularization parameter.
     l2_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 norm using the input value as regularization parameter.
     l2_square_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 square norm using the input value as regularization parameter.
     unimodality : bool or dictionary, optional
-        If it is True unimodality constraint is applied to all modes.
+        If it is True, unimodality constraint is applied to all modes.
+        Applied to each column seperately.
     normalize : bool or dictionary, optional
-        This constraint divides all the values by maximum value of the input array. If it is True normalize constraint
-        is applied to all modes.
+        This constraint divides all the values by maximum value of the input array.
+        If it is True, normalize constraint is applied to all modes.
     simplex : float or list or dictionary, optional
+        Projects on the simplex with the given parameter
+        Applied to each column seperately.
     normalized_sparsity : float or list or dictionary, optional
+        Normalizes with the norm after hard thresholding
     soft_sparsity : float or list or dictionary, optional
+        Impose that the columns of factors have L1 norm bounded by a user-defined threshold.
     smoothness : float or list or dictionary, optional
+        Optimizes the factors by solving a banded system
     monotonicity : bool or dictionary, optional
+        Projects columns to monotonically decreasing distrbution
+        Applied to each column seperately.
+        If it is True, monotonicity constraint is applied to all modes.
     hard_sparsity : float or list or dictionary, optional
+        Hard thresholding with the given threshold
     n_const : int
         Number of constraints. If it is None, function returns input tensor.
         Default : 1
@@ -243,21 +257,35 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
     ----------
     tensor : ndarray
     non_negative : bool or dictionary
-        This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
+        This constraint is clipping negative values to '0'.
+        If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
+        Penalizes the factor with the given regularizer
     l2_reg : float or list or dictionary, optional
+        Penalizes the factor with the given regularizer
     l2_square_reg : float or list or dictionary, optional
+        Penalizes the factor with the given regularizer
     unimodality : bool or dictionary, optional
-        If it is True unimodality constraint is applied to all modes.
+        If it is True, unimodality constraint is applied to all modes.
+        Applied to each column seperately.
     normalize : bool or dictionary, optional
-        This constraint divides all the values by maximum value of the input array. If it is True normalize constraint
-        is applied to all modes.
+        This constraint divides all the values by maximum value of the input array.
+        If it is True, normalize constraint is applied to all modes.
     simplex : float or list or dictionary, optional
+        Projects on the simplex with the given parameter
+        Applied to each column seperately.
     normalized_sparsity : float or list or dictionary, optional
+        Normalizes with the norm after hard thresholding
     soft_sparsity : float or list or dictionary, optional
+        Simplex operator using soft thresholding
     smoothness : float or list or dictionary, optional
+        Optimizes the factors by solving a banded system
     monotonicity : bool or dictionary, optional
+        Projects columns to monotonically decreasing distrbution
+        Applied to each column seperately.
+        If it is True, monotonicity constraint is applied to all modes.
     hard_sparsity : float or list or dictionary, optional
+        Hard thresholding with the given threshold
     n_const : int
         Number of constraints. If it is None, function returns input tensor.
         Default : 1
@@ -297,7 +325,7 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
     elif constraint == 'unimodality':
         return unimodality_prox(tensor)
     elif constraint == 'normalize':
-        return tensor / tl.max(tensor)
+        return tensor / tl.max(tl.abs(tensor))
     elif constraint == 'simplex':
         return simplex_prox(tensor, parameter)
     elif constraint == 'normalized_sparsity':
@@ -565,17 +593,25 @@ def simplex_prox(tensor, parameter):
             "Validation of subgradient optimization."
             Mathematical programming 6.1 (1974): 62-88.
     """
-    _, col = tl.shape(tensor)
-    tensor = tl.clip(tensor, 0, tl.max(tensor))
+    # Making it work for 1-dimensional tensors as well
+    if tl.ndim(tensor) > 1:
+        row, col = tl.shape(tensor)
+    else:
+        row = tl.shape(tensor)[0]
+        col = 1
+        tensor = tl.reshape(tensor, [row, col])
     tensor_sort = tl.sort(tensor, axis=0, descending=True)
-
-    to_change = tl.sum(tl.where(tensor_sort > (tl.cumsum(tensor_sort, axis=0) - parameter), 1.0, 0.0), axis=0)
+    # Broadcasting is used to divide rows by 1,2,3...
+    cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(tl.ones([row, 1]), axis=0)
+    # Added -1 to correspond to a Python index
+    to_change = tl.sum(tl.where(tensor_sort > cumsum_min_param_by_k, 1, 0), axis=0) - 1
     difference = tl.zeros(col)
     for i in range(col):
-        if to_change[i] > 0:
-            difference = tl.index_update(difference, tl.index[i], tl.cumsum(tensor_sort, axis=0)[int(to_change[i] - 1), i])
-    difference = (difference - parameter) / to_change
-    return tl.clip(tensor - difference, a_min=0)
+        difference = tl.index_update(difference, tl.index[i], cumsum_min_param_by_k[to_change[i], i])
+    if col > 1:
+        return tl.clip(tensor - difference, a_min=0)
+    else:
+        return tl.tensor_to_vec(tl.clip(tensor - difference, a_min=0))
 
 
 def hard_thresholding(tensor, number_of_non_zero):
@@ -1059,25 +1095,43 @@ def admm(UtM, UtU, x, dual_var, n_iter_max=100, n_const=None, order=None, non_ne
         Maximum number of iteration
         Default: 100
     n_const : int
+        Number of constraints. If it is None, function solves least square problem without proximity operator
+        If ADMM function is used with a constraint apart from constrained parafac decomposition,
+        n_const value should be changed to '1'.
         Default : None
     order : int
+        Specifies which constraint to implement if several constraints are selected as input
         Default : None
     non_negative : bool or dictionary
-        This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
+        This constraint is clipping negative values to '0'.
+        If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
+        Penalizes the factor with the l1 norm using the input value as regularization parameter.
     l2_reg : float or list or dictionary, optional
-    l2_square : float or list or dictionary, optional
+        Penalizes the factor with the l2 norm using the input value as regularization parameter.
+    l2_square_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 square norm using the input value as regularization parameter.
     unimodality : bool or dictionary, optional
-        If it is True unimodality constraint is applied to all modes.
+        If it is True, unimodality constraint is applied to all modes.
+        Applied to each column seperately.
     normalize : bool or dictionary, optional
-        This constraint divides all the values by maximum value of the input array. If it is True normalize constraint
-        is applied to all modes.
+        This constraint divides all the values by maximum value of the input array.
+        If it is True, normalize constraint is applied to all modes.
     simplex : float or list or dictionary, optional
+        Projects on the simplex with the given parameter
+        Applied to each column seperately.
     normalized_sparsity : float or list or dictionary, optional
+        Normalizes with the norm after hard thresholding
     soft_sparsity : float or list or dictionary, optional
+        Impose that the columns of factors have L1 norm bounded by a user-defined threshold.
     smoothness : float or list or dictionary, optional
+        Optimizes the factors by solving a banded system
     monotonicity : bool or dictionary, optional
+        Projects columns to monotonically decreasing distrbution
+        Applied to each column seperately.
+        If it is True, monotonicity constraint is applied to all modes.
     hard_sparsity : float or list or dictionary, optional
+        Hard thresholding with the given threshold
     tol : float
 
     Returns

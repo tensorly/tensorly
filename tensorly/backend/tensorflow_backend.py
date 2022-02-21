@@ -60,12 +60,12 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
         if a_min is not None:
             a_min = self.tensor(a_min, **self.context(tensor_))
         else:
-            a_min = tf.reduce_min(input_tensor=tensor_)
+            a_min = self.tensor(-float('inf'))
 
         if a_max is not None:
             a_max = self.tensor(a_max, **self.context(tensor_))
         else:
-            a_max = tf.reduce_max(input_tensor=tensor_)
+            a_max = self.tensor(float('inf'))
 
         return tf.clip_by_value(tensor_, clip_value_min=a_min, clip_value_max=a_max)
 
@@ -233,6 +233,9 @@ _FUN_NAMES = [
     (tf.tensordot, 'tensordot'),
     (tfm.sin, 'sin'),
     (tfm.cos, 'cos'),
+    (tfm.exp, 'exp'),
+    (tfm.log, 'log'),
+    (tfm.digamma, 'digamma'),
     (tfm.count_nonzero, 'count_nonzero'),
     (tfm.cumsum, 'cumsum'),
     (tfm.reduce_any, 'any')

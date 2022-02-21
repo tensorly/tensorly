@@ -51,10 +51,17 @@ def test_soft_sparsity():
 
 def test_simplex():
     """Test for simplex operator"""
-    tensor = T.tensor([[0.5, 1.3, 4.5], [0.8, 0.3, 2]])
+    # 1d Tensor
+    tensor = T.tensor([0.4, 0.5, 0.6])
     res = simplex_prox(tensor, 1)
-    true_res = T.tensor([[0.35, 1, 1], [0.65, 0, 0]])
-    assert_array_almost_equal(true_res, res)
+    true_res = T.tensor([0.23, 0.33, 0.43])
+    assert_array_almost_equal(true_res, res, decimal=2)
+
+    # 2d Tensor
+    tensor = T.tensor([[0.4, 1.5, 1],[0.5, 2, 3], [0.6, 0.3, 2.9]])
+    res = simplex_prox(tensor, 1)
+    true_res = T.tensor([[0.23, 0.25, 0], [0.33, 0.75, 0.55], [0.43, 0, 0.45]])
+    assert_array_almost_equal(true_res, res, decimal=2)
 
 
 def test_normalized_sparsity():
