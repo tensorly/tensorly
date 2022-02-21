@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 import scipy.linalg
 import scipy.sparse.linalg
+import scipy.special
 
 
 class Index():
@@ -1423,6 +1424,23 @@ class Backend(object):
         """Return the base 2 logarithm of x.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def log(x):
+        """Calculate the natural logarithm of all elements in the input array."""
+        raise
+
+    @staticmethod
+    def exp(x):
+        """Calculate the exponential of all elements in the input array."""
+        raise NotImplementedError
+
+    def digamma(self, x):
+        """The digamma function.
+
+            The logarithmic derivative of the gamma function evaluated at z.
+        """
+        return self.tensor(scipy.special.digamma(x), **self.context(x))
 
     @staticmethod
     def sin(x):

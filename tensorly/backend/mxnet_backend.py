@@ -21,7 +21,7 @@ class MxnetBackend(Backend, backend_name='mxnet'):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=None):
+    def tensor(data, dtype=None, **kwargs):
         if dtype is None and isinstance(data, numpy.ndarray):
             dtype = data.dtype
         return np.array(data, dtype=dtype)
@@ -114,7 +114,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'reshape', 'moveaxis',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'trace', 'any',
              'zeros_like', 'eye', 'concatenate', 'max', 'min', 'flip', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero',  'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
+             'argmax', 'stack', 'diag', 'einsum', 'log', 'log2', 'tensordot', 'sin', 'cos', 'exp']:
     MxnetBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'eigh']:

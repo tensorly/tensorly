@@ -130,8 +130,13 @@ def test_constrained_parafac_simplex():
     rng = T.check_random_state(1234)
     rank = 3
     init = 'random'
-    tensor = T.tensor(rng.random_sample([6, 8, 4]))
-    _, factors = constrained_parafac(tensor, simplex=[3, 3, 3], rank=rank, init=init, random_state=rng)
+    weights_init, factors_init = initialize_constrained_parafac(T.zeros([6, 8, 4]), rank, simplex=[3, 3, 3],
+                                                                init=init)
+    tensor = cp_to_tensor((weights_init, factors_init))
+    for i in range(len(factors_init)):
+        factors_init[i] += T.tensor(0.1 * rng.random_sample(T.shape(factors_init[i])), **T.context(factors_init[i]))
+    tensor_init = CPTensor((weights_init, factors_init))
+    _, factors = constrained_parafac(tensor, simplex=[3, 3, 3], rank=rank, init=tensor_init, random_state=rng)
     for factor in factors:
         assert_array_almost_equal(np.sum(T.to_numpy(factor), axis=0)[0], 3,  decimal=0)
 
