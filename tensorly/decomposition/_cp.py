@@ -447,6 +447,7 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None, indices_list=None,
         if not None, index of a matrix to skip
 
     indices_list : list, default is None
+        a list of length `matrices` containing the indices with the range of relevant matrice row
         if None, random indices will be created
 
     random_state : None, int or numpy.random.RandomState
