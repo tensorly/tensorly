@@ -205,10 +205,10 @@ def test_constrained_parafac_normalized_sparsity():
         factors_init[i] += T.tensor(0.1 * rng.random_sample(T.shape(factors_init[i])), **T.context(factors_init[i]))
     tensor_init = CPTensor((weights_init, factors_init))
     res, errors = constrained_parafac(tensor, normalized_sparsity=[5, 5, 5], rank=rank, init=tensor_init,
-                                      random_state=rng, return_errors=True, tol_outer=1-16)
+                                      random_state=rng, return_errors=True)
     # Check if factors are normalized and k-sparse
     for i in range(len(factors_init)):
-        assert_(T.norm(res.factors[i]) <= 1)
+        assert_array_almost_equal(T.norm(res.factors[i]), 1, decimal=6)
         assert_(T.count_nonzero(res.factors[i]) == 5)
 
 
