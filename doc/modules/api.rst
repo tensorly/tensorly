@@ -212,6 +212,7 @@ Algebraic operations
     tt_to_tensor
     tt_to_unfolded
     tt_to_vec
+    pad_tt_rank
 
 
 :mod:`tensorly.tt_matrix`: Matrices in TT form

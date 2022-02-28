@@ -2,7 +2,7 @@ import numpy as np
 
 import tensorly as tl
 from ..decomposition import tensor_train
-from ..tt_tensor import tt_to_tensor, _validate_tt_tensor, pad_tt
+from ..tt_tensor import tt_to_tensor, _validate_tt_tensor, pad_tt_rank
 from ..tt_tensor import validate_tt_rank, _tt_n_param
 from ..testing import assert_array_almost_equal, assert_equal, assert_raises, assert_
 from ..random import random_tt, random_tr
@@ -147,7 +147,7 @@ def test_pad_tt_rank(n_pad):
     """Test for pad_tt_rank"""
     rank = (1, 2, 2, 2, 1)
     tt = random_tt((4, 3, 5, 2), rank=rank)
-    padded_tt = tl.tt_tensor.TTTensor(pad_tt(tt, n_padding=n_pad, pad_boundaries=False))
+    padded_tt = tl.tt_tensor.TTTensor(pad_tt_rank(tt, n_padding=n_pad, pad_boundaries=False))
     rec = tt.to_tensor()
     rec_padded = padded_tt.to_tensor()
     assert_array_almost_equal(rec, rec_padded, decimal=4)
@@ -155,7 +155,7 @@ def test_pad_tt_rank(n_pad):
 
     rank = (2, 3, 4, 5, 2)
     tr = random_tr((4, 3, 5, 2), rank=rank)
-    padded_tr = tl.tr_tensor.TRTensor(pad_tt(tr, n_padding=n_pad, pad_boundaries=True))
+    padded_tr = tl.tr_tensor.TRTensor(pad_tt_rank(tr, n_padding=n_pad, pad_boundaries=True))
     rec = tr.to_tensor()
     rec_padded = padded_tr.to_tensor()
     assert_array_almost_equal(rec, rec_padded, decimal=4)

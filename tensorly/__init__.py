@@ -14,7 +14,7 @@ from .cp_tensor import (cp_to_tensor, cp_to_unfolded,
 from .tucker_tensor import (tucker_to_tensor, tucker_to_unfolded,
                             tucker_to_vec, tucker_mode_dot,
                             validate_tucker_rank)
-from .tt_tensor import tt_to_tensor, tt_to_unfolded, tt_to_vec, validate_tt_rank
+from .tt_tensor import tt_to_tensor, tt_to_unfolded, tt_to_vec, validate_tt_rank, pad_tt_rank
 from .tt_matrix import (tt_matrix_to_tensor, tt_matrix_to_tensor, validate_tt_matrix_rank,
                         tt_matrix_to_unfolded, tt_matrix_to_vec, tt_matrix_to_matrix)
 from .tr_tensor import tr_to_tensor, tr_to_unfolded, tr_to_vec, validate_tr_rank
