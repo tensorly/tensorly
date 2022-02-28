@@ -300,6 +300,41 @@ class TTTensor(FactorizedTensor):
     def to_vec(self):
         return tt_to_vec(self)
 
+
+def pad_tt(factor_list, n_padding=1, pad_boundaries=False):
+    """Pads a Tensor-Train so as to increase its rank without changing its reconstruction
+    
+    Parameters
+    ----------
+    factor_list : tensor list
+    n_padding : int, default is 1 
+        how much to increase the rank (bond dimension) by
+    pad_boundaries : bool, default is False
+        if True, also pad the boundaries (useful for a tensor-ring)
+        should be False for a tensor-train to keep the boundary rank to be 1
+
+    Returns
+    -------
+    padded_factor_list
+    """
+    new_factors = []
+    n_factors = len(factor_list)
+    
+    for i, factor in enumerate(factor_list):
+        n_padding_left = n_padding_right = n_padding
+        if (i == 0) and not pad_boundaries:
+            n_padding_left = 0
+        elif (i == n_factors - 1) and not pad_boundaries:
+            n_padding_right = 0
+
+        r1, *s, r2 = tl.shape(factor)
+        new_factor = tl.zeros((r1 + n_padding_left, *s, r2 + n_padding_right), **tl.context(factor))
+        tl.index_update(new_factor, tl.index[:r1, :, :r2], factor)
+        new_factors.append(new_factor)
+
+    return new_factors
+
+
 mps_to_tensor = DefineDeprecated(deprecated_name='mps_to_tensor', use_instead=tt_to_tensor)
 mps_to_unfolded = DefineDeprecated(deprecated_name='mps_to_unfolded', use_instead=tt_to_unfolded)
 mps_to_vec = DefineDeprecated(deprecated_name='mps_to_vec', use_instead=tt_to_vec)
