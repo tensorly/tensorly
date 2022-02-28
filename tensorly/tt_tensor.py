@@ -301,9 +301,11 @@ class TTTensor(FactorizedTensor):
         return tt_to_vec(self)
 
 
-def pad_tt(factor_list, n_padding=1, pad_boundaries=False):
-    """Pads a Tensor-Train so as to increase its rank without changing its reconstruction
+def pad_tt_rank(factor_list, n_padding=1, pad_boundaries=False):
+    """Pads the factors of a Tensor-Train so as to increase its rank without changing its reconstruction
     
+    The tensor-train (ring) will be padded with 0s to increase its rank only but not the underlying tensor it represents.
+
     Parameters
     ----------
     factor_list : tensor list
