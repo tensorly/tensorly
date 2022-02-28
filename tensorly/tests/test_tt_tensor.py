@@ -143,8 +143,8 @@ def test_validate_tt_rank():
     assert_(n_param >= n_param_tensor*coef)
 
 @pytest.mark.parametrize("n_pad", [1, 2])
-def test_pad_tt(n_pad):
-    """Test for pad_tt"""
+def test_pad_tt_rank(n_pad):
+    """Test for pad_tt_rank"""
     rank = (1, 2, 2, 2, 1)
     tt = random_tt((4, 3, 5, 2), rank=rank)
     padded_tt = tl.tt_tensor.TTTensor(pad_tt(tt, n_padding=n_pad, pad_boundaries=False))
