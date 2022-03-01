@@ -331,7 +331,7 @@ def pad_tt_rank(factor_list, n_padding=1, pad_boundaries=False):
 
         r1, *s, r2 = tl.shape(factor)
         new_factor = tl.zeros((r1 + n_padding_left, *s, r2 + n_padding_right), **tl.context(factor))
-        new_factors.append(tl.index_update(new_factor, tl.index[:r1, :, :r2], factor))
+        new_factors.append(tl.index_update(new_factor, tl.index[:r1, ..., :r2], factor))
 
     return new_factors
 
