@@ -350,8 +350,3 @@ def setup(app):
     app.connect('build-finished', embed_code_links)
     metadata = {'parallel_read_safe': True}
     return metadata
-
-
-def setup_module():
-    # HACK: Stop nosetests running setup() above
-    pass
