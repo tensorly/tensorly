@@ -135,7 +135,7 @@ Running the tests
 
 Testing and documentation are an essential part of this package and all functions come with uni-tests and documentation.
 
-The tests are ran using the `pytest` package (though you can also use `nose`). 
+The tests are ran using the `pytest` package. 
 First install `pytest`::
 
     pip install pytest
