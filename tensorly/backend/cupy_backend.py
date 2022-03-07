@@ -78,3 +78,5 @@ for name in ['svd', 'qr', 'eigh', 'solve']:
 
 for name in ['gammad']:
     CupyBackend.register_method(name, getattr(cupyx.scipy.special, name))
+
+CupyBackend.regsiter_method('gamma', cp.random.gamma)

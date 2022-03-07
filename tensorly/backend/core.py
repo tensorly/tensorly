@@ -139,6 +139,18 @@ class Backend(object):
         random_tensor = self.tensor(random_tensor, **context)
         return random_tensor
 
+    def gamma(self, shape, scale=1.0, size=None, seed=None, **context):
+        """Draw samples from a Gamma distribution.
+
+        Samples are drawn from a Gamma distribution with specified parameters, 
+        shape (sometimes designated “k”) and scale (sometimes designated “theta”),
+        where both parameters are > 0.
+        """
+        rng = self.check_random_state(seed)
+        random_tensor = rng.gamma(shape=shape, scale=scale, size=size)
+        random_tensor = self.tensor(random_tensor, **context)
+        return random_tensor
+
     @staticmethod
     def context(tensor):
         """Returns the context of a tensor
@@ -1441,6 +1453,7 @@ class Backend(object):
             The logarithmic derivative of the gamma function evaluated at z.
         """
         return self.tensor(scipy.special.digamma(x), **self.context(x))
+
 
     @staticmethod
     def sin(x):
