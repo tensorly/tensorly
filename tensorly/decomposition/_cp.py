@@ -449,8 +449,6 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None, indices_list=None,
     indices_list : list, default is None
         Contains, for each matrix in `matrices`, a list of indices of rows to sample.
         if None, random indices will be created
-        a list of length `matrices` containing the indices with the range of relevant matrice row
-        if None, random indices will be created
 
     random_state : None, int or numpy.random.RandomState
         if int, used to set the seed of the random number generator
