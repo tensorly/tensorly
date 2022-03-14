@@ -337,3 +337,153 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
         return cp_tensor, rec_errors
     else:
         return cp_tensor
+
+
+class ConstrainedCP(DecompositionMixin):
+    """CANDECOMP/PARAFAC decomposition via alternating optimization of
+    alternating direction method of multipliers (AO-ADMM):
+
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that::
+
+        tensor = [|weights; factors[0], ..., factors[-1] |],
+
+    where factors are either penalized or constrained according to the user-defined constraint.
+
+    In order to compute the factors efficiently, the ADMM algorithm
+    introduces an auxilliary factor which is called factor_aux in the function.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    rank  : int
+        Number of components.
+    n_iter_max : int
+        Maximum number of iteration for outer loop
+    n_iter_max_inner : int
+        Number of iteration for inner loop
+    init : {'svd', 'random', cptensor}, optional
+        Type of factor matrix initialization. See `initialize_factors`.
+    svd : str, default is 'numpy_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    tol_outer : float, optional
+        (Default: 1e-8) Relative reconstruction error tolerance for outer loop. The
+        algorithm is considered to have found a local minimum when the
+        reconstruction error is less than `tol_outer`.
+    tol_inner : float, optional
+        (Default: 1e-6) Absolute reconstruction error tolerance for factor update during inner loop, i.e. ADMM optimization.
+    random_state : {None, int, np.random.RandomState}
+    verbose : int, optional
+        Level of verbosity
+    return_errors : bool, optional
+        Activate return of iteration errors
+    non_negative : bool or dictionary
+        This constraint is clipping negative values to '0'.
+        If it is True, non-negative constraint is applied to all modes.
+    l1_reg : float or list or dictionary, optional
+        Penalizes the factor with the l1 norm using the input value as regularization parameter.
+    l2_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 norm using the input value as regularization parameter.
+    l2_square_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 square norm using the input value as regularization parameter.
+    unimodality : bool or dictionary, optional
+        If it is True, unimodality constraint is applied to all modes.
+        Applied to each column seperately.
+    normalize : bool or dictionary, optional
+        This constraint divides all the values by maximum value of the input array.
+        If it is True, normalize constraint is applied to all modes.
+    simplex : float or list or dictionary, optional
+        Projects on the simplex with the given parameter
+        Applied to each column seperately.
+    normalized_sparsity : float or list or dictionary, optional
+        Normalizes with the norm after hard thresholding
+    soft_sparsity : float or list or dictionary, optional
+        Impose that the columns of factors have L1 norm bounded by a user-defined threshold.
+    smoothness : float or list or dictionary, optional
+        Optimizes the factors by solving a banded system
+    monotonicity : bool or dictionary, optional
+        Projects columns to monotonically decreasing distrbution
+        Applied to each column seperately.
+        If it is True, monotonicity constraint is applied to all modes.
+    hard_sparsity : float or list or dictionary, optional
+        Hard thresholding with the given threshold
+    cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
+       Stopping criterion if `tol` is not None.
+       If 'rec_error',  algorithm stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
+       If 'abs_rec_error', algorithm terminates when `|previous rec_error - current rec_error| < tol`.
+    fixed_modes : list, default is None
+        A list of modes for which the initial value is not modified.
+        The last mode cannot be fixed due to error computation.
+
+    Returns
+    -------
+    CPTensor : (weight, factors)
+        * weights : 1D array of shape (rank, )
+        * factors : List of factors of the CP decomposition element `i` is of shape ``(tensor.shape[i], rank)``
+    errors : list
+        A list of reconstruction errors at each iteration of the algorithms.
+
+    References
+    ----------
+    .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications", SIAM
+           REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
+    .. [2] Huang, Kejun, Nicholas D. Sidiropoulos, and Athanasios P. Liavas.
+           "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization." IEEE
+           Transactions on Signal Processing 64.19 (2016): 5052-5065.
+    """
+
+    def __init__(self, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize_factors=False, orthogonalise=False,
+                 tol=1e-8, random_state=None, verbose=0, sparsity=None, l2_reg=0, mask=None,
+                 cvg_criterion='abs_rec_error', fixed_modes=None, svd_mask_repeats=5, linesearch=False):
+        self.rank = rank
+        self.n_iter_max = n_iter_max
+        self.init = init
+        self.svd = svd
+        self.normalize_factors = normalize_factors
+        self.orthogonalise = orthogonalise
+        self.tol = tol
+        self.random_state = random_state
+        self.verbose = verbose
+        self.sparsity = sparsity
+        self.l2_reg = l2_reg
+        self.mask = mask
+        self.cvg_criterion = cvg_criterion
+        self.fixed_modes = fixed_modes
+        self.svd_mask_repeats = svd_mask_repeats
+        self.linesearch = linesearch
+
+    def fit_transform(self, tensor):
+        """Decompose an input tensor
+
+        Parameters
+        ----------
+        tensor : tensorly tensor
+            input tensor to decompose
+
+        Returns
+        -------
+        CPTensor
+            decomposed tensor
+        """
+        cp_tensor, errors = constrained_parafac(
+            tensor,
+            rank=self.rank,
+            n_iter_max=self.n_iter_max,
+            init=self.init,
+            svd=self.svd,
+            normalize_factors=self.normalize_factors,
+            orthogonalise=self.orthogonalise,
+            tol=self.tol,
+            random_state=self.random_state,
+            verbose=self.verbose,
+            sparsity=self.sparsity,
+            l2_reg=self.l2_reg,
+            mask=self.mask,
+            cvg_criterion=self.cvg_criterion,
+            fixed_modes=self.fixed_modes,
+            svd_mask_repeats=self.svd_mask_repeats,
+            linesearch=self.linesearch,
+            return_errors=True,
+        )
+        self.decomposition_ = cp_tensor
+        self.errors_ = errors
+        return self.decomposition_
