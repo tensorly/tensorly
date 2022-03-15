@@ -1,11 +1,11 @@
 import numpy as np
 from ...cp_tensor import cp_to_tensor, CPTensor
-from .._constrained_cp import constrained_parafac, initialize_constrained_parafac
+from .._constrained_cp import constrained_parafac, initialize_constrained_parafac, ConstrainedCP
 from ... import backend as T
-from ...testing import assert_, assert_array_almost_equal
+from ...testing import assert_, assert_array_almost_equal, assert_class_wrapper_correctly_passes_arguments
 from ...random import random_cp
 
-def test_constrained_parafac_nonnegative():
+def test_constrained_parafac_nonnegative(monkeypatch):
     """Test for the CANDECOMP-PARAFAC decomposition with ADMM under nonnegativity constraints
     """
     rng = T.check_random_state(1234)
@@ -32,7 +32,7 @@ def test_constrained_parafac_nonnegative():
     # Test the max abs difference between the reconstruction and the tensor
     assert_(T.max(T.abs(nn_res - tensor)) < tol_max_abs,
             f'abs norm of reconstruction error = {T.max(T.abs(nn_res - tensor))} higher than tolerance={tol_max_abs}')
-
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, constrained_parafac, ConstrainedCP, ignore_args={'return_errors'}, rank=3)
 
 def test_constrained_parafac_l1():
     """Test for the CANDECOMP-PARAFAC decomposition with ADMM and l1 regularization

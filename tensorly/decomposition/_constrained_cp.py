@@ -3,6 +3,7 @@ import warnings
 
 import tensorly as tl
 from ..random import random_cp
+from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..cp_tensor import (CPTensor, unfolding_dot_khatri_rao, cp_norm,
                          validate_cp_rank)
@@ -431,25 +432,36 @@ class ConstrainedCP(DecompositionMixin):
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
 
-    def __init__(self, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize_factors=False, orthogonalise=False,
-                 tol=1e-8, random_state=None, verbose=0, sparsity=None, l2_reg=0, mask=None,
-                 cvg_criterion='abs_rec_error', fixed_modes=None, svd_mask_repeats=5, linesearch=False):
+    def __init__(self, rank, n_iter_max=100, n_iter_max_inner=10,
+                 init='svd', svd='numpy_svd', tol_outer=1e-8, tol_inner=1e-6, random_state=None,
+                 verbose=0, return_errors=False, cvg_criterion='abs_rec_error',
+                 fixed_modes=None, non_negative=None, l1_reg=None, l2_reg=None, l2_square_reg=None,
+                 unimodality=None, normalize=None, simplex=None, normalized_sparsity=None, soft_sparsity=None,
+                 smoothness=None, monotonicity=None, hard_sparsity=None):
         self.rank = rank
         self.n_iter_max = n_iter_max
+        self.n_iter_max_inner = n_iter_max_inner
         self.init = init
         self.svd = svd
-        self.normalize_factors = normalize_factors
-        self.orthogonalise = orthogonalise
-        self.tol = tol
+        self.tol_outer = tol_outer
+        self.tol_inner = tol_inner
         self.random_state = random_state
         self.verbose = verbose
-        self.sparsity = sparsity
-        self.l2_reg = l2_reg
-        self.mask = mask
+        self.return_errors = return_errors
         self.cvg_criterion = cvg_criterion
         self.fixed_modes = fixed_modes
-        self.svd_mask_repeats = svd_mask_repeats
-        self.linesearch = linesearch
+        self.non_negative = non_negative
+        self.l1_reg = l1_reg
+        self.l2_reg = l2_reg
+        self.l2_square_reg = l2_square_reg
+        self.unimodality = unimodality
+        self.normalize = normalize
+        self.simplex = simplex
+        self.normalized_sparsity = normalized_sparsity
+        self.soft_sparsity = soft_sparsity
+        self.smoothness = smoothness
+        self.monotonicity = monotonicity
+        self.hard_sparsity = hard_sparsity
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -468,20 +480,27 @@ class ConstrainedCP(DecompositionMixin):
             tensor,
             rank=self.rank,
             n_iter_max=self.n_iter_max,
+            n_iter_max_inner=self.n_iter_max_inner,
             init=self.init,
             svd=self.svd,
-            normalize_factors=self.normalize_factors,
-            orthogonalise=self.orthogonalise,
-            tol=self.tol,
+            tol_outer=self.tol_outer,
+            tol_inner=self.tol_inner,
             random_state=self.random_state,
             verbose=self.verbose,
-            sparsity=self.sparsity,
-            l2_reg=self.l2_reg,
-            mask=self.mask,
             cvg_criterion=self.cvg_criterion,
             fixed_modes=self.fixed_modes,
-            svd_mask_repeats=self.svd_mask_repeats,
-            linesearch=self.linesearch,
+            non_negative=self.non_negative,
+            l1_reg=self.l1_reg,
+            l2_reg=self.l2_reg,
+            l2_square_reg=self.l2_square_reg,
+            unimodality=self.unimodality,
+            normalize=self.normalize,
+            simplex=self.simplex,
+            normalized_sparsity=self.normalized_sparsity,
+            soft_sparsity=self.soft_sparsity,
+            smoothness=self.smoothness,
+            monotonicity=self.monotonicity ,
+            hard_sparsity=self.hard_sparsity,
             return_errors=True,
         )
         self.decomposition_ = cp_tensor
