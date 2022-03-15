@@ -195,6 +195,10 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
     def log2(self,x):
         return tfm.log(x) / tfm.log(2.)
 
+    @staticmethod
+    def concatenate(tensors, axis=0):
+        return tf.concat(tensors, axis=axis)
+
 _FUN_NAMES = [
     # source_fun, target_fun
     (np.int32, 'int32'),
@@ -221,7 +225,6 @@ _FUN_NAMES = [
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),
     (tf.identity, 'copy'),
-    (tf.concat, 'concatenate'),
     (tf.stack, 'stack'),
     (tf.reduce_min, 'min'),
     (tf.reduce_max, 'max'),
