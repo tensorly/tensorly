@@ -10,6 +10,8 @@ import numpy as np
 import math
 import tensorly as tl
 from tensorly import random
+from tensorly.testing import assert_, assert_class_wrapper_correctly_passes_arguments
+from tensorly.decomposition._tt import TensorTrain
 import tensorly.decomposition
 from tensorly.contrib.decomposition.tt_TTOI import tensor_train_OI 
 
