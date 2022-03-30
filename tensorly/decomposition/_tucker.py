@@ -188,10 +188,10 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
                     print('converged in {} iterations.'.format(iteration))
                 break
 
-    return (core, factors)
+    return (core, factors), rec_errors
 
 
-def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
+def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd', return_errors=False,
            svd='numpy_svd', tol=10e-5, random_state=None, mask=None, verbose=False):
     """Tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
@@ -210,6 +210,10 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
+    return_errors : boolean
+        Indicates whether the algorithm should return all reconstruction errors
+        and computation time of each iteration or not
+        Default: False
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD,
         acceptable values in tensorly.SVD_FUNS
@@ -250,9 +254,9 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         modes, factors = zip(*[(i, f) for (i, f) in enumerate(factors) if i not in fixed_factors])
         init = (core, list(factors))
 
-        core, new_factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
-                                           svd=svd, tol=tol, random_state=random_state, mask=mask,
-                                           verbose=verbose)
+        (core, new_factors), rec_errors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
+                                                         svd=svd, tol=tol, random_state=random_state, mask=mask,
+                                                         verbose=verbose)
 
         factors = list(new_factors)
         for i, e in enumerate(fixed_factors):
@@ -266,10 +270,14 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd',
         # TO-DO validate rank for partial tucker as well
         rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
-        core, factors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
-                                       svd=svd, tol=tol, random_state=random_state, mask=mask,
-                                       verbose=verbose)
-        return TuckerTensor((core, factors))
+        (core, factors), rec_errors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
+                                                     svd=svd, tol=tol, random_state=random_state, mask=mask,
+                                                     verbose=verbose)
+        tensor = TuckerTensor((core, factors))
+        if return_errors:
+            return tensor, rec_errors
+        else:
+            return tensor
 
 def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
                         random_state=None, verbose=False, return_errors=False,
@@ -290,8 +298,10 @@ def non_negative_tucker(tensor, rank, n_iter_max=10, init='svd', tol=10e-5,
     random_state : {None, int, np.random.RandomState}
     verbose : int , optional
         level of verbosity
-    ranks : None or int list
-    size of the core tensor
+    return_errors : boolean
+        Indicates whether the algorithm should return all reconstruction errors
+        and computation time of each iteration or not
+        Default: False
     normalize_factors : if True, aggregates the norms of the factors in the core.
 
     Returns
@@ -582,6 +592,10 @@ class Tucker(DecompositionMixin):
     n_iter_max : int
                 maximum number of iteration
     init : {'svd', 'random'}, optional
+    return_errors : boolean
+        Indicates whether the algorithm should return all reconstruction errors
+        and computation time of each iteration or not
+        Default: False
     svd : str, default is 'numpy_svd'
         ignore if non_negative is True
         function to use to compute the SVD,
@@ -607,12 +621,13 @@ class Tucker(DecompositionMixin):
     SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
     def __init__(self, rank=None, n_iter_max=100,
-                 init='svd', svd='numpy_svd', tol=10e-5, fixed_factors=None,
+                 init='svd', return_errors=False, svd='numpy_svd', tol=10e-5, fixed_factors=None,
                  random_state=None, mask=None, verbose=False):
         self.rank = rank
         self.fixed_factors = fixed_factors
         self.n_iter_max = n_iter_max
         self.init = init
+        self.return_errors = return_errors
         self.svd = svd
         self.tol = tol
         self.random_state = random_state
@@ -626,6 +641,7 @@ class Tucker(DecompositionMixin):
             fixed_factors=self.fixed_factors,
             n_iter_max=self.n_iter_max,
             init=self.init,
+            return_errors=self.return_errors,
             svd=self.svd,
             tol=self.tol,
             random_state=self.random_state,
