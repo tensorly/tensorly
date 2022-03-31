@@ -19,7 +19,6 @@ import copy
 from .core import Backend
 
 
-
 class JaxBackend(Backend, backend_name='jax'):
 
     @staticmethod
@@ -99,7 +98,11 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
 for name in ['solve', 'qr', 'svd', 'eigh']:
     JaxBackend.register_method(name, getattr(np.linalg, name))
 
-for name in ['index', 'index_update']:
+if LooseVersion(jax.__version__) >= LooseVersion('0.3.0'):
+    def index_update(tensor, indices, values):
+        return tensor.at[indices].set(values)
+    JaxBackend.register_method('index_update', index_update)
+else:
     JaxBackend.register_method(name, getattr(jax.ops, name))
 
 for name in ['digamma']:
