@@ -40,7 +40,7 @@ def sequential_prod(tensor_prod, multiplier_list, direction):
 
 
 
-def tensor_train_OI(data_tensor, rank, n_iter, trajectory = False, return_errors = True, **context):
+def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_errors = True, **context):
     """ Perform tensor-train orthogonal iteration (TTOI) for tensor train decomposition
     Reference paper: Zhou Y, Zhang AR, Zheng L, Wang Y. "Optimal high-order tensor svd via tensor-train orthogonal iteration."
 
@@ -53,7 +53,7 @@ def tensor_train_OI(data_tensor, rank, n_iter, trajectory = False, return_errors
         must verify rank[0] == rank[-1] == 1 (boundary conditions)
         and len(rank) == len(tl.shape(data_tensor))+1
     n_iter : int
-        number of iterations
+        half the number of iterations
     trajectory : bool, optional, default is False
         if True, the output of each iteration of TTOI is returned: 2*n_iter outputs
         otherwise, only the output of the last iteration is returned
