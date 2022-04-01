@@ -118,9 +118,9 @@ for name in ['int64', 'int32', 'float64', 'float32',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero',  'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'diag', 'einsum', 'log', 'log2', 'tensordot', 'exp',
              'sin', 'cos', 'tan', 
-             'asin', 'acos', 'atan', 'arcsin', 'arccos', 'arctan',
+             'arcsin', 'arccos', 'arctan',
              'sinh', 'cosh', 'tanh', 
-             'arcsinh', 'arccosh', 'arctanh', 'asinh', 'acosh', 'atanh',
+             'arcsinh', 'arccosh', 'arctanh',
             ]:
     MxnetBackend.register_method(name, getattr(np, name))
 
