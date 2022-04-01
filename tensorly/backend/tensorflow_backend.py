@@ -201,6 +201,10 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
 
 _FUN_NAMES = [
     # source_fun, target_fun
+    (np.e, 'e'),
+    (np.pi, 'pi'),
+    (np.inf, 'inf'),
+    (np.nan, 'nan'),
     (np.int32, 'int32'),
     (np.int64, 'int64'),
     (np.float32, 'float32'),
