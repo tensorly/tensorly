@@ -31,7 +31,11 @@ from .backend import (context, tensor, is_tensor, shape, ndim, to_numpy, copy,
                       argmin, all, mean, sum, prod, sign, abs, sqrt, norm, dot,
                       kron, solve, lstsq, qr, kr, partial_svd, stack, eps, finfo,
                       matmul, index_update, check_random_state, randomized_svd,
-                      randn, randomized_range_finder, log, log2, exp, sin, cos)
+                      randn, randomized_range_finder, log, log2, exp,
+                      sin, cos, tan, asin, acos, atan, arcsin, arccos, arctan,
+                      sinh, cosh, tanh, arcsinh, arccosh, arctanh, asinh, acosh, atanh,
+                      e, pi, inf, nan,
+                      )
 
 # Deprecated
 from .cp_tensor import kruskal_to_tensor, kruskal_to_unfolded, kruskal_to_vec
