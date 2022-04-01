@@ -81,7 +81,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64',
              'sin', 'cos', 'tan', 
              'arcsin', 'arccos', 'arctan',
              'sinh', 'cosh', 'tanh', 
-             'arcsinh', 'arccosh', 'arctanh', 'asinh', 'acosh', 'atanh',
+             'arcsinh', 'arccosh', 'arctanh',
             ]:
     NumpyBackend.register_method(name, getattr(np, name))
 
