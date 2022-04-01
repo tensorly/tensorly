@@ -74,9 +74,9 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 
              'conj', 'diag', 'einsum', 'tensordot', 
              'log', 'log2', 'exp',
              'sin', 'cos', 'tan', 
-             'asin', 'acos', 'atan', 'arcsin', 'arccos', 'arctan',
+             'arcsin', 'arccos', 'arctan',
              'sinh', 'cosh', 'tanh', 
-             'arcsinh', 'arccosh', 'arctanh', 'asinh', 'acosh', 'atanh',
+             'arcsinh', 'arccosh', 'arctanh',
              ]:
     CupyBackend.register_method(name, getattr(cp, name))
 
