@@ -68,6 +68,22 @@ class Backend(object):
         setattr(cls, name, staticmethod(func))
 
     @property
+    def e(self):
+        raise NotImplementedError
+
+    @property
+    def pi(self):
+        raise NotImplementedError
+
+    @property
+    def nan(self):
+        raise NotImplementedError
+
+    @property
+    def inf(self):
+        raise NotImplementedError
+
+    @property
     def int64(self):
         raise NotImplementedError
 
