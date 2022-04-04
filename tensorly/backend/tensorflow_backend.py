@@ -262,7 +262,7 @@ _FUN_NAMES = [
     (tfm.count_nonzero, 'count_nonzero'),
     (tfm.cumsum, 'cumsum'),
     (tfm.reduce_any, 'any')
-    ]
+]
 for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)
 del _FUN_NAMES
