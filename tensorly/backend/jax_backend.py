@@ -37,9 +37,11 @@ class JaxBackend(Backend, backend_name='jax'):
     def to_numpy(tensor):
         return numpy.asarray(tensor)
 
-    @staticmethod
-    def copy(tensor):
-        return copy.copy(tensor)
+    def copy(self, tensor):
+        # See https://github.com/tensorly/tensorly/pull/397
+        # and https://github.com/google/jax/issues/3473
+        return self.tensor( tensor.copy(), **self.context(tensor))
+        #return copy.copy(tensor)
 
     @staticmethod
     def shape(tensor):
