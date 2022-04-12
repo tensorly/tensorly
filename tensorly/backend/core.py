@@ -68,6 +68,22 @@ class Backend(object):
         setattr(cls, name, staticmethod(func))
 
     @property
+    def e(self):
+        raise NotImplementedError
+
+    @property
+    def pi(self):
+        raise NotImplementedError
+
+    @property
+    def nan(self):
+        raise NotImplementedError
+
+    @property
+    def inf(self):
+        raise NotImplementedError
+
+    @property
     def int64(self):
         raise NotImplementedError
 
@@ -1454,6 +1470,11 @@ class Backend(object):
         """
         return self.tensor(scipy.special.digamma(x), **self.context(x))
 
+    @staticmethod
+    def flip(tensor, axis=None):
+        """Reverse the order of elements in an array along the given axis.
+        """
+        raise NotImplementedError
 
     @staticmethod
     def sin(x):
@@ -1468,7 +1489,82 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
-    def flip(tensor, axis=None):
-        """Reverse the order of elements in an array along the given axis.
+    def tan(x):
+        """Return the tan of x.
         """
+        raise NotImplementedError
+
+    @staticmethod
+    def asin(x):
+        """Return the asin of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def acos(x):
+        """Return the acos of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def atan(x):
+        """Return the atan of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arcsin(x):
+        """Return the arcsin of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arccos(x):
+        """Return the arccos of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arctan(x):
+        """Return the arctan of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def sinh(x):
+        """Return the sinh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def cosh(x):
+        """Return the cosh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def tanh(x):
+        """Return the tanh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arcsinh(x):
+        """Return the arcsinh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arccosh(x):
+        """Return the arccosh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arctanh(x):
+        """Return the arctanh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def asinh(x):
+        """Return the asinh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def acosh(x):
+        """Return the acosh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def atanh(x):
+        """Return the atanh of x."""
         raise NotImplementedError

@@ -28,12 +28,16 @@ class BackendManager(types.ModuleType):
                   'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
                   'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
                   'argmax', 'stack', 'conj', 'diag', 'einsum', 'log', 'log2', 'dot', 'tensordot',
-                  'sin', 'cos', 'exp', 'clip', 'kr', 'kron', 'partial_svd', 'lstsq', 'eps', 'finfo',
+                  'exp', 'clip', 'kr', 'kron', 'partial_svd', 'lstsq', 'eps', 'finfo',
                   'solve', 'qr', 'randn', 'check_random_state', 'sort', 'eigh',
                   'index_update', 'context', 'tensor', 'norm', 'to_numpy', 'is_tensor',
-                  'randomized_range_finder', 'randomized_svd', 'argsort', 'flip', 'count_nonzero'
+                  'randomized_range_finder', 'randomized_svd', 'argsort', 'flip', 'count_nonzero',
+                  'sin', 'cos', 'tan', 
+                  'asin', 'acos', 'atan', 'arcsin', 'arccos', 'arctan',
+                  'sinh', 'cosh', 'tanh', 
+                  'arcsinh', 'arccosh', 'arctanh', 'asinh', 'acosh', 'atanh',
                  ]
-    _attributes = ['int64', 'int32', 'float64', 'float32', 
+    _attributes = ['int64', 'int32', 'float64', 'float32', 'pi', 'e', 'inf', 'nan',
                    'complex128', 'complex64', 'SVD_FUNS', 'index', 'backend_name']
     available_backend_names = ['numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy', 'jax']
     _default_backend = 'numpy'

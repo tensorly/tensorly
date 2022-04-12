@@ -88,11 +88,18 @@ class JaxBackend(Backend, backend_name='jax'):
         else:
             return np.argsort(tensor, axis=axis)
 
-for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 'reshape', 'moveaxis',
+for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
+             'pi', 'e', 'inf', 'nan',
+             'reshape', 'moveaxis',
              'where', 'transpose', 'arange', 'ones', 'zeros', 'flip', 'trace', 'any',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log', 'log2', 'tensordot', 'sin', 'cos', 'exp']:
+             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log', 'log2', 'tensordot', 'exp',
+             'sin', 'cos', 'tan', 
+             'arcsin', 'arccos', 'arctan',
+             'sinh', 'cosh', 'tanh', 
+             'arcsinh', 'arccosh', 'arctanh',
+            ]:
     JaxBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'svd', 'eigh']:
