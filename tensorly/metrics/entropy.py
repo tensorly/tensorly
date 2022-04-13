@@ -1,7 +1,6 @@
 import math
 import tensorly as tl
 from .. import backend as T
-from ..cp_tensor import cp_normalize
 from ..tt_tensor import tt_to_tensor
 from ..utils import prod
 
@@ -68,7 +67,7 @@ def cp_vonneumann_entropy(tensor):
     -------
     cp_von_neumann_entropy : order-0 tensor
     """
-    eig_vals = cp_normalize(tensor).weights
+    eig_vals = tl.cp_normalize(tensor).weights
     eps = tl.eps(eig_vals.dtype)
     eig_vals = eig_vals[eig_vals > eps]
 
