@@ -8,13 +8,16 @@ from ..cp_tensor import (cp_to_tensor, cp_to_unfolded,
                               cp_mode_dot, unfolding_dot_khatri_rao,
                               cp_norm, cp_flip_sign,
                               _cp_n_param, validate_cp_rank,
-                              cp_lstsq_grad
+                              cp_lstsq_grad, cp_permute_factors
                         )
 from ..base import unfold, tensor_to_vec
 from tensorly.random import random_cp
 from tensorly.testing import (assert_equal, assert_raises, assert_,
                               assert_array_equal, assert_array_almost_equal)
+import pytest
 
+skip_tensorflow = pytest.mark.skipif((tl.get_backend() == "tensorflow"),
+                                     reason=f"Indexing with list not supported in TensorFlow")
 
 def test_cp_normalize():
     shape = (3, 4, 5)
@@ -294,3 +297,34 @@ def test_cp_copy():
     weights_normalized, factors_normalized = cp_normalize(cp_tensor.cp_copy())
     # Check that modifying copy tensor doesn't change the original tensor
     assert_array_almost_equal(cp_to_tensor((weights, factors)), cp_to_tensor(cp_tensor))
+
+@skip_tensorflow
+def test_cp_permute_factors():
+    """Test cp_permute_factors function ."""
+    shape = (3, 4, 5)
+    rank = 4
+
+    # one target cp tensor
+    cp_tensor_1 = random_cp(shape, rank)
+    cp_tensor_2 = random_cp(shape, rank)
+    permuted_cp_tensor, permutation = cp_permute_factors(cp_tensor_1, cp_tensor_2)
+    assert_array_almost_equal(cp_to_tensor(cp_tensor_2), cp_to_tensor(permuted_cp_tensor))
+
+    # two target cp tensors
+    cp_tensor_2 = cp_tensor_1.cp_copy()
+    cp_tensor_3 = cp_tensor_1.cp_copy()
+
+    col_order_1 = [1, 0, 3, 2]
+    for f in range(3):
+        cp_tensor_2.factors[f] = cp_tensor_2.factors[f][:, col_order_1]
+
+    col_order_2 = [3, 1, 2, 0]
+    for f in range(3):
+        cp_tensor_3.factors[f] = cp_tensor_3.factors[f][:, col_order_2]
+
+    cp_tensors, permutation = cp_permute_factors(cp_tensor_1, [cp_tensor_2, cp_tensor_3])
+    assert_array_almost_equal(permutation[0], col_order_1)
+    assert_array_almost_equal(permutation[1], col_order_2)
+    assert_array_almost_equal(cp_to_tensor(cp_tensors[0]), cp_to_tensor(cp_tensor_2))
+    assert_array_almost_equal(cp_to_tensor(cp_tensors[1]), cp_to_tensor(cp_tensor_3))
+
