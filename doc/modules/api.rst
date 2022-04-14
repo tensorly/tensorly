@@ -327,6 +327,7 @@ Note that these are currently experimental and may change in the future.
     TensorTrain
     Parafac2
     SymmetricCP
+    ConstrainedCP
 
 Functions
 ---------
