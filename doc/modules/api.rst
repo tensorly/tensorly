@@ -174,6 +174,7 @@ Algebraic operations
     cp_normalize
     cp_norm
     cp_mode_dot
+    cp_permute_factors
     unfolding_dot_khatri_rao
 
 
