@@ -47,11 +47,11 @@ for f in range(3):
 ##############################################################################
 # Permute target CPTensors
 # -----------------------
-# Now, we can use these two manipulated CPTensors with permuting function. Here,
-# cp_tensor_1 will be used as a reference to permute others which called target cp tensors.
-# There is no limitation for number of target cp tensors but there should be only one reference cp tensor.
-# Results will include permuted cp tensors and permutation for each permuted cp tensor.
-# It should be noted that, reference cp tensor won't be included among the output cp tensors.
+# Now, we can use these two manipulated CPTensors as inputs to the permutation function. Here,
+# cp_tensor_1 will be used as a reference to permute other CPTensors, which are called target CPTensors.
+# There is no limitation for the number of target CPTensors but there should be only one reference CPTensor.
+# Results will include permuted CPTensors and permutation for each permuted cp tensor.
+# It should be noted that, reference CPTensor won't be included among the output CPTensors.
 
 cp_tensors, permutation = cp_permute_factors(cp_tensor_1, [cp_tensor_2, cp_tensor_3])
 
@@ -62,7 +62,7 @@ cp_tensors, permutation = cp_permute_factors(cp_tensor_1, [cp_tensor_2, cp_tenso
 print(permutation)
 
 ##############################################################################
-# We can also observe changing of the factor columns by plotting one column
+# We can also observe the evolution of the factor columns order by plotting one column
 # before and after permuting.
 
 fig, axs = plt.subplots(1, 3)
