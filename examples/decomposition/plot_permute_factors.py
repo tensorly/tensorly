@@ -16,8 +16,6 @@ On this page, you will find examples showing how to use tensorly.cp_tensor.cp_pe
 import tensorly as tl
 from tensorly.random import random_cp
 from tensorly.cp_tensor import cp_permute_factors
-import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 ##############################################################################
