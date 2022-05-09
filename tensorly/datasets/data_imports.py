@@ -4,6 +4,10 @@ Load example datasets.
 
 from os.path import dirname
 import numpy as np
+import requests
+import scipy.io
+from zipfile import ZipFile
+from io import BytesIO
 
 
 class Bunch(dict):
@@ -210,3 +214,58 @@ def load_covid19_serology():
         reference=reference,
         DESC=DESC,
         LICENSE=LICENSE)
+
+
+def load_indian_pines():
+    """
+    Loads indian pines hyperspectral data from th website and returns it as a tensorly tensor without storing the data
+    in the hard drive. This dataset could be useful for non-negative constrained decomposition methods and
+    classification/segmentation applications with tha available ground truth in
+    http://www.ehu.eus/ccwintco/uploads/c/c4/Indian_pines_gt.mat.
+    """
+
+    url = 'http://www.ehu.eus/ccwintco/uploads/6/67/Indian_pines_corrected.mat'
+    r = requests.get(url, allow_redirects=True)
+    image = scipy.io.loadmat(BytesIO(r.content))['indian_pines_corrected']
+    reference = "Baumgardner, M. F., Biehl, L. L., Landgrebe, D. A. (2015). 220 Band AVIRIS Hyperspectral " \
+                "Image Data Set: June 12, 1992 Indian Pine Test Site 3. Purdue University Research Repository. " \
+                "doi:10.4231/R7RX991C"
+    licence = "Licensed under Attribution 3.0 Unported (https://creativecommons.org/licenses/by/3.0/legalcode)"
+    desc =  "Airborne Visible / Infrared Imaging Spectrometer (AVIRIS)  hyperspectral sensor data (aviris.jpl.nasa.gov/) " \
+            "were acquired on June 12, 1992 over the Purdue University Agronomy farm northwest " \
+            "of West Lafayette and the surrounding area. This scene consists of 145 times 145 pixels and 220 spectral " \
+            "reflectance bands in the wavelength range 0.4–2.5 10^(-6) meters."
+    return Bunch(
+        tensor=np.array(image, "float"),
+        dims=["Spatial dimension", "Spatial dimension", "Hyperspectral bands"],
+        reference=reference,
+        DESC=desc,
+        LICENCE=licence)
+
+
+def load_kinetic():
+    """
+    Loads kinetic fluorescence dataset from website and returns it as tensorly tensor without storing the data
+    in the hard drive.The data is well suited for Parafac and multi-way partial least squares regression (N-PLS).
+    """
+    url = 'http://models.life.ku.dk/sites/default/files/Kinetic_Fluor.zip'
+    r = requests.get(url, allow_redirects=True)
+    zip = ZipFile(BytesIO(r.content))
+    tensor = scipy.io.loadmat(zip.open('Xlarge.mat'))['Xlarge']
+    tensor[np.isnan(tensor)] = 0
+    reference = "Nikolajsen, R. P., Booksh, K. S., Hansen, Å. M., & Bro, R. (2003). \
+                Quantifying catecholamines using multi-way kinetic modelling. \
+                Analytica Chimica Acta, 475(1-2), 137-150."
+    licence = "http://www.models.life.ku.dk/datasets. All downloadable material listed on these pages - " \
+              "appended by specifics mentioned under " \
+              "the individual headers/chapters - is available for public use. " \
+              "Please note that while great care has been taken, the software, code and data are provided" \
+              "as is and that Q&T, LIFE, KU does not accept any responsibility or liability."
+    desc = "A four-way data set with the modes: Concentration, excitation wavelength, emission wavelength and time"
+
+    return Bunch(
+        tensor=tensor,
+        dims=["Measurements", "Emissions", "Excitations", "Time points"],
+        reference=reference,
+        DESC = desc,
+        LICENCE = licence)
