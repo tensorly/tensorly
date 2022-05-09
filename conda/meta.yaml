@@ -24,8 +24,6 @@ requirements:
 test:
   requires:
     - pytest
-    # NumPy requires nosetests e.g. for assert_raises.....
-    - nose
 
   commands:
     - TENSORLY_BACKEND='numpy' pytest -v $SP_DIR/tensorly

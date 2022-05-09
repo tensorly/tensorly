@@ -1,5 +1,4 @@
 numpy
 scipy
 pytest
-nose
 pytest-cov

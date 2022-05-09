@@ -67,10 +67,17 @@ class CupyBackend(Backend, backend_name='cupy'):
 
 
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
+             'pi', 'e', 'inf', 'nan',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye', 'trace', 'any',
              'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip', 'matmul',
              'min', 'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'stack',
-             'conj', 'diag', 'einsum', 'log2', 'tensordot', 'exp', 'log']:
+             'conj', 'diag', 'einsum', 'tensordot', 
+             'log', 'log2', 'exp',
+             'sin', 'cos', 'tan', 
+             'arcsin', 'arccos', 'arctan',
+             'sinh', 'cosh', 'tanh', 
+             'arcsinh', 'arccosh', 'arctanh',
+             ]:
     CupyBackend.register_method(name, getattr(cp, name))
 
 for name in ['svd', 'qr', 'eigh', 'solve']:
@@ -78,3 +85,5 @@ for name in ['svd', 'qr', 'eigh', 'solve']:
 
 for name in ['gammad']:
     CupyBackend.register_method(name, getattr(cupyx.scipy.special, name))
+
+CupyBackend.regsiter_method('gamma', cp.random.gamma)

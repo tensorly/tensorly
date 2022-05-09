@@ -426,7 +426,7 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         return cp_tensor
     
 
-def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
+def sample_khatri_rao(matrices, n_samples, skip_matrix=None, indices_list=None,
                       return_sampled_rows=False, random_state=None):
     """Random subsample of the Khatri-Rao product of the given list of matrices
 
@@ -445,6 +445,10 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
 
     skip_matrix : None or int, optional, default is None
         if not None, index of a matrix to skip
+
+    indices_list : list, default is None
+        Contains, for each matrix in `matrices`, a list of indices of rows to sample.
+        if None, random indices will be created
 
     random_state : None, int or numpy.random.RandomState
         if int, used to set the seed of the random number generator
@@ -465,22 +469,23 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None,
     indices_kr : int list
         list of length `n_samples` containing the sampled row indices
     """
-    if random_state is None or not isinstance(random_state, np.random.RandomState):
-        rng = tl.check_random_state(random_state)
-        warnings.warn('You are creating a new random number generator at each call.\n'
-                      'If you are calling sample_khatri_rao inside a loop this will be slow:'
-                      ' best to create a rng outside and pass it as argument (random_state=rng).')
-    else:
-        rng = random_state
-
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+
+    # For each matrix, randomly choose n_samples indices for which to compute the khatri-rao product
+    if indices_list is None:
+        if random_state is None or not isinstance(random_state, np.random.RandomState):
+            rng = tl.check_random_state(random_state)
+            warnings.warn('You are creating a new random number generator at each call.\n'
+                          'If you are calling sample_khatri_rao inside a loop this will be slow:'
+                          ' best to create a rng outside and pass it as argument (random_state=rng).')
+        else:
+            rng = random_state
+        indices_list = [rng.randint(0, tl.shape(m)[0], size=n_samples, dtype=int) for m in matrices]
 
     rank = tl.shape(matrices[0])[1]
     sizes = [tl.shape(m)[0] for m in matrices]
 
-    # For each matrix, randomly choose n_samples indices for which to compute the khatri-rao product
-    indices_list = [rng.randint(0, tl.shape(m)[0], size=n_samples, dtype=int) for m in matrices]
     if return_sampled_rows:
         # Compute corresponding rows of the full khatri-rao product
         indices_kr = np.zeros((n_samples), dtype=int)

@@ -14,7 +14,7 @@ def test_partial_tucker():
     tol_max_abs = 10e-1
     tensor = tl.tensor(rng.random_sample((3, 4, 3)))
     modes = [1, 2]
-    core, factors = partial_tucker(tensor, modes, rank=None, n_iter_max=200, verbose=True)
+    (core, factors), rec_errors = partial_tucker(tensor, modes, rank=None, n_iter_max=200, verbose=True)
     reconstructed_tensor = multi_mode_dot(core, factors, modes=modes)
     norm_rec = tl.norm(reconstructed_tensor, 2)
     norm_tensor = tl.norm(tensor, 2)
@@ -25,7 +25,7 @@ def test_partial_tucker():
 
     # Test the shape of the core and factors
     ranks = [3, 1]
-    core, factors = partial_tucker(tensor, modes=modes, rank=ranks, n_iter_max=100, verbose=1)
+    (core, factors), rec_errors = partial_tucker(tensor, modes=modes, rank=ranks, n_iter_max=100, verbose=1)
     for i, rank in enumerate(ranks):
         assert_equal(factors[i].shape, (tensor.shape[i+1], ranks[i]),
                      err_msg="factors[{}].shape={}, expected {}".format(
@@ -34,8 +34,8 @@ def test_partial_tucker():
                      "expected {}".format(core.shape, [tensor.shape[0]]+ranks))
 
     # Test random_state fixes the core and the factor matrices
-    core1, factors1 = partial_tucker(tensor, modes=modes, rank=ranks, random_state=0)
-    core2, factors2 = partial_tucker(tensor, modes=modes, rank=ranks, random_state=0)
+    (core1, factors1), rec_errors = partial_tucker(tensor, modes=modes, rank=ranks, random_state=0)
+    (core2, factors2), rec_errors = partial_tucker(tensor, modes=modes, rank=ranks, random_state=0)
     assert_array_equal(core1, core2)
     for factor1, factor2 in zip(factors1, factors2):
         assert_array_equal(factor1, factor2)

@@ -19,7 +19,6 @@ import copy
 from .core import Backend
 
 
-
 class JaxBackend(Backend, backend_name='jax'):
 
     @staticmethod
@@ -38,9 +37,11 @@ class JaxBackend(Backend, backend_name='jax'):
     def to_numpy(tensor):
         return numpy.asarray(tensor)
 
-    @staticmethod
-    def copy(tensor):
-        return copy.copy(tensor)
+    def copy(self, tensor):
+        # See https://github.com/tensorly/tensorly/pull/397
+        # and https://github.com/google/jax/issues/3473
+        return self.tensor( tensor.copy(), **self.context(tensor))
+        #return copy.copy(tensor)
 
     @staticmethod
     def shape(tensor):
@@ -89,17 +90,28 @@ class JaxBackend(Backend, backend_name='jax'):
         else:
             return np.argsort(tensor, axis=axis)
 
-for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 'reshape', 'moveaxis',
+for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
+             'pi', 'e', 'inf', 'nan',
+             'reshape', 'moveaxis',
              'where', 'transpose', 'arange', 'ones', 'zeros', 'flip', 'trace', 'any',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log', 'log2', 'tensordot', 'sin', 'cos', 'exp']:
+             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log', 'log2', 'tensordot', 'exp',
+             'sin', 'cos', 'tan', 
+             'arcsin', 'arccos', 'arctan',
+             'sinh', 'cosh', 'tanh', 
+             'arcsinh', 'arccosh', 'arctanh',
+            ]:
     JaxBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'svd', 'eigh']:
     JaxBackend.register_method(name, getattr(np.linalg, name))
 
-for name in ['index', 'index_update']:
+if LooseVersion(jax.__version__) >= LooseVersion('0.3.0'):
+    def index_update(tensor, indices, values):
+        return tensor.at[indices].set(values)
+    JaxBackend.register_method('index_update', index_update)
+else:
     JaxBackend.register_method(name, getattr(jax.ops, name))
 
 for name in ['digamma']:

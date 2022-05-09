@@ -1,11 +1,11 @@
 import numpy as np
 from ...cp_tensor import cp_to_tensor, CPTensor
-from .._constrained_cp import constrained_parafac, initialize_constrained_parafac
+from .._constrained_cp import constrained_parafac, initialize_constrained_parafac, ConstrainedCP
 from ... import backend as T
-from ...testing import assert_, assert_array_almost_equal
+from ...testing import assert_, assert_array_almost_equal, assert_class_wrapper_correctly_passes_arguments
 from ...random import random_cp
 
-def test_constrained_parafac_nonnegative():
+def test_constrained_parafac_nonnegative(monkeypatch):
     """Test for the CANDECOMP-PARAFAC decomposition with ADMM under nonnegativity constraints
     """
     rng = T.check_random_state(1234)
@@ -32,7 +32,7 @@ def test_constrained_parafac_nonnegative():
     # Test the max abs difference between the reconstruction and the tensor
     assert_(T.max(T.abs(nn_res - tensor)) < tol_max_abs,
             f'abs norm of reconstruction error = {T.max(T.abs(nn_res - tensor))} higher than tolerance={tol_max_abs}')
-
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, constrained_parafac, ConstrainedCP, ignore_args={'return_errors'}, rank=3)
 
 def test_constrained_parafac_l1():
     """Test for the CANDECOMP-PARAFAC decomposition with ADMM and l1 regularization
@@ -205,10 +205,10 @@ def test_constrained_parafac_normalized_sparsity():
         factors_init[i] += T.tensor(0.1 * rng.random_sample(T.shape(factors_init[i])), **T.context(factors_init[i]))
     tensor_init = CPTensor((weights_init, factors_init))
     res, errors = constrained_parafac(tensor, normalized_sparsity=[5, 5, 5], rank=rank, init=tensor_init,
-                                      random_state=rng, return_errors=True, tol_outer=1-16)
+                                      random_state=rng, return_errors=True)
     # Check if factors are normalized and k-sparse
     for i in range(len(factors_init)):
-        assert_(T.norm(res.factors[i]) <= 1)
+        assert_array_almost_equal(T.norm(res.factors[i]), 1, decimal=6)
         assert_(T.count_nonzero(res.factors[i]) == 5)
 
 

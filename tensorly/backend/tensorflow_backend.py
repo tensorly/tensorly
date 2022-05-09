@@ -195,8 +195,16 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
     def log2(self,x):
         return tfm.log(x) / tfm.log(2.)
 
+    @staticmethod
+    def concatenate(tensors, axis=0):
+        return tf.concat(tensors, axis=axis)
+
 _FUN_NAMES = [
     # source_fun, target_fun
+    (np.e, 'e'),
+    (np.pi, 'pi'),
+    (np.inf, 'inf'),
+    (np.nan, 'nan'),
     (np.int32, 'int32'),
     (np.int64, 'int64'),
     (np.float32, 'float32'),
@@ -221,7 +229,6 @@ _FUN_NAMES = [
     (tf.argmax, 'argmax'),
     (tf.stack, 'stack'),
     (tf.identity, 'copy'),
-    (tf.concat, 'concatenate'),
     (tf.stack, 'stack'),
     (tf.reduce_min, 'min'),
     (tf.reduce_max, 'max'),
@@ -233,13 +240,29 @@ _FUN_NAMES = [
     (tf.tensordot, 'tensordot'),
     (tfm.sin, 'sin'),
     (tfm.cos, 'cos'),
+    (tfm.tan, 'tan'),
+    (tfm.asin, 'arcsin'),
+    (tfm.acos, 'arccos'),
+    (tfm.atan, 'arctan'),
+    (tfm.asin, 'asin'),
+    (tfm.acos, 'acos'),
+    (tfm.atan, 'atan'),
+    (tfm.sinh, 'sinh'),
+    (tfm.cosh, 'cosh'),
+    (tfm.tanh, 'tanh'),
+    (tfm.asinh, 'arcsinh'),
+    (tfm.acosh, 'arccosh'),
+    (tfm.atanh, 'arctanh'),
+    (tfm.asinh, 'asinh'),
+    (tfm.acosh, 'acosh'),
+    (tfm.atanh, 'atanh'),
     (tfm.exp, 'exp'),
     (tfm.log, 'log'),
     (tfm.digamma, 'digamma'),
     (tfm.count_nonzero, 'count_nonzero'),
     (tfm.cumsum, 'cumsum'),
     (tfm.reduce_any, 'any')
-    ]
+]
 for source_fun, target_fun_name in _FUN_NAMES:
     TensorflowBackend.register_method(target_fun_name, source_fun)
 del _FUN_NAMES
