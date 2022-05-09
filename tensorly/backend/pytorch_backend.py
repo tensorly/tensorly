@@ -46,7 +46,7 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
 
     @staticmethod
     def shape(tensor):
-        return tensor.shape
+        return tuple(tensor.shape)
 
     @staticmethod
     def ndim(tensor):
@@ -61,14 +61,10 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, inplace=False):
-        if a_max is None:
-            a_max = torch.max(tensor)
-        if a_min is None:
-            a_min = torch.min(tensor)
         if inplace:
-            return torch.clamp(tensor, a_min, a_max, out=tensor)
+            return torch.clip(tensor, a_min, a_max, out=tensor)
         else:
-            return torch.clamp(tensor, a_min, a_max)
+            return torch.clip(tensor, a_min, a_max)
 
     @staticmethod
     def all(tensor):
@@ -115,11 +111,10 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
             return torch.mean(tensor, dim=axis)
 
     @staticmethod
-    def sum(tensor, axis=None):
+    def sum(tensor, axis=None, keepdims=False):
         if axis is None:
-            return torch.sum(tensor)
-        else:
-            return torch.sum(tensor, dim=axis)
+            axis = tuple(range(tensor.ndim))
+        return torch.sum(tensor, dim=axis, keepdim=keepdims)
 
     @staticmethod
     def max(tensor, axis=None):
@@ -226,7 +221,8 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
              'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'count_nonzero', 'tensordot',
              'zeros_like', 'reshape', 'eye', 'min', 'prod', 'abs', 'matmul',
-             'sqrt', 'sign', 'where', 'conj', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
+             'sqrt', 'sign', 'where', 'conj', 'finfo', 'einsum',
+             'log', 'log2', 'sin', 'cos', 'exp', 'digamma']:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 

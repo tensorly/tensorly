@@ -1,6 +1,6 @@
 import numpy as np
 from .core import Backend
-
+import scipy.special
 
 class NumpyBackend(Backend, backend_name='numpy'):
 
@@ -9,7 +9,7 @@ class NumpyBackend(Backend, backend_name='numpy'):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=None):
+    def tensor(data, dtype=None, **kwargs):
         return np.array(data, dtype=dtype)
 
     @staticmethod
@@ -76,8 +76,11 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'flip',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
+             'argmax', 'stack', 'conj', 'diag', 'einsum', 'log', 'log2', 'tensordot', 'sin', 'cos', 'exp']:
     NumpyBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'svd', 'eigh']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
+
+for name in ['digamma']:
+    NumpyBackend.register_method(name, getattr(scipy.special, name))

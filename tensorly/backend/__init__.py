@@ -27,8 +27,8 @@ class BackendManager(types.ModuleType):
                   'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
                   'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
                   'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-                  'argmax', 'stack', 'conj', 'diag', 'einsum', 'log2', 'dot', 'tensordot', 
-                  'sin', 'cos', 'clip', 'kr', 'kron', 'partial_svd', 'lstsq', 'eps', 'finfo',
+                  'argmax', 'stack', 'conj', 'diag', 'einsum', 'log', 'log2', 'dot', 'tensordot',
+                  'sin', 'cos', 'exp', 'clip', 'kr', 'kron', 'partial_svd', 'lstsq', 'eps', 'finfo',
                   'solve', 'qr', 'randn', 'check_random_state', 'sort', 'eigh',
                   'index_update', 'context', 'tensor', 'norm', 'to_numpy', 'is_tensor',
                   'randomized_range_finder', 'randomized_svd', 'argsort', 'flip', 'count_nonzero'

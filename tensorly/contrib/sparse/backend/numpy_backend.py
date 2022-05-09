@@ -51,6 +51,10 @@ class NumpySparseBackend(Backend, backend_name='numpy.sparse'):
         return _py_copy(tensor)
 
     @staticmethod
+    def clip(tensor, a_min=None, a_max=None):
+        return np.clip(tensor, a_min, a_max)
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         # handle difference in default axis notation
         if axis == ():
@@ -155,7 +159,7 @@ class NumpySparseBackend(Backend, backend_name='numpy.sparse'):
 
 for name in ['int64', 'int32', 'float64', 'float32', 'transpose', 'moveaxis',
              'reshape', 'ndim', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj', 'shape']:
+             'prod', 'sqrt', 'abs', 'sign', 'arange', 'conj', 'shape']:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
 for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye',

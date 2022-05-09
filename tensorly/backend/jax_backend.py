@@ -6,6 +6,7 @@ try:
     from jax.config import config
     config.update("jax_enable_x64", True)
     import jax.numpy as np
+    import jax.scipy.special
 except ImportError as error:
     message = ('Impossible to import Jax.\n'
                'To use TensorLy with the Jax backend, '
@@ -26,7 +27,7 @@ class JaxBackend(Backend, backend_name='jax'):
         return {'dtype': tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=None):
+    def tensor(data, dtype=None, **kwargs):
         return np.array(data, dtype=dtype)
 
     @staticmethod
@@ -92,7 +93,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
              'where', 'transpose', 'arange', 'ones', 'zeros', 'flip', 'trace', 'any',
              'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log2', 'tensordot', 'sin', 'cos']:
+             'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log', 'log2', 'tensordot', 'sin', 'cos', 'exp']:
     JaxBackend.register_method(name, getattr(np, name))
 
 for name in ['solve', 'qr', 'svd', 'eigh']:
@@ -100,3 +101,6 @@ for name in ['solve', 'qr', 'svd', 'eigh']:
 
 for name in ['index', 'index_update']:
     JaxBackend.register_method(name, getattr(jax.ops, name))
+
+for name in ['digamma']:
+    JaxBackend.register_method(name, getattr(jax.scipy.special, name))

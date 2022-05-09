@@ -43,21 +43,35 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
     svd : str, default is 'numpy_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     non_negative : bool or dictionary
-        This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
+        This constraint is clipping negative values to '0'.
+        If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
+        Penalizes the factor with the l1 norm using the input value as regularization parameter.
     l2_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 norm using the input value as regularization parameter.
     l2_square_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 square norm using the input value as regularization parameter.
     unimodality : bool or dictionary, optional
-        If it is True unimodality constraint is applied to all modes.
+        If it is True, unimodality constraint is applied to all modes.
+        Applied to each column seperately.
     normalize : bool or dictionary, optional
-        This constraint divides all the values by maximum value of the input array. If it is True normalize constraint
-        is applied to all modes.
+        This constraint divides all the values by maximum value of the input array.
+        If it is True, normalize constraint is applied to all modes.
     simplex : float or list or dictionary, optional
+        Projects on the simplex with the given parameter
+        Applied to each column seperately.
     normalized_sparsity : float or list or dictionary, optional
+        Normalizes with the norm after hard thresholding
     soft_sparsity : float or list or dictionary, optional
+        Impose that the columns of factors have L1 norm bounded by a user-defined threshold.
     smoothness : float or list or dictionary, optional
+        Optimizes the factors by solving a banded system
     monotonicity : bool or dictionary, optional
+        Projects columns to monotonically decreasing distrbution
+        Applied to each column seperately.
+        If it is True, monotonicity constraint is applied to all modes.
     hard_sparsity : float or list or dictionary, optional
+        Hard thresholding with the given threshold
     Returns
     -------
     factors : CPTensor
@@ -169,21 +183,35 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
     return_errors : bool, optional
         Activate return of iteration errors
     non_negative : bool or dictionary
-        This constraint is clipping negative values to '0'. If it is True non-negative constraint is applied to all modes.
+        This constraint is clipping negative values to '0'.
+        If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
+        Penalizes the factor with the l1 norm using the input value as regularization parameter.
     l2_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 norm using the input value as regularization parameter.
     l2_square_reg : float or list or dictionary, optional
+        Penalizes the factor with the l2 square norm using the input value as regularization parameter.
     unimodality : bool or dictionary, optional
-        If it is True unimodality constraint is applied to all modes.
+        If it is True, unimodality constraint is applied to all modes.
+        Applied to each column seperately.
     normalize : bool or dictionary, optional
-        This constraint divides all the values by maximum value of the input array. If it is True normalize constraint
-        is applied to all modes.
+        This constraint divides all the values by maximum value of the input array.
+        If it is True, normalize constraint is applied to all modes.
     simplex : float or list or dictionary, optional
+        Projects on the simplex with the given parameter
+        Applied to each column seperately.
     normalized_sparsity : float or list or dictionary, optional
+        Normalizes with the norm after hard thresholding
     soft_sparsity : float or list or dictionary, optional
+        Impose that the columns of factors have L1 norm bounded by a user-defined threshold.
     smoothness : float or list or dictionary, optional
+        Optimizes the factors by solving a banded system
     monotonicity : bool or dictionary, optional
+        Projects columns to monotonically decreasing distrbution
+        Applied to each column seperately.
+        If it is True, monotonicity constraint is applied to all modes.
     hard_sparsity : float or list or dictionary, optional
+        Hard thresholding with the given threshold
     cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
        Stopping criterion if `tol` is not None.
        If 'rec_error',  algorithm stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
