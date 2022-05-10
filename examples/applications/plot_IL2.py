@@ -11,7 +11,7 @@ To do this, we will work with a tensor of experimentally measured cell signaling
 """
 
 import numpy as np
-import pandas as pd
+#import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from tensorly.datasets import IL2data
@@ -87,25 +87,36 @@ sig_tensor_fact = cp_normalize(sig_tensor_fact)
 # 
 # Finally, we label, plot, and analyze our factored tensor of data.
 
-f, ax = plt.subplots(1, 2, figsize=(12, 6))
+f, ax = plt.subplots(1, 2, figsize=(9, 4.5))
+
+components = [1, 2, 3]
+width = 0.25
 
 lig_facs = sig_tensor_fact[1][0]
-lig_fact_df = pd.DataFrame()
-for i in range(0, 3):
-    lig_fact_df = lig_fact_df.append(pd.DataFrame({"Component_Val": lig_facs[:, i], "Component": (i + 1), "Ligand": IL2mutants}))
+ligands = IL2mutants
+x_lig = np.arange(len(ligands))
 
-sns.barplot(data=lig_fact_df, ax=ax[0], x="Component_Val", y="Ligand", hue="Component")
-ax[0].set(xlabel="Component Weight", xlim=(0, 1))
+lig_rects_comp1 = ax[0].bar(x_lig - width, lig_facs[:, 0], width, label='Component 1')
+lig_rects_comp2 = ax[0].bar(x_lig, lig_facs[:, 1], width, label='Component 2')
+lig_rects_comp3 = ax[0].bar(x_lig + width, lig_facs[:, 2], width, label='Component 3')
+ax[0].set(xlabel="Ligand", ylabel="Component Weight", ylim=(0, 1))
+ax[0].set_xticks(x_lig, ligands)
+ax[0].set_xticklabels(ax[0].get_xticklabels(), rotation=60, ha="right", fontsize=9)
+ax[0].legend()
+
 
 cell_facs = sig_tensor_fact[1][3]
-cell_fact_df = pd.DataFrame()
-for i in range(0, 3):
-    cell_fact_df = cell_fact_df.append(pd.DataFrame({"Component_Val": cell_facs[:, i], "Component": (i + 1), "Cell": cells}))
+x_cell = np.arange(len(cells))
 
-sns.barplot(data=cell_fact_df, ax=ax[1], x="Cell", y="Component_Val", hue="Component")
-ax[1].set(ylabel="Component Weight", ylim=(0, 1))
+cell_rects_comp1 = ax[1].bar(x_cell - width, cell_facs[:, 0], width, label='Component 1')
+cell_rects_comp2 = ax[1].bar(x_cell, cell_facs[:, 1], width, label='Component 2')
+cell_rects_comp3 = ax[1].bar(x_cell + width, cell_facs[:, 2], width, label='Component 3')
+ax[1].set(xlabel="Cell", ylabel="Component Weight", ylim=(0, 1))
+ax[1].set_xticks(x_cell, cells)
 ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation=45, ha="right")
+ax[1].legend()
 
+f.tight_layout()
 plt.show()
 
 #%%

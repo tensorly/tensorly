@@ -33,7 +33,7 @@ Apply CP decomposition to COVID-19 Serology Dataset
 import numpy as np
 import tensorly as tl
 from tensorly.decomposition import parafac
-from tensorly.datasets.imports import load_covid19_serology
+from tensorly.datasets.data_imports import load_covid19_serology
 from matplotlib import pyplot as plt
 from matplotlib.cm import ScalarMappable
 
