@@ -11,7 +11,6 @@ To do this, we will work with a tensor of experimentally measured cell signaling
 """
 
 import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
 from tensorly.datasets import IL2data
 from tensorly.decomposition import non_negative_parafac
