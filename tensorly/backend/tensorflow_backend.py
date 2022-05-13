@@ -1,10 +1,9 @@
 try:
     import tensorflow as tf
     import tensorflow.math as tfm
+    import tensorflow.experimental.numpy as tnp
 except ImportError as error:
-    message = ('Impossible to import TensorFlow.\n'
-               'To use TensorLy with the TensorFlow backend, '
-               'you must first install TensorFlow!')
+    message = "Impossible to import TensorFlow.\n" "To use TensorLy with the TensorFlow backend, " "you must first install TensorFlow!"
     raise ImportError(message) from error
 
 import numpy as np
@@ -12,19 +11,18 @@ import numpy as np
 from . import Backend
 
 
-class TensorflowBackend(Backend, backend_name='tensorflow'):
-
+class TensorflowBackend(Backend, backend_name="tensorflow"):
     @staticmethod
     def context(tensor):
-        return {'dtype': tensor.dtype}
+        return {"dtype": tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=np.float32, device=None, device_id=None):
+    def tensor(data, dtype=np.float64, device=None, device_id=None):
         if isinstance(data, tf.Tensor) or isinstance(data, tf.Variable):
             return tf.cast(data, dtype=dtype)
 
         out = tf.Variable(data, dtype=dtype)
-        return out.gpu(device_id) if device == 'gpu' else out
+        return out.gpu(device_id) if device == "gpu" else out
 
     @staticmethod
     def is_tensor(tensor):
@@ -42,76 +40,10 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
             return tensor
 
     @staticmethod
-    def ndim(tensor):
-        return len(tensor.get_shape()._dims)
-
-    @staticmethod
-    def shape(tensor):
-        return tuple(tensor.shape.as_list())
-
-    @staticmethod
-    def arange(start, stop=None, step=1, dtype=np.float32):
-        if stop is None:
-            stop = start
-            start = 0
-        return tf.range(start=start, limit=stop, delta=step, dtype=dtype)
-
-    def clip(self, tensor_, a_min=None, a_max=None, inplace=False):
-        if a_min is not None:
-            a_min = self.tensor(a_min, **self.context(tensor_))
-        else:
-            a_min = self.tensor(-float('inf'))
-
-        if a_max is not None:
-            a_max = self.tensor(a_max, **self.context(tensor_))
-        else:
-            a_max = self.tensor(float('inf'))
-
-        return tf.clip_by_value(tensor_, clip_value_min=a_min, clip_value_max=a_max)
-
-    def moveaxis(self, tensor, source, target):
-        axes = list(range(self.ndim(tensor)))
-        if source < 0: source = axes[source]
-        if target < 0: target = axes[target]
-        try:
-            axes.pop(source)
-        except IndexError:
-            raise ValueError('Source should verify 0 <= source < tensor.ndim'
-                             'Got %d' % source)
-        try:
-            axes.insert(target, source)
-        except IndexError:
-            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
-                             'Got %d' % target)
-        return tf.transpose(a=tensor, perm=axes)
-
-    @staticmethod
     def norm(tensor, order=2, axis=None):
-        if order == 'inf':
+        if order == "inf":
             order = np.inf
         return tf.norm(tensor=tensor, ord=order, axis=axis)
-
-    def dot(self, a, b):
-        if self.ndim(a) > 2 and self.ndim(b) > 2:
-            return tf.tensordot(a, b, axes=([-1], [-2]))
-        if not self.ndim(a) or not self.ndim(b):
-            return a * b
-        return self.matmul(a, b)
-
-    def matmul(self, a, b):
-        if self.ndim(b) == 1:
-            return tf.tensordot(a, b, 1)
-        if self.ndim(a) == 1:
-            return tf.tensordot(a, b, axes=([-1], [-2]))
-        return tf.linalg.matmul(a, b)
-
-    @staticmethod
-    def conj(x, *args, **kwargs):
-        """WARNING: IDENTITY FUNCTION (does nothing)
-
-            This backend currently does not support complex tensors
-        """
-        return x
 
     @staticmethod
     def solve(lhs, rhs):
@@ -125,39 +57,22 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
         return res
 
     @staticmethod
-    def sort(tensor, axis, descending = False):
-        if descending:
-            direction = 'DESCENDING'
-        else:
-            direction = 'ASCENDING'
-            
-        if axis is None:
-            tensor = tf.reshape(tensor, [-1])
-            axis = -1
+    def clip(tensor, a_min=None, a_max=None):
+        return tnp.clip(tensor, a_min, a_max)
 
-        return tf.sort(tensor, axis=axis, direction = direction)
+    @staticmethod
+    def sort(tensor, axis, descending=False):
+        if descending:
+            return tnp.flip(tnp.sort(tensor, axis=axis), axis=axis)
+        else:
+            return tnp.sort(tensor, axis=axis)
 
     @staticmethod
     def argsort(tensor, axis, descending=False):
         if descending:
-            direction = 'DESCENDING'
+            return tnp.argsort(-1 * tensor, axis=axis)
         else:
-            direction = 'ASCENDING'
-
-        if axis is None:
-            tensor = tf.reshape(tensor, [-1])
-            axis = -1
-
-        return tf.argsort(tensor, axis=axis, direction=direction)
-
-    def flip(self, tensor, axis=None):
-        if isinstance(axis, int):
-            axis = [axis]
-
-        if axis is None:
-            return tf.reverse(tensor, axis=[i for i in range(self.ndim(tensor))])
-        else:
-            return tf.reverse(tensor, axis=axis)
+            return tnp.argsort(tensor, axis=axis)
 
     @staticmethod
     def lstsq(a, b):
@@ -170,21 +85,20 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
         return x, residuals if tf.linalg.matrix_rank(a) == n else tf.constant([])
 
     def svd(self, matrix, full_matrices):
-        """ Correct for the atypical return order of tf.linalg.svd. """
+        """Correct for the atypical return order of tf.linalg.svd."""
         S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
         return U, S, tf.transpose(a=V)
-    
+
     def index_update(self, tensor, indices, values):
         if not isinstance(tensor, tf.Variable):
             tensor = tf.Variable(tensor)
             to_tensor = True
         else:
             to_tensor = False
-        
+
         if isinstance(values, int):
-            values = tf.constant(np.ones(self.shape(tensor[indices]))*values,
-                                 **self.context(tensor))
-        
+            values = tf.constant(np.ones(self.shape(tensor[indices])) * values, **self.context(tensor))
+
         tensor = tensor[indices].assign(values)
 
         if to_tensor:
@@ -192,78 +106,74 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
         else:
             return tensor
 
-    def log2(self,x):
-        return tfm.log(x) / tfm.log(2.)
 
-    @staticmethod
-    def concatenate(tensors, axis=0):
-        return tf.concat(tensors, axis=axis)
+# Register numpy functions
+for name in ["nan"]:
+    TensorflowBackend.register_method(name, getattr(np, name))
 
-_FUN_NAMES = [
-    # source_fun, target_fun
-    (np.e, 'e'),
-    (np.pi, 'pi'),
-    (np.inf, 'inf'),
-    (np.nan, 'nan'),
-    (np.int32, 'int32'),
-    (np.int64, 'int64'),
-    (np.float32, 'float32'),
-    (np.float64, 'float64'),
-    (np.complex128, 'complex128'),
-    (np.complex64, 'complex64'),
-    (tf.ones, 'ones'),
-    (tf.zeros, 'zeros'),
-    (tf.linalg.diag, 'diag'),
-    (tf.zeros_like, 'zeros_like'),
-    (tf.eye, 'eye'),
-    (tf.reshape, 'reshape'),
-    (tf.transpose, 'transpose'),
-    (tf.where, 'where'),
-    (tf.sign, 'sign'),
-    (tf.abs, 'abs'),
-    (tf.sqrt, 'sqrt'),
-    (tf.linalg.qr, 'qr'),
-    (tf.linalg.eigh, 'eigh'),
-    (tf.linalg.trace, 'trace'),
-    (tf.argmin, 'argmin'),
-    (tf.argmax, 'argmax'),
-    (tf.stack, 'stack'),
-    (tf.identity, 'copy'),
-    (tf.stack, 'stack'),
-    (tf.reduce_min, 'min'),
-    (tf.reduce_max, 'max'),
-    (tf.reduce_mean, 'mean'),
-    (tf.reduce_sum, 'sum'),
-    (tf.reduce_prod, 'prod'),
-    (tf.reduce_all, 'all'),
-    (tf.einsum, 'einsum'),
-    (tf.tensordot, 'tensordot'),
-    (tfm.sin, 'sin'),
-    (tfm.cos, 'cos'),
-    (tfm.tan, 'tan'),
-    (tfm.asin, 'arcsin'),
-    (tfm.acos, 'arccos'),
-    (tfm.atan, 'arctan'),
-    (tfm.asin, 'asin'),
-    (tfm.acos, 'acos'),
-    (tfm.atan, 'atan'),
-    (tfm.sinh, 'sinh'),
-    (tfm.cosh, 'cosh'),
-    (tfm.tanh, 'tanh'),
-    (tfm.asinh, 'arcsinh'),
-    (tfm.acosh, 'arccosh'),
-    (tfm.atanh, 'arctanh'),
-    (tfm.asinh, 'asinh'),
-    (tfm.acosh, 'acosh'),
-    (tfm.atanh, 'atanh'),
-    (tfm.exp, 'exp'),
-    (tfm.log, 'log'),
-    (tfm.digamma, 'digamma'),
-    (tfm.count_nonzero, 'count_nonzero'),
-    (tfm.cumsum, 'cumsum'),
-    (tfm.reduce_any, 'any')
-]
-for source_fun, target_fun_name in _FUN_NAMES:
-    TensorflowBackend.register_method(target_fun_name, source_fun)
-del _FUN_NAMES
 
+# Register linalg functions
+for name in ["diag", "qr", "eigh", "trace"]:
+    TensorflowBackend.register_method(name, getattr(tf.linalg, name))
+
+
+# Register tfm functions
+for name in ["exp", "log", "digamma", "atanh", "acosh", "asinh", "tanh", "cosh", "sinh", "atan", "acos", "asin", "sin", "cos", "tan"]:
+    TensorflowBackend.register_method(name, getattr(tfm, name))
+
+
+# Register tnp functions
+for name in [
+    "log2",
+    "concatenate",
+    "flip",
+    "dot",
+    "matmul",
+    "cumsum",
+    "argmin",
+    "argmax",
+    "any",
+    "e",
+    "inf",
+    "pi",
+    "conj",
+    "arctanh",
+    "arccosh",
+    "arcsinh",
+    "arctan",
+    "arccos",
+    "arcsin",
+    "tensordot",
+    "sign",
+    "stack",
+    "copy",
+    "min",
+    "max",
+    "mean",
+    "sum",
+    "prod",
+    "all",
+    "eye",
+    "where",
+    "ones",
+    "zeros",
+    "abs",
+    "sqrt",
+    "zeros_like",
+    "int32",
+    "int64",
+    "float32",
+    "float64",
+    "complex64",
+    "complex128",
+    "moveaxis",
+    "ndim",
+    "shape",
+    "arange",
+    "einsum",
+    "stack",
+    "reshape",
+    "transpose",
+    "count_nonzero",
+]:
+    TensorflowBackend.register_method(name, getattr(tnp, name))
