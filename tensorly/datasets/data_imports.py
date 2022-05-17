@@ -235,8 +235,13 @@ def load_indian_pines():
             "were acquired on June 12, 1992 over the Purdue University Agronomy farm northwest " \
             "of West Lafayette and the surrounding area. This scene consists of 145 times 145 pixels and 220 spectral " \
             "reflectance bands in the wavelength range 0.4–2.5 10^(-6) meters."
+    url_gt = 'http://www.ehu.eus/ccwintco/uploads/c/c4/Indian_pines_gt.mat'
+    r = requests.get(url_gt, allow_redirects=True)
+    labels = scipy.io.loadmat(BytesIO(r.content))['indian_pines_gt']
+    wavelenghts = []
     return Bunch(
         tensor=np.array(image, "float"),
+        ticks=[labels, wavelenghts],
         dims=["Spatial dimension", "Spatial dimension", "Hyperspectral bands"],
         reference=reference,
         DESC=desc,
