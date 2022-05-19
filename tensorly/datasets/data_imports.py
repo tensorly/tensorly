@@ -33,7 +33,7 @@ class Bunch(dict):
         pass
 
 
-def IL2data():
+def load_IL2data():
     """
     Loads tensor of IL-2 mutein treatment responses.
     Tensor contains the signaling responses of eight different cell types to 13 IL-2 mutants.
