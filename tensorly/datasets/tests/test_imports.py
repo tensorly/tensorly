@@ -27,7 +27,9 @@ def test_indian_pines():
     data = load_indian_pines()
 
     tensor = data["tensor"]
-    assert tensor.shape[0] == 145
+    assert tensor.shape[0] == len(data["ticks"][0])
+    assert tensor.shape[1] == len(data["ticks"][0])
+    assert tensor.shape[2] == len(data["ticks"][1])
 
 
 def test_kinetic():

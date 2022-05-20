@@ -231,17 +231,35 @@ def load_indian_pines():
                 "Image Data Set: June 12, 1992 Indian Pine Test Site 3. Purdue University Research Repository. " \
                 "doi:10.4231/R7RX991C"
     licence = "Licensed under Attribution 3.0 Unported (https://creativecommons.org/licenses/by/3.0/legalcode)"
-    desc =  "Airborne Visible / Infrared Imaging Spectrometer (AVIRIS)  hyperspectral sensor data (aviris.jpl.nasa.gov/) " \
-            "were acquired on June 12, 1992 over the Purdue University Agronomy farm northwest " \
-            "of West Lafayette and the surrounding area. This scene consists of 145 times 145 pixels and 220 spectral " \
-            "reflectance bands in the wavelength range 0.4–2.5 10^(-6) meters."
+    desc = "Airborne Visible / Infrared Imaging Spectrometer (AVIRIS)  hyperspectral sensor data (aviris.jpl.nasa.gov/) " \
+           "were acquired on June 12, 1992 over the Purdue University Agronomy farm northwest " \
+           "of West Lafayette and the surrounding area. This scene consists of 145 times 145 pixels and 220 spectral " \
+           "reflectance bands in the wavelength range 0.4–2.5 10^(-6) meters."
     url_gt = 'http://www.ehu.eus/ccwintco/uploads/c/c4/Indian_pines_gt.mat'
     r = requests.get(url_gt, allow_redirects=True)
     labels = scipy.io.loadmat(BytesIO(r.content))['indian_pines_gt']
-    wavelenghts = []
+    wavelengths = [400.02, 409.82, 419.62, 429.43, 439.25, 449.07, 458.9, 468.73, 478.57, 488.41, 498.26, 508.12,
+                   517.98, 527.85, 537.72, 547.6, 557.49, 567.38, 577.28, 587.18, 597.09, 607.01, 616.93, 626.85,
+                   636.78, 646.72, 656.67, 666.61, 676.57, 686.53, 696.5, 686.91, 696.55, 706.19, 715.83, 725.47,
+                   735.11, 744.74, 754.38, 764.01, 773.64, 783.27, 792.91, 802.53, 812.21, 821.79, 831.41, 841.04,
+                   850.66, 860.28, 869.91, 879.53, 889.14, 898.76, 908.38, 917.99, 927.61, 937.22, 946.83, 956.45,
+                   966.06, 975.66, 985.27, 994.88, 1004.48, 1014.09, 1023.69, 1033.29, 1042.89, 1052.49, 1062.09,
+                   1071.69, 1081.29, 1090.88, 1100.48, 1110.07, 1119.66, 1129.25, 1138.84, 1148.43, 1158.02, 1167.61,
+                   1177.19, 1186.77, 1196.36, 1205.94, 1215.52, 1225.1, 1234.68, 1244.26, 1253.83, 1263.41, 1272.98,
+                   1282.55, 1273.0, 1282.96, 1292.93, 1302.89, 1312.85, 1322.81, 1332.77, 1342.73, 1352.68, 1422.34,
+                   1432.28, 1442.23, 1452.17, 1462.11, 1472.05, 1481.99, 1491.92, 1501.86, 1511.79, 1521.73, 1531.66,
+                   1541.59, 1551.52, 1561.44, 1571.37, 1581.3, 1591.22, 1601.14, 1611.06, 1620.98, 1630.9, 1640.81,
+                   1650.73, 1660.64, 1670.56, 1680.47, 1690.38, 1700.28, 1710.19, 1720.1, 1730.0, 1739.9, 1749.81,
+                   1759.71, 1769.6, 1779.5, 1789.4, 1799.29, 1809.19, 1819.08, 1953.26, 1963.25, 1973.24, 1983.23,
+                   1993.22, 2003.2, 2013.18, 2023.16, 2033.13, 2043.1, 2053.07, 2063.04, 2073.0, 2082.97, 2092.92,
+                   2102.88, 2112.83, 2122.78, 2132.73, 2142.68, 2152.62, 2162.56, 2172.5, 2182.43, 2192.37, 2202.3,
+                   2260.22, 2270.15, 2232.07, 2241.99, 2251.9, 2261.82, 2271.73, 2281.64, 2291.54, 2301.45, 2311.35,
+                   2321.25, 2331.14, 2341.03, 2350.92, 2360.81, 2370.7, 2380.58, 2390.46, 2400.33, 2410.21, 2420.08,
+                   2429.95, 2439.81, 2449.68, 2459.54, 2469.4, 2479.25, 2489.11, 2498.96]
+
     return Bunch(
         tensor=np.array(image, "float"),
-        ticks=[labels, wavelenghts],
+        ticks=[labels, wavelengths],
         dims=["Spatial dimension", "Spatial dimension", "Hyperspectral bands"],
         reference=reference,
         DESC=desc,
@@ -272,5 +290,5 @@ def load_kinetic():
         tensor=tensor,
         dims=["Measurements", "Emissions", "Excitations", "Time points"],
         reference=reference,
-        DESC = desc,
-        LICENCE = licence)
+        DESC=desc,
+        LICENCE=licence)
