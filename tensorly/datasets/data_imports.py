@@ -4,7 +4,7 @@ Load example datasets.
 
 from os.path import dirname
 import numpy as np
-import requests
+from urllib.request import urlopen
 import scipy.io
 from zipfile import ZipFile
 from io import BytesIO
@@ -225,8 +225,8 @@ def load_indian_pines():
     """
 
     url = 'http://www.ehu.eus/ccwintco/uploads/6/67/Indian_pines_corrected.mat'
-    r = requests.get(url, allow_redirects=True)
-    image = scipy.io.loadmat(BytesIO(r.content))['indian_pines_corrected']
+    r = urlopen(url)
+    image = scipy.io.loadmat(BytesIO(r.read()))['indian_pines_corrected']
     reference = "Baumgardner, M. F., Biehl, L. L., Landgrebe, D. A. (2015). 220 Band AVIRIS Hyperspectral " \
                 "Image Data Set: June 12, 1992 Indian Pine Test Site 3. Purdue University Research Repository. " \
                 "doi:10.4231/R7RX991C"
@@ -236,8 +236,8 @@ def load_indian_pines():
            "of West Lafayette and the surrounding area. This scene consists of 145 times 145 pixels and 220 spectral " \
            "reflectance bands in the wavelength range 0.4–2.5 10^(-6) meters."
     url_gt = 'http://www.ehu.eus/ccwintco/uploads/c/c4/Indian_pines_gt.mat'
-    r = requests.get(url_gt, allow_redirects=True)
-    labels = scipy.io.loadmat(BytesIO(r.content))['indian_pines_gt']
+    r = urlopen(url_gt)
+    labels = scipy.io.loadmat(BytesIO(r.read()))['indian_pines_gt']
     wavelengths = [400.02, 409.82, 419.62, 429.43, 439.25, 449.07, 458.9, 468.73, 478.57, 488.41, 498.26, 508.12,
                    517.98, 527.85, 537.72, 547.6, 557.49, 567.38, 577.28, 587.18, 597.09, 607.01, 616.93, 626.85,
                    636.78, 646.72, 656.67, 666.61, 676.57, 686.53, 696.5, 686.91, 696.55, 706.19, 715.83, 725.47,
@@ -272,8 +272,8 @@ def load_kinetic():
     in the hard drive.The data is well suited for Parafac and multi-way partial least squares regression (N-PLS).
     """
     url = 'http://models.life.ku.dk/sites/default/files/Kinetic_Fluor.zip'
-    r = requests.get(url, allow_redirects=True)
-    zip = ZipFile(BytesIO(r.content))
+    r = urlopen(url)
+    zip = ZipFile(BytesIO(r.read()))
     tensor = scipy.io.loadmat(zip.open('Xlarge.mat'))['Xlarge']
     tensor[np.isnan(tensor)] = 0
     reference = "Nikolajsen, R. P., Booksh, K. S., Hansen, Å. M., & Bro, R. (2003). \
