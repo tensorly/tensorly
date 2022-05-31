@@ -12,7 +12,7 @@ To do this, we will work with a tensor of experimentally measured cell signaling
 
 import numpy as np
 import matplotlib.pyplot as plt
-from tensorly.datasets import IL2data
+from tensorly.datasets import load_IL2data
 from tensorly.decomposition import non_negative_parafac
 from tensorly.cp_tensor import cp_normalize
 
@@ -48,7 +48,7 @@ from tensorly.cp_tensor import cp_normalize
 # measured quantity represents the amount of phosphorlyated STAT5 (pSTAT5) in a 
 # given cell population following stimulation with the specified IL-2 mutant.
 
-response_data = IL2data()
+response_data = load_IL2data()
 IL2mutants, cells = response_data.ticks[0], response_data.ticks[3]
 print(response_data.tensor.shape, response_data.dims)
 
