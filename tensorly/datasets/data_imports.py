@@ -8,7 +8,7 @@ from urllib.request import urlopen
 import scipy.io
 from zipfile import ZipFile
 from io import BytesIO
-
+import tensorly as tl
 
 class Bunch(dict):
     """ A Bunch, exposing dict keys as a keys() method.
@@ -77,7 +77,7 @@ def load_IL2data():
         SOFTWARE."""
 
     return Bunch(
-        tensor=tensor,
+        tensor=tl.tensor(tensor),
         ticks=[ligands, times, doses, cells],
         dims=dims,
         reference=reference,
@@ -208,7 +208,7 @@ def load_covid19_serology():
             SOFTWARE."""
 
     return Bunch(
-        tensor=tensor,
+        tensor=tl.tensor(tensor),
         ticks=[sampleLabels, antigenLabels, receptorLabels],
         dims=dims,
         reference=reference,
@@ -216,7 +216,7 @@ def load_covid19_serology():
         LICENSE=LICENSE)
 
 
-def load_indian_pines():
+def fetch_indian_pines():
     """
     Loads indian pines hyperspectral data from th website and returns it as a tensorly tensor without storing the data
     in the hard drive. This dataset could be useful for non-negative constrained decomposition methods and
@@ -258,7 +258,7 @@ def load_indian_pines():
                    2429.95, 2439.81, 2449.68, 2459.54, 2469.4, 2479.25, 2489.11, 2498.96]
 
     return Bunch(
-        tensor=np.array(image, "float"),
+        tensor=tl.tensor(np.array(image, "float")),
         ticks=[labels, wavelengths],
         dims=["Spatial dimension", "Spatial dimension", "Hyperspectral bands"],
         reference=reference,
@@ -266,7 +266,7 @@ def load_indian_pines():
         LICENCE=licence)
 
 
-def load_kinetic():
+def fetch_kinetic():
     """
     Loads kinetic fluorescence dataset from website and returns it as tensorly tensor without storing the data
     in the hard drive.The data is well suited for Parafac and multi-way partial least squares regression (N-PLS).
@@ -287,7 +287,7 @@ def load_kinetic():
     desc = "A four-way data set with the modes: Concentration, excitation wavelength, emission wavelength and time"
 
     return Bunch(
-        tensor=tensor,
+        tensor=tl.tensor(tensor),
         dims=["Measurements", "Emissions", "Excitations", "Time points"],
         reference=reference,
         DESC=desc,
