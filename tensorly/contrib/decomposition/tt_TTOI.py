@@ -4,6 +4,7 @@ from math import prod
 import tensorly as tl
 from tensorly.tt_tensor import tt_to_tensor, validate_tt_rank
 import warnings
+from tensorly.decomposition._base_decomposition import DecompositionMixin
 
 
 
@@ -171,3 +172,17 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
         return factors, full_tensor, error_list
     else:
         return factors, full_tensor
+
+
+class TensorTrain_OI(DecompositionMixin):
+
+    def __init__(self, rank, n_iter, trajectory, return_errors):
+        self.rank = rank
+        self.n_iter = n_iter
+        self.trajectory = trajectory
+        self.return_errors = return_errors
+
+    def fit_transform(self, tensor):
+        self.decomposition_ = tensor_train_OI(tensor, rank=self.rank, n_iter=self.n_iter,
+                                              trajectory=self.trajectory, return_errors=self.return_errors)
+        return self.decomposition_

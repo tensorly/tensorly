@@ -13,7 +13,7 @@ from tensorly import random
 from tensorly.testing import assert_, assert_class_wrapper_correctly_passes_arguments
 from tensorly.decomposition._tt import TensorTrain, tensor_train
 import tensorly.decomposition
-from tensorly.contrib.decomposition.tt_TTOI import tensor_train_OI 
+from tensorly.contrib.decomposition.tt_TTOI import tensor_train_OI, TensorTrain_OI
 
 
 def test_TTOI(monkeypatch):
@@ -42,6 +42,6 @@ def test_TTOI(monkeypatch):
     estimation_errors /= tl.norm(true_tensor, 2)
     assert_(estimation_errors[0]-estimation_errors[2*n_iter-1] >= 1e-3)
 
-    assert_class_wrapper_correctly_passes_arguments(monkeypatch, tensor_train_OI, TensorTrain, ignore_args = {'n_iter', 'trajectory', 'return_errors'}, rank = rank)
+    assert_class_wrapper_correctly_passes_arguments(monkeypatch, tensor_train_OI, TensorTrain_OI, ignore_args = {}, rank = rank)
     #assert_class_wrapper_correctly_passes_arguments(monkeypatch, tensor_train, TensorTrain, ignore_args = {}, rank = rank)
     
