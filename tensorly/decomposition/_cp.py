@@ -684,7 +684,7 @@ class CP(DecompositionMixin):
     """
     def __init__(self, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize_factors=False, orthogonalise=False,
                  tol=1e-8, random_state=None, verbose=0, sparsity=None, l2_reg=0,  mask=None,
-                 cvg_criterion='abs_rec_error', fixed_modes=None, svd_mask_repeats=5, linesearch=False):
+                 cvg_criterion='abs_rec_error', fixed_modes=None, svd_mask_repeats=5, linesearch=False, callback=None):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
