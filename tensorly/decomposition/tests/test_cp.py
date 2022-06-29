@@ -25,7 +25,13 @@ def test_parafac(linesearch, orthogonalise, true_rank, rank, init, monkeypatch):
     tol_norm_2 = 0.01
     tol_max_abs = 0.05
     tensor = random_cp((6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=True, random_state=rng)
-    fac, errors = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=10e-5, random_state=rng, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
+
+    # Callback to record error
+    errors = list()
+    def callback(_, __, rec_error):
+        errors.append(rec_error)
+
+    fac = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=10e-5, random_state=rng, orthogonalise=orthogonalise, linesearch=linesearch, callback=callback)
 
     # Check that the error monotonically decreases
     # TODO: This doesn't always pass with these other options
