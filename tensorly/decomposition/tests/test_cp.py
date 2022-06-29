@@ -10,40 +10,41 @@ from ...cp_tensor import cp_to_tensor
 from ...random import random_cp
 from ...tenalg import khatri_rao
 from ... import backend as T
-from ...testing import assert_array_equal, assert_, assert_class_wrapper_correctly_passes_arguments
+from ...testing import assert_array_equal, assert_, assert_class_wrapper_correctly_passes_arguments, assert_array_almost_equal
 from ...metrics.factors import congruence_coefficient
 
 
 @pytest.mark.parametrize("linesearch", [True, False])
 @pytest.mark.parametrize("orthogonalise", [True, False])
-@pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 5)])
+@pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 4)])
 @pytest.mark.parametrize("init", ['svd', 'random'])
-def test_parafac(linesearch, orthogonalise, true_rank, rank, init, monkeypatch):
+@pytest.mark.parametrize("normalize_factors", [False, True])
+@pytest.mark.parametrize("random_state", [1, 1234])
+def test_parafac(linesearch, orthogonalise, true_rank, rank, init, normalize_factors, random_state, monkeypatch):
     """Test for the CANDECOMP-PARAFAC decomposition
     """
-    rng = tl.check_random_state(1234)
+    rng = tl.check_random_state(random_state)
     tol_norm_2 = 0.01
     tol_max_abs = 0.05
     tensor = random_cp((6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=True, random_state=rng)
-    fac, errors = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=10e-5, random_state=rng, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
+
+    rng = tl.check_random_state(random_state)
+    fac, errors = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
+
+    # Given all the random seed is set, this should provide the same answer for random initialization
+    if init == "random":
+        rng = tl.check_random_state(random_state)
+        facTwo, errorsTwo = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
+        assert_array_almost_equal(errors, errorsTwo)
+        assert_array_almost_equal(fac.factors[0], facTwo.factors[0])
+        assert_array_almost_equal(fac.factors[1], facTwo.factors[1])
+        assert_array_almost_equal(fac.factors[2], facTwo.factors[2])
 
     # Check that the error monotonically decreases
-    # TODO: This doesn't always pass with these other options
-    if (orthogonalise is False) and (linesearch is False):
-        assert_(np.all(np.diff(errors) <= 1e-3))
+    if not orthogonalise:
+        assert_(np.all(np.diff(errors) <= 1.0e-3))
 
     rec = cp_to_tensor(fac)
-    error = T.norm(rec - tensor, 2)
-    error /= T.norm(tensor, 2)
-    assert_(error < tol_norm_2,
-            f'norm 2 of reconstruction higher = {error} than tolerance={tol_norm_2}')
-    # Test the max abs difference between the reconstruction and the tensor
-    assert_(T.max(T.abs(rec - tensor)) < tol_max_abs,
-            f'abs norm of reconstruction error = {T.max(T.abs(rec - tensor))} higher than tolerance={tol_max_abs}')
-
-    # Test normalization
-    res = parafac(tensor, rank=rank, n_iter_max=200, normalize_factors=True, tol=10e-5, init='svd')
-    rec = cp_to_tensor(res)
     error = T.norm(rec - tensor, 2)
     error /= T.norm(tensor, 2)
     assert_(error < tol_norm_2,
