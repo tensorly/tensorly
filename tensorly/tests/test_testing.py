@@ -48,7 +48,7 @@ def test_assert_array_almost_equal():
     with pytest.raises(AssertionError):
         assert_array_almost_equal(tensor, tensor + 10)
 
-    decimal = 5
+    decimal = 3
     assert_array_almost_equal(
         tensor, tensor + 1.5 * 10 ** (-decimal - 1), decimal=decimal
     )
