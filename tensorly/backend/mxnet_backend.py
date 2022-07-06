@@ -40,16 +40,8 @@ class MxnetBackend(Backend, backend_name='mxnet'):
             return numpy.array(tensor)
 
     @staticmethod
-    def shape(tensor):
-        return tensor.shape
-
-    @staticmethod
     def ndim(tensor):
         return tensor.ndim
-
-    @staticmethod
-    def dot(a, b):
-        return np.dot(a, b)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None):
@@ -96,19 +88,6 @@ class MxnetBackend(Backend, backend_name='mxnet'):
         x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None)
         return x, residuals
 
-    @staticmethod
-    def sort(tensor, axis, descending = False):
-        if descending:
-            return np.flip(np.sort(tensor, axis=axis), axis = axis)
-        else:
-            return np.sort(tensor, axis=axis)
-
-    @staticmethod
-    def argsort(tensor, axis, descending = False):
-        if descending:
-            return np.argsort(-1 * tensor, axis=axis)
-        else:
-            return np.argsort(tensor, axis=axis)
 
 for name in ['int64', 'int32', 'float64', 'float32', 
              'pi', 'e', 'inf', 'nan',
@@ -119,7 +98,7 @@ for name in ['int64', 'int32', 'float64', 'float32',
              'argmax', 'stack', 'diag', 'einsum', 'log', 'log2', 'tensordot', 'exp',
              'sin', 'cos', 'tan', 
              'arcsin', 'arccos', 'arctan',
-             'sinh', 'cosh', 'tanh', 
+             'sinh', 'cosh', 'tanh', 'argsort', 'sort', 'dot', 'shape',
              'arcsinh', 'arccosh', 'arctanh',
             ]:
     MxnetBackend.register_method(name, getattr(np, name))

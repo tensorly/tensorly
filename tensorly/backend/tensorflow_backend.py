@@ -125,30 +125,20 @@ class TensorflowBackend(Backend, backend_name='tensorflow'):
         return res
 
     @staticmethod
-    def sort(tensor, axis, descending = False):
-        if descending:
-            direction = 'DESCENDING'
-        else:
-            direction = 'ASCENDING'
-            
+    def sort(tensor, axis):
         if axis is None:
             tensor = tf.reshape(tensor, [-1])
             axis = -1
 
-        return tf.sort(tensor, axis=axis, direction = direction)
+        return tf.sort(tensor, axis=axis, direction = 'ASCENDING')
 
     @staticmethod
-    def argsort(tensor, axis, descending=False):
-        if descending:
-            direction = 'DESCENDING'
-        else:
-            direction = 'ASCENDING'
-
+    def argsort(tensor, axis):
         if axis is None:
             tensor = tf.reshape(tensor, [-1])
             axis = -1
 
-        return tf.argsort(tensor, axis=axis, direction=direction)
+        return tf.argsort(tensor, axis=axis, direction='ASCENDING')
 
     def flip(self, tensor, axis=None):
         if isinstance(axis, int):

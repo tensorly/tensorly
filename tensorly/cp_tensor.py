@@ -721,8 +721,6 @@ def cp_permute_factors(ref_cp_tensor, tensors_to_permute):
             permuted_tensors.append(tensors_to_permute[i].cp_copy())
             tensors_to_permute[i] = cp_normalize(tensors_to_permute[i])
     ref_cp_tensor = cp_normalize(ref_cp_tensor)
-
-    rank = T.shape(ref_cp_tensor.factors[0])[1]
     n_tensors = len(tensors_to_permute)
     n_factors = len(ref_cp_tensor.factors)
     permutation = []
