@@ -48,7 +48,8 @@ class CupyBackend(Backend, backend_name='cupy'):
         return x, residuals
 
 
-for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
+for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
+ 'reshape', 'moveaxis',
              'pi', 'e', 'inf', 'nan',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye', 'trace', 'any',
              'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip', 'matmul',
@@ -65,7 +66,7 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 
 for name in ['svd', 'qr', 'eigh', 'solve']:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
 
-for name in ['gammad']:
+for name in ['digamma']:
     CupyBackend.register_method(name, getattr(cupyx.scipy.special, name))
 
 CupyBackend.regsiter_method('gamma', cp.random.gamma)
