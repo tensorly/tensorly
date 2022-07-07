@@ -44,16 +44,8 @@ class JaxBackend(Backend, backend_name='jax'):
         #return copy.copy(tensor)
 
     @staticmethod
-    def shape(tensor):
-        return tensor.shape
-
-    @staticmethod
     def ndim(tensor):
         return tensor.ndim
-
-    @staticmethod
-    def dot(a, b):
-        return a.dot(b)
 
     @staticmethod
     def lstsq(a, b):
@@ -76,19 +68,6 @@ class JaxBackend(Backend, backend_name='jax'):
         m = mask.reshape((-1, 1)) if mask is not None else 1
         return np.einsum(operation, *matrices).reshape((-1, n_columns))*m
 
-    @staticmethod
-    def sort(tensor, axis, descending = False):
-        if descending:
-            return np.flip(np.sort(tensor, axis=axis), axis = axis)
-        else:
-            return np.sort(tensor, axis=axis)
-
-    @staticmethod
-    def argsort(tensor, axis, descending = False):
-        if descending:
-            return np.argsort(-1 * tensor, axis=axis)
-        else:
-            return np.argsort(tensor, axis=axis)
 
 for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64', 
              'pi', 'e', 'inf', 'nan',
@@ -99,7 +78,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64',
              'argmax', 'stack', 'conj', 'diag', 'clip', 'einsum', 'log', 'log2', 'tensordot', 'exp',
              'sin', 'cos', 'tan', 
              'arcsin', 'arccos', 'arctan',
-             'sinh', 'cosh', 'tanh', 
+             'sinh', 'cosh', 'tanh', 'argsort', 'sort', 'dot', 'shape',
              'arcsinh', 'arccosh', 'arctanh',
             ]:
     JaxBackend.register_method(name, getattr(np, name))

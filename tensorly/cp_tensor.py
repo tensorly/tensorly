@@ -172,22 +172,21 @@ def _validate_cp_tensor(cp_tensor):
         return 0, 0
 
     weights, factors = cp_tensor
-            
-    # if len(factors) < 2:
-    #     raise ValueError('A CP tensor should be composed of at least two factors.'
-    #                      'However, {} factor was given.'.format(len(factors)))
 
     if T.ndim(factors[0]) == 2:
         rank = int(T.shape(factors[0])[1])
-    else:
+    elif T.ndim(factors[0]) == 1:
         rank = 1
+    else:
+        raise ValueError('Got a factor with 3 dimensions but CP factors should be at most 2D, of shape (size, rank).')
+
     shape = []
     for i, factor in enumerate(factors):
         s = T.shape(factor)
         if len(s) == 2:
             current_mode_size, current_rank = s
-        else:
-            current_mode_size, current_rank = s, 1
+        else: # The shape is just (size, ) if rank 1
+            current_mode_size, current_rank = *s, 1
 
         if current_rank != rank:
             raise ValueError('All the factors of a CP tensor should have the same number of column.'
@@ -722,16 +721,15 @@ def cp_permute_factors(ref_cp_tensor, tensors_to_permute):
             permuted_tensors.append(tensors_to_permute[i].cp_copy())
             tensors_to_permute[i] = cp_normalize(tensors_to_permute[i])
     ref_cp_tensor = cp_normalize(ref_cp_tensor)
-
-    rank = T.shape(ref_cp_tensor.factors[0])[1]
     n_tensors = len(tensors_to_permute)
     n_factors = len(ref_cp_tensor.factors)
     permutation = []
     ref_factors = T.concatenate(ref_cp_tensor.factors)
     for i in range(n_tensors):
         _, col = congruence_coefficient(ref_factors, T.concatenate(tensors_to_permute[i].factors))
+        col = T.tensor(col, dtype=T.int64)
         for f in range(n_factors):
-            permuted_tensors[i].factors[f] = permuted_tensors[i].factors[f][: ,col]
+            permuted_tensors[i].factors[f] = permuted_tensors[i].factors[f][:, col]
         permuted_tensors[i].weights = permuted_tensors[i].weights[col]
         permutation.append(col)
     if len(permuted_tensors) == 1:

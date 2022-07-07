@@ -60,17 +60,27 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
     def clip(tensor, a_min=None, a_max=None):
         return tnp.clip(tensor, a_min, a_max)
 
-    @staticmethod
-    def sort(tensor, axis, descending=False):
-        if descending:
-            return tnp.flip(tnp.sort(tensor, axis=axis), axis=axis)
-        else:
-            return tnp.sort(tensor, axis=axis)
+    def sort(tensor, axis):
+        if axis is None:
+            tensor = tf.reshape(tensor, [-1])
+            axis = -1
+
+        return tf.sort(tensor, axis=axis, direction = 'ASCENDING')
 
     @staticmethod
-    def argsort(tensor, axis, descending=False):
-        if descending:
-            return tnp.argsort(-1 * tensor, axis=axis)
+    def argsort(tensor, axis):
+        if axis is None:
+            tensor = tf.reshape(tensor, [-1])
+            axis = -1
+
+        return tf.argsort(tensor, axis=axis, direction='ASCENDING')
+
+    def flip(self, tensor, axis=None):
+        if isinstance(axis, int):
+            axis = [axis]
+
+        if axis is None:
+            return tf.reverse(tensor, axis=[i for i in range(self.ndim(tensor))])
         else:
             return tnp.argsort(tensor, axis=axis)
 

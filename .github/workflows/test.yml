@@ -35,7 +35,8 @@ jobs:
           pip install tensorflow;
         elif [[ "${{matrix.BACKEND}}" == "mxnet" ]]; then
           echo "Installing MXNet";
-          pip install mxnet;
+          sudo apt install gfortran;
+          pip install mxnet<3 --pre -f https://dist.mxnet.io/python;
         elif [[ "${{matrix.BACKEND}}" == "jax" ]]; then
           echo "Installing JAX";
           pip install jax jaxlib;

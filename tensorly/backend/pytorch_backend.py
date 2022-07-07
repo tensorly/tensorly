@@ -146,8 +146,8 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
             return torch.argmin(input, dim=axis)
 
     @staticmethod
-    def argsort(input, axis=None, descending=False):
-            return torch.argsort(input, dim=axis, descending=descending)
+    def argsort(input, axis=None):
+            return torch.argsort(input, dim=axis)
 
     @staticmethod
     def argmax(input, axis=None):
@@ -162,12 +162,12 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
         return torch.diag(tensor, diagonal=k)
 
     @staticmethod
-    def sort(tensor, axis, descending = False):
+    def sort(tensor, axis):
         if axis is None:
             tensor = tensor.flatten()
             axis = -1
 
-        return torch.sort(tensor, dim=axis, descending = descending).values
+        return torch.sort(tensor, dim=axis).values
 
     @staticmethod
     def update_index(tensor, index, values):

@@ -884,7 +884,7 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
-    def sort(tensor, axis, descending = False):
+    def sort(tensor, axis):
         """Return a sorted copy of an array
 
         Parameters
@@ -893,8 +893,6 @@ class Backend(object):
             An N-D tensor
         axis : int or None
             Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
-        descending : bool
-            If True, values are sorted in descending order, otherwise in ascending.
 
         Returns
         -------
@@ -904,7 +902,7 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
-    def argsort(tensor, axis,  descending = False):
+    def argsort(tensor, axis):
         """Returns arguments of a sorted array
 
         Parameters
@@ -913,8 +911,6 @@ class Backend(object):
             An N-D tensor
         axis : int or None
             Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
-        descending : bool
-            If True, values are sorted in descending order, otherwise in ascending.
 
         Returns
         -------

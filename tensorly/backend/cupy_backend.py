@@ -35,10 +35,6 @@ class CupyBackend(Backend, backend_name='cupy'):
         return tensor
 
     @staticmethod
-    def shape(tensor):
-        return tensor.shape
-
-    @staticmethod
     def ndim(tensor):
         return tensor.ndim
 
@@ -51,22 +47,9 @@ class CupyBackend(Backend, backend_name='cupy'):
         x, residuals, _, _ = cp.linalg.lstsq(a, b, rcond=None)
         return x, residuals
 
-    @staticmethod
-    def sort(tensor, axis, descending = False):
-        if descending:
-            return cp.flip(cp.sort(tensor, axis=axis), axis = axis)
-        else:
-            return cp.sort(tensor, axis=axis)
 
-    @staticmethod
-    def argsort(tensor, axis, descending = False):
-        if descending:
-            return np.argsort(-1 * tensor, axis=axis)
-        else:
-            return np.argsort(tensor, axis=axis)
-
-
-for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
+for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
+ 'reshape', 'moveaxis',
              'pi', 'e', 'inf', 'nan',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye', 'trace', 'any',
              'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip', 'matmul',
@@ -75,7 +58,7 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 
              'log', 'log2', 'exp',
              'sin', 'cos', 'tan', 
              'arcsin', 'arccos', 'arctan',
-             'sinh', 'cosh', 'tanh', 
+             'sinh', 'cosh', 'tanh', 'argsort', 'sort', 'shape',
              'arcsinh', 'arccosh', 'arctanh',
              ]:
     CupyBackend.register_method(name, getattr(cp, name))
@@ -83,7 +66,7 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 
 for name in ['svd', 'qr', 'eigh', 'solve']:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
 
-for name in ['gammad']:
+for name in ['digamma']:
     CupyBackend.register_method(name, getattr(cupyx.scipy.special, name))
 
 CupyBackend.regsiter_method('gamma', cp.random.gamma)
