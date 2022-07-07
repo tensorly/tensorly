@@ -600,7 +600,7 @@ def simplex_prox(tensor, parameter):
         row = tl.shape(tensor)[0]
         col = 1
         tensor = tl.reshape(tensor, [row, col])
-    tensor_sort = tl.sort(tensor, axis=0, descending=True)
+    tensor_sort = tl.flip(tl.sort(tensor, axis=0), axis=0)
     # Broadcasting is used to divide rows by 1,2,3...
     cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(tl.ones([row, 1]), axis=0)
     # Added -1 to correspond to a Python index
@@ -630,7 +630,7 @@ def hard_thresholding(tensor, number_of_non_zero):
           Thresholded tensor on which the operator has been applied
     """
     tensor_vec = tl.copy(tl.tensor_to_vec(tensor))
-    sorted_indices = tl.argsort(tl.argsort(tl.abs(tensor_vec), axis=0, descending=True), axis=0)
+    sorted_indices = tl.argsort(tl.flip(tl.argsort(tl.abs(tensor_vec), axis=0), axis=0), axis=0)
     return tl.reshape(tl.where(sorted_indices < number_of_non_zero, tensor_vec, tl.tensor(0, **tl.context(tensor_vec))), tensor.shape)
 
 

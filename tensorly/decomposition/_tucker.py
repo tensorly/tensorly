@@ -76,7 +76,7 @@ def initialize_tucker(tensor, rank, modes, random_state, init='svd', svd='numpy_
     return core, factors
     
 
-def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e-5,
+def partial_tucker(tensor, rank, modes=None, n_iter_max=100, init='svd', tol=10e-5,
                    svd='numpy_svd', random_state=None, verbose=False, mask=None):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
@@ -85,11 +85,11 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
     Parameters
     ----------
     tensor : ndarray
-    modes : int list
-            list of the modes on which to perform the decomposition
     rank : None, int or int list
         size of the core tensor, ``(len(ranks) == tensor.ndim)``
         if int, the same rank is used for all modes
+    modes : None, int list
+            list of the modes on which to perform the decomposition
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, or TuckerTensor optional
@@ -118,6 +118,9 @@ def partial_tucker(tensor, modes, rank=None, n_iter_max=100, init='svd', tol=10e
             with ``core.shape[i] == (tensor.shape[i], ranks[i]) for i in modes``
 
     """
+    if modes is None:
+        modes = list(range(tl.ndim(tensor)))
+
     if rank is None:
         message = "No value given for 'rank'. The decomposition will preserve the original size."
         warnings.warn(message, Warning)
@@ -254,7 +257,7 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd', return_
         modes, factors = zip(*[(i, f) for (i, f) in enumerate(factors) if i not in fixed_factors])
         init = (core, list(factors))
 
-        (core, new_factors), rec_errors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
+        (core, new_factors), rec_errors = partial_tucker(tensor, rank=rank, modes=modes, n_iter_max=n_iter_max, init=init,
                                                          svd=svd, tol=tol, random_state=random_state, mask=mask,
                                                          verbose=verbose)
 
@@ -270,7 +273,7 @@ def tucker(tensor, rank, fixed_factors=None, n_iter_max=100, init='svd', return_
         # TO-DO validate rank for partial tucker as well
         rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
 
-        (core, factors), rec_errors = partial_tucker(tensor, modes, rank=rank, n_iter_max=n_iter_max, init=init,
+        (core, factors), rec_errors = partial_tucker(tensor, rank=rank, modes=modes, n_iter_max=n_iter_max, init=init,
                                                      svd=svd, tol=tol, random_state=random_state, mask=mask,
                                                      verbose=verbose)
         tensor = TuckerTensor((core, factors))
