@@ -236,7 +236,7 @@ def test_norm():
     v = T.tensor([1., 2., 3.])
     assert_equal(T.norm(v,1), 6)
 
-    A = T.reshape(T.arange(6), (3,2))
+    A = T.reshape(T.arange(6, dtype=T.float32), (3,2))
     assert_equal(T.norm(A, 1), 15)
 
     column_norms1 = T.norm(A, 1, axis=0)
