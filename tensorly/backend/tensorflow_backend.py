@@ -40,6 +40,10 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
             return tensor
 
     @staticmethod
+    def shape(tensor):
+        return tuple(tensor.shape.as_list())
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         if order == "inf":
             order = np.inf
@@ -154,7 +158,6 @@ for name in [
     "complex128",
     "moveaxis",
     "ndim",
-    "shape",
     "arange",
     "sort",
     "argsort",
