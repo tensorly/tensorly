@@ -14,8 +14,19 @@ def assert_array_almost_equal(a, b, *args, **kwargs):
     np.testing.assert_array_almost_equal(T.to_numpy(a), T.to_numpy(b), *args, **kwargs)
 
 
-def assert_allclose(actual, desired, *args, **kwargs):
-    np.testing.assert_allclose(T.to_numpy(actual), T.to_numpy(desired), *args, **kwargs)
+def assert_allclose(actual, desired, rtol=1e-07, atol=0, equal_nan=True, err_msg='', verbose=True):
+    """Check if two arrays are equal up to a given relevant and absolute tolerance.
+
+    See the `NumPy documentation <https://numpy.org/doc/stable/reference/generated/numpy.testing.assert_array_equal.html>`_ for more details."""
+    np.testing.assert_allclose(
+        T.to_numpy(actual),
+        T.to_numpy(desired),
+        rtol=rtol,
+        atol=atol,
+        equal_nan=equal_nan,
+        err_msg=err_msg,
+        verbose=verbose
+    )
 
 
 def assert_equal(actual, desired, *args, **kwargs):
