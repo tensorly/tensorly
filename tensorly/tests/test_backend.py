@@ -133,6 +133,10 @@ def test_svd():
     tol_orthogonality = 0.01
 
     for name, svd_fun in T.SVD_FUNS.items():
+        if name == "randomized_svd":
+            decimal = 2
+        else:
+            decimal = 3
         sizes = [(100, 100), (100, 5), (10, 10), (10, 4), (5, 100)]
         n_eigenvecs = [90, 4, 5, 4, 5]
 
@@ -143,7 +147,7 @@ def test_svd():
             U, S, V = svd(matrix)
             U, S, V = U[:, :n], S[:n], V[:n, :]
 
-            assert_array_almost_equal(np.abs(S), T.abs(fS), decimal=3,
+            assert_array_almost_equal(np.abs(S), T.abs(fS), decimal=decimal,
                 err_msg='eigenvals not correct for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
                         name, tl.get_backend(), n, s))
 
