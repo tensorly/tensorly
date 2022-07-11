@@ -7,13 +7,26 @@ from tensorly import backend as T
 
 
 def assert_array_equal(a, b, *args, **kwargs):
-    np.testing.assert_array_equal(T.to_numpy(a), T.to_numpy(b),
-                                  *args, **kwargs)
+    np.testing.assert_array_equal(T.to_numpy(a), T.to_numpy(b), *args, **kwargs)
 
 
 def assert_array_almost_equal(a, b, *args, **kwargs):
-    np.testing.assert_array_almost_equal(T.to_numpy(a), T.to_numpy(b),
-                                         *args, **kwargs)
+    np.testing.assert_array_almost_equal(T.to_numpy(a), T.to_numpy(b), *args, **kwargs)
+
+
+def assert_allclose(actual, desired, rtol=1e-07, atol=0, equal_nan=True, err_msg='', verbose=True):
+    """Check if two arrays are equal up to a given relevant and absolute tolerance.
+
+    See the `NumPy documentation <https://numpy.org/doc/stable/reference/generated/numpy.testing.assert_array_equal.html>`_ for more details."""
+    np.testing.assert_allclose(
+        T.to_numpy(actual),
+        T.to_numpy(desired),
+        rtol=rtol,
+        atol=atol,
+        equal_nan=equal_nan,
+        err_msg=err_msg,
+        verbose=verbose
+    )
 
 
 def assert_equal(actual, desired, *args, **kwargs):
@@ -60,7 +73,7 @@ def _get_decomposition_checker(supposed_kwargs, output_length):
         and their supposed value.
     output_length : int
         The number of outputs from the function
-    
+
     Returns
     -------
     function
@@ -117,6 +130,6 @@ def assert_class_wrapper_correctly_passes_arguments(
     monkeypatch.setattr(decomposition_module, decomposition_function.__name__, decomposition_checker)
     DecompositionClass(**extra_args, **test_kwargs).fit(None)
 
-    
+
 assert_ = np.testing.assert_
 assert_raises = np.testing.assert_raises
