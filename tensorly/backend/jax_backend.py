@@ -93,5 +93,5 @@ if LooseVersion(jax.__version__) >= LooseVersion('0.3.0'):
 else:
     JaxBackend.register_method(name, getattr(jax.ops, name))
 
-for name in ['digamma']:
-    JaxBackend.register_method(name, getattr(jax.scipy.special, name))
+for name in ['gamma']:
+    JaxBackend.register_method(name, getattr(jax.random, name))

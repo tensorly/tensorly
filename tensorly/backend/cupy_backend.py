@@ -66,7 +66,4 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
 for name in ['svd', 'qr', 'eigh', 'solve']:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
 
-for name in ['digamma']:
-    CupyBackend.register_method(name, getattr(cupyx.scipy.special, name))
-
 CupyBackend.regsiter_method('gamma', cp.random.gamma)
