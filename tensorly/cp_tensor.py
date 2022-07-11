@@ -598,7 +598,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
     for r in range(rank):
-        component = multi_mode_dot(tensor, [tl.conj(f[:, r]) for f in factors], skip=mode)
+        component = multi_mode_dot(tensor, [T.conj(f[:, r]) for f in factors], skip=mode)
         mttkrp_parts.append(component)
 
     if weights is None:
