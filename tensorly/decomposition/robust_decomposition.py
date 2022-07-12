@@ -114,7 +114,7 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1.0, reg_J=1.0,
 
         # Convergence check
         if iteration > 1:
-            if max(rec_X[-1], rec_D[-1]) <= tol:
+            if rec_X[-1] <= tol and rec_D[-1] <= tol:
                 if verbose:
                     print('\nConverged in {} iterations'.format(iteration))
                 break
