@@ -58,7 +58,7 @@ def random_parafac2(shapes, rank, full=False, random_state=None,
 
 
 def random_cp(shape, rank, full=False, orthogonal=False, 
-                   random_state=None, normalise_factors=True, **context):
+                   random_state=None, normalise_factors=True, complex=False, **context):
     """Generates a random CP tensor
 
     Parameters
@@ -88,7 +88,15 @@ def random_cp(shape, rank, full=False, orthogonal=False,
                       'a tensor with min(shape)={} < rank={}'.format(min(shape), rank))
 
     rns = T.check_random_state(random_state)
-    factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
+    factors = []
+    for s in shape:
+        if complex:
+            factor = rns.random_sample((s, rank)) + rns.random_sample((s, rank)) * (0.0 + 1.0j)
+        else:
+            factor = rns.random_sample((s, rank))
+
+        factors.append(T.tensor(factor, **context))
+
     weights = T.ones(rank, **context)
     if orthogonal:
         factors = [T.qr(factor)[0] for factor in factors]

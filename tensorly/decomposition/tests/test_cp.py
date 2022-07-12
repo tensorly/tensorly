@@ -20,13 +20,14 @@ from ...metrics.factors import congruence_coefficient
 @pytest.mark.parametrize("init", ['svd', 'random'])
 @pytest.mark.parametrize("normalize_factors", [False, True])
 @pytest.mark.parametrize("random_state", [1, 1234])
-def test_parafac(linesearch, orthogonalise, true_rank, rank, init, normalize_factors, random_state, monkeypatch):
+@pytest.mark.parametrize("complex", [False, True])
+def test_parafac(linesearch, orthogonalise, true_rank, rank, init, normalize_factors, random_state, complex, monkeypatch):
     """Test for the CANDECOMP-PARAFAC decomposition
     """
     rng = tl.check_random_state(random_state)
     tol_norm_2 = 0.01
     tol_max_abs = 0.05
-    tensor = random_cp((6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=True, random_state=rng)
+    tensor = random_cp((6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=True, complex=complex, random_state=rng)
 
     rng = tl.check_random_state(random_state)
     fac, errors = parafac(tensor, rank=rank, n_iter_max=200, init=init, tol=1e-6, random_state=rng, normalize_factors=normalize_factors, orthogonalise=orthogonalise, linesearch=linesearch, return_errors=True)
