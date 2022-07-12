@@ -330,12 +330,12 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
             pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
+                    pseudo_inverse = pseudo_inverse * tl.dot(tl.conj(tl.transpose(factor)), factor)
             pseudo_inverse += Id
             pseudo_inverse = tl.reshape(weights, (-1, 1)) * pseudo_inverse * tl.reshape(weights, (1, -1))
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
-            factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse),
+            factor = tl.transpose(tl.solve(tl.conj(tl.transpose(pseudo_inverse)),
                                   tl.transpose(mttkrp)))
             factors[mode] = factor
             if normalize_factors and mode != modes_list[-1]:
