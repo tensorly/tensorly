@@ -38,8 +38,7 @@ def test_coupled_matrix_tensor_3d_factorization():
         + tl.norm(matrix_true - matrix_pred) ** 2
     )
 
-    assert_(error < tol_norm_2,
-            'norm 2 of reconstruction higher than tol')
+    assert_(error < tol_norm_2, "norm 2 of reconstruction higher than tol")
 
     # Test the max abs difference between the reconstruction and the tensor
     assert_(
