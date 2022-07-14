@@ -99,14 +99,7 @@ def random_cp(
         )
 
     rns = T.check_random_state(random_state)
-    factors = []
-    for s in shape:
-        if complex:
-            factor = rns.random_sample((s, rank)) + rns.random_sample((s, rank)) * (0.0 + 1.0j)
-        else:
-            factor = rns.random_sample((s, rank))
-
-        factors.append(T.tensor(factor, **context))
+    factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
 
     weights = T.ones(rank, **context)
     if orthogonal:
