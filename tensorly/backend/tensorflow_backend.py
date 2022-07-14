@@ -3,7 +3,11 @@ try:
     import tensorflow.math as tfm
     import tensorflow.experimental.numpy as tnp
 except ImportError as error:
-    message = "Impossible to import TensorFlow.\n" "To use TensorLy with the TensorFlow backend, " "you must first install TensorFlow!"
+    message = (
+        "Impossible to import TensorFlow.\n"
+        "To use TensorLy with the TensorFlow backend, "
+        "you must first install TensorFlow!"
+    )
     raise ImportError(message) from error
 
 import numpy as np
@@ -87,7 +91,9 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
             to_tensor = False
 
         if isinstance(values, int):
-            values = tf.constant(np.ones(self.shape(tensor[indices])) * values, **self.context(tensor))
+            values = tf.constant(
+                np.ones(self.shape(tensor[indices])) * values, **self.context(tensor)
+            )
 
         tensor = tensor[indices].assign(values)
 
@@ -108,7 +114,23 @@ for name in ["diag", "qr", "eigh", "trace"]:
 
 
 # Register tfm functions
-for name in ["exp", "log", "digamma", "atanh", "acosh", "asinh", "tanh", "cosh", "sinh", "atan", "acos", "asin", "sin", "cos", "tan"]:
+for name in [
+    "exp",
+    "log",
+    "digamma",
+    "atanh",
+    "acosh",
+    "asinh",
+    "tanh",
+    "cosh",
+    "sinh",
+    "atan",
+    "acos",
+    "asin",
+    "sin",
+    "cos",
+    "tan",
+]:
     TensorflowBackend.register_method(name, getattr(tfm, name))
 
 

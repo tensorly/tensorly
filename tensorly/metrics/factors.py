@@ -32,13 +32,15 @@ def congruence_coefficient(matrix1, matrix2, absolute_value=True):
     if T.shape(matrix1) != T.shape(matrix2):
         raise ValueError("Matrices must have same shape")
 
-    matrix1 = matrix1/T.norm(matrix1, axis=0)
-    matrix2 = matrix2/T.norm(matrix2, axis=0)
+    matrix1 = matrix1 / T.norm(matrix1, axis=0)
+    matrix2 = matrix2 / T.norm(matrix2, axis=0)
     all_congruences = T.dot(T.transpose(matrix1), matrix2)
     if absolute_value:
         all_congruences = T.abs(all_congruences)
     all_congruences = T.to_numpy(all_congruences)
-    row_ind, col_ind = linear_sum_assignment(-all_congruences)   # Use -corr because scipy didn't doesn't support maximising prior to v1.4
+    row_ind, col_ind = linear_sum_assignment(
+        -all_congruences
+    )  # Use -corr because scipy didn't doesn't support maximising prior to v1.4
     indices = dict(zip(row_ind, col_ind))
     permutation = [indices[i] for i in range(num_cols)]
     return all_congruences[row_ind, col_ind].mean(), permutation

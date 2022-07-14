@@ -14,6 +14,7 @@ import numpy as np
 
 # License: BSD 3 clause
 
+
 class CPTensor(FactorizedTensor):
     def __init__(self, cp_tensor):
         super().__init__()
@@ -30,36 +31,41 @@ class CPTensor(FactorizedTensor):
         self.factors = factors
         self.weights = weights
 
-    
     def __getitem__(self, index):
         if index == 0:
             return self.weights
         elif index == 1:
             return self.factors
-        else: 
-            raise IndexError('You tried to access index {} of a CP tensor.\n'
-                             'You can only access index 0 and 1 of a CP tensor'
-                             '(corresponding respectively to the weights and factors)'.format(index))
-    
+        else:
+            raise IndexError(
+                "You tried to access index {} of a CP tensor.\n"
+                "You can only access index 0 and 1 of a CP tensor"
+                "(corresponding respectively to the weights and factors)".format(index)
+            )
+
     def __setitem__(self, index, value):
         if index == 0:
             self.weights = value
         elif index == 1:
             self.factors = value
-        else: 
-            raise IndexError('You tried to set the value at index {} of a CP tensor.\n'
-                             'You can only set index 0 and 1 of a CP tensor'
-                             '(corresponding respectively to the weights and factors)'.format(index))
+        else:
+            raise IndexError(
+                "You tried to set the value at index {} of a CP tensor.\n"
+                "You can only set index 0 and 1 of a CP tensor"
+                "(corresponding respectively to the weights and factors)".format(index)
+            )
 
     def __iter__(self):
         yield self.weights
         yield self.factors
-        
+
     def __len__(self):
         return 2
-    
+
     def __repr__(self):
-        message = '(weights, factors) : rank-{} CPTensor of shape {} '.format(self.rank, self.shape)
+        message = "(weights, factors) : rank-{} CPTensor of shape {} ".format(
+            self.rank, self.shape
+        )
         return message
 
     def to_tensor(self):
@@ -67,12 +73,17 @@ class CPTensor(FactorizedTensor):
 
     def to_vec(self):
         return cp_to_vec(self)
-    
+
     def to_unfolded(self, mode):
         return cp_to_unfolded(self, mode)
 
     def cp_copy(self):
-        return CPTensor((T.copy(self.weights), [T.copy(self.factors[i]) for i in range(len(self.factors))]))
+        return CPTensor(
+            (
+                T.copy(self.weights),
+                [T.copy(self.factors[i]) for i in range(len(self.factors))],
+            )
+        )
 
     def mode_dot(self, matrix_or_vector, mode, keep_dim=False, copy=True):
         """n-mode product of a CP tensor and a matrix or vector at the specified mode
@@ -80,7 +91,7 @@ class CPTensor(FactorizedTensor):
         Parameters
         ----------
         cp_tensor : tl.CPTensor or (core, factors)
-                        
+
         matrix_or_vector : ndarray
             1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
             matrix or vectors to which to n-mode multiply the tensor
@@ -112,13 +123,13 @@ class CPTensor(FactorizedTensor):
 
         Notes
         -----
-        This is ||cp_to_tensor(factors)||^2 
-        
+        This is ||cp_to_tensor(factors)||^2
+
         You can see this using the fact that
         khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
         """
         return cp_norm(self)
-    
+
     def normalize(self, inplace=True):
         """Normalizes the factors to unit length
 
@@ -150,16 +161,15 @@ class CPTensor(FactorizedTensor):
         self.weights, self.factors = cp_normalize(self)
 
 
-
 def _validate_cp_tensor(cp_tensor):
     """Validates a cp_tensor in the form (weights, factors)
-    
+
         Returns the rank and shape of the validated tensor
-    
+
     Parameters
     ----------
     cp_tensor : CPTensor or (weights, factors)
-    
+
     Returns
     -------
     (shape, rank) : (int tuple, int)
@@ -168,7 +178,7 @@ def _validate_cp_tensor(cp_tensor):
     if isinstance(cp_tensor, CPTensor):
         # it's already been validated at creation
         return cp_tensor.shape, cp_tensor.rank
-    elif isinstance(cp_tensor, (float, int)): #0-order tensor
+    elif isinstance(cp_tensor, (float, int)):  # 0-order tensor
         return 0, 0
 
     weights, factors = cp_tensor
@@ -178,27 +188,36 @@ def _validate_cp_tensor(cp_tensor):
     elif T.ndim(factors[0]) == 1:
         rank = 1
     else:
-        raise ValueError('Got a factor with 3 dimensions but CP factors should be at most 2D, of shape (size, rank).')
+        raise ValueError(
+            "Got a factor with 3 dimensions but CP factors should be at most 2D, of shape (size, rank)."
+        )
 
     shape = []
     for i, factor in enumerate(factors):
         s = T.shape(factor)
         if len(s) == 2:
             current_mode_size, current_rank = s
-        else: # The shape is just (size, ) if rank 1
+        else:  # The shape is just (size, ) if rank 1
             current_mode_size, current_rank = *s, 1
 
         if current_rank != rank:
-            raise ValueError('All the factors of a CP tensor should have the same number of column.'
-                             'However, factors[0].shape[1]={} but factors[{}].shape[1]={}.'.format(
-                                 rank, i, T.shape(factor)[1]))
+            raise ValueError(
+                "All the factors of a CP tensor should have the same number of column."
+                "However, factors[0].shape[1]={} but factors[{}].shape[1]={}.".format(
+                    rank, i, T.shape(factor)[1]
+                )
+            )
         shape.append(current_mode_size)
 
-    if weights is not None and T.shape(weights) != (rank, ):
-        raise ValueError('Given factors for a rank-{} CP tensor but len(weights)={}.'.format(
-            rank, T.shape(weights)))
-        
+    if weights is not None and T.shape(weights) != (rank,):
+        raise ValueError(
+            "Given factors for a rank-{} CP tensor but len(weights)={}.".format(
+                rank, T.shape(weights)
+            )
+        )
+
     return tuple(shape), rank
+
 
 def _cp_n_param(tensor_shape, rank, weights=False):
     """Number of parameters of a CP decomposition for a given `rank` and full `tensor_shape`.
@@ -207,23 +226,23 @@ def _cp_n_param(tensor_shape, rank, weights=False):
     ----------
     tensor_shape : int tuple
         shape of the full tensor to decompose (or approximate)
-    
+
     rank : tuple
         rank of the CP decomposition
-    
+
     Returns
     -------
     n_params : int
         Number of parameters of a CP decomposition of rank `rank` of a full tensor of shape `tensor_shape`
     """
-    factors_params = rank*np.sum(tensor_shape)
+    factors_params = rank * np.sum(tensor_shape)
     if weights:
         return factors_params + rank
     else:
         return factors_params
 
 
-def validate_cp_rank(tensor_shape, rank='same', rounding='round'):
+def validate_cp_rank(tensor_shape, rank="same", rounding="round"):
     """Returns the rank of a CP Decomposition
 
     Parameters
@@ -242,20 +261,22 @@ def validate_cp_rank(tensor_shape, rank='same', rounding='round'):
     rank : int
         rank of the decomposition
     """
-    if rounding == 'ceil':
+    if rounding == "ceil":
         rounding_fun = np.ceil
-    elif rounding == 'floor':
+    elif rounding == "floor":
         rounding_fun = np.floor
-    elif rounding == 'round':
+    elif rounding == "round":
         rounding_fun = np.round
     else:
-        raise ValueError(f'Rounding should be of round, floor or ceil, but got {rounding}')
-    
-    if rank == 'same':
+        raise ValueError(
+            f"Rounding should be of round, floor or ceil, but got {rounding}"
+        )
+
+    if rank == "same":
         rank = float(1)
 
     if isinstance(rank, float):
-        rank = int(rounding_fun(np.prod(tensor_shape)*rank/np.sum(tensor_shape)))
+        rank = int(rounding_fun(np.prod(tensor_shape) * rank / np.sum(tensor_shape)))
     return rank
 
 
@@ -273,7 +294,7 @@ def cp_normalize(cp_tensor):
     cp_tensor : CPTensor = (weight, factors)
         factors is list of matrices, all with the same number of columns
         i.e.::
-        
+
             for u in U:
                 u[i].shape == (s_i, R)
 
@@ -285,19 +306,21 @@ def cp_normalize(cp_tensor):
     """
     _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
-    
+
     if weights is None:
         weights = T.ones(rank, **T.context(factors[0]))
-    
+
     normalized_factors = []
     for i, factor in enumerate(factors):
         if i == 0:
-            factor = factor*weights
+            factor = factor * weights
             weights = T.ones(rank, **T.context(factor))
-            
+
         scales = T.norm(factor, axis=0)
-        scales_non_zero = T.where(scales==0, T.ones(T.shape(scales), **T.context(factor)), scales)
-        weights = weights*scales
+        scales_non_zero = T.where(
+            scales == 0, T.ones(T.shape(scales), **T.context(factor)), scales
+        )
+        weights = weights * scales
         normalized_factors.append(factor / T.reshape(scales_non_zero, (1, -1)))
 
     return CPTensor((weights, normalized_factors))
@@ -313,12 +336,12 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
     cp_tensor : CPTensor = (weight, factors)
         factors is list of matrices, all with the same number of columns
         i.e.::
-        
+
             for u in U:
                 u[i].shape == (s_i, R)
 
         where `R` is fixed while `s_i` can vary with `i`
-    
+
     mode: int
         mode that should receive negative signs
 
@@ -345,12 +368,12 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
         column_signs = T.sign(func(factors[jj], axis=0))
 
         # Update both the current and receiving factor
-        factors[mode] = factors[mode]*column_signs[np.newaxis, :]
-        factors[jj] = factors[jj]*column_signs[np.newaxis, :]
+        factors[mode] = factors[mode] * column_signs[np.newaxis, :]
+        factors[jj] = factors[jj] * column_signs[np.newaxis, :]
 
     # Check the weight signs
     weight_signs = T.sign(weights)
-    factors[mode] = factors[mode]*weight_signs[np.newaxis, :]
+    factors[mode] = factors[mode] * weight_signs[np.newaxis, :]
     weights = T.abs(weights)
 
     return CPTensor((weights, factors))
@@ -402,10 +425,12 @@ def cp_lstsq_grad(cp_tensor, tensor, return_loss=False, mask=None):
     if mask is not None:
         diff = diff * mask
 
-    grad_fac = [-unfolding_dot_khatri_rao(diff, cp_tensor, ii) for ii in range(len(factors))]
+    grad_fac = [
+        -unfolding_dot_khatri_rao(diff, cp_tensor, ii) for ii in range(len(factors))
+    ]
 
     if return_loss:
-        return CPTensor((None, grad_fac)), 0.5*T.sum(diff**2)
+        return CPTensor((None, grad_fac)), 0.5 * T.sum(diff**2)
 
     return CPTensor((None, grad_fac))
 
@@ -443,21 +468,24 @@ def cp_to_tensor(cp_tensor, mask=None):
     """
     shape, _ = _validate_cp_tensor(cp_tensor)
 
-    if not shape: # 0-order tensor
+    if not shape:  # 0-order tensor
         return cp_tensor
 
     weights, factors = cp_tensor
-    if len(shape) == 1: # just a vector
-        return T.sum(weights*factors[0], axis=1)
+    if len(shape) == 1:  # just a vector
+        return T.sum(weights * factors[0], axis=1)
 
     if weights is None:
         weights = 1
 
     if mask is None:
-        full_tensor = T.dot(factors[0]*weights,
-                            T.transpose(khatri_rao(factors, skip_matrix=0)))
+        full_tensor = T.dot(
+            factors[0] * weights, T.transpose(khatri_rao(factors, skip_matrix=0))
+        )
     else:
-        full_tensor = T.sum(khatri_rao([factors[0]*weights]+factors[1:], mask=mask), axis=1)
+        full_tensor = T.sum(
+            khatri_rao([factors[0] * weights] + factors[1:], mask=mask), axis=1
+        )
 
     return fold(full_tensor, 0, shape)
 
@@ -491,7 +519,9 @@ def cp_to_unfolded(cp_tensor, mode):
     weights, factors = cp_tensor
 
     if weights is not None:
-        return T.dot(factors[mode]*weights, T.transpose(khatri_rao(factors, skip_matrix=mode)))
+        return T.dot(
+            factors[mode] * weights, T.transpose(khatri_rao(factors, skip_matrix=mode))
+        )
     else:
         return T.dot(factors[mode], T.transpose(khatri_rao(factors, skip_matrix=mode)))
 
@@ -522,73 +552,83 @@ def cp_to_vec(cp_tensor):
 
 
 def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
-        """n-mode product of a CP tensor and a matrix or vector at the specified mode
+    """n-mode product of a CP tensor and a matrix or vector at the specified mode
 
-        Parameters
-        ----------
-        cp_tensor : tl.CPTensor or (core, factors)
-                        
-        matrix_or_vector : ndarray
-            1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
-            matrix or vectors to which to n-mode multiply the tensor
-        mode : int
+    Parameters
+    ----------
+    cp_tensor : tl.CPTensor or (core, factors)
 
-        Returns
-        -------
-        CPTensor = (core, factors)
-            `mode`-mode product of `tensor` by `matrix_or_vector`
-            * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
-            * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
+    matrix_or_vector : ndarray
+        1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
+        matrix or vectors to which to n-mode multiply the tensor
+    mode : int
 
-        See also
-        --------
-        kruskal_multi_mode_dot : chaining several mode_dot in one call
-        """
-        shape, _ = _validate_cp_tensor(cp_tensor)
-        weights, factors = cp_tensor
-        contract = False
-        
-        if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
-            # Test for the validity of the operation
-            if matrix_or_vector.shape[1] != shape[mode]:
-                raise ValueError(
-                    'shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)'.format(
-                        shape, matrix_or_vector.shape, mode, shape[mode], matrix_or_vector.shape[1]
-                    ))
+    Returns
+    -------
+    CPTensor = (core, factors)
+        `mode`-mode product of `tensor` by `matrix_or_vector`
+        * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
+        * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
 
-        elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
-            if matrix_or_vector.shape[0] != shape[mode]:
-                raise ValueError(
-                    'shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)'.format(
-                        shape, matrix_or_vector.shape, mode, shape[mode], matrix_or_vector.shape[0]
-                    ))
-            if not keep_dim:
-                contract = True # Contract over that mode
-        else:
-            raise ValueError('Can only take n_mode_product with a vector or a matrix.')
-                             
-        if copy:
-            factors = [T.copy(f) for f in factors]
-            weights = T.copy(weights)   
-            
-        if contract:
-            factor = factors.pop(mode)
-            factor = T.dot(matrix_or_vector, factor)
-            mode = max(mode - 1, 0)
-            factors[mode] *= factor
-        else:
-             factors[mode] = T.dot(matrix_or_vector, factors[mode])
+    See also
+    --------
+    kruskal_multi_mode_dot : chaining several mode_dot in one call
+    """
+    shape, _ = _validate_cp_tensor(cp_tensor)
+    weights, factors = cp_tensor
+    contract = False
 
-        if copy:
-            return CPTensor((weights, factors))
-        else:
-            cp_tensor.shape = tuple(f.shape[0] for f in factors)
-            return cp_tensor
-    
+    if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
+        # Test for the validity of the operation
+        if matrix_or_vector.shape[1] != shape[mode]:
+            raise ValueError(
+                "shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)".format(
+                    shape,
+                    matrix_or_vector.shape,
+                    mode,
+                    shape[mode],
+                    matrix_or_vector.shape[1],
+                )
+            )
+
+    elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
+        if matrix_or_vector.shape[0] != shape[mode]:
+            raise ValueError(
+                "shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)".format(
+                    shape,
+                    matrix_or_vector.shape,
+                    mode,
+                    shape[mode],
+                    matrix_or_vector.shape[0],
+                )
+            )
+        if not keep_dim:
+            contract = True  # Contract over that mode
+    else:
+        raise ValueError("Can only take n_mode_product with a vector or a matrix.")
+
+    if copy:
+        factors = [T.copy(f) for f in factors]
+        weights = T.copy(weights)
+
+    if contract:
+        factor = factors.pop(mode)
+        factor = T.dot(matrix_or_vector, factor)
+        mode = max(mode - 1, 0)
+        factors[mode] *= factor
+    else:
+        factors[mode] = T.dot(matrix_or_vector, factors[mode])
+
+    if copy:
+        return CPTensor((weights, factors))
+    else:
+        cp_tensor.shape = tuple(f.shape[0] for f in factors)
+        return cp_tensor
+
 
 def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     """mode-n unfolding times khatri-rao product of factors
-    
+
     Parameters
     ----------
     tensor : tl.tensor
@@ -597,7 +637,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
         list of matrices of which to the khatri-rao product
     mode : int
         mode on which to unfold `tensor`
-    
+
     Returns
     -------
     mttkrp
@@ -606,13 +646,13 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     Notes
     -----
     This is a variant of::
-    
+
         unfolded = unfold(tensor, mode)
         kr_factors = khatri_rao(factors, skip_matrix=mode)
         mttkrp2 = tl.dot(unfolded, kr_factors)
 
     Multiplying with the Khatri-Rao product is equivalent to multiplying,
-    for each rank, with the kronecker product of each factor. 
+    for each rank, with the kronecker product of each factor.
     In code::
 
         mttkrp_parts = []
@@ -620,9 +660,9 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
             component = tl.tenalg.multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode)
             mttkrp_parts.append(component)
         mttkrp = tl.stack(mttkrp_parts, axis=1)
-        return mttkrp 
+        return mttkrp
 
-    This can be done by taking n-mode-product with the full factors 
+    This can be done by taking n-mode-product with the full factors
     (faster but more memory consuming)::
 
         projected = multi_mode_dot(tensor, factors, skip=mode, transpose=True)
@@ -633,9 +673,9 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
             res.append(projected[index])
         return T.stack(res, axis=-1)
 
-    
+
     The same idea could be expressed using einsum::
-    
+
         ndims = tl.ndim(tensor)
         tensor_idx = ''.join(chr(ord('a') + i) for i in range(ndims))
         rank = chr(ord('a') + ndims + 1)
@@ -653,13 +693,15 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
     for r in range(rank):
-        component = multi_mode_dot(tensor, [T.conj(f[:, r]) for f in factors], skip=mode)
+        component = multi_mode_dot(
+            tensor, [T.conj(f[:, r]) for f in factors], skip=mode
+        )
         mttkrp_parts.append(component)
 
     if weights is None:
         return T.stack(mttkrp_parts, axis=1)
     else:
-        return T.stack(mttkrp_parts, axis=1)*T.reshape(weights, (1, -1))
+        return T.stack(mttkrp_parts, axis=1) * T.reshape(weights, (1, -1))
 
 
 def cp_norm(cp_tensor):
@@ -675,18 +717,18 @@ def cp_norm(cp_tensor):
 
     Notes
     -----
-    This is ||cp_to_tensor(factors)||^2 
-    
+    This is ||cp_to_tensor(factors)||^2
+
     You can see this using the fact that
     khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
     """
     _ = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
     norm = T.prod([T.dot(T.transpose(f), f) for f in factors])
-    
+
     if weights is not None:
-        #norm = T.dot(T.dot(weights, norm), weights)
-        norm = norm * (T.reshape(weights, (-1, 1))*T.reshape(weights, (1, -1)))
+        # norm = T.dot(T.dot(weights, norm), weights)
+        norm = norm * (T.reshape(weights, (-1, 1)) * T.reshape(weights, (1, -1)))
 
     # We sum even if weigths is not None
     # as e.g. MXNet would return a 1D tensor, not a 0D tensor
@@ -724,7 +766,9 @@ def cp_permute_factors(ref_cp_tensor, tensors_to_permute):
     permutation = []
     ref_factors = T.concatenate(ref_cp_tensor.factors)
     for i in range(n_tensors):
-        _, col = congruence_coefficient(ref_factors, T.concatenate(tensors_to_permute[i].factors))
+        _, col = congruence_coefficient(
+            ref_factors, T.concatenate(tensors_to_permute[i].factors)
+        )
         col = T.tensor(col, dtype=T.int64)
         for f in range(n_factors):
             permuted_tensors[i].factors[f] = permuted_tensors[i].factors[f][:, col]
@@ -734,10 +778,19 @@ def cp_permute_factors(ref_cp_tensor, tensors_to_permute):
         permuted_tensors = permuted_tensors[0]
     return permuted_tensors, permutation
 
+
 # Deprecated classes and functions
-KruskalTensor = DefineDeprecated(deprecated_name='KruskalTensor', use_instead=CPTensor)
-kruskal_norm = DefineDeprecated(deprecated_name='kruskal_norm', use_instead=cp_norm)
-kruskal_mode_dot = DefineDeprecated(deprecated_name='kruskal_mode_dot', use_instead=cp_mode_dot)
-kruskal_to_tensor = DefineDeprecated(deprecated_name='kruskal_to_tensor', use_instead=cp_to_tensor)
-kruskal_to_unfolded = DefineDeprecated(deprecated_name='kruskal_to_unfolded', use_instead=cp_to_unfolded)
-kruskal_to_vec = DefineDeprecated(deprecated_name='kruskal_to_vec', use_instead=cp_to_vec)
+KruskalTensor = DefineDeprecated(deprecated_name="KruskalTensor", use_instead=CPTensor)
+kruskal_norm = DefineDeprecated(deprecated_name="kruskal_norm", use_instead=cp_norm)
+kruskal_mode_dot = DefineDeprecated(
+    deprecated_name="kruskal_mode_dot", use_instead=cp_mode_dot
+)
+kruskal_to_tensor = DefineDeprecated(
+    deprecated_name="kruskal_to_tensor", use_instead=cp_to_tensor
+)
+kruskal_to_unfolded = DefineDeprecated(
+    deprecated_name="kruskal_to_unfolded", use_instead=cp_to_unfolded
+)
+kruskal_to_vec = DefineDeprecated(
+    deprecated_name="kruskal_to_vec", use_instead=cp_to_vec
+)

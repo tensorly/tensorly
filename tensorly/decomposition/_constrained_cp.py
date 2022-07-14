@@ -5,8 +5,7 @@ import tensorly as tl
 from ..random import random_cp
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
-from ..cp_tensor import (CPTensor, unfolding_dot_khatri_rao, cp_norm,
-                         validate_cp_rank)
+from ..cp_tensor import CPTensor, unfolding_dot_khatri_rao, cp_norm, validate_cp_rank
 from ..tenalg.proximal import admm, proximal_operator, validate_constraints
 
 # Author: Jean Kossaifi
@@ -16,12 +15,25 @@ from ..tenalg.proximal import admm, proximal_operator, validate_constraints
 # License: BSD 3 clause
 
 
-def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
-                                   random_state=None, non_negative=None, l1_reg=None,
-                                   l2_reg=None, l2_square_reg=None, unimodality=None, normalize=None,
-                                   simplex=None, normalized_sparsity=None,
-                                   soft_sparsity=None, smoothness=None, monotonicity=None,
-                                   hard_sparsity=None):
+def initialize_constrained_parafac(
+    tensor,
+    rank,
+    init="svd",
+    svd="numpy_svd",
+    random_state=None,
+    non_negative=None,
+    l1_reg=None,
+    l2_reg=None,
+    l2_square_reg=None,
+    unimodality=None,
+    normalize=None,
+    simplex=None,
+    normalized_sparsity=None,
+    soft_sparsity=None,
+    smoothness=None,
+    monotonicity=None,
+    hard_sparsity=None,
+):
     r"""Initialize factors used in `constrained_parafac`.
 
     Parameters
@@ -81,15 +93,18 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
     n_modes = tl.ndim(tensor)
     rng = tl.check_random_state(random_state)
 
-    if init == 'random':
-        weights, factors = random_cp(tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor))
+    if init == "random":
+        weights, factors = random_cp(
+            tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor)
+        )
 
-    elif init == 'svd':
+    elif init == "svd":
         try:
             svd_fun = tl.SVD_FUNS[svd]
         except KeyError:
-            message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                svd, tl.get_backend(), tl.SVD_FUNS)
+            message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
+                svd, tl.get_backend(), tl.SVD_FUNS
+            )
             raise ValueError(message)
 
         factors = []
@@ -102,8 +117,10 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
                 U = tl.index_update(U, tl.index[:, :idx], U[:, :idx] * S[:idx])
 
             if tensor.shape[mode] < rank:
-                random_part = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
-                                        **tl.context(tensor))
+                random_part = tl.tensor(
+                    rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
+                    **tl.context(tensor)
+                )
                 U = tl.concatenate([U, random_part], axis=1)
 
             factors.append(U[:, :rank])
@@ -122,31 +139,61 @@ def initialize_constrained_parafac(tensor, rank, init='svd', svd='numpy_svd',
             return kt
         except ValueError:
             raise ValueError(
-                'If initialization method is a mapping, then it must '
-                'be possible to convert it to a CPTensor instance'
+                "If initialization method is a mapping, then it must "
+                "be possible to convert it to a CPTensor instance"
             )
     else:
         raise ValueError('Initialization method "{}" not recognized'.format(init))
 
     for i in range(n_modes):
-        factors[i] = proximal_operator(factors[i], non_negative=non_negative, l1_reg=l1_reg,
-                                       l2_reg=l2_reg, l2_square_reg=l2_square_reg, unimodality=unimodality,
-                                       normalize=normalize, simplex=simplex, normalized_sparsity=normalized_sparsity,
-                                       soft_sparsity=soft_sparsity, smoothness=smoothness,
-                                       monotonicity=monotonicity, hard_sparsity=hard_sparsity, n_const=n_modes, order=i)
+        factors[i] = proximal_operator(
+            factors[i],
+            non_negative=non_negative,
+            l1_reg=l1_reg,
+            l2_reg=l2_reg,
+            l2_square_reg=l2_square_reg,
+            unimodality=unimodality,
+            normalize=normalize,
+            simplex=simplex,
+            normalized_sparsity=normalized_sparsity,
+            soft_sparsity=soft_sparsity,
+            smoothness=smoothness,
+            monotonicity=monotonicity,
+            hard_sparsity=hard_sparsity,
+            n_const=n_modes,
+            order=i,
+        )
     kt = CPTensor((None, factors))
     return kt
 
 
-def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
-                        init='svd', svd='numpy_svd',
-                        tol_outer=1e-8, tol_inner=1e-6, random_state=None,
-                        verbose=0, return_errors=False,
-                        cvg_criterion='abs_rec_error',
-                        fixed_modes=None, non_negative=None, l1_reg=None,
-                        l2_reg=None, l2_square_reg=None, unimodality=None, normalize=None,
-                        simplex=None, normalized_sparsity=None, soft_sparsity=None,
-                        smoothness=None, monotonicity=None, hard_sparsity=None):
+def constrained_parafac(
+    tensor,
+    rank,
+    n_iter_max=100,
+    n_iter_max_inner=10,
+    init="svd",
+    svd="numpy_svd",
+    tol_outer=1e-8,
+    tol_inner=1e-6,
+    random_state=None,
+    verbose=0,
+    return_errors=False,
+    cvg_criterion="abs_rec_error",
+    fixed_modes=None,
+    non_negative=None,
+    l1_reg=None,
+    l2_reg=None,
+    l2_square_reg=None,
+    unimodality=None,
+    normalize=None,
+    simplex=None,
+    normalized_sparsity=None,
+    soft_sparsity=None,
+    smoothness=None,
+    monotonicity=None,
+    hard_sparsity=None,
+):
     """CANDECOMP/PARAFAC decomposition via alternating optimization of
     alternating direction method of multipliers (AO-ADMM):
 
@@ -238,21 +285,41 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
-    _, _ = validate_constraints(non_negative=non_negative, l1_reg=l1_reg, l2_reg=l2_reg, l2_square_reg=l2_square_reg,
-                                unimodality=unimodality, normalize=normalize, simplex=simplex,
-                                normalized_sparsity=normalized_sparsity, soft_sparsity=soft_sparsity,
-                                smoothness=smoothness, monotonicity=monotonicity, hard_sparsity=hard_sparsity,
-                                n_const=tl.ndim(tensor))
+    _, _ = validate_constraints(
+        non_negative=non_negative,
+        l1_reg=l1_reg,
+        l2_reg=l2_reg,
+        l2_square_reg=l2_square_reg,
+        unimodality=unimodality,
+        normalize=normalize,
+        simplex=simplex,
+        normalized_sparsity=normalized_sparsity,
+        soft_sparsity=soft_sparsity,
+        smoothness=smoothness,
+        monotonicity=monotonicity,
+        hard_sparsity=hard_sparsity,
+        n_const=tl.ndim(tensor),
+    )
 
-    weights, factors = initialize_constrained_parafac(tensor, rank, init=init, svd=svd,
-                                                      random_state=random_state, non_negative=non_negative,
-                                                      l1_reg=l1_reg, l2_reg=l2_reg, l2_square_reg=l2_square_reg,
-                                                      unimodality=unimodality, normalize=normalize,
-                                                      simplex=simplex,
-                                                      normalized_sparsity=normalized_sparsity,
-                                                      soft_sparsity=soft_sparsity,
-                                                      smoothness=smoothness, monotonicity=monotonicity,
-                                                      hard_sparsity=hard_sparsity)
+    weights, factors = initialize_constrained_parafac(
+        tensor,
+        rank,
+        init=init,
+        svd=svd,
+        random_state=random_state,
+        non_negative=non_negative,
+        l1_reg=l1_reg,
+        l2_reg=l2_reg,
+        l2_square_reg=l2_square_reg,
+        unimodality=unimodality,
+        normalize=normalize,
+        simplex=simplex,
+        normalized_sparsity=normalized_sparsity,
+        soft_sparsity=soft_sparsity,
+        smoothness=smoothness,
+        monotonicity=monotonicity,
+        hard_sparsity=hard_sparsity,
+    )
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
@@ -261,8 +328,10 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
         fixed_modes = []
 
     if tl.ndim(tensor) - 1 in fixed_modes:
-        warnings.warn('You asked for fixing the last mode, which is not supported.\n '
-                      'The last mode will not be fixed. Consider using tl.moveaxis()')
+        warnings.warn(
+            "You asked for fixing the last mode, which is not supported.\n "
+            "The last mode will not be fixed. Consider using tl.moveaxis()"
+        )
         fixed_modes.remove(tl.ndim(tensor) - 1)
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
@@ -283,42 +352,64 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
             pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
+                    pseudo_inverse = pseudo_inverse * tl.dot(
+                        tl.transpose(factor), factor
+                    )
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
 
-            factors[mode], factors_aux[mode], dual_variables[mode] = admm(mttkrp, pseudo_inverse, factors[mode], dual_variables[mode],
-                                                                          n_iter_max=n_iter_max_inner, n_const=tl.ndim(tensor),
-                                                                          order=mode, non_negative=non_negative, l1_reg=l1_reg,
-                                                                          l2_reg=l2_reg, l2_square_reg=l2_square_reg,
-                                                                          unimodality=unimodality, normalize=normalize,
-                                                                          simplex=simplex, normalized_sparsity=normalized_sparsity,
-                                                                          soft_sparsity=soft_sparsity,
-                                                                          smoothness=smoothness, monotonicity=monotonicity,
-                                                                          hard_sparsity=hard_sparsity, tol=tol_inner)
+            factors[mode], factors_aux[mode], dual_variables[mode] = admm(
+                mttkrp,
+                pseudo_inverse,
+                factors[mode],
+                dual_variables[mode],
+                n_iter_max=n_iter_max_inner,
+                n_const=tl.ndim(tensor),
+                order=mode,
+                non_negative=non_negative,
+                l1_reg=l1_reg,
+                l2_reg=l2_reg,
+                l2_square_reg=l2_square_reg,
+                unimodality=unimodality,
+                normalize=normalize,
+                simplex=simplex,
+                normalized_sparsity=normalized_sparsity,
+                soft_sparsity=soft_sparsity,
+                smoothness=smoothness,
+                monotonicity=monotonicity,
+                hard_sparsity=hard_sparsity,
+                tol=tol_inner,
+            )
 
         factors_norm = cp_norm((weights, factors))
         iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0) * weights)
-        rec_error = tl.sqrt(tl.abs(norm_tensor ** 2 + factors_norm ** 2 - 2 * iprod)) / norm_tensor
+        rec_error = (
+            tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+            / norm_tensor
+        )
         rec_errors.append(rec_error)
         constraint_error = 0
         for mode in modes_list:
-            constraint_error += tl.norm(factors[mode] - tl.transpose(factors_aux[mode])) / tl.norm(factors[mode])
+            constraint_error += tl.norm(
+                factors[mode] - tl.transpose(factors_aux[mode])
+            ) / tl.norm(factors[mode])
         if tol_outer:
 
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
                 if verbose:
-                    print("iteration {}, reconstruction error: {}, decrease = {}".format(iteration,
-                                                                                         rec_error,
-                                                                                         rec_error_decrease))
+                    print(
+                        "iteration {}, reconstruction error: {}, decrease = {}".format(
+                            iteration, rec_error, rec_error_decrease
+                        )
+                    )
 
                 if constraint_error < tol_outer:
                     break
-                if cvg_criterion == 'abs_rec_error':
+                if cvg_criterion == "abs_rec_error":
                     stop_flag = abs(rec_error_decrease) < tol_outer
-                elif cvg_criterion == 'rec_error':
+                elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol_outer
                 else:
                     raise TypeError("Unknown convergence criterion")
@@ -330,7 +421,7 @@ def constrained_parafac(tensor, rank, n_iter_max=100, n_iter_max_inner=10,
 
             else:
                 if verbose:
-                    print('reconstruction error={}'.format(rec_errors[-1]))
+                    print("reconstruction error={}".format(rec_errors[-1]))
 
     cp_tensor = CPTensor((weights, factors))
 
@@ -432,12 +523,33 @@ class ConstrainedCP(DecompositionMixin):
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
 
-    def __init__(self, rank, n_iter_max=100, n_iter_max_inner=10,
-                 init='svd', svd='numpy_svd', tol_outer=1e-8, tol_inner=1e-6, random_state=None,
-                 verbose=0, return_errors=False, cvg_criterion='abs_rec_error',
-                 fixed_modes=None, non_negative=None, l1_reg=None, l2_reg=None, l2_square_reg=None,
-                 unimodality=None, normalize=None, simplex=None, normalized_sparsity=None, soft_sparsity=None,
-                 smoothness=None, monotonicity=None, hard_sparsity=None):
+    def __init__(
+        self,
+        rank,
+        n_iter_max=100,
+        n_iter_max_inner=10,
+        init="svd",
+        svd="numpy_svd",
+        tol_outer=1e-8,
+        tol_inner=1e-6,
+        random_state=None,
+        verbose=0,
+        return_errors=False,
+        cvg_criterion="abs_rec_error",
+        fixed_modes=None,
+        non_negative=None,
+        l1_reg=None,
+        l2_reg=None,
+        l2_square_reg=None,
+        unimodality=None,
+        normalize=None,
+        simplex=None,
+        normalized_sparsity=None,
+        soft_sparsity=None,
+        smoothness=None,
+        monotonicity=None,
+        hard_sparsity=None,
+    ):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.n_iter_max_inner = n_iter_max_inner
@@ -499,7 +611,7 @@ class ConstrainedCP(DecompositionMixin):
             normalized_sparsity=self.normalized_sparsity,
             soft_sparsity=self.soft_sparsity,
             smoothness=self.smoothness,
-            monotonicity=self.monotonicity ,
+            monotonicity=self.monotonicity,
             hard_sparsity=self.hard_sparsity,
             return_errors=True,
         )

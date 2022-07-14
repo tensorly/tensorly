@@ -23,4 +23,4 @@ jobs:
         pip install black
     - name: Lint with Black
       run: |
-        black --check --diff --color .
+        black --check --diff --color ./tensorly

@@ -9,8 +9,9 @@ from ._cp import initialize_cp
 # License: BSD 3 clause
 
 
-
-def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', n_iter_max=100, normalize_factors=False):
+def coupled_matrix_tensor_3d_factorization(
+    tensor_3d, matrix, rank, init="svd", n_iter_max=100, normalize_factors=False
+):
     """
     Calculates a coupled matrix and tensor factorization of 3rd order tensor and matrix which are
     coupled in first mode.
@@ -89,14 +90,18 @@ def coupled_matrix_tensor_3d_factorization(tensor_3d, matrix, rank, init='svd', 
                 kr = tl.concatenate((kr, V), axis=0)
                 unfolded = tl.concatenate((unfolded, matrix), axis=1)
 
-            tensor_cp.factors[ii] = tl.transpose(tl.lstsq(kr, tl.transpose(unfolded))[0])
+            tensor_cp.factors[ii] = tl.transpose(
+                tl.lstsq(kr, tl.transpose(unfolded))[0]
+            )
 
-        error_new = tl.norm(
-            tensor_3d - cp_to_tensor(tensor_cp)) ** 2 + tl.norm(
-            matrix - cp_to_tensor((None, [tensor_cp.factors[0], V]))) ** 2
+        error_new = (
+            tl.norm(tensor_3d - cp_to_tensor(tensor_cp)) ** 2
+            + tl.norm(matrix - cp_to_tensor((None, [tensor_cp.factors[0], V]))) ** 2
+        )
 
-        if iteration > 0 and (tl.abs(error_new - error_old) / error_old <= 1e-8 or error_new <
-                              1e-5):
+        if iteration > 0 and (
+            tl.abs(error_new - error_old) / error_old <= 1e-8 or error_new < 1e-5
+        ):
             break
         error_old = error_new
         rec_errors.append(error_new)
