@@ -76,37 +76,41 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
     else:
         n_columns = 1
         matrices = [T.reshape(m, (-1, 1)) for m in matrices]
-        warnings.warn('Khatri-rao of a series of vectors instead of matrices. '
-                      'Condidering each has a matrix with 1 column.')
+        warnings.warn(
+            "Khatri-rao of a series of vectors instead of matrices. "
+            "Condidering each has a matrix with 1 column."
+        )
 
     # Optional part, testing whether the matrices have the proper size
     for i, matrix in enumerate(matrices):
         if T.ndim(matrix) != 2:
-            raise ValueError('All the matrices must have exactly 2 dimensions!'
-                             'Matrix {} has dimension {} != 2.'.format(
-                                 i, T.ndim(matrix)))
+            raise ValueError(
+                "All the matrices must have exactly 2 dimensions!"
+                "Matrix {} has dimension {} != 2.".format(i, T.ndim(matrix))
+            )
         if matrix.shape[1] != n_columns:
-            raise ValueError('All matrices must have same number of columns!'
-                             'Matrix {} has {} columns != {}.'.format(
-                                 i, matrix.shape[1], n_columns))
+            raise ValueError(
+                "All matrices must have same number of columns!"
+                "Matrix {} has {} columns != {}.".format(i, matrix.shape[1], n_columns)
+            )
 
     if reverse:
         matrices = matrices[::-1]
         # Note: we do NOT use .reverse() which would reverse matrices even outside this function
-    
-    shared_dim = 'a'
-    start = ord('b')
+
+    shared_dim = "a"
+    start = ord("b")
     individual_dims = [chr(start + i) for i in range(len(matrices))]
-    equation = ','.join(f'{i}{shared_dim}' for i in individual_dims)
+    equation = ",".join(f"{i}{shared_dim}" for i in individual_dims)
 
     if weights is not None:
-        equation += f',{shared_dim}'
+        equation += f",{shared_dim}"
         matrices = matrices + [weights]
 
     if mask is not None:
-        equation += ',' + ''.join(individual_dims)
+        equation += "," + "".join(individual_dims)
         matrices.append(mask)
 
-    equation += '->' + ''.join(individual_dims) + shared_dim
-        
+    equation += "->" + "".join(individual_dims) + shared_dim
+
     return T.reshape(T.einsum(equation, *matrices), (-1, n_columns))

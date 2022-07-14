@@ -1,6 +1,5 @@
 import numpy as np
-from ..cp_tensor import (cp_to_tensor, CPTensor,
-                         cp_normalize, validate_cp_rank)
+from ..cp_tensor import cp_to_tensor, CPTensor, cp_normalize, validate_cp_rank
 from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 from ..tt_tensor import tt_to_tensor, TTTensor, validate_tt_rank
 from ..tt_matrix import tt_matrix_to_tensor, TTMatrix, validate_tt_matrix_rank
@@ -12,14 +11,14 @@ import warnings
 
 
 def random_tensor(shape, random_state=None, **context):
-    """Create a random tensor
-    """
+    """Create a random tensor"""
     rns = T.check_random_state(random_state)
     return T.tensor(rns.random_sample(shape), **context)
 
 
-def random_parafac2(shapes, rank, full=False, random_state=None,
-                    normalise_factors=True, **context):
+def random_parafac2(
+    shapes, rank, full=False, random_state=None, normalise_factors=True, **context
+):
     """Generate a random PARAFAC2 tensor
 
     Parameters
@@ -38,15 +37,18 @@ def random_parafac2(shapes, rank, full=False, random_state=None,
     """
     rns = T.check_random_state(random_state)
     if not all(shape[1] == shapes[0][1] for shape in shapes):
-        raise ValueError('All matrices must have equal number of columns.')
-    
+        raise ValueError("All matrices must have equal number of columns.")
+
     projection_matrices = [
         T.qr(T.tensor(rns.random_sample((shape[0], rank)), **context))[0]
-            for shape in shapes
+        for shape in shapes
     ]
     weights, factors = random_cp(
-        [len(shapes), rank, shapes[0][1]], rank=rank, normalise_factors=False, 
-        random_state=rns,  **context
+        [len(shapes), rank, shapes[0][1]],
+        rank=rank,
+        normalise_factors=False,
+        random_state=rns,
+        **context,
     )
 
     parafac2_tensor = Parafac2Tensor((weights, factors, projection_matrices))
@@ -57,8 +59,15 @@ def random_parafac2(shapes, rank, full=False, random_state=None,
         return parafac2_tensor
 
 
-def random_cp(shape, rank, full=False, orthogonal=False, 
-                   random_state=None, normalise_factors=True, **context):
+def random_cp(
+    shape,
+    rank,
+    full=False,
+    orthogonal=False,
+    random_state=None,
+    normalise_factors=True,
+    **context,
+):
     """Generates a random CP tensor
 
     Parameters
@@ -84,8 +93,10 @@ def random_cp(shape, rank, full=False, orthogonal=False,
     """
     rank = validate_cp_rank(shape, rank)
     if (rank > min(shape)) and orthogonal:
-        warnings.warn('Can only construct orthogonal tensors when rank <= min(shape) but got '
-                      'a tensor with min(shape)={} < rank={}'.format(min(shape), rank))
+        warnings.warn(
+            "Can only construct orthogonal tensors when rank <= min(shape) but got "
+            "a tensor with min(shape)={} < rank={}".format(min(shape), rank)
+        )
 
     rns = T.check_random_state(random_state)
     factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
@@ -100,7 +111,10 @@ def random_cp(shape, rank, full=False, orthogonal=False,
     else:
         return CPTensor((weights, factors))
 
-def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, **context):
+
+def random_tucker(
+    shape, rank, full=False, orthogonal=False, random_state=None, **context
+):
     """Generates a random Tucker tensor
 
     Parameters
@@ -131,14 +145,16 @@ def random_tucker(shape, rank, full=False, orthogonal=False, random_state=None, 
     if orthogonal:
         for i, (s, r) in enumerate(zip(shape, rank)):
             if r > s:
-                warnings.warn('Selected orthogonal=True, but selected a rank larger than the tensor size for mode {0}: '
-                             'rank[{0}]={1} > shape[{0}]={2}.'.format(i, r, s))
+                warnings.warn(
+                    "Selected orthogonal=True, but selected a rank larger than the tensor size for mode {0}: "
+                    "rank[{0}]={1} > shape[{0}]={2}.".format(i, r, s)
+                )
 
     factors = []
     for (s, r) in zip(shape, rank):
         if orthogonal:
             factor = T.tensor(rns.random_sample((s, s)), **context)
-            Q, _= T.qr(factor)
+            Q, _ = T.qr(factor)
             factors.append(T.tensor(Q[:, :r]))
         else:
             factors.append(T.tensor(rns.random_sample((s, r)), **context))
@@ -174,7 +190,7 @@ def random_tt(shape, rank, full=False, random_state=None, **context):
         * ND-array : full tensor if `full` is True
         * 3D-array list : list of factors otherwise
     """
-    n_dim = len(shape) 
+    n_dim = len(shape)
 
     rank = validate_tt_rank(shape, rank)
 
@@ -183,15 +199,21 @@ def random_tt(shape, rank, full=False, random_state=None, **context):
 
     # Initialization
     if rank[0] != 1:
-        message = 'Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.'.format(rank[0])
+        message = "Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.".format(
+            rank[0]
+        )
         raise ValueError(message)
     if rank[-1] != 1:
-        message = 'Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(rank[0])
+        message = "Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.".format(
+            rank[0]
+        )
         raise ValueError(message)
 
     rns = T.check_random_state(random_state)
-    factors = [T.tensor(rns.random_sample((rank[i], s, rank[i+1])), **context)\
-               for i, s in enumerate(shape)]
+    factors = [
+        T.tensor(rns.random_sample((rank[i], s, rank[i + 1])), **context)
+        for i, s in enumerate(shape)
+    ]
 
     if full:
         return tt_to_tensor(factors)
@@ -231,8 +253,13 @@ def random_tt_matrix(shape, rank, full=False, random_state=None, **context):
 
     factors = []
     for i in range(n_dim):
-         factors.append(random_tensor((rank[i], left_shape[i], right_shape[i], rank[i + 1]),
-                                             random_state=random_state, **context))
+        factors.append(
+            random_tensor(
+                (rank[i], left_shape[i], right_shape[i], rank[i + 1]),
+                random_state=random_state,
+                **context,
+            )
+        )
 
     if full:
         return tt_matrix_to_tensor(factors)
@@ -273,11 +300,14 @@ def random_tr(shape, rank, full=False, random_state=None, **context):
 
     # Initialization
     if rank[0] != rank[-1]:
-        message = f'Provided rank[0] == {rank[0]} and rank[-1] == {rank[-1]} but boundary conditions dictatate rank[0] == rank[-1].'
+        message = f"Provided rank[0] == {rank[0]} and rank[-1] == {rank[-1]} but boundary conditions dictatate rank[0] == rank[-1]."
         raise ValueError(message)
 
     rns = T.check_random_state(random_state)
-    factors = [T.tensor(rns.random_sample((rank[i], s, rank[i + 1])), **context) for i, s in enumerate(shape)]
+    factors = [
+        T.tensor(rns.random_sample((rank[i], s, rank[i + 1])), **context)
+        for i, s in enumerate(shape)
+    ]
 
     if full:
         return tr_to_tensor(factors)
@@ -285,5 +315,7 @@ def random_tr(shape, rank, full=False, random_state=None, **context):
         return TRTensor(factors)
 
 
-random_kruskal = DefineDeprecated(deprecated_name='random_kruskal', use_instead=random_cp)
-random_mps = DefineDeprecated(deprecated_name='random_mps', use_instead=random_tt)
+random_kruskal = DefineDeprecated(
+    deprecated_name="random_kruskal", use_instead=random_cp
+)
+random_mps = DefineDeprecated(deprecated_name="random_mps", use_instead=random_tt)

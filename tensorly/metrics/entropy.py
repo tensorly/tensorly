@@ -7,6 +7,7 @@ from ..utils import prod
 # Authors: Taylor Lee Patti <taylorpatti@g.harvard.edu>
 #          Jean Kossaifi
 
+
 def vonneumann_entropy(tensor):
     """Returns the von Neumann entropy of a density matrix (2-mode, square) tensor (matrix).
 
@@ -20,8 +21,8 @@ def vonneumann_entropy(tensor):
 
     Notes
     -----
-    The von Neumann entropy is :math:`- \\sum_i p_i ln(p_i)`, 
-    where p_i are the probabilities that each state is occupied 
+    The von Neumann entropy is :math:`- \\sum_i p_i ln(p_i)`,
+    where p_i are the probabilities that each state is occupied
     (the eigenvalues of the density matrix).
     """
     square_dim = int(math.sqrt(prod(tensor.shape)))
@@ -29,12 +30,12 @@ def vonneumann_entropy(tensor):
     try:
         eig_vals = T.eigh(tensor)[0]
     except:
-    #All density matrices are Hermitian, here real. Hermitianize matrix if rounding/transformation
-    #errors have occured.
-        tensor = (tensor + tl.transpose(tensor))/2
+        # All density matrices are Hermitian, here real. Hermitianize matrix if rounding/transformation
+        # errors have occured.
+        tensor = (tensor + tl.transpose(tensor)) / 2
         eig_vals = T.eigh(tensor)[0]
     eps = tl.eps(eig_vals.dtype)
-    eig_vals = eig_vals[eig_vals >  eps]
+    eig_vals = eig_vals[eig_vals > eps]
 
     return -T.sum(T.log2(eig_vals) * eig_vals)
 
@@ -56,7 +57,7 @@ def tt_vonneumann_entropy(tensor):
 
 
 def cp_vonneumann_entropy(tensor):
-    """Returns the von Neumann entropy of a density matrix (square matrix) in CP tensor. 
+    """Returns the von Neumann entropy of a density matrix (square matrix) in CP tensor.
 
     Parameters
     ----------
