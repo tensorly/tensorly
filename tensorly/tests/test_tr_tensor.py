@@ -14,12 +14,18 @@ def test_validate_tr_tensor():
 
     # Check that the correct shape/rank are returned
     shape, rank = _validate_tr_tensor(factors)
-    assert_equal(shape, true_shape,
-                 err_msg='Returned incorrect shape (got {}, expected {})'.format(
-                     shape, true_shape))
-    assert_equal(rank, true_rank,
-                 err_msg='Returned incorrect rank (got {}, expected {})'.format(
-                     rank, true_rank))
+    assert_equal(
+        shape,
+        true_shape,
+        err_msg="Returned incorrect shape (got {}, expected {})".format(
+            shape, true_shape
+        ),
+    )
+    assert_equal(
+        rank,
+        true_rank,
+        err_msg="Returned incorrect rank (got {}, expected {})".format(rank, true_rank),
+    )
 
     # One of the factors has the wrong ndim
     factors[0] = tl.tensor(rng.random_sample((4, 4)))
@@ -47,9 +53,16 @@ def test_tr_to_tensor():
     for i in range(4):
         for j in range(5):
             for k in range(6):
-                product = tl.dot(tl.dot(factors[0][:, i, :], factors[1][:, j, :]), factors[2][:, k, :])
+                product = tl.dot(
+                    tl.dot(factors[0][:, i, :], factors[1][:, j, :]),
+                    factors[2][:, k, :],
+                )
                 # TODO: add trace to backend instead of this
-                tensor = tl.index_update(tensor, tl.index[i, j, k], tl.sum(product * tl.eye(product.shape[0])))
+                tensor = tl.index_update(
+                    tensor,
+                    tl.index[i, j, k],
+                    tl.sum(product * tl.eye(product.shape[0])),
+                )
 
     # Check that TR factors re-assemble to the original tensor
     assert_array_almost_equal(tensor, tr_to_tensor(factors))
@@ -61,12 +74,12 @@ def test_validate_tr_rank():
     n_param_tensor = np.prod(tensor_shape)
 
     # Rounding = floor
-    rank = validate_tr_rank(tensor_shape, rank='same', rounding='floor')
+    rank = validate_tr_rank(tensor_shape, rank="same", rounding="floor")
     n_param = _tr_n_param(tensor_shape, rank)
     assert_(n_param <= n_param_tensor)
 
     # Rounding = ceil
-    rank = validate_tr_rank(tensor_shape, rank='same', rounding='ceil')
+    rank = validate_tr_rank(tensor_shape, rank="same", rounding="ceil")
     n_param = _tr_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)
 

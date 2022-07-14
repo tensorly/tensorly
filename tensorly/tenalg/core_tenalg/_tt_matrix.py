@@ -3,6 +3,7 @@
 import tensorly as tl
 from ._batched_tensordot import tensordot
 
+
 def tt_matrix_to_tensor(tt_matrix):
     """Returns the full tensor whose TT-Matrix decomposition is given by 'factors'
 
@@ -22,11 +23,11 @@ def tt_matrix_to_tensor(tt_matrix):
     # Each core is of shape (rank_left, size_in, size_out, rank_right)
     _, in_shape, out_shape, _ = zip(*(tl.shape(f) for f in tt_matrix))
     ndim = len(in_shape)
-    
-    # Intertwine the dims 
+
+    # Intertwine the dims
     # full_shape = in_shape[0], out_shape[0], in_shape[1], ...
     full_shape = sum(zip(*(in_shape, out_shape)), ())
-    order = list(range(0, ndim*2, 2)) + list(range(1, ndim*2, 2))
+    order = list(range(0, ndim * 2, 2)) + list(range(1, ndim * 2, 2))
 
     for i, factor in enumerate(tt_matrix):
         if not i:

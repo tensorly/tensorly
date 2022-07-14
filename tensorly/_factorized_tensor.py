@@ -3,18 +3,19 @@ from . import tenalg
 from collections.abc import Mapping
 from abc import ABCMeta
 
+
 class FactorizedTensor(Mapping, metaclass=ABCMeta):
-    """Base Class for Tensors in Factorized form
-    """
+    """Base Class for Tensors in Factorized form"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def to_tensor(self):
         return NotImplementedError
-    
+
     def to_unfolded(self, mode):
         return NotImplementedError
-    
+
     def to_vec(self):
         return NotImplementedError
 

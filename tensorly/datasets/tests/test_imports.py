@@ -1,8 +1,13 @@
-from ..data_imports import load_IL2data, load_covid19_serology, fetch_indian_pines, fetch_kinetic
+from ..data_imports import (
+    load_IL2data,
+    load_covid19_serology,
+    fetch_indian_pines,
+    fetch_kinetic,
+)
 
 
 def test_IL2data():
-    """ Test that data import dimensions match. """
+    """Test that data import dimensions match."""
     data = load_IL2data()
 
     tensor = data["tensor"]
@@ -13,7 +18,7 @@ def test_IL2data():
 
 
 def test_COVID19_data():
-    """ Test that data import dimensions match. """
+    """Test that data import dimensions match."""
     data = load_covid19_serology()
 
     tensor = data["tensor"]
@@ -23,7 +28,7 @@ def test_COVID19_data():
 
 
 def test_indian_pines():
-    """ Test that data import dimensions match. """
+    """Test that data import dimensions match."""
     data = fetch_indian_pines()
 
     tensor = data["tensor"]
@@ -33,7 +38,7 @@ def test_indian_pines():
 
 
 def test_kinetic():
-    """ Test that data import dimensions match. """
+    """Test that data import dimensions match."""
     data = fetch_kinetic()
 
     tensor = data["tensor"]
