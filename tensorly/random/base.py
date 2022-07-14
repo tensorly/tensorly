@@ -100,7 +100,6 @@ def random_cp(
 
     rns = T.check_random_state(random_state)
     factors = [T.tensor(rns.random_sample((s, rank)), **context) for s in shape]
-
     weights = T.ones(rank, **context)
     if orthogonal:
         factors = [T.qr(factor)[0] for factor in factors]
