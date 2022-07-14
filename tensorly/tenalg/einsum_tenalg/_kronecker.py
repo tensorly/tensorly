@@ -6,7 +6,6 @@ import numpy as np
 # License: BSD 3 clause
 
 
-
 def kronecker(matrices, skip_matrix=None, reverse=False):
     """Kronecker product of a list of matrices
 
@@ -49,16 +48,15 @@ def kronecker(matrices, skip_matrix=None, reverse=False):
     else:
         order = 1
 
-    start = ord('a')
+    start = ord("a")
     n_matrices = len(matrices)
     rows, columns = zip(*[T.shape(m) for m in matrices])
     output_size = (np.prod(rows), np.prod(columns))
     row_idx = [chr(start + i) for i in range(n_matrices)]
     column_idx = [chr(start + n_matrices + i) for i in range(n_matrices)]
-    
+
     # Indices of each matrix
-    equation = ','.join(f'{i}{j}' for (i, j) in zip(row_idx, column_idx))
-    equation += '->' + ''.join(row_idx) + ''.join(column_idx)
+    equation = ",".join(f"{i}{j}" for (i, j) in zip(row_idx, column_idx))
+    equation += "->" + "".join(row_idx) + "".join(column_idx)
 
     return T.reshape(T.einsum(equation, *matrices[::order]), output_size)
-

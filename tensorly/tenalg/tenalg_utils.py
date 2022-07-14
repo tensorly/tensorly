@@ -1,11 +1,11 @@
 def _validate_contraction_modes(shape1, shape2, modes, batched_modes=False):
     """Takes in the contraction modes (for a tensordot) and validates them
-    
+
     Parameters
     ----------
     modes : int or tuple[int] or (modes1, modes2)
     batched_modes : bool, default is False
-    
+
     Returns
     -------
     modes1, modes2 : a list of modes for each contraction
@@ -33,23 +33,29 @@ def _validate_contraction_modes(shape1, shape2, modes, batched_modes=False):
         modes2 = [modes2]
 
     if len(modes1) != len(modes2):
-        if batched_modes: 
-            message = f'Both tensors must have the same number of batched modes'
+        if batched_modes:
+            message = f"Both tensors must have the same number of batched modes"
         else:
-            message = 'Both tensors must have the same number of modes to contract along. '
-        raise ValueError(message + f'However, got modes={modes}, '
-                         f' i.e. {len(modes1)} modes for tensor 1 and {len(modes2)} mode for tensor 2'
-                         f'(modes1={modes1}, and modes2={modes2})')
+            message = (
+                "Both tensors must have the same number of modes to contract along. "
+            )
+        raise ValueError(
+            message + f"However, got modes={modes}, "
+            f" i.e. {len(modes1)} modes for tensor 1 and {len(modes2)} mode for tensor 2"
+            f"(modes1={modes1}, and modes2={modes2})"
+        )
     ndim1 = len(shape1)
     ndim2 = len(shape2)
     for i in range(len(modes1)):
         if shape1[modes1[i]] != shape2[modes2[i]]:
             if batched_modes:
-                message = 'Batch-dimensions must have the same dimensions in both tensors but got'
+                message = "Batch-dimensions must have the same dimensions in both tensors but got"
             else:
-                message = 'Contraction dimensions must have the same dimensions in both tensors but got'
-            raise ValueError(message + f' mode {modes1[i]} of size {shape1[modes1[i]]} and '
-                             f' mode {modes2[i]} of size {shape2[modes2[i]]}.')
+                message = "Contraction dimensions must have the same dimensions in both tensors but got"
+            raise ValueError(
+                message + f" mode {modes1[i]} of size {shape1[modes1[i]]} and "
+                f" mode {modes2[i]} of size {shape2[modes2[i]]}."
+            )
         if modes1[i] < 0:
             modes1[i] += ndim1
         if modes2[i] < 0:
