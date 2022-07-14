@@ -1,6 +1,12 @@
-from ...decomposition import (tucker, partial_tucker, non_negative_tucker,
-                              parafac, non_negative_parafac, robust_pca,
-                              symmetric_parafac_power_iteration)
+from ...decomposition import (
+    tucker,
+    partial_tucker,
+    non_negative_tucker,
+    parafac,
+    non_negative_parafac,
+    robust_pca,
+    symmetric_parafac_power_iteration,
+)
 from .core import wrap
 
 tucker = wrap(tucker)

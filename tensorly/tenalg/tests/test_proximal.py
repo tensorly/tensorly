@@ -1,17 +1,33 @@
 import numpy as np
 
 from ... import backend as T
-from ..proximal import (svd_thresholding, smoothness_prox, soft_thresholding, hals_nnls, fista,
-                        active_set_nnls, procrustes, hard_thresholding, soft_sparsity_prox,
-                        simplex_prox, normalized_sparsity_prox, monotonicity_prox, unimodality_prox, l2_prox,
-                        l2_square_prox, admm)
+from ..proximal import (
+    svd_thresholding,
+    smoothness_prox,
+    soft_thresholding,
+    hals_nnls,
+    fista,
+    active_set_nnls,
+    procrustes,
+    hard_thresholding,
+    soft_sparsity_prox,
+    simplex_prox,
+    normalized_sparsity_prox,
+    monotonicity_prox,
+    unimodality_prox,
+    l2_prox,
+    l2_square_prox,
+    admm,
+)
 from ...testing import assert_, assert_array_equal, assert_array_almost_equal
 from tensorly import tensor_to_vec
 import pytest
 
 # Author: Jean Kossaifi
-skip_tensorflow = pytest.mark.skipif((T.get_backend() == "tensorflow"),
-                                     reason=f"Indexing with list not supported in TensorFlow")
+skip_tensorflow = pytest.mark.skipif(
+    (T.get_backend() == "tensorflow"),
+    reason=f"Indexing with list not supported in TensorFlow",
+)
 
 
 def test_smoothness():
@@ -45,7 +61,7 @@ def test_soft_sparsity():
     tensor = T.tensor([[0.5, 1.3, 4.5], [0.8, 0.3, 2]])
     threshold = 2
     res = soft_sparsity_prox(tensor, threshold)
-    true_res = T.tensor([[0.85, 1.5, 2.], [1.15, 0.5, 0.]])
+    true_res = T.tensor([[0.85, 1.5, 2.0], [1.15, 0.5, 0.0]])
     assert_array_almost_equal(true_res, res)
 
 
@@ -58,7 +74,7 @@ def test_simplex():
     assert_array_almost_equal(true_res, res, decimal=2)
 
     # 2d Tensor
-    tensor = T.tensor([[0.4, 1.5, 1],[0.5, 2, 3], [0.6, 0.3, 2.9]])
+    tensor = T.tensor([[0.4, 1.5, 1], [0.5, 2, 3], [0.6, 0.3, 2.9]])
     res = simplex_prox(tensor, 1)
     true_res = T.tensor([[0.23, 0.25, 0], [0.33, 0.75, 0.55], [0.43, 0, 0.45]])
     assert_array_almost_equal(true_res, res, decimal=2)
@@ -94,8 +110,12 @@ def test_unimodality():
         elif max_location == (T.shape(tensor)[0] - 1):
             assert_(np.all(np.diff(tensor_unimodal[:, i], axis=0) >= 0))
         else:
-            assert_(np.all(np.diff(tensor_unimodal[:int(max_location), i], axis=0) >= 0))
-            assert_(np.all(np.diff(tensor_unimodal[int(max_location):, i], axis=0) <= 0))
+            assert_(
+                np.all(np.diff(tensor_unimodal[: int(max_location), i], axis=0) >= 0)
+            )
+            assert_(
+                np.all(np.diff(tensor_unimodal[int(max_location) :, i], axis=0) <= 0)
+            )
 
 
 def test_l2_prox():
@@ -117,15 +137,23 @@ def test_squared_l2_prox():
 def test_soft_thresholding():
     """Test for shrinkage"""
     # small test
-    tensor = T.tensor([[[1, 2, 3], [4.3, -1.2, 3]],
-                       [[0.5, -5, -1.3], [1.2, 3.7, -9]],
-                       [[-2, 0, 1.0], [0.5, -0.5, 1.1]]])
+    tensor = T.tensor(
+        [
+            [[1, 2, 3], [4.3, -1.2, 3]],
+            [[0.5, -5, -1.3], [1.2, 3.7, -9]],
+            [[-2, 0, 1.0], [0.5, -0.5, 1.1]],
+        ]
+    )
     threshold = 1.1
     copy_tensor = T.copy(tensor)
     res = soft_thresholding(tensor, threshold)
-    true_res = T.tensor([[[0, 0.9, 1.9], [3.2, -0.1, 1.9]],
-                         [[0, -3.9, -0.2], [0.1, 2.6, -7.9]],
-                         [[-0.9, 0, 0], [0, -0, 0]]])
+    true_res = T.tensor(
+        [
+            [[0, 0.9, 1.9], [3.2, -0.1, 1.9]],
+            [[0, -3.9, -0.2], [0.1, 2.6, -7.9]],
+            [[-0.9, 0, 0], [0, -0, 0]],
+        ]
+    )
     # account for floating point errors: np array have a precision of around 2e-15
     # check np.finfo(np.float64).eps
     assert_array_almost_equal(true_res, res)
@@ -154,9 +182,7 @@ def test_soft_thresholding():
 
 def test_svd_thresholding():
     """Test for singular_value_thresholding operator"""
-    U = T.tensor([[1, 0, 0],
-                  [0, 1, 0],
-                  [0, 0, 1]])
+    U = T.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     singular_values = T.tensor([0.4, 2.1, -2])
     tensor = T.dot(U, T.reshape(singular_values, (-1, 1)) * T.transpose(U))
     shrinked_singular_values = T.tensor([0, 1.6, -1.5])
@@ -205,7 +231,9 @@ def test_admm():
     ata = T.dot(T.transpose(a), a)
     dual = T.zeros(T.shape(atb))
     x_init = T.zeros(T.shape(atb))
-    x_admm, x_dual, dual_var = admm(T.transpose(atb), T.transpose(ata), x=x_init, dual_var=dual)
+    x_admm, x_dual, dual_var = admm(
+        T.transpose(atb), T.transpose(ata), x=x_init, dual_var=dual
+    )
     assert_array_almost_equal(true_res, T.transpose(x_admm), decimal=2)
 
 

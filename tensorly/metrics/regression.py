@@ -53,7 +53,9 @@ def reflective_correlation_coefficient(y_true, y_pred, axis=None):
     -------
     float: reflective correlation coefficient
     """
-    return T.sum(y_true*y_pred, axis=axis)/T.sqrt(T.sum(y_true**2, axis=axis)*T.sum(y_pred**2, axis=axis))
+    return T.sum(y_true * y_pred, axis=axis) / T.sqrt(
+        T.sum(y_true**2, axis=axis) * T.sum(y_pred**2, axis=axis)
+    )
 
 
 def covariance(y_true, y_pred, axis=None):
@@ -69,7 +71,7 @@ def covariance(y_true, y_pred, axis=None):
         shape[axis] = 1
         centered_pred = T.reshape(centered_pred, shape)
 
-    return T.mean((y_true - centered_true)*(y_pred - centered_pred), axis=axis)
+    return T.mean((y_true - centered_true) * (y_pred - centered_pred), axis=axis)
 
 
 def variance(y, axis=None):
@@ -82,5 +84,6 @@ def standard_deviation(y, axis=None):
 
 def correlation(y_true, y_pred, axis=None):
     """Pearson's product moment correlation coefficient"""
-    return covariance(y_true, y_pred, axis=axis)/T.sqrt(variance(y_true, axis)*variance(y_pred, axis))
-
+    return covariance(y_true, y_pred, axis=axis) / T.sqrt(
+        variance(y_true, axis) * variance(y_pred, axis)
+    )

@@ -5,9 +5,14 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..random import random_cp
 from ..base import unfold
-from ..cp_tensor import (cp_to_tensor, CPTensor,
-                         unfolding_dot_khatri_rao, cp_norm,
-                         cp_normalize, validate_cp_rank)
+from ..cp_tensor import (
+    cp_to_tensor,
+    CPTensor,
+    unfolding_dot_khatri_rao,
+    cp_norm,
+    cp_normalize,
+    validate_cp_rank,
+)
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -17,7 +22,14 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 # License: BSD 3 clause
 
 
-def initialize_cp(tensor, rank, init="svd", svd="numpy_svd", random_state=None, normalize_factors=False):
+def initialize_cp(
+    tensor,
+    rank,
+    init="svd",
+    svd="numpy_svd",
+    random_state=None,
+    normalize_factors=False,
+):
     r"""Initialize factors used in `parafac`.
 
     The type of initialization is set using `init`. If `init == 'random'` then
@@ -45,13 +57,21 @@ def initialize_cp(tensor, rank, init="svd", svd="numpy_svd", random_state=None, 
     rng = tl.check_random_state(random_state)
 
     if init == "random":
-        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, random_state=rng, **tl.context(tensor))
+        kt = random_cp(
+            tl.shape(tensor),
+            rank,
+            normalise_factors=False,
+            random_state=rng,
+            **tl.context(tensor),
+        )
 
     elif init == "svd":
         try:
             svd_fun = tl.SVD_FUNS[svd]
         except KeyError:
-            message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(svd, tl.get_backend(), tl.SVD_FUNS)
+            message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
+                svd, tl.get_backend(), tl.SVD_FUNS
+            )
             raise ValueError(message)
 
         factors = []
@@ -65,7 +85,10 @@ def initialize_cp(tensor, rank, init="svd", svd="numpy_svd", random_state=None, 
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
-                random_part = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])), **tl.context(tensor))
+                random_part = tl.tensor(
+                    rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
+                    **tl.context(tensor),
+                )
                 U = tl.concatenate([U, random_part], axis=1)
 
             factors.append(U[:, :rank])
@@ -92,8 +115,8 @@ def initialize_cp(tensor, rank, init="svd", svd="numpy_svd", random_state=None, 
                 kt = CPTensor((None, factors))
         except ValueError:
             raise ValueError(
-                'If initialization method is a mapping, then it must '
-                'be possible to convert it to a CPTensor instance'
+                "If initialization method is a mapping, then it must "
+                "be possible to convert it to a CPTensor instance"
             )
     else:
         raise ValueError('Initialization method "{}" not recognized'.format(init))
@@ -121,7 +144,9 @@ def sparsify_tensor(tensor, card):
         return tensor
     bound = tl.sort(tl.abs(tensor), axis=None)[-card]
 
-    return tl.where(tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor)
+    return tl.where(
+        tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor
+    )
 
 
 def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None):
@@ -175,7 +200,9 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
             low_rank_component = cp_to_tensor((weights, factors))
             sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
 
-            unnorml_rec_error = tl.norm(tensor - low_rank_component - sparse_component, 2)
+            unnorml_rec_error = tl.norm(
+                tensor - low_rank_component - sparse_component, 2
+            )
         else:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
             factors_norm = cp_norm((weights, factors))
@@ -183,22 +210,34 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
             iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
-            unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+            unnorml_rec_error = tl.sqrt(
+                tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
+            )
 
     return unnorml_rec_error, tensor, norm_tensor
 
 
-def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
-            normalize_factors=False, orthogonalise=False,
-            tol=1e-8, random_state=None,
-            verbose=0, return_errors=False,
-            sparsity=None,
-            l2_reg=0,  mask=None,
-            cvg_criterion="abs_rec_error",
-            fixed_modes=None,
-            svd_mask_repeats=5,
-            linesearch=False,
-            callback=None):
+def parafac(
+    tensor,
+    rank,
+    n_iter_max=100,
+    init="svd",
+    svd="numpy_svd",
+    normalize_factors=False,
+    orthogonalise=False,
+    tol=1e-8,
+    random_state=None,
+    verbose=0,
+    return_errors=False,
+    sparsity=None,
+    l2_reg=0,
+    mask=None,
+    cvg_criterion="abs_rec_error",
+    fixed_modes=None,
+    svd_mask_repeats=5,
+    linesearch=False,
+    callback=None,
+):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that::
 
@@ -286,15 +325,27 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         acc_fail = 0  # How many times acceleration have failed
         max_fail = 4  # Increase acc_pow with one after max_fail failure
 
-    weights, factors = initialize_cp(tensor, rank, init=init, svd=svd,
-                                 random_state=random_state,
-                                 normalize_factors=normalize_factors)
+    weights, factors = initialize_cp(
+        tensor,
+        rank,
+        init=init,
+        svd=svd,
+        random_state=random_state,
+        normalize_factors=normalize_factors,
+    )
 
     if mask is not None and init == "svd":
         for _ in range(svd_mask_repeats):
             tensor = tensor * mask + tl.cp_to_tensor((weights, factors), mask=1 - mask)
 
-            weights, factors = initialize_cp(tensor, rank, init=init, svd=svd, random_state=random_state, normalize_factors=normalize_factors)
+            weights, factors = initialize_cp(
+                tensor,
+                rank,
+                init=init,
+                svd=svd,
+                random_state=random_state,
+                normalize_factors=normalize_factors,
+            )
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
@@ -304,11 +355,15 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         fixed_modes = []
 
     if fixed_modes == list(range(tl.ndim(tensor))):  # Check If all modes are fixed
-        cp_tensor = CPTensor((weights, factors))  # No need to run optimization algorithm, just return the initialization
+        cp_tensor = CPTensor(
+            (weights, factors)
+        )  # No need to run optimization algorithm, just return the initialization
         return cp_tensor
 
     if tl.ndim(tensor) - 1 in fixed_modes:
-        warnings.warn("You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()")
+        warnings.warn(
+            "You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()"
+        )
         fixed_modes.remove(tl.ndim(tensor) - 1)
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
@@ -321,7 +376,10 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
 
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
-            factors = [tl.qr(f)[0] if min(tl.shape(f)) >= rank else f for i, f in enumerate(factors)]
+            factors = [
+                tl.qr(f)[0] if min(tl.shape(f)) >= rank else f
+                for i, f in enumerate(factors)
+            ]
 
         if linesearch and iteration % 2 == 0:
             factors_last = [tl.copy(f) for f in factors]
@@ -336,12 +394,20 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
             pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
+                    pseudo_inverse = pseudo_inverse * tl.dot(
+                        tl.conj(tl.transpose(factor)), factor
+                    )
             pseudo_inverse += Id
-            pseudo_inverse = tl.reshape(weights, (-1, 1)) * pseudo_inverse * tl.reshape(weights, (1, -1))
+            pseudo_inverse = (
+                tl.reshape(weights, (-1, 1))
+                * pseudo_inverse
+                * tl.reshape(weights, (1, -1))
+            )
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
-            factor = tl.transpose(tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp)))
+            factor = tl.transpose(
+                tl.solve(tl.conj(tl.transpose(pseudo_inverse)), tl.transpose(mttkrp))
+            )
             factors[mode] = factor
             if normalize_factors and mode != modes_list[-1]:
                 weights, factors = cp_normalize((weights, factors))
@@ -354,19 +420,28 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
 
         # Calculate the current unnormalized error if we need it
         if (tol or return_errors) and line_iter is False:
-            unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
+            unnorml_rec_error, tensor, norm_tensor = error_calc(
+                tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
+            )
         else:
             if mask is not None:
-                tensor = tensor * mask + tl.cp_to_tensor((weights, factors), mask=1 - mask)
+                tensor = tensor * mask + tl.cp_to_tensor(
+                    (weights, factors), mask=1 - mask
+                )
 
         # Start line search if requested.
         if line_iter is True:
             jump = iteration ** (1.0 / acc_pow)
 
             new_weights = weights_last + (weights - weights_last) * jump
-            new_factors = [factors_last[ii] + (factors[ii] - factors_last[ii]) * jump for ii in range(tl.ndim(tensor))]
+            new_factors = [
+                factors_last[ii] + (factors[ii] - factors_last[ii]) * jump
+                for ii in range(tl.ndim(tensor))
+            ]
 
-            new_rec_error, new_tensor, new_norm_tensor = error_calc(tensor, norm_tensor, new_weights, new_factors, sparsity, mask)
+            new_rec_error, new_tensor, new_norm_tensor = error_calc(
+                tensor, norm_tensor, new_weights, new_factors, sparsity, mask
+            )
 
             if (new_rec_error / new_norm_tensor) < rec_errors[-1]:
                 factors, weights = new_factors, new_weights
@@ -377,7 +452,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
                 if verbose:
                     print("Accepted line search jump of {}.".format(jump))
             else:
-                unnorml_rec_error, tensor, norm_tensor = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp)
+                unnorml_rec_error, tensor, norm_tensor = error_calc(
+                    tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
+                )
                 acc_fail += 1
 
                 if verbose:
@@ -403,7 +480,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
 
                 if verbose:
                     print(
-                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}, unnormalized = {unnorml_rec_error}"
+                        "iteration {}, reconstruction error: {}, decrease = {}, unnormalized = {}".format(
+                            iteration, rec_error, rec_error_decrease, unnorml_rec_error
+                        )
                     )
 
                 if cvg_criterion == "abs_rec_error":
@@ -426,7 +505,9 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
     cp_tensor = CPTensor((weights, factors))
 
     if sparsity:
-        sparse_component = sparsify_tensor(tensor - cp_to_tensor((weights, factors)), sparsity)
+        sparse_component = sparsify_tensor(
+            tensor - cp_to_tensor((weights, factors)), sparsity
+        )
         cp_tensor = (cp_tensor, sparse_component)
 
     if return_errors:
@@ -435,8 +516,14 @@ def parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
         return cp_tensor
 
 
-def sample_khatri_rao(matrices, n_samples, skip_matrix=None, indices_list=None,
-                      return_sampled_rows=False, random_state=None):
+def sample_khatri_rao(
+    matrices,
+    n_samples,
+    skip_matrix=None,
+    indices_list=None,
+    return_sampled_rows=False,
+    random_state=None,
+):
     """Random subsample of the Khatri-Rao product of the given list of matrices
 
         If one matrix only is given, that matrix is directly returned.
@@ -492,7 +579,9 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None, indices_list=None,
             )
         else:
             rng = random_state
-        indices_list = [rng.randint(0, tl.shape(m)[0], size=n_samples, dtype=int) for m in matrices]
+        indices_list = [
+            rng.randint(0, tl.shape(m)[0], size=n_samples, dtype=int) for m in matrices
+        ]
 
     rank = tl.shape(matrices[0])[1]
     sizes = [tl.shape(m)[0] for m in matrices]
@@ -514,8 +603,19 @@ def sample_khatri_rao(matrices, n_samples, skip_matrix=None, indices_list=None,
         return sampled_kr, indices_list
 
 
-def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', svd='numpy_svd',
-                       tol=10e-9, max_stagnation=20, return_errors=False, random_state=None, verbose=1):
+def randomised_parafac(
+    tensor,
+    rank,
+    n_samples,
+    n_iter_max=100,
+    init="random",
+    svd="numpy_svd",
+    tol=10e-9,
+    max_stagnation=20,
+    return_errors=False,
+    random_state=None,
+    verbose=1,
+):
     """Randomised CP decomposition via sampled ALS
 
     Parameters
@@ -556,7 +656,9 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
     rng = tl.check_random_state(random_state)
-    weights, factors = initialize_cp(tensor, rank, init=init, svd=svd, random_state=random_state)
+    weights, factors = initialize_cp(
+        tensor, rank, init=init, svd=svd, random_state=random_state
+    )
     rec_errors = []
     n_dims = tl.ndim(tensor)
     norm_tensor = tl.norm(tensor, 2)
@@ -565,7 +667,9 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
     weights = tl.ones(rank, **tl.context(tensor))
     for iteration in range(n_iter_max):
         for mode in range(n_dims):
-            kr_prod, indices_list = sample_khatri_rao(factors, n_samples, skip_matrix=mode, random_state=rng)
+            kr_prod, indices_list = sample_khatri_rao(
+                factors, n_samples, skip_matrix=mode, random_state=rng
+            )
             indices_list = [i.tolist() for i in indices_list]
             # Keep all the elements of the currently considered mode
             indices_list.insert(mode, slice(None, None, None))
@@ -582,7 +686,9 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
             factors[mode] = factor
 
         if max_stagnation or tol:
-            rec_error = tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
+            rec_error = (
+                tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
+            )
             if not min_error or rec_error < min_error:
                 min_error = rec_error
                 stagnation = -1
@@ -592,11 +698,15 @@ def randomised_parafac(tensor, rank, n_samples, n_iter_max=100, init='random', s
 
             if iteration > 1:
                 if verbose:
-                    print('reconstruction error={}, variation={}.'.format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]))
+                    print(
+                        "reconstruction error={}, variation={}.".format(
+                            rec_errors[-1], rec_errors[-2] - rec_errors[-1]
+                        )
+                    )
 
-                if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or \
-                   (stagnation and (stagnation > max_stagnation)):
+                if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or (
+                    stagnation and (stagnation > max_stagnation)
+                ):
                     if verbose:
                         print("converged in {} iterations.".format(iteration))
                     break
@@ -682,9 +792,25 @@ class CP(DecompositionMixin):
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
            Applications", PhD., University of Amsterdam, 1998
     """
-    def __init__(self, rank, n_iter_max=100, init='svd', svd='numpy_svd', normalize_factors=False, orthogonalise=False,
-                 tol=1e-8, random_state=None, verbose=0, sparsity=None, l2_reg=0,  mask=None,
-                 cvg_criterion='abs_rec_error', fixed_modes=None, svd_mask_repeats=5, linesearch=False, callback=None):
+    def __init__(
+        self,
+        rank,
+        n_iter_max=100,
+        init="svd",
+        svd="numpy_svd",
+        normalize_factors=False,
+        orthogonalise=False,
+        tol=1e-8,
+        random_state=None,
+        verbose=0,
+        sparsity=None,
+        l2_reg=0,
+        mask=None,
+        cvg_criterion="abs_rec_error",
+        fixed_modes=None,
+        svd_mask_repeats=5,
+        linesearch=False,
+    ):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
@@ -781,8 +907,19 @@ class RandomizedCP(DecompositionMixin):
     .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
        "A Practical Randomized CP Tensor Decomposition",
     """
-    def __init__(self, rank, n_samples, n_iter_max=100, init='random', svd='numpy_svd',
-                 tol=10e-9, max_stagnation=20, random_state=None, verbose=1):
+
+    def __init__(
+        self,
+        rank,
+        n_samples,
+        n_iter_max=100,
+        init="random",
+        svd="numpy_svd",
+        tol=10e-9,
+        max_stagnation=20,
+        random_state=None,
+        verbose=1,
+    ):
         self.rank = rank
         self.n_samples = n_samples
         self.n_iter_max = n_iter_max
@@ -794,7 +931,17 @@ class RandomizedCP(DecompositionMixin):
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        self.decomposition_, self.errors_ = randomised_parafac(tensor, rank=self.rank, n_samples=self.n_samples,
-                n_iter_max=self.n_iter_max, init=self.init, svd=self.svd, tol=self.tol, return_errors=True,
-                max_stagnation=self.max_stagnation, random_state=self.random_state, verbose=self.verbose)
+        self.decomposition_, self.errors_ = randomised_parafac(
+            tensor,
+            rank=self.rank,
+            n_samples=self.n_samples,
+            n_iter_max=self.n_iter_max,
+            init=self.init,
+            svd=self.svd,
+            tol=self.tol,
+            return_errors=True,
+            max_stagnation=self.max_stagnation,
+            random_state=self.random_state,
+            verbose=self.verbose,
+        )
         return self.decomposition_
