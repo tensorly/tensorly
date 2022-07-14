@@ -4,6 +4,7 @@ from ._batched_tensordot import tensordot
 
 # License: BSD 3 clause
 
+
 def outer(tensors):
     """Returns the outer product of tensors
 
@@ -21,6 +22,7 @@ def outer(tensors):
         else:
             res = tensor
     return res
+
 
 def batched_outer(tensors):
     """Returns the outer product of tensors

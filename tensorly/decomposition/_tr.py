@@ -46,10 +46,12 @@ def tensor_ring(input_tensor, rank, mode=0, verbose=False):
 
     n_row, n_column = unfolding.shape
     if rank[0] * rank[1] > min(n_row, n_column):
-        raise ValueError(f'rank[{mode}] * rank[{mode + 1}] = {rank[0] * rank[1]} is larger than '
-                         f'first matricization dimension {n_row}×{n_column}.\n'
-                         'Failed to compute first factor with specified rank. '
-                         'Reduce specified ranks or change first matricization `mode`.')
+        raise ValueError(
+            f"rank[{mode}] * rank[{mode + 1}] = {rank[0] * rank[1]} is larger than "
+            f"first matricization dimension {n_row}×{n_column}.\n"
+            "Failed to compute first factor with specified rank. "
+            "Reduce specified ranks or change first matricization `mode`."
+        )
 
     # SVD of unfolding matrix
     U, S, V = tl.partial_svd(unfolding, rank[0] * rank[1])
@@ -82,7 +84,12 @@ def tensor_ring(input_tensor, rank, mode=0, verbose=False):
         factors[k] = tl.reshape(U, (rank[k], tensor_size[k], rank[k + 1]))
 
         if verbose is True:
-            print("TR factor " + str((mode + k) % n_dim) + " computed with shape " + str(factors[k].shape))
+            print(
+                "TR factor "
+                + str((mode + k) % n_dim)
+                + " computed with shape "
+                + str(factors[k].shape)
+            )
 
         # Get new unfolding matrix for the remaining factors
         unfolding = tl.reshape(S, (-1, 1)) * V
@@ -92,7 +99,12 @@ def tensor_ring(input_tensor, rank, mode=0, verbose=False):
     factors[-1] = tl.reshape(unfolding, (prev_rank, -1, rank[0]))
 
     if verbose is True:
-        print("TR factor " + str((mode - 1) % n_dim) + " computed with shape " + str(factors[-1].shape))
+        print(
+            "TR factor "
+            + str((mode - 1) % n_dim)
+            + " computed with shape "
+            + str(factors[-1].shape)
+        )
 
     # Reorder factors to match input
     if mode:

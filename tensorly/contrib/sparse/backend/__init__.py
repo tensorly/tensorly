@@ -6,8 +6,9 @@ from ....backend import backend_context, get_backend
 from .... import backend, base, cp_tensor, tucker_tensor, tt_tensor
 
 
-_KNOWN_BACKENDS = {'numpy': 'NumpySparseBackend'}
+_KNOWN_BACKENDS = {"numpy": "NumpySparseBackend"}
 _LOADED_BACKENDS = {}
+
 
 @contextmanager
 def sparse_context():
@@ -18,15 +19,16 @@ def sparse_context():
     with backend_context(_LOADED_BACKENDS[backend_name]):
         yield
 
+
 def register_sparse_backend(backend_name):
-    """Registers a new backend by importing the corresponding module 
+    """Registers a new backend by importing the corresponding module
         and adding the correspond `Backend` class in Backend._LOADED_BACKEND
         under the key `backend_name`
-    
+
     Parameters
     ----------
     backend_name : str, name of the backend to load
-    
+
     Raises
     ------
     ValueError
@@ -35,13 +37,17 @@ def register_sparse_backend(backend_name):
     """
 
     if backend_name in _KNOWN_BACKENDS:
-        module = importlib.import_module('tensorly.contrib.sparse.backend.{0}_backend'.format(backend_name))
+        module = importlib.import_module(
+            "tensorly.contrib.sparse.backend.{0}_backend".format(backend_name)
+        )
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
         _LOADED_BACKENDS[backend_name] = backend
     else:
         msg = "Unknown backend name {0!r}, known backends are [{1}]".format(
-                backend_name, ', '.join(map(repr, _KNOWN_BACKENDS)))
+            backend_name, ", ".join(map(repr, _KNOWN_BACKENDS))
+        )
         raise ValueError(msg)
+
 
 def __getattr__(method_name):
     backend_name = get_backend()
@@ -49,21 +55,25 @@ def __getattr__(method_name):
         register_sparse_backend(backend_name)
     return getattr(_LOADED_BACKENDS[backend_name], method_name)
 
+
 def __dir__():
     backend_name = get_backend()
     if backend_name not in _LOADED_BACKENDS:
         register_sparse_backend(backend_name)
 
-    return [k for k in dir(_LOADED_BACKENDS[backend_name]) if not k.startswith('_')]
+    return [k for k in dir(_LOADED_BACKENDS[backend_name]) if not k.startswith("_")]
+
 
 def dispatch_sparse(func):
-    @functools.wraps(func, assigned=('__name__', '__qualname__',
-                                     '__doc__', '__annotations__'))
+    @functools.wraps(
+        func, assigned=("__name__", "__qualname__", "__doc__", "__annotations__")
+    )
     def inner(*args, **kwargs):
         with sparse_context():
             return func(*args, **kwargs)
 
     return inner
+
 
 tensor = dispatch_sparse(backend.tensor)
 is_tensor = dispatch_sparse(backend.is_tensor)
@@ -80,7 +90,9 @@ arange = dispatch_sparse(backend.arange)
 ones = dispatch_sparse(backend.ones)
 zeros = dispatch_sparse(backend.zeros)
 zeros_like = dispatch_sparse(backend.zeros_like)
-eye = dispatch_sparse(backend.eye,)
+eye = dispatch_sparse(
+    backend.eye,
+)
 clip = dispatch_sparse(backend.clip)
 where = dispatch_sparse(backend.where)
 max = dispatch_sparse(backend.max)

@@ -24,12 +24,12 @@ def test_batched_outer_product():
 
     Notes
     -----
-    At the time of writing, MXNet doesn't support transpose 
+    At the time of writing, MXNet doesn't support transpose
     for tensors of order higher than 6
     """
     rng = tl.check_random_state(1234)
     batch_size = 3
-    
+
     X = tl.tensor(rng.random_sample((batch_size, 4, 5, 6)))
     Y = tl.tensor(rng.random_sample((batch_size, 3)))
     Z = tl.tensor(rng.random_sample((batch_size, 2)))
