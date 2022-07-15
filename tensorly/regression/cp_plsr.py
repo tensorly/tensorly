@@ -9,7 +9,7 @@ from .. import backend as T
 # License: BSD 3 clause
 
 
-class CP_PLSR():
+class CP_PLSR:
     """CP tensor regression
 
         Learns a low rank CP tensor weight
@@ -27,7 +27,9 @@ class CP_PLSR():
         whether to be verbose during fitting
     """
 
-    def __init__(self, n_components, tol=1.0e-7, n_iter_max=100, random_state=None, verbose=False):
+    def __init__(
+        self, n_components, tol=1.0e-7, n_iter_max=100, random_state=None, verbose=False
+    ):
         self.n_components = n_components
         self.tol = tol
         self.n_iter_max = n_iter_max
@@ -35,9 +37,8 @@ class CP_PLSR():
         self.verbose = verbose
 
     def get_params(self, **kwargs):
-        """Returns a dictionary of parameters
-        """
-        params = ['n_components', 'tol', 'n_iter_max', 'random_state', 'verbose']
+        """Returns a dictionary of parameters"""
+        params = ["n_components", "tol", "n_iter_max", "random_state", "verbose"]
         return {param_name: getattr(self, param_name) for param_name in params}
 
     def set_params(self, **parameters):

@@ -18,7 +18,9 @@ def test_CPRegressor():
 
     # Generate random samples
     rng = T.check_random_state(1234)
-    X = T.tensor(rng.normal(size=(1200, image_height, image_width, n_channels), loc=0, scale=1))
+    X = T.tensor(
+        rng.normal(size=(1200, image_height, image_width, n_channels), loc=0, scale=1)
+    )
     regression_weights = np.zeros((image_height, image_width, n_channels))
     regression_weights[2:-2, 2:-2, 0] = 1
     regression_weights[2:-2, 2:-2, 1] = 2
@@ -27,7 +29,7 @@ def test_CPRegressor():
 
     y = T.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(regression_weights))
     X_train = X[:1000, :, :]
-    X_test = X[1000:, : ,:]
+    X_test = X[1000:, :, :]
     y_train = y[:1000]
     y_test = y[1000:]
 
