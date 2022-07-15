@@ -1,0 +1,37 @@
+import numpy as np
+
+from ..cp_plsr import CP_PLSR
+from ...base import tensor_to_vec, partial_tensor_to_vec
+from ...metrics.regression import RMSE
+from ... import backend as T
+from ...testing import assert_
+
+
+def test_CPRegressor():
+    """Test for CP_PLSR."""
+
+    # Parameter of the experiment
+    image_height = 8
+    image_width = 8
+    n_channels = 3
+    tol = 0.05
+
+    # Generate random samples
+    rng = T.check_random_state(1234)
+    X = T.tensor(rng.normal(size=(1200, image_height, image_width, n_channels), loc=0, scale=1))
+    regression_weights = np.zeros((image_height, image_width, n_channels))
+    regression_weights[2:-2, 2:-2, 0] = 1
+    regression_weights[2:-2, 2:-2, 1] = 2
+    regression_weights[2:-2, 2:-2, 2] = -1
+    regression_weights = T.tensor(regression_weights)
+
+    y = T.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(regression_weights))
+    X_train = X[:1000, :, :]
+    X_test = X[1000:, : ,:]
+    y_train = y[:1000]
+    y_test = y[1000:]
+
+    estimator = CP_PLSR(n_components=4, verbose=True)
+    estimator.fit(X_train, y_train)
+    y_pred = estimator.predict(X_test)
+    error = RMSE(y_test, y_pred)
