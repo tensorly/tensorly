@@ -14,6 +14,7 @@ from ..testing import (
     assert_array_almost_equal,
     assert_raises,
 )
+from tensorly.tenalg.svd import SVD_FUNS, svd_funs
 
 # Author: Jean Kossaifi
 
@@ -137,8 +138,8 @@ def test_svd():
     tol = 0.1
     tol_orthogonality = 0.01
 
-    for name, svd_fun in T.SVD_FUNS.items():
-        if name == "randomized_svd":
+    for svd in SVD_FUNS:
+        if svd == "randomized_svd":
             decimal = 2
         else:
             decimal = 3
@@ -148,17 +149,15 @@ def test_svd():
         for s, n in zip(sizes, n_eigenvecs):
             matrix = np.random.random(s)
             matrix_backend = T.tensor(matrix)
-            fU, fS, fV = svd_fun(matrix_backend, n_eigenvecs=n)
-            U, S, V = svd(matrix)
+            fU, fS, fV = svd_funs(matrix_backend, n_eigenvecs=n, svd_type=svd)
+            U, S, V = svd_funs(matrix, n_eigenvecs=n, svd_type=svd)
             U, S, V = U[:, :n], S[:n], V[:n, :]
 
             assert_array_almost_equal(
                 np.abs(S),
                 T.abs(fS),
                 decimal=decimal,
-                err_msg='eigenvals not correct for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
-                    name, tl.get_backend(), n, s
-                ),
+                err_msg=f'eigenvals not correct for "{svd}" svd fun VS svd and backend="{tl.get_backend()}, for {n} eigenenvecs, and size {s}".',
             )
 
             # True reconstruction error (based on numpy SVD)
@@ -171,7 +170,7 @@ def test_svd():
             assert_(
                 true_rec_error - rec_error <= tol,
                 msg='Reconstruction not correct for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
-                    name, tl.get_backend(), n, s
+                    svd, tl.get_backend(), n, s
                 ),
             )
 
@@ -180,21 +179,21 @@ def test_svd():
             assert_(
                 left_orthogonality_error <= tol_orthogonality,
                 msg='Left eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
-                    name, tl.get_backend(), n, s
+                    svd, tl.get_backend(), n, s
                 ),
             )
             right_orthogonality_error = T.norm(T.dot(fV, T.transpose(fV)) - T.eye(n))
             assert_(
                 right_orthogonality_error <= tol_orthogonality,
                 msg='Right eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
-                    name, tl.get_backend(), n, s
+                    svd, tl.get_backend(), n, s
                 ),
             )
 
         # Should fail on non-matrices
         with assert_raises(ValueError):
             tensor = T.tensor(np.random.random((3, 3, 3)))
-            svd_fun(tensor)
+            svd_funs(tensor, n_eigenvecs=n, svd_type=svd)
 
         # Test for singular matrices (some eigenvals will be zero)
         # Rank at most 5
@@ -231,7 +230,7 @@ def test_svd():
 def test_randomized_range_finder():
     size = (7, 5)
     A = T.randn(size)
-    Q = T.randomized_range_finder(A, n_dims=min(size))
+    Q = tl.tenalg.svd.randomized_range_finder(A, n_dims=min(size))
     assert_array_almost_equal(A, tl.dot(tl.dot(Q, tl.transpose(T.conj(Q))), A))
 
 

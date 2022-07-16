@@ -13,6 +13,7 @@ from ..cp_tensor import (
     cp_normalize,
     validate_cp_rank,
 )
+from ..tenalg.svd import svd_funs
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -26,7 +27,7 @@ def initialize_cp(
     tensor,
     rank,
     init="svd",
-    svd="numpy_svd",
+    svd="partial_svd",
     random_state=None,
     normalize_factors=False,
 ):
@@ -43,8 +44,8 @@ def initialize_cp(
     tensor : ndarray
     rank : int
     init : {'svd', 'random', cptensor}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     non_negative : bool, default is False
         if True, non-negative factors are returned
 
@@ -66,17 +67,9 @@ def initialize_cp(
         )
 
     elif init == "svd":
-        try:
-            svd_fun = tl.SVD_FUNS[svd]
-        except KeyError:
-            message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
-                svd, tl.get_backend(), tl.SVD_FUNS
-            )
-            raise ValueError(message)
-
         factors = []
         for mode in range(tl.ndim(tensor)):
-            U, S, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
+            U, S, _ = svd_funs(unfold(tensor, mode), n_eigenvecs=rank, svd_type=svd)
 
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
             if mode == 0:
@@ -222,7 +215,7 @@ def parafac(
     rank,
     n_iter_max=100,
     init="svd",
-    svd="numpy_svd",
+    svd="partial_svd",
     normalize_factors=False,
     orthogonalise=False,
     tol=1e-8,
@@ -253,8 +246,8 @@ def parafac(
         Type of factor matrix initialization.
         If a CPTensor is passed, this is directly used for initalization.
         See `initialize_factors`.
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
     tol : float, optional
@@ -602,7 +595,7 @@ def randomised_parafac(
     n_samples,
     n_iter_max=100,
     init="random",
-    svd="numpy_svd",
+    svd="partial_svd",
     tol=10e-9,
     max_stagnation=20,
     return_errors=False,
@@ -621,8 +614,8 @@ def randomised_parafac(
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -726,8 +719,8 @@ class CP(DecompositionMixin):
         Maximum number of iteration
     init : {'svd', 'random'}, optional
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
     tol : float, optional
@@ -791,7 +784,7 @@ class CP(DecompositionMixin):
         rank,
         n_iter_max=100,
         init="svd",
-        svd="numpy_svd",
+        svd="partial_svd",
         normalize_factors=False,
         orthogonalise=False,
         tol=1e-8,
@@ -876,8 +869,8 @@ class RandomizedCP(DecompositionMixin):
     n_iter_max : int
                 maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
@@ -906,7 +899,7 @@ class RandomizedCP(DecompositionMixin):
         n_samples,
         n_iter_max=100,
         init="random",
-        svd="numpy_svd",
+        svd="partial_svd",
         tol=10e-9,
         max_stagnation=20,
         random_state=None,

@@ -40,6 +40,7 @@ from .tt_matrix import (
     tt_matrix_to_matrix,
 )
 from .tr_tensor import tr_to_tensor, tr_to_unfolded, tr_to_vec, validate_tr_rank
+from .tenalg import partial_svd, truncated_svd
 
 from .backend import (
     set_backend,
@@ -87,16 +88,13 @@ from .backend import (
     lstsq,
     qr,
     kr,
-    partial_svd,
     stack,
     eps,
     finfo,
     matmul,
     index_update,
     check_random_state,
-    randomized_svd,
     randn,
-    randomized_range_finder,
     log,
     log2,
     exp,

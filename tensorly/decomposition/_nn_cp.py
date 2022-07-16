@@ -4,15 +4,15 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..random import random_cp
 from ..base import unfold
-from ..tenalg.proximal import soft_thresholding, hals_nnls
+from ..tenalg.proximal import hals_nnls
 from ..cp_tensor import (
-    cp_to_tensor,
     CPTensor,
     unfolding_dot_khatri_rao,
     cp_norm,
     cp_normalize,
     validate_cp_rank,
 )
+from ..tenalg.svd import svd_funs
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -26,78 +26,11 @@ from ..cp_tensor import (
 # License: BSD 3 clause
 
 
-def make_svd_non_negative(tensor, U, S, V, nntype):
-    """Use NNDSVD method to transform SVD results into a non-negative form. This
-    method leads to more efficient solving with NNMF [1].
-
-    Parameters
-    ----------
-    tensor : tensor being decomposed
-    U, S, V: SVD factorization results
-    nntype : {'nndsvd', 'nndsvda'}
-        Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
-
-    [1]: Boutsidis & Gallopoulos. Pattern Recognition, 41(4): 1350-1362, 2008.
-    """
-
-    # NNDSVD initialization
-    W = tl.zeros_like(U)
-    H = tl.zeros_like(V)
-
-    # The leading singular triplet is non-negative
-    # so it can be used as is for initialization.
-    W = tl.index_update(W, tl.index[:, 0], tl.sqrt(S[0]) * tl.abs(U[:, 0]))
-    H = tl.index_update(H, tl.index[0, :], tl.sqrt(S[0]) * tl.abs(V[0, :]))
-
-    for j in range(1, tl.shape(U)[1]):
-        x, y = U[:, j], V[j, :]
-
-        # extract positive and negative parts of column vectors
-        x_p, y_p = tl.clip(x, a_min=0.0), tl.clip(y, a_min=0.0)
-        x_n, y_n = tl.abs(tl.clip(x, a_max=0.0)), tl.abs(tl.clip(y, a_max=0.0))
-
-        # and their norms
-        x_p_nrm, y_p_nrm = tl.norm(x_p), tl.norm(y_p)
-        x_n_nrm, y_n_nrm = tl.norm(x_n), tl.norm(y_n)
-
-        m_p, m_n = x_p_nrm * y_p_nrm, x_n_nrm * y_n_nrm
-
-        # choose update
-        if m_p > m_n:
-            u = x_p / x_p_nrm
-            v = y_p / y_p_nrm
-            sigma = m_p
-        else:
-            u = x_n / x_n_nrm
-            v = y_n / y_n_nrm
-            sigma = m_n
-
-        lbd = tl.sqrt(S[j] * sigma)
-        W = tl.index_update(W, tl.index[:, j], lbd * u)
-        H = tl.index_update(H, tl.index[j, :], lbd * v)
-
-    # After this point we no longer need H
-    eps = tl.eps(tensor.dtype)
-
-    if nntype == "nndsvd":
-        W = soft_thresholding(W, eps)
-    elif nntype == "nndsvda":
-        avg = tl.mean(tensor)
-        W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W)) * avg, W)
-    else:
-        raise ValueError(
-            "Invalid nntype parameter: got %r instead of one of %r"
-            % (nntype, ("nndsvd", "nndsvda"))
-        )
-
-    return W
-
-
 def initialize_nn_cp(
     tensor,
     rank,
     init="svd",
-    svd="numpy_svd",
+    svd="partial_svd",
     random_state=None,
     normalize_factors=False,
     nntype="nndsvda",
@@ -114,8 +47,8 @@ def initialize_nn_cp(
     tensor : ndarray
     rank : int
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     nntype : {'nndsvd', 'nndsvda'}
         Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
 
@@ -137,20 +70,12 @@ def initialize_nn_cp(
         )
 
     elif init == "svd":
-        try:
-            svd_fun = tl.SVD_FUNS[svd]
-        except KeyError:
-            message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
-                svd, tl.get_backend(), tl.SVD_FUNS
-            )
-            raise ValueError(message)
 
         factors = []
         for mode in range(tl.ndim(tensor)):
-            U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
-
-            # Apply nnsvd to make non-negative
-            U = make_svd_non_negative(tensor, U, S, V, nntype)
+            U, _, _ = svd_funs(
+                unfold(tensor, mode), n_eigenvecs=rank, svd_type=svd, non_negative=True
+            )
 
             if tensor.shape[mode] < rank:
                 # TODO: this is a hack but it seems to do the job for now
@@ -192,7 +117,7 @@ def non_negative_parafac(
     rank,
     n_iter_max=100,
     init="svd",
-    svd="numpy_svd",
+    svd="partial_svd",
     tol=10e-7,
     random_state=None,
     verbose=0,
@@ -215,8 +140,8 @@ def non_negative_parafac(
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -354,7 +279,7 @@ def non_negative_parafac_hals(
     rank,
     n_iter_max=100,
     init="svd",
-    svd="numpy_svd",
+    svd="partial_svd",
     tol=10e-8,
     random_state=None,
     sparsity_coefficients=None,
@@ -379,8 +304,8 @@ def non_negative_parafac_hals(
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -562,8 +487,8 @@ class CP_NN(DecompositionMixin):
             Maximum number of iteration
         init : {'svd', 'random'}, optional
             Type of factor matrix initialization. See `initialize_factors`.
-        svd : str, default is 'numpy_svd'
-            function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        svd : str, default is 'partial_svd'
+            function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
         normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
             of shape (rank, ), which will contain the norms of the factors
         tol : float, optional
@@ -623,7 +548,7 @@ class CP_NN(DecompositionMixin):
         rank,
         n_iter_max=100,
         init="svd",
-        svd="numpy_svd",
+        svd="partial_svd",
         tol=10e-7,
         random_state=None,
         verbose=0,
@@ -697,8 +622,8 @@ class CP_NN_HALS(DecompositionMixin):
         Maximum number of iteration
     init : {'svd', 'random'}, optional
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
     tol : float, optional
@@ -758,7 +683,7 @@ class CP_NN_HALS(DecompositionMixin):
         rank,
         n_iter_max=100,
         init="svd",
-        svd="numpy_svd",
+        svd="partial_svd",
         tol=10e-8,
         sparsity_coefficients=None,
         fixed_modes=None,

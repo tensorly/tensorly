@@ -7,6 +7,7 @@ from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..cp_tensor import CPTensor, unfolding_dot_khatri_rao, cp_norm, validate_cp_rank
 from ..tenalg.proximal import admm, proximal_operator, validate_constraints
+from ..tenalg.svd import svd_funs
 
 # Author: Jean Kossaifi
 #         Jeremy Cohen <jeremy.cohen@irisa.fr>
@@ -19,7 +20,7 @@ def initialize_constrained_parafac(
     tensor,
     rank,
     init="svd",
-    svd="numpy_svd",
+    svd="partial_svd",
     random_state=None,
     non_negative=None,
     l1_reg=None,
@@ -53,8 +54,8 @@ def initialize_constrained_parafac(
     rank : int
     random_state : {None, int, np.random.RandomState}
     init : {'svd', 'random', cptensor}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     non_negative : bool or dictionary
         This constraint is clipping negative values to '0'.
         If it is True, non-negative constraint is applied to all modes.
@@ -99,17 +100,9 @@ def initialize_constrained_parafac(
         )
 
     elif init == "svd":
-        try:
-            svd_fun = tl.SVD_FUNS[svd]
-        except KeyError:
-            message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
-                svd, tl.get_backend(), tl.SVD_FUNS
-            )
-            raise ValueError(message)
-
         factors = []
         for mode in range(tl.ndim(tensor)):
-            U, S, _ = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
+            U, S, _ = svd_funs(unfold(tensor, mode), n_eigenvecs=rank, svd_type=svd)
 
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
             if mode == 0:
@@ -173,7 +166,7 @@ def constrained_parafac(
     n_iter_max=100,
     n_iter_max_inner=10,
     init="svd",
-    svd="numpy_svd",
+    svd="partial_svd",
     tol_outer=1e-8,
     tol_inner=1e-6,
     random_state=None,
@@ -217,8 +210,8 @@ def constrained_parafac(
         Number of iteration for inner loop
     init : {'svd', 'random', cptensor}, optional
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol_outer : float, optional
         (Default: 1e-8) Relative reconstruction error tolerance for outer loop. The
         algorithm is considered to have found a local minimum when the
@@ -455,8 +448,8 @@ class ConstrainedCP(DecompositionMixin):
         Number of iteration for inner loop
     init : {'svd', 'random', cptensor}, optional
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol_outer : float, optional
         (Default: 1e-8) Relative reconstruction error tolerance for outer loop. The
         algorithm is considered to have found a local minimum when the
@@ -529,7 +522,7 @@ class ConstrainedCP(DecompositionMixin):
         n_iter_max=100,
         n_iter_max_inner=10,
         init="svd",
-        svd="numpy_svd",
+        svd="partial_svd",
         tol_outer=1e-8,
         tol_inner=1e-6,
         random_state=None,

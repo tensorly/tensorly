@@ -8,12 +8,11 @@ from ..tucker_tensor import (
     validate_tucker_rank,
     tucker_normalize,
 )
-import tensorly.tenalg as tlg
 from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
 from collections.abc import Iterable
-from tensorly.decomposition._nn_cp import make_svd_non_negative
+from ..tenalg.svd import svd_funs
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -21,7 +20,7 @@ from tensorly.decomposition._nn_cp import make_svd_non_negative
 
 
 def initialize_tucker(
-    tensor, rank, modes, random_state, init="svd", svd="numpy_svd", non_negative=False
+    tensor, rank, modes, random_state, init="svd", svd="partial_svd", non_negative=False
 ):
     """
     Initialize core and factors used in `tucker`.
@@ -38,8 +37,8 @@ def initialize_tucker(
     modes : int list
     random_state : {None, int, np.random.RandomState}
     init : {'svd', 'random', cptensor}, optional
-    svd : str, default is 'numpy_svd'
-          function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+          function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     non_negative : bool, default is False
         if True, non-negative factors are returned
 
@@ -49,23 +48,17 @@ def initialize_tucker(
               initialized core tensor
     factors : list of factors
     """
-    try:
-        svd_fun = tl.SVD_FUNS[svd]
-    except KeyError:
-        message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
-            svd, tl.get_backend(), tl.SVD_FUNS
-        )
-        raise ValueError(message)
     # Initialisation
     if init == "svd":
         factors = []
         for index, mode in enumerate(modes):
-            U, S, V = svd_fun(
-                unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state
+            U, S, V = svd_funs(
+                unfold(tensor, mode),
+                n_eigenvecs=rank[index],
+                svd_type=svd,
+                non_negative=non_negative,
+                random_state=random_state,
             )
-
-            if non_negative is True:
-                U = make_svd_non_negative(tensor, U, S, V, nntype="nndsvd")
 
             factors.append(U[:, : rank[index]])
         # The initial core approximation is needed here for the masking step
@@ -98,7 +91,7 @@ def partial_tucker(
     n_iter_max=100,
     init="svd",
     tol=10e-5,
-    svd="numpy_svd",
+    svd="partial_svd",
     random_state=None,
     verbose=False,
     mask=None,
@@ -119,9 +112,9 @@ def partial_tucker(
                  maximum number of iteration
     init : {'svd', 'random'}, or TuckerTensor optional
         if a TuckerTensor is provided, this is used for initialization
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'partial_svd'
         function to use to compute the SVD,
-        acceptable values in tensorly.SVD_FUNS
+        acceptable values in tensorly.tenalg.svd.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -163,20 +156,15 @@ def partial_tucker(
         message = "Masking occurs after initialization. Therefore, random initialization is recommended."
         warnings.warn(message, Warning)
 
-    try:
-        svd_fun = tl.SVD_FUNS[svd]
-    except KeyError:
-        message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
-            svd, tl.get_backend(), tl.SVD_FUNS
-        )
-        raise ValueError(message)
-
     # SVD init
     if init == "svd":
         factors = []
         for index, mode in enumerate(modes):
-            eigenvecs, _, _ = svd_fun(
-                unfold(tensor, mode), n_eigenvecs=rank[index], random_state=random_state
+            eigenvecs, _, _ = svd_funs(
+                unfold(tensor, mode),
+                n_eigenvecs=rank[index],
+                svd_type=svd,
+                random_state=random_state,
             )
             factors.append(eigenvecs)
 
@@ -212,7 +200,7 @@ def partial_tucker(
             core_approximation = multi_mode_dot(
                 tensor, factors, modes=modes, skip=index, transpose=True
             )
-            eigenvecs, _, _ = svd_fun(
+            eigenvecs, _, _ = svd_funs(
                 unfold(core_approximation, mode),
                 n_eigenvecs=rank[index],
                 random_state=random_state,
@@ -248,7 +236,7 @@ def tucker(
     n_iter_max=100,
     init="svd",
     return_errors=False,
-    svd="numpy_svd",
+    svd="partial_svd",
     tol=10e-5,
     random_state=None,
     mask=None,
@@ -275,9 +263,9 @@ def tucker(
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
         Default: False
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'partial_svd'
         function to use to compute the SVD,
-        acceptable values in tensorly.SVD_FUNS
+        acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -488,7 +476,7 @@ def non_negative_tucker_hals(
     rank,
     n_iter_max=100,
     init="svd",
-    svd="numpy_svd",
+    svd="partial_svd",
     tol=1e-8,
     sparsity_coefficients=None,
     core_sparsity_coefficient=None,
@@ -514,8 +502,8 @@ def non_negative_tucker_hals(
     n_iter_max : int
             maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
@@ -744,10 +732,10 @@ class Tucker(DecompositionMixin):
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
         Default: False
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'partial_svd'
         ignore if non_negative is True
         function to use to compute the SVD,
-        acceptable values in tensorly.SVD_FUNS
+        acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
@@ -775,7 +763,7 @@ class Tucker(DecompositionMixin):
         n_iter_max=100,
         init="svd",
         return_errors=False,
-        svd="numpy_svd",
+        svd="partial_svd",
         tol=10e-5,
         fixed_factors=None,
         random_state=None,
@@ -840,10 +828,10 @@ class Tucker_NN(DecompositionMixin):
     n_iter_max : int
                 maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'partial_svd'
         ignore if non_negative is True
         function to use to compute the SVD,
-        acceptable values in tensorly.SVD_FUNS
+        acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
@@ -870,7 +858,7 @@ class Tucker_NN(DecompositionMixin):
         rank=None,
         n_iter_max=100,
         init="svd",
-        svd="numpy_svd",
+        svd="partial_svd",
         tol=10e-5,
         random_state=None,
         verbose=False,
@@ -929,8 +917,8 @@ class Tucker_NN_HALS(DecompositionMixin):
     n_iter_max : int
         maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    svd : str, default is 'partial_svd'
+        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
@@ -980,7 +968,7 @@ class Tucker_NN_HALS(DecompositionMixin):
         rank=None,
         n_iter_max=100,
         init="svd",
-        svd="numpy_svd",
+        svd="partial_svd",
         tol=1e-8,
         sparsity_coefficients=None,
         core_sparsity_coefficient=None,
