@@ -7,8 +7,6 @@ import types
 import warnings
 
 import numpy as np
-import scipy.linalg
-import scipy.sparse.linalg
 import scipy.special
 
 

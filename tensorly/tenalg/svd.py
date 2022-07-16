@@ -2,9 +2,7 @@ import numpy as np
 import warnings
 import tensorly as tl
 from .proximal import soft_thresholding
-import scipy.linalg
 import scipy.sparse.linalg
-import scipy.special
 
 
 def svd_flip(U, V, u_based_decision=True):
@@ -202,7 +200,6 @@ def partial_svd(matrix, n_eigenvecs=None, random_state=None, **kwargs):
     # Choose what to do depending on the params
     dim_1, dim_2 = tl.shape(matrix)
     min_dim = min(dim_1, dim_2)
-    matrix = tl.to_numpy(matrix)
 
     if (n_eigenvecs is None) or (n_eigenvecs >= min_dim):
         # Just perform trucated SVD
@@ -211,6 +208,7 @@ def partial_svd(matrix, n_eigenvecs=None, random_state=None, **kwargs):
         U, S, V = tl.svd(matrix, full_matrices=full_matrices)
         U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
     else:
+        matrix = tl.to_numpy(matrix)
         # We can perform a partial SVD
         rng = tl.check_random_state(random_state)
         # initilize with [-1, 1] as in ARPACK
@@ -248,13 +246,13 @@ def partial_svd(matrix, n_eigenvecs=None, random_state=None, **kwargs):
             U, R = np.linalg.qr(U)
             U = U * (2 * (np.diag(R) >= 0) - 1)
 
+        if not is_numpy:
+            U = tl.tensor(U, **ctx)
+            S = tl.tensor(S, **ctx)
+            V = tl.tensor(V, **ctx)
+
         # WARNING: here, V is still the transpose of what it should be
         V = V.T.conj()
-
-    if not is_numpy:
-        U = tl.tensor(U, **ctx)
-        S = tl.tensor(S, **ctx)
-        V = tl.tensor(V, **ctx)
 
     return U, S, V
 

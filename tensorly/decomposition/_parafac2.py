@@ -57,7 +57,7 @@ def initialize_decomposition(
             )
         C = svd_funs(unfold(padded_tensor, 2), n_eigenvecs=rank, svd_type=svd)[0]
         B = T.eye(rank, **context)
-        projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
+        projections = _compute_projections(tensor_slices, (A, B, C), svd)
         return Parafac2Tensor((None, [A, B, C], projections))
 
     elif isinstance(init, (tuple, list, Parafac2Tensor, CPTensor)):
@@ -88,7 +88,7 @@ def _pad_by_zeros(tensor_slices):
     return padded
 
 
-def _compute_projections(tensor_slices, factors, svd_fun, out=None):
+def _compute_projections(tensor_slices, factors, svd, out=None):
     A, B, C = factors
 
     if out is None:
@@ -102,7 +102,7 @@ def _compute_projections(tensor_slices, factors, svd_fun, out=None):
         a_i = A[i]
         lhs = T.dot(B, T.transpose(a_i * C))
         rhs = T.transpose(tensor_slice)
-        U, S, Vh = svd_fun(T.dot(lhs, rhs), n_eigenvecs=A.shape[1])
+        U, S, Vh = svd_funs(T.dot(lhs, rhs), n_eigenvecs=A.shape[1], svd_type=svd)
 
         out[i] = tl.index_update(projection, tl.index[:], T.transpose(T.dot(U, Vh)))
 
@@ -276,7 +276,6 @@ def parafac2(
     norm_tensor = tl.sqrt(
         sum(tl.norm(tensor_slice, 2) ** 2 for tensor_slice in tensor_slices)
     )
-    svd_fun = _get_svd(svd)
 
     if absolute_tol is None:
         absolute_tol = tl.eps(factors[0].dtype) * 1000
@@ -330,7 +329,7 @@ def parafac2(
         weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
 
         projections = _compute_projections(
-            tensor_slices, factors, svd_fun, out=projections
+            tensor_slices, factors, svd, out=projections
         )
         projected_tensor = _project_tensor_slices(
             tensor_slices, projections, out=projected_tensor
