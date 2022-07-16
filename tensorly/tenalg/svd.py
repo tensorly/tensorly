@@ -353,7 +353,7 @@ def randomized_svd(
     return U, S, V
 
 
-SVD_FUNS = ["truncated_svd", "truncated_svd", "symeig_svd", "randomized_svd"]
+SVD_FUNS = ["truncated_svd", "symeig_svd", "randomized_svd"]
 
 
 def svd_funs(
@@ -368,8 +368,6 @@ def svd_funs(
 ):
 
     if svd_type == "truncated_svd":
-        U, S, V = truncated_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
-    elif svd_type == "truncated_svd":
         U, S, V = truncated_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
     elif svd_type == "symeig_svd":
         U, S, V = symeig_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
