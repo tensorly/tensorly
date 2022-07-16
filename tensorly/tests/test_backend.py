@@ -122,13 +122,13 @@ def test_svd_time():
     """
     M = tl.tensor(np.random.random_sample((4, 10000)))
     t = time()
-    _ = tl.partial_svd(M, 4)
+    _ = tl.truncated_svd(M, 4)
     t = time() - t
     assert_(t <= 0.1, f"Partial_SVD took too long, maybe full_matrices set wrongly")
 
     M = tl.tensor(np.random.random_sample((10000, 4)))
     t = time()
-    _ = tl.partial_svd(M, 4)
+    _ = tl.truncated_svd(M, 4)
     t = time() - t
     assert_(t <= 0.1, f"Partial_SVD took too long, maybe full_matrices set wrongly")
 
@@ -198,7 +198,7 @@ def test_svd():
         # Test for singular matrices (some eigenvals will be zero)
         # Rank at most 5
         matrix = tl.dot(tl.randn((20, 5), seed=12), tl.randn((5, 20), seed=23))
-        U, S, V = tl.partial_svd(matrix, n_eigenvecs=6, random_state=0)
+        U, S, V = tl.truncated_svd(matrix, n_eigenvecs=6, random_state=0)
         true_rec_error = tl.sum((matrix - tl.dot(U, tl.reshape(S, (-1, 1)) * V)) ** 2)
         assert_(true_rec_error <= tol)
         assert_(
@@ -211,17 +211,17 @@ def test_svd():
 
         # Test orthonormality when  max_dim > n_eigenvecs > matrix_rank
         matrix = tl.dot(tl.randn((4, 2), seed=1), tl.randn((2, 4), seed=12))
-        U, S, V = tl.partial_svd(matrix, n_eigenvecs=3, random_state=0)
+        U, S, V = tl.truncated_svd(matrix, n_eigenvecs=3, random_state=0)
         left_orthogonality_error = T.norm(T.dot(T.transpose(U), U) - T.eye(3))
         assert_(left_orthogonality_error <= tol_orthogonality)
         right_orthogonality_error = T.norm(T.dot(V, T.transpose(V)) - T.eye(3))
         assert_(right_orthogonality_error <= tol_orthogonality)
 
-        # Test if partial_svd returns the same result for the same setting
+        # Test if truncated_svd returns the same result for the same setting
         matrix = T.tensor(np.random.random((20, 5)))
         random_state = np.random.RandomState(0)
-        U1, S1, V1 = tl.partial_svd(matrix, n_eigenvecs=2, random_state=random_state)
-        U2, S2, V2 = tl.partial_svd(matrix, n_eigenvecs=2, random_state=0)
+        U1, S1, V1 = tl.truncated_svd(matrix, n_eigenvecs=2, random_state=random_state)
+        U2, S2, V2 = tl.truncated_svd(matrix, n_eigenvecs=2, random_state=0)
         assert_array_equal(U1, U2)
         assert_array_equal(S1, S2)
         assert_array_equal(V1, V2)

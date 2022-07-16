@@ -1,8 +1,6 @@
-import numpy as np
 import warnings
 import tensorly as tl
 from .proximal import soft_thresholding
-import scipy.sparse.linalg
 
 
 def svd_flip(U, V, u_based_decision=True):
@@ -154,107 +152,6 @@ def randomized_range_finder(A, n_dims, n_iter=2, random_state=None):
         Q, _ = tl.qr(tl.dot(A, Q))
 
     return Q
-
-
-def partial_svd(matrix, n_eigenvecs=None, random_state=None, **kwargs):
-    """Computes a fast partial SVD on `matrix`
-
-    If `n_eigenvecs` is specified, sparse eigendecomposition is used on
-    either matrix.dot(matrix.T) or matrix.T.dot(matrix).
-
-    Parameters
-    ----------
-    matrix : tensor
-        A 2D tensor.
-    n_eigenvecs : int, optional, default is None
-        If specified, number of eigen[vectors-values] to return.
-    flip : bool, default is False
-        If True, the SVD sign ambiguity is resolved by making the largest component
-        in the columns of U, positive.
-    random_state: {None, int, np.random.RandomState}
-        If specified, use it for sampling starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
-    **kwargs : optional
-        kwargs are used to absorb the difference of parameters among the other SVD functions
-
-    Returns
-    -------
-    U : 2-D tensor, shape (matrix.shape[0], n_eigenvecs)
-        Contains the right singular vectors
-    S : 1-D tensor, shape (n_eigenvecs, )
-        Contains the singular values of `matrix`
-    V : 2-D tensor, shape (n_eigenvecs, matrix.shape[1])
-        Contains the left singular vectors
-    """
-    # Check that matrix is... a matrix!
-    if tl.ndim(matrix) != 2:
-        raise ValueError("matrix be a matrix. matrix.ndim is %d != 2" % tl.ndim(matrix))
-
-    ctx = tl.context(matrix)
-    is_numpy = isinstance(matrix, np.ndarray)
-    if not is_numpy:
-        warnings.warn(
-            "In partial_svd: converting to NumPy."
-            " Check svd_funs for available alternatives if you want to avoid this."
-        )
-
-    # Choose what to do depending on the params
-    dim_1, dim_2 = tl.shape(matrix)
-    min_dim = min(dim_1, dim_2)
-
-    if (n_eigenvecs is None) or (n_eigenvecs >= min_dim):
-        # Just perform trucated SVD
-        full_matrices = (n_eigenvecs is None) or (n_eigenvecs > min_dim)
-        # If n_eigenvecs == min_dim, we don't want full_matrices=True, it's super slow
-        U, S, V = tl.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-    else:
-        matrix = tl.to_numpy(matrix)
-        # We can perform a partial SVD
-        rng = tl.check_random_state(random_state)
-        # initilize with [-1, 1] as in ARPACK
-        v0 = rng.uniform(-1, 1, min_dim)
-
-        # First choose whether to use X * X.T or X.T *X
-        if dim_1 < dim_2:
-            S, U = scipy.sparse.linalg.eigsh(
-                np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which="LM", v0=v0
-            )
-            S = np.sqrt(np.clip(S, 0, None))
-            S = np.clip(
-                S, np.finfo(S.dtype).eps, None
-            )  # To avoid divide by zero warning on next line
-            V = np.dot(
-                matrix.T.conj(),
-                U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1 / S)[None, :],
-            )
-            U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-            V, R = np.linalg.qr(V)
-            V = V * (
-                2 * (np.diag(R) >= 0) - 1
-            )  # we can't use np.sign because np.sign(0) == 0
-        else:
-            S, V = scipy.sparse.linalg.eigsh(
-                np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which="LM", v0=v0
-            )
-            S = np.sqrt(np.clip(S, 0, None))
-            S = np.clip(S, np.finfo(S.dtype).eps, None)
-            U = (
-                np.dot(matrix, V)
-                * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1 / S)[None, :]
-            )
-            U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-            U, R = np.linalg.qr(U)
-            U = U * (2 * (np.diag(R) >= 0) - 1)
-
-        if not is_numpy:
-            U = tl.tensor(U, **ctx)
-            S = tl.tensor(S, **ctx)
-            V = tl.tensor(V, **ctx)
-
-        # WARNING: here, V is still the transpose of what it should be
-        V = V.T.conj()
-
-    return U, S, V
 
 
 def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
@@ -456,12 +353,12 @@ def randomized_svd(
     return U, S, V
 
 
-SVD_FUNS = ["partial_svd", "truncated_svd", "symeig_svd", "randomized_svd"]
+SVD_FUNS = ["truncated_svd", "truncated_svd", "symeig_svd", "randomized_svd"]
 
 
 def svd_funs(
     tensor,
-    svd_type="partial_svd",
+    svd_type="truncated_svd",
     n_eigenvecs=None,
     flip_svd=True,
     non_negative=False,
@@ -470,8 +367,8 @@ def svd_funs(
     **kwargs,
 ):
 
-    if svd_type == "partial_svd":
-        U, S, V = partial_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
+    if svd_type == "truncated_svd":
+        U, S, V = truncated_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
     elif svd_type == "truncated_svd":
         U, S, V = truncated_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
     elif svd_type == "symeig_svd":

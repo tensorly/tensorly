@@ -30,7 +30,7 @@ def initialize_nn_cp(
     tensor,
     rank,
     init="svd",
-    svd="partial_svd",
+    svd="truncated_svd",
     random_state=None,
     normalize_factors=False,
     nntype="nndsvda",
@@ -47,7 +47,7 @@ def initialize_nn_cp(
     tensor : ndarray
     rank : int
     init : {'svd', 'random'}, optional
-    svd : str, default is 'partial_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     nntype : {'nndsvd', 'nndsvda'}
         Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
@@ -117,7 +117,7 @@ def non_negative_parafac(
     rank,
     n_iter_max=100,
     init="svd",
-    svd="partial_svd",
+    svd="truncated_svd",
     tol=10e-7,
     random_state=None,
     verbose=0,
@@ -140,7 +140,7 @@ def non_negative_parafac(
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'partial_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
           tolerance: the algorithm stops when the variation in
@@ -279,7 +279,7 @@ def non_negative_parafac_hals(
     rank,
     n_iter_max=100,
     init="svd",
-    svd="partial_svd",
+    svd="truncated_svd",
     tol=10e-8,
     random_state=None,
     sparsity_coefficients=None,
@@ -304,7 +304,7 @@ def non_negative_parafac_hals(
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'partial_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     tol : float, optional
           tolerance: the algorithm stops when the variation in
@@ -487,7 +487,7 @@ class CP_NN(DecompositionMixin):
             Maximum number of iteration
         init : {'svd', 'random'}, optional
             Type of factor matrix initialization. See `initialize_factors`.
-        svd : str, default is 'partial_svd'
+        svd : str, default is 'truncated_svd'
             function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
         normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
             of shape (rank, ), which will contain the norms of the factors
@@ -548,7 +548,7 @@ class CP_NN(DecompositionMixin):
         rank,
         n_iter_max=100,
         init="svd",
-        svd="partial_svd",
+        svd="truncated_svd",
         tol=10e-7,
         random_state=None,
         verbose=0,
@@ -622,7 +622,7 @@ class CP_NN_HALS(DecompositionMixin):
         Maximum number of iteration
     init : {'svd', 'random'}, optional
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'partial_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
@@ -683,7 +683,7 @@ class CP_NN_HALS(DecompositionMixin):
         rank,
         n_iter_max=100,
         init="svd",
-        svd="partial_svd",
+        svd="truncated_svd",
         tol=10e-8,
         sparsity_coefficients=None,
         fixed_modes=None,

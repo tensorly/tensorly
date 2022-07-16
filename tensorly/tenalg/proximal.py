@@ -842,7 +842,7 @@ def svd_thresholding(matrix, threshold):
     --------
     procrustes : procrustes operator
     """
-    U, s, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
+    U, s, V = tl.truncated_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, tl.reshape(soft_thresholding(s, threshold), (-1, 1)) * V)
 
 
@@ -864,7 +864,7 @@ def procrustes(matrix):
     --------
     svd_thresholding : SVD-thresholding operator
     """
-    U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
+    U, _, V = tl.truncated_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
 
 
@@ -1100,7 +1100,7 @@ def fista(
     if x is None:
         x = tl.zeros(tl.shape(UtM), **tl.context(UtM))
     if lr is None:
-        lr = 1 / (tl.partial_svd(UtU)[1][0])
+        lr = 1 / (tl.truncated_svd(UtU)[1][0])
     # Parameters
     momentum_old = tl.tensor(1.0)
     norm_0 = 0.0

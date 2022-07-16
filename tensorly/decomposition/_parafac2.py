@@ -19,7 +19,7 @@ from ..tenalg.svd import svd_funs
 
 
 def initialize_decomposition(
-    tensor_slices, rank, init="random", svd="partial_svd", random_state=None
+    tensor_slices, rank, init="random", svd="truncated_svd", random_state=None
 ):
     r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices
 
@@ -136,7 +136,7 @@ def parafac2(
     rank,
     n_iter_max=2000,
     init="random",
-    svd="partial_svd",
+    svd="truncated_svd",
     normalize_factors=False,
     tol=1e-8,
     absolute_tol=1e-13,
@@ -196,7 +196,7 @@ def parafac2(
             Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'partial_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     normalize_factors : bool (optional)
         If True, aggregate the weights of each factor in a 1D-tensor
@@ -432,7 +432,7 @@ class Parafac2(DecompositionMixin):
 
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'partial_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
     normalize_factors : bool (optional)
         If True, aggregate the weights of each factor in a 1D-tensor
@@ -503,7 +503,7 @@ class Parafac2(DecompositionMixin):
         rank,
         n_iter_max=2000,
         init="random",
-        svd="partial_svd",
+        svd="truncated_svd",
         normalize_factors=False,
         tol=1e-8,
         absolute_tol=1e-13,

@@ -11,7 +11,7 @@ import warnings
 
 from ..backend import BackendManager, dynamically_dispatched_class_attribute
 from .base_tenalg import TenalgBackend
-from .svd import partial_svd, truncated_svd, symeig_svd, randomized_svd
+from .svd import truncated_svd, truncated_svd, symeig_svd, randomized_svd
 
 
 class TenalgBackendManager(BackendManager):

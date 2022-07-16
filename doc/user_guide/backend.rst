@@ -85,7 +85,7 @@ In practice, this means that function like `min`, `max`, `reshape`, etc, are acc
    min_value = tl.min(tensor)
    
    unfolding = tl.unfold(tensor, mode=0)
-   U, S, V = tl.partial_svd(unfolding, n_eigenvecs=5)
+   U, S, V = tl.truncated_svd(unfolding, n_eigenvecs=5)
 
 This will allow your code to work transparently with any of the backend.
 
