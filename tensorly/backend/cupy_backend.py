@@ -13,7 +13,7 @@ except ImportError as error:
 import warnings
 import numpy as np
 
-from .core import Backend
+from .core import Backend, backend_types
 
 
 class CupyBackend(Backend, backend_name="cupy"):
@@ -49,13 +49,7 @@ class CupyBackend(Backend, backend_name="cupy"):
         return x, residuals
 
 
-for name in [
-    "float64",
-    "float32",
-    "int64",
-    "int32",
-    "complex128",
-    "complex64",
+for name in backend_types + [
     "reshape",
     "moveaxis",
     "pi",

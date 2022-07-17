@@ -12,7 +12,7 @@ except ImportError as error:
 
 import numpy as np
 
-from . import Backend
+from . import Backend, backend_types
 
 
 class TensorflowBackend(Backend, backend_name="tensorflow"):
@@ -135,7 +135,7 @@ for name in [
 
 
 # Register tnp functions
-for name in [
+for name in backend_types + [
     "log2",
     "concatenate",
     "flip",
@@ -172,12 +172,6 @@ for name in [
     "abs",
     "sqrt",
     "zeros_like",
-    "int32",
-    "int64",
-    "float32",
-    "float64",
-    "complex64",
-    "complex128",
     "moveaxis",
     "ndim",
     "arange",

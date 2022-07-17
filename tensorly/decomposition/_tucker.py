@@ -20,7 +20,13 @@ from ..tenalg.svd import svd_funs
 
 
 def initialize_tucker(
-    tensor, rank, modes, random_state, init="svd", svd="truncated_svd", non_negative=False
+    tensor,
+    rank,
+    modes,
+    random_state,
+    init="svd",
+    svd="truncated_svd",
+    non_negative=False,
 ):
     """
     Initialize core and factors used in `tucker`.

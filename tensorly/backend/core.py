@@ -10,6 +10,9 @@ import numpy as np
 import scipy.special
 
 
+backend_types = ["int32", "int64", "float32", "float64", "complex64", "complex128"]
+
+
 class Index:
     """Convenience class used as a an array, to be used with index_update
 

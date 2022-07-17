@@ -328,9 +328,7 @@ def parafac2(
         factors[1] = factors[1] * T.reshape(weights, (1, -1))
         weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
 
-        projections = _compute_projections(
-            tensor_slices, factors, svd, out=projections
-        )
+        projections = _compute_projections(tensor_slices, factors, svd, out=projections)
         projected_tensor = _project_tensor_slices(
             tensor_slices, projections, out=projected_tensor
         )

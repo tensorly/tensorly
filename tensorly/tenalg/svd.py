@@ -112,7 +112,7 @@ def make_svd_non_negative(tensor, U, S, V, nntype):
         W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W)) * avg, W)
     else:
         raise ValueError(
-            f"Invalid nntype parameter: got {nntype} instead of one of (\"nndsvd\", \"nndsvda\")"
+            f'Invalid nntype parameter: got {nntype} instead of one of ("nndsvd", "nndsvda")'
         )
 
     return W

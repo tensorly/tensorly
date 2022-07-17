@@ -1,5 +1,5 @@
 import numpy as np
-from .core import Backend
+from .core import Backend, backend_types
 import scipy.special
 
 
@@ -53,13 +53,7 @@ class NumpyBackend(Backend, backend_name="numpy"):
         return np.einsum(operation, *matrices).reshape((-1, n_columns)) * m
 
 
-for name in [
-    "int64",
-    "int32",
-    "float64",
-    "float32",
-    "complex128",
-    "complex64",
+for name in backend_types + [
     "pi",
     "e",
     "inf",

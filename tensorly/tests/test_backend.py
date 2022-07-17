@@ -169,25 +169,19 @@ def test_svd():
             # Check that the two are similar
             assert_(
                 true_rec_error - rec_error <= tol,
-                msg='Reconstruction not correct for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
-                    svd, tl.get_backend(), n, s
-                ),
+                msg='Reconstruction not correct for "{svd}" svd fun VS svd and backend="{tl.get_backend()}, for {n} eigenenvecs, and size {s}".',
             )
 
             # Check for orthogonality when relevant
             left_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
             assert_(
                 left_orthogonality_error <= tol_orthogonality,
-                msg='Left eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
-                    svd, tl.get_backend(), n, s
-                ),
+                msg='Left eigenvecs not orthogonal for "{svd}" svd fun VS svd and backend="{tl.get_backend()}, for {n} eigenenvecs, and size {s}".',
             )
             right_orthogonality_error = T.norm(T.dot(fV, T.transpose(fV)) - T.eye(n))
             assert_(
                 right_orthogonality_error <= tol_orthogonality,
-                msg='Right eigenvecs not orthogonal for "{}" svd fun VS svd and backend="{}, for {} eigenenvecs, and size {}".'.format(
-                    svd, tl.get_backend(), n, s
-                ),
+                msg='Right eigenvecs not orthogonal for "{svd}" svd fun VS svd and backend="{tl.get_backend()}, for {n} eigenenvecs, and size {s}".',
             )
 
         # Should fail on non-matrices

@@ -19,7 +19,7 @@ except ImportError as error:
 import numpy
 import copy
 
-from .core import Backend
+from .core import Backend, backend_types
 
 
 class JaxBackend(Backend, backend_name="jax"):
@@ -74,13 +74,7 @@ class JaxBackend(Backend, backend_name="jax"):
         return np.einsum(operation, *matrices).reshape((-1, n_columns)) * m
 
 
-for name in [
-    "int64",
-    "int32",
-    "float64",
-    "float32",
-    "complex128",
-    "complex64",
+for name in backend_types + [
     "pi",
     "e",
     "inf",

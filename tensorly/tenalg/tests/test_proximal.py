@@ -231,9 +231,7 @@ def test_admm():
     ata = T.dot(T.transpose(a), a)
     dual = T.zeros(T.shape(atb))
     x_init = T.zeros(T.shape(atb))
-    x_admm, _, _ = admm(
-        T.transpose(atb), T.transpose(ata), x=x_init, dual_var=dual
-    )
+    x_admm, _, _ = admm(T.transpose(atb), T.transpose(ata), x=x_init, dual_var=dual)
     assert_array_almost_equal(true_res, T.transpose(x_admm), decimal=2)
 
 

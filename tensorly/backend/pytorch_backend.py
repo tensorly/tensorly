@@ -13,7 +13,7 @@ except ImportError as error:
 
 import numpy as np
 
-from .core import Backend
+from .core import Backend, backend_types
 
 linalg_lstsq_avail = LooseVersion(torch.__version__) >= LooseVersion("1.9.0")
 
@@ -231,13 +231,7 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
 
 
 # Register the other functions
-for name in [
-    "float64",
-    "float32",
-    "int64",
-    "int32",
-    "complex128",
-    "complex64",
+for name in backend_types + [
     "pi",
     "e",
     "inf",
