@@ -58,7 +58,7 @@ def initialize_tucker(
     if init == "svd":
         factors = []
         for index, mode in enumerate(modes):
-            U, S, V = svd_funs(
+            U, _, _ = svd_funs(
                 unfold(tensor, mode),
                 n_eigenvecs=rank[index],
                 svd_type=svd,
@@ -66,11 +66,9 @@ def initialize_tucker(
                 random_state=random_state,
             )
 
-            factors.append(U[:, : rank[index]])
+            factors.append(U)
         # The initial core approximation is needed here for the masking step
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
-        if non_negative is True:
-            core = tl.abs(core)
 
     elif init == "random":
         rng = tl.check_random_state(random_state)
@@ -81,11 +79,13 @@ def initialize_tucker(
             tl.tensor(rng.random_sample(s), **tl.context(tensor))
             for s in zip(tl.shape(tensor), rank)
         ]
-        if non_negative is True:
-            factors = [tl.abs(f) for f in factors]
-            core = tl.abs(core)
+            
     else:
         (core, factors) = init
+
+    if non_negative is True:
+        factors = [tl.abs(f) for f in factors]
+        core = tl.abs(core)
 
     return core, factors
 
@@ -163,35 +163,14 @@ def partial_tucker(
         warnings.warn(message, Warning)
 
     # SVD init
-    if init == "svd":
-        factors = []
-        for index, mode in enumerate(modes):
-            eigenvecs, _, _ = svd_funs(
-                unfold(tensor, mode),
-                n_eigenvecs=rank[index],
-                svd_type=svd,
-                random_state=random_state,
-            )
-            factors.append(eigenvecs)
-
-        # The initial core approximation is needed here for the masking step
-        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
-    elif init == "random":
-        rng = tl.check_random_state(random_state)
-        # len(rank) == len(modes) but we still want a core dimension for the modes not optimized
-        core_shape = list(tl.shape(tensor))
-        for (i, e) in enumerate(modes):
-            core_shape[e] = rank[i]
-        core = tl.tensor(rng.random_sample(core_shape), **tl.context(tensor))
-        factors = [
-            tl.tensor(
-                rng.random_sample((tl.shape(tensor)[mode], rank[index])),
-                **tl.context(tensor),
-            )
-            for (index, mode) in enumerate(modes)
-        ]
-    else:
-        (core, factors) = init
+    core, factors = initialize_tucker(
+        tensor,
+        rank,
+        modes,
+        init=init,
+        svd=svd,
+        random_state=random_state,
+    )
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
@@ -413,21 +392,14 @@ def non_negative_tucker(
     epsilon = 10e-12
 
     # Initialisation
-    if init == "svd":
-        core, factors = tucker(tensor, rank)
-        nn_factors = [tl.abs(f) for f in factors]
-        nn_core = tl.abs(core)
-    else:
-        rng = tl.check_random_state(random_state)
-        core = tl.tensor(
-            rng.random_sample(rank) + 0.01, **tl.context(tensor)
-        )  # Check this
-        factors = [
-            tl.tensor(rng.random_sample(s), **tl.context(tensor))
-            for s in zip(tl.shape(tensor), rank)
-        ]
-        nn_factors = [tl.abs(f) for f in factors]
-        nn_core = tl.abs(core)
+    nn_core, nn_factors = initialize_tucker(
+        tensor,
+        rank,
+        range(tl.ndim(tensor)),
+        init=init,
+        random_state=random_state,
+        non_negative=True,
+    )
 
     norm_tensor = tl.norm(tensor, 2)
     rec_errors = []
