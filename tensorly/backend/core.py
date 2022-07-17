@@ -37,7 +37,25 @@ backend_basic_math = [
     "arccos",
     "arcsin",
 ]
-backend_array = ["einsum", "matmul", "ones", "zeros", "any", "all", "where"]
+backend_array = [
+    "einsum",
+    "matmul",
+    "ones",
+    "zeros",
+    "any",
+    "prod",
+    "all",
+    "where",
+    "reshape",
+    "cumsum",
+    "count_nonzero",
+    "eye",
+    "sign",
+    "sqrt",
+    "abs",
+    "min",
+    "zeros_like",
+]
 
 
 class Index:
