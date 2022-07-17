@@ -112,8 +112,7 @@ def make_svd_non_negative(tensor, U, S, V, nntype):
         W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W)) * avg, W)
     else:
         raise ValueError(
-            "Invalid nntype parameter: got %r instead of one of %r"
-            % (nntype, ("nndsvd", "nndsvda"))
+            f"Invalid nntype parameter: got {nntype} instead of one of (\"nndsvd\", \"nndsvda\")"
         )
 
     return W
@@ -154,6 +153,38 @@ def randomized_range_finder(A, n_dims, n_iter=2, random_state=None):
     return Q
 
 
+def svd_checks(matrix, n_eigenvecs=None):
+    """Runs common checks to all of the SVD methods.
+
+    Parameters
+    ----------
+    matrix : 2D-array
+    n_eigenvecs : int, optional, default is None
+        if specified, number of eigen[vectors-values] to return
+
+    Returns
+    -------
+    """
+    # Check that matrix is... a matrix!
+    if tl.ndim(matrix) != 2:
+        raise ValueError(f"matrix be a matrix. matrix.ndim is {tl.ndim(matrix)} != 2")
+
+    dim_1, dim_2 = tl.shape(matrix)
+    min_dim, max_dim = min(dim_1, dim_2), max(dim_1, dim_2)
+
+    if n_eigenvecs is None:
+        n_eigenvecs = max_dim
+
+    if n_eigenvecs > max_dim:
+        warnings.warn(
+            f"Trying to compute SVD with n_eigenvecs={n_eigenvecs}, which is larger "
+            f"than max(matrix.shape)={max_dim}. Setting n_eigenvecs to {max_dim}."
+        )
+        n_eigenvecs = max_dim
+
+    return n_eigenvecs, min_dim, max_dim
+
+
 def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
     """Computes a truncated SVD on `matrix` using the backends's standard SVD
 
@@ -175,29 +206,10 @@ def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
         of shape (n_eigenvecs, matrix.shape[1])
         contains the left singular vectors
     """
-    # Check that matrix is... a matrix!
-    if tl.ndim(matrix) != 2:
-        raise ValueError("matrix be a matrix. matrix.ndim is %d != 2" % tl.ndim(matrix))
+    n_eigenvecs, min_dim, _ = svd_checks(matrix, n_eigenvecs=n_eigenvecs)
 
-    dim_1, dim_2 = tl.shape(matrix)
-    min_dim, max_dim = min(dim_1, dim_2), max(dim_1, dim_2)
-
-    if n_eigenvecs is None:
-        n_eigenvecs = max_dim
-
-    if n_eigenvecs > max_dim:
-        warnings.warn(
-            "Trying to compute SVD with n_eigenvecs={0}, which "
-            "is larger than max(matrix.shape)={1}. Setting "
-            "n_eigenvecs to {1}".format(n_eigenvecs, max_dim)
-        )
-        n_eigenvecs = max_dim
-
-    full_matrices = n_eigenvecs > min_dim
-
-    U, S, V = tl.svd(matrix, full_matrices=full_matrices)
-    U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-    return U, S, V
+    U, S, V = tl.svd(matrix, full_matrices=n_eigenvecs > min_dim)
+    return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
 
 
 def symeig_svd(matrix, n_eigenvecs=None, **kwargs):
@@ -225,23 +237,9 @@ def symeig_svd(matrix, n_eigenvecs=None, **kwargs):
         of shape (n_eigenvecs, matrix.shape[1])
         contains the left singular vectors
     """
-    # Check that matrix is... a matrix!
-    if tl.ndim(matrix) != 2:
-        raise ValueError("matrix be a matrix. matrix.ndim is %d != 2" % tl.ndim(matrix))
+    n_eigenvecs, _, _ = svd_checks(matrix, n_eigenvecs=n_eigenvecs)
 
     dim_1, dim_2 = tl.shape(matrix)
-    max_dim = max(dim_1, dim_2)
-
-    if n_eigenvecs is None:
-        n_eigenvecs = max_dim
-
-    if n_eigenvecs > max_dim:
-        warnings.warn(
-            "Trying to compute SVD with n_eigenvecs={0}, which "
-            "is larger than max(matrix.shape)={1}. Setting "
-            "n_eigenvecs to {1}".format(n_eigenvecs, max_dim)
-        )
-        n_eigenvecs = max_dim
 
     if dim_1 > dim_2:
         S, U = tl.eigh(tl.dot(matrix, tl.transpose(matrix)))
@@ -306,24 +304,9 @@ def randomized_svd(
     Probabilistic algorithms for constructing approximate matrix decompositions`
     - Halko et al (2009)
     """
-    # Check that matrix is... a matrix!
-    if tl.ndim(matrix) != 2:
-        raise ValueError(f"matrix be a matrix. matrix.ndim is {tl.ndim(matrix)} != 2")
+    n_eigenvecs, min_dim, max_dim = svd_checks(matrix, n_eigenvecs=n_eigenvecs)
 
     dim_1, dim_2 = tl.shape(matrix)
-    min_dim, max_dim = min(dim_1, dim_2), max(dim_1, dim_2)
-
-    if n_eigenvecs is None:
-        n_eigenvecs = max_dim
-
-    if n_eigenvecs > max_dim:
-        warnings.warn(
-            f"Trying to compute SVD with n_eigenvecs={n_eigenvecs}, which "
-            f"is larger than max(matrix.shape)={max_dim}. Setting "
-            f"n_eigenvecs to {max_dim}"
-        )
-        n_eigenvecs = max_dim
-
     n_dims = min(n_eigenvecs + n_oversamples, max_dim)
 
     if (

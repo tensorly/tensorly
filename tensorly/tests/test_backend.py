@@ -150,7 +150,7 @@ def test_svd():
             matrix = np.random.random(s)
             matrix_backend = T.tensor(matrix)
             fU, fS, fV = svd_funs(matrix_backend, n_eigenvecs=n, svd_type=svd)
-            U, S, V = svd_funs(matrix, n_eigenvecs=n, svd_type=svd)
+            U, S, V = np.linalg.svd(matrix, full_matrices=True)
             U, S, V = U[:, :n], S[:n], V[:n, :]
 
             assert_array_almost_equal(
