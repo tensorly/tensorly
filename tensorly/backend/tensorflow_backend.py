@@ -12,7 +12,7 @@ except ImportError as error:
 
 import numpy as np
 
-from . import Backend, backend_types, backend_basic_math, backend_array
+from .core import Backend, backend_types, backend_basic_math, backend_array
 
 
 class TensorflowBackend(Backend, backend_name="tensorflow"):
