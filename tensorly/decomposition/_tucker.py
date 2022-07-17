@@ -79,7 +79,7 @@ def initialize_tucker(
             tl.tensor(rng.random_sample(s), **tl.context(tensor))
             for s in zip(tl.shape(tensor), rank)
         ]
-            
+
     else:
         (core, factors) = init
 
