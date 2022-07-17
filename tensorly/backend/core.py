@@ -10,7 +10,34 @@ import numpy as np
 import scipy.special
 
 
-backend_types = ["int32", "int64", "float32", "float64", "complex64", "complex128"]
+backend_types = [
+    "int32",
+    "int64",
+    "float32",
+    "float64",
+    "complex64",
+    "complex128",
+    "pi",
+    "e",
+    "inf",
+]
+backend_basic_math = [
+    "exp",
+    "log",
+    "tanh",
+    "cosh",
+    "sinh",
+    "sin",
+    "cos",
+    "tan",
+    "arctanh",
+    "arccosh",
+    "arcsinh",
+    "arctan",
+    "arccos",
+    "arcsin",
+]
+backend_array = ["einsum", "matmul", "ones", "zeros", "any", "all", "where"]
 
 
 class Index:
@@ -1151,21 +1178,6 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
-    def asin(x):
-        """Return the asin of x."""
-        raise NotImplementedError
-
-    @staticmethod
-    def acos(x):
-        """Return the acos of x."""
-        raise NotImplementedError
-
-    @staticmethod
-    def atan(x):
-        """Return the atan of x."""
-        raise NotImplementedError
-
-    @staticmethod
     def arcsin(x):
         """Return the arcsin of x."""
         raise NotImplementedError
@@ -1208,19 +1220,4 @@ class Backend(object):
     @staticmethod
     def arctanh(x):
         """Return the arctanh of x."""
-        raise NotImplementedError
-
-    @staticmethod
-    def asinh(x):
-        """Return the asinh of x."""
-        raise NotImplementedError
-
-    @staticmethod
-    def acosh(x):
-        """Return the acosh of x."""
-        raise NotImplementedError
-
-    @staticmethod
-    def atanh(x):
-        """Return the atanh of x."""
         raise NotImplementedError

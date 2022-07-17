@@ -13,7 +13,12 @@ except ImportError as error:
 import warnings
 import numpy as np
 
-from .core import Backend, backend_types
+from .core import (
+    Backend,
+    backend_types,
+    backend_basic_math,
+    backend_array,
+)
 
 
 class CupyBackend(Backend, backend_name="cupy"):
@@ -49,63 +54,44 @@ class CupyBackend(Backend, backend_name="cupy"):
         return x, residuals
 
 
-for name in backend_types + [
-    "reshape",
-    "moveaxis",
-    "pi",
-    "e",
-    "inf",
-    "nan",
-    "transpose",
-    "copy",
-    "ones",
-    "zeros",
-    "zeros_like",
-    "eye",
-    "trace",
-    "any",
-    "arange",
-    "where",
-    "dot",
-    "kron",
-    "concatenate",
-    "max",
-    "flip",
-    "matmul",
-    "min",
-    "all",
-    "mean",
-    "sum",
-    "cumsum",
-    "count_nonzero",
-    "prod",
-    "sign",
-    "abs",
-    "sqrt",
-    "stack",
-    "conj",
-    "diag",
-    "einsum",
-    "tensordot",
-    "log",
-    "log2",
-    "exp",
-    "sin",
-    "cos",
-    "tan",
-    "arcsin",
-    "arccos",
-    "arctan",
-    "sinh",
-    "cosh",
-    "tanh",
-    "argsort",
-    "sort",
-    "shape",
-    "arcsinh",
-    "arccosh",
-    "arctanh",
-]:
+for name in (
+    backend_types
+    + backend_basic_math
+    + backend_array
+    + [
+        "reshape",
+        "moveaxis",
+        "nan",
+        "transpose",
+        "copy",
+        "zeros_like",
+        "eye",
+        "trace",
+        "arange",
+        "dot",
+        "kron",
+        "concatenate",
+        "max",
+        "flip",
+        "min",
+        "mean",
+        "sum",
+        "cumsum",
+        "count_nonzero",
+        "prod",
+        "sign",
+        "abs",
+        "sqrt",
+        "stack",
+        "conj",
+        "diag",
+        "tensordot",
+        "log2",
+        "argsort",
+        "sort",
+        "shape",
+    ]
+):
     CupyBackend.register_method(name, getattr(cp, name))
 
 for name in ["svd", "qr", "eigh", "solve"]:

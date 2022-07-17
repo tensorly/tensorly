@@ -11,7 +11,7 @@ except ImportError as error:
 
 import warnings
 import numpy
-from .core import Backend
+from .core import Backend, backend_basic_math, backend_array
 
 mx.npx.set_np()
 
@@ -90,67 +90,51 @@ class MxnetBackend(Backend, backend_name="mxnet"):
         return x, residuals
 
 
-for name in [
-    "int64",
-    "int32",
-    "float64",
-    "float32",
-    "pi",
-    "e",
-    "inf",
-    "nan",
-    "reshape",
-    "moveaxis",
-    "where",
-    "copy",
-    "transpose",
-    "arange",
-    "ones",
-    "zeros",
-    "trace",
-    "any",
-    "zeros_like",
-    "eye",
-    "concatenate",
-    "max",
-    "min",
-    "flip",
-    "matmul",
-    "all",
-    "mean",
-    "sum",
-    "cumsum",
-    "count_nonzero",
-    "prod",
-    "sign",
-    "abs",
-    "sqrt",
-    "argmin",
-    "argmax",
-    "stack",
-    "diag",
-    "einsum",
-    "log",
-    "log2",
-    "tensordot",
-    "exp",
-    "sin",
-    "cos",
-    "tan",
-    "arcsin",
-    "arccos",
-    "arctan",
-    "sinh",
-    "cosh",
-    "tanh",
-    "argsort",
-    "sort",
-    "dot",
-    "shape",
-    "arcsinh",
-    "arccosh",
-    "arctanh",
-]:
+for name in (
+    backend_basic_math
+    + backend_array
+    + [
+        "int64",
+        "int32",
+        "float64",
+        "float32",
+        "pi",
+        "e",
+        "inf",
+        "nan",
+        "reshape",
+        "moveaxis",
+        "copy",
+        "transpose",
+        "arange",
+        "trace",
+        "zeros_like",
+        "eye",
+        "concatenate",
+        "max",
+        "min",
+        "flip",
+        "mean",
+        "sum",
+        "cumsum",
+        "count_nonzero",
+        "prod",
+        "sign",
+        "abs",
+        "sqrt",
+        "argmin",
+        "argmax",
+        "stack",
+        "diag",
+        "log2",
+        "tensordot",
+        "exp",
+        "argsort",
+        "sort",
+        "dot",
+        "shape",
+    ]
+):
     MxnetBackend.register_method(name, getattr(np, name))
 
 for name in ["solve", "qr", "eigh"]:

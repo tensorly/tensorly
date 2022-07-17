@@ -12,7 +12,7 @@ except ImportError as error:
 
 import numpy as np
 
-from . import Backend, backend_types
+from . import Backend, backend_types, backend_basic_math, backend_array
 
 
 class TensorflowBackend(Backend, backend_name="tensorflow"):
@@ -114,74 +114,46 @@ for name in ["diag", "qr", "eigh", "trace"]:
 
 
 # Register tfm functions
-for name in [
-    "exp",
-    "log",
-    "digamma",
-    "atanh",
-    "acosh",
-    "asinh",
-    "tanh",
-    "cosh",
-    "sinh",
-    "atan",
-    "acos",
-    "asin",
-    "sin",
-    "cos",
-    "tan",
-]:
-    TensorflowBackend.register_method(name, getattr(tfm, name))
+TensorflowBackend.register_method("digamma", getattr(tfm, "digamma"))
 
 
 # Register tnp functions
-for name in backend_types + [
-    "log2",
-    "concatenate",
-    "flip",
-    "dot",
-    "matmul",
-    "cumsum",
-    "argmin",
-    "argmax",
-    "any",
-    "e",
-    "inf",
-    "pi",
-    "conj",
-    "arctanh",
-    "arccosh",
-    "arcsinh",
-    "arctan",
-    "arccos",
-    "arcsin",
-    "tensordot",
-    "sign",
-    "stack",
-    "copy",
-    "min",
-    "max",
-    "mean",
-    "sum",
-    "prod",
-    "all",
-    "eye",
-    "where",
-    "ones",
-    "zeros",
-    "abs",
-    "sqrt",
-    "zeros_like",
-    "moveaxis",
-    "ndim",
-    "arange",
-    "sort",
-    "argsort",
-    "flip",
-    "einsum",
-    "stack",
-    "reshape",
-    "transpose",
-    "count_nonzero",
-]:
+for name in (
+    backend_types
+    + backend_basic_math
+    + backend_array
+    + [
+        "log2",
+        "concatenate",
+        "flip",
+        "dot",
+        "cumsum",
+        "argmin",
+        "argmax",
+        "conj",
+        "tensordot",
+        "sign",
+        "stack",
+        "copy",
+        "min",
+        "max",
+        "mean",
+        "sum",
+        "prod",
+        "eye",
+        "abs",
+        "sqrt",
+        "zeros_like",
+        "moveaxis",
+        "ndim",
+        "arange",
+        "sort",
+        "argsort",
+        "flip",
+        "stack",
+        "reshape",
+        "transpose",
+        "count_nonzero",
+    ]
+):
     TensorflowBackend.register_method(name, getattr(tnp, name))

@@ -13,7 +13,12 @@ except ImportError as error:
 
 import numpy as np
 
-from .core import Backend, backend_types
+from .core import (
+    Backend,
+    backend_types,
+    backend_basic_math,
+    backend_array,
+)
 
 linalg_lstsq_avail = LooseVersion(torch.__version__) >= LooseVersion("1.9.0")
 
@@ -231,54 +236,30 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
 
 
 # Register the other functions
-for name in backend_types + [
-    "pi",
-    "e",
-    "inf",
-    "nan",
-    "is_tensor",
-    "ones",
-    "zeros",
-    "any",
-    "trace",
-    "cumsum",
-    "count_nonzero",
-    "zeros_like",
-    "reshape",
-    "eye",
-    "min",
-    "prod",
-    "abs",
-    "matmul",
-    "sqrt",
-    "sign",
-    "where",
-    "conj",
-    "finfo",
-    "einsum",
-    "log",
-    "log2",
-    "exp",
-    "digamma",
-    "sin",
-    "cos",
-    "tan",
-    "asin",
-    "acos",
-    "atan",
-    "arcsin",
-    "arccos",
-    "arctan",
-    "sinh",
-    "cosh",
-    "tanh",
-    "arcsinh",
-    "arccosh",
-    "arctanh",
-    "asinh",
-    "acosh",
-    "atanh",
-]:
+for name in (
+    backend_types
+    + backend_basic_math
+    + backend_array
+    + [
+        "nan",
+        "is_tensor",
+        "trace",
+        "cumsum",
+        "count_nonzero",
+        "zeros_like",
+        "reshape",
+        "eye",
+        "min",
+        "prod",
+        "abs",
+        "sqrt",
+        "sign",
+        "conj",
+        "finfo",
+        "log2",
+        "digamma",
+    ]
+):
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 

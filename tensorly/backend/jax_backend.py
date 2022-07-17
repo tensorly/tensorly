@@ -19,7 +19,12 @@ except ImportError as error:
 import numpy
 import copy
 
-from .core import Backend, backend_types
+from .core import (
+    Backend,
+    backend_types,
+    backend_basic_math,
+    backend_array,
+)
 
 
 class JaxBackend(Backend, backend_name="jax"):
@@ -74,65 +79,46 @@ class JaxBackend(Backend, backend_name="jax"):
         return np.einsum(operation, *matrices).reshape((-1, n_columns)) * m
 
 
-for name in backend_types + [
-    "pi",
-    "e",
-    "inf",
-    "nan",
-    "reshape",
-    "moveaxis",
-    "where",
-    "transpose",
-    "arange",
-    "ones",
-    "zeros",
-    "flip",
-    "trace",
-    "any",
-    "zeros_like",
-    "eye",
-    "kron",
-    "concatenate",
-    "max",
-    "min",
-    "matmul",
-    "all",
-    "mean",
-    "sum",
-    "cumsum",
-    "count_nonzero",
-    "prod",
-    "sign",
-    "abs",
-    "sqrt",
-    "argmin",
-    "argmax",
-    "stack",
-    "conj",
-    "diag",
-    "clip",
-    "einsum",
-    "log",
-    "log2",
-    "tensordot",
-    "exp",
-    "sin",
-    "cos",
-    "tan",
-    "arcsin",
-    "arccos",
-    "arctan",
-    "sinh",
-    "cosh",
-    "tanh",
-    "argsort",
-    "sort",
-    "dot",
-    "shape",
-    "arcsinh",
-    "arccosh",
-    "arctanh",
-]:
+for name in (
+    backend_types
+    + backend_basic_math
+    + backend_array
+    + [
+        "nan",
+        "reshape",
+        "moveaxis",
+        "transpose",
+        "arange",
+        "flip",
+        "trace",
+        "zeros_like",
+        "eye",
+        "kron",
+        "concatenate",
+        "max",
+        "min",
+        "mean",
+        "sum",
+        "cumsum",
+        "count_nonzero",
+        "prod",
+        "sign",
+        "abs",
+        "sqrt",
+        "argmin",
+        "argmax",
+        "stack",
+        "conj",
+        "diag",
+        "clip",
+        "log2",
+        "tensordot",
+        "argsort",
+        "sort",
+        "dot",
+        "shape",
+    ]
+):
     JaxBackend.register_method(name, getattr(np, name))
 
 for name in ["solve", "qr", "svd", "eigh"]:

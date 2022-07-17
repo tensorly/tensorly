@@ -1,5 +1,10 @@
 import numpy as np
-from .core import Backend, backend_types
+from .core import (
+    Backend,
+    backend_types,
+    backend_basic_math,
+    backend_array,
+)
 import scipy.special
 
 
@@ -53,65 +58,47 @@ class NumpyBackend(Backend, backend_name="numpy"):
         return np.einsum(operation, *matrices).reshape((-1, n_columns)) * m
 
 
-for name in backend_types + [
-    "pi",
-    "e",
-    "inf",
-    "nan",
-    "reshape",
-    "moveaxis",
-    "any",
-    "trace",
-    "where",
-    "copy",
-    "transpose",
-    "arange",
-    "ones",
-    "zeros",
-    "flip",
-    "zeros_like",
-    "eye",
-    "kron",
-    "concatenate",
-    "max",
-    "min",
-    "matmul",
-    "all",
-    "mean",
-    "sum",
-    "cumsum",
-    "count_nonzero",
-    "prod",
-    "sign",
-    "abs",
-    "sqrt",
-    "argmin",
-    "argmax",
-    "stack",
-    "conj",
-    "diag",
-    "einsum",
-    "log",
-    "log2",
-    "tensordot",
-    "exp",
-    "sin",
-    "cos",
-    "tan",
-    "arcsin",
-    "arccos",
-    "arctan",
-    "sinh",
-    "cosh",
-    "tanh",
-    "argsort",
-    "sort",
-    "dot",
-    "shape",
-    "arcsinh",
-    "arccosh",
-    "arctanh",
-]:
+for name in (
+    backend_types
+    + backend_basic_math
+    + backend_array
+    + [
+        "nan",
+        "reshape",
+        "moveaxis",
+        "trace",
+        "copy",
+        "transpose",
+        "arange",
+        "flip",
+        "zeros_like",
+        "eye",
+        "kron",
+        "concatenate",
+        "max",
+        "min",
+        "mean",
+        "sum",
+        "cumsum",
+        "count_nonzero",
+        "prod",
+        "sign",
+        "abs",
+        "sqrt",
+        "argmin",
+        "argmax",
+        "stack",
+        "conj",
+        "diag",
+        "log",
+        "log2",
+        "tensordot",
+        "argsort",
+        "sort",
+        "dot",
+        "shape",
+    ]
+):
     NumpyBackend.register_method(name, getattr(np, name))
 
 for name in ["solve", "qr", "svd", "eigh"]:
