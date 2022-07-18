@@ -39,7 +39,7 @@ To contribute code to the TensorLy code-base, you must ensure compatibility with
    This means you should only use TensorLy functions, never directly a function from the backend
    e.g. use ``tl.mean``, **not** ``numpy.mean`` or ``torch.mean``.
 
-To do so, we **only use** functions wrapped in :py:mod:`tensorly.backend`, such as :py:mod:`tensorly.backend.truncated_svd`, etc.
+To do so, we **only use** functions wrapped in :py:mod:`tensorly.backend`, such as :py:mod:`tensorly.backend.tensordot`, etc.
 If the function you need doesn't exist, either try using other existing ones,
 or, if you cannot do otherwise, add the required function to all backends.
 
