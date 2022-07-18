@@ -55,7 +55,7 @@ def initialize_constrained_parafac(
     random_state : {None, int, np.random.RandomState}
     init : {'svd', 'random', cptensor}, optional
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     non_negative : bool or dictionary
         This constraint is clipping negative values to '0'.
         If it is True, non-negative constraint is applied to all modes.
@@ -211,7 +211,7 @@ def constrained_parafac(
     init : {'svd', 'random', cptensor}, optional
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol_outer : float, optional
         (Default: 1e-8) Relative reconstruction error tolerance for outer loop. The
         algorithm is considered to have found a local minimum when the
@@ -449,7 +449,7 @@ class ConstrainedCP(DecompositionMixin):
     init : {'svd', 'random', cptensor}, optional
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol_outer : float, optional
         (Default: 1e-8) Relative reconstruction error tolerance for outer loop. The
         algorithm is considered to have found a local minimum when the

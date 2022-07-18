@@ -347,19 +347,28 @@ def svd_funs(
     non_negative=False,
     nntype="nndsvd",
     u_based_decision=True,
+    mask=None,
+    svd_mask_repeats=5,
     **kwargs,
 ):
 
     if svd_type == "truncated_svd":
-        U, S, V = truncated_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
+        svd_fun = truncated_svd
     elif svd_type == "symeig_svd":
-        U, S, V = symeig_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
+        svd_fun = symeig_svd
     elif svd_type == "randomized_svd":
-        U, S, V = randomized_svd(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
+        svd_fun = randomized_svd
     else:
         raise ValueError(
             f"Got svd={svd_type}. However, the possible choices are {SVD_FUNS}"
         )
+
+    U, S, V = svd_fun(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
+
+    if mask is not None:
+        for _ in range(svd_mask_repeats):
+            tensor = tensor * mask + (U @ tl.diag(S) @ V) * (1 - mask)
+            U, S, V = svd_fun(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
 
     if flip_svd:
         U, V = svd_flip(U, V, u_based_decision=u_based_decision)

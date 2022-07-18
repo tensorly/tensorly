@@ -197,7 +197,7 @@ def parafac2(
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     normalize_factors : bool (optional)
         If True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors. Note that
@@ -431,7 +431,7 @@ class Parafac2(DecompositionMixin):
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     normalize_factors : bool (optional)
         If True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors. Note that

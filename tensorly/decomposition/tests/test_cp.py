@@ -14,7 +14,6 @@ from .._cp import (
 from .._nn_cp import (
     non_negative_parafac,
     non_negative_parafac_hals,
-    initialize_nn_cp,
     CP_NN,
     CP_NN_HALS,
 )
@@ -320,16 +319,6 @@ def test_non_negative_parafac(monkeypatch):
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, non_negative_parafac, CP_NN, ignore_args={"return_errors"}, rank=3
     )
-
-
-def test_initialize_nn_cp():
-    """Test that if we initialise with an existing init, then it isn't modified."""
-    init = CPTensor([None, [-tl.ones((30, 3)), -tl.ones((20, 3)), -tl.ones((10, 3))]])
-    tensor = cp_to_tensor(init)
-    initialised_tensor = initialize_nn_cp(tensor, 3, init=init)
-    for factor_matrix, init_factor_matrix in zip(init[1], initialised_tensor[1]):
-        assert_array_equal(factor_matrix, init_factor_matrix)
-    assert_array_equal(tensor, cp_to_tensor(initialised_tensor))
 
 
 def test_non_negative_parafac_hals(monkeypatch):

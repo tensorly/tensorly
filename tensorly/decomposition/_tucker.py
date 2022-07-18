@@ -27,6 +27,8 @@ def initialize_tucker(
     init="svd",
     svd="truncated_svd",
     non_negative=False,
+    mask=None,
+    svd_mask_repeats=5,
 ):
     """
     Initialize core and factors used in `tucker`.
@@ -44,7 +46,7 @@ def initialize_tucker(
     random_state : {None, int, np.random.RandomState}
     init : {'svd', 'random', cptensor}, optional
     svd : str, default is 'truncated_svd'
-          function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+          function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     non_negative : bool, default is False
         if True, non-negative factors are returned
 
@@ -58,11 +60,14 @@ def initialize_tucker(
     if init == "svd":
         factors = []
         for index, mode in enumerate(modes):
+            mask_unfold = None if mask is None else unfold(mask, mode)
             U, _, _ = svd_funs(
                 unfold(tensor, mode),
                 n_eigenvecs=rank[index],
                 svd_type=svd,
                 non_negative=non_negative,
+                mask=mask_unfold,
+                svd_mask_repeats=svd_mask_repeats,
                 random_state=random_state,
             )
 
@@ -101,6 +106,7 @@ def partial_tucker(
     random_state=None,
     verbose=False,
     mask=None,
+    svd_mask_repeats=5,
 ):
     """Partial tucker decomposition via Higher Order Orthogonal Iteration (HOI)
 
@@ -158,10 +164,6 @@ def partial_tucker(
     else:
         rank = tuple(rank)
 
-    if mask is not None and init == "svd":
-        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
-        warnings.warn(message, Warning)
-
     # SVD init
     core, factors = initialize_tucker(
         tensor,
@@ -170,6 +172,8 @@ def partial_tucker(
         init=init,
         svd=svd,
         random_state=random_state,
+        mask=mask,
+        svd_mask_repeats=svd_mask_repeats,
     )
 
     rec_errors = []
@@ -250,7 +254,7 @@ def tucker(
         Default: False
     svd : str, default is 'truncated_svd'
         function to use to compute the SVD,
-        acceptable values in tensorly.tenalg.svd.svd_funs
+        acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -481,7 +485,7 @@ def non_negative_tucker_hals(
             maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
@@ -713,7 +717,7 @@ class Tucker(DecompositionMixin):
     svd : str, default is 'truncated_svd'
         ignore if non_negative is True
         function to use to compute the SVD,
-        acceptable values in tensorly.tenalg.svd.svd_funs
+        acceptable values in tensorly.SVD_FUNS
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
@@ -809,7 +813,7 @@ class Tucker_NN(DecompositionMixin):
     svd : str, default is 'truncated_svd'
         ignore if non_negative is True
         function to use to compute the SVD,
-        acceptable values in tensorly.tenalg.svd.svd_funs
+        acceptable values in tensorly.SVD_FUNS
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
@@ -896,7 +900,7 @@ class Tucker_NN_HALS(DecompositionMixin):
         maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance

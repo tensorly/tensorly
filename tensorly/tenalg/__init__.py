@@ -11,7 +11,7 @@ import warnings
 
 from ..backend import BackendManager, dynamically_dispatched_class_attribute
 from .base_tenalg import TenalgBackend
-from .svd import truncated_svd, truncated_svd, symeig_svd, randomized_svd
+from .svd import SVD_FUNS, svd_funs, truncated_svd
 
 
 class TenalgBackendManager(BackendManager):
@@ -79,7 +79,7 @@ class TenalgBackendManager(BackendManager):
             msg = f"Unknown backend name {backend_name!r}, known backends are {cls.available_backend_names}"
             raise ValueError(msg)
         if backend_name not in TenalgBackend._available_tenalg_backends:
-            importlib.import_module("tensorly.tenalg.{0}_tenalg".format(backend_name))
+            importlib.import_module(f"tensorly.tenalg.{backend_name}_tenalg")
         if backend_name in TenalgBackend._available_tenalg_backends:
             backend = TenalgBackend._available_tenalg_backends[backend_name]()
             # backend = getattr(module, )()

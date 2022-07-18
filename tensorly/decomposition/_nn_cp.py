@@ -1,9 +1,7 @@
-import numpy as np
 import warnings
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ..random import random_cp
-from ..base import unfold
+from ._cp import initialize_cp
 from ..tenalg.proximal import hals_nnls
 from ..cp_tensor import (
     CPTensor,
@@ -24,92 +22,6 @@ from ..tenalg.svd import svd_funs
 #          Caglayan TUna <caglayantun@gmail.com>
 
 # License: BSD 3 clause
-
-
-def initialize_nn_cp(
-    tensor,
-    rank,
-    init="svd",
-    svd="truncated_svd",
-    random_state=None,
-    normalize_factors=False,
-    nntype="nndsvda",
-):
-    r"""Initialize factors used in `parafac`.
-
-    The type of initialization is set using `init`. If `init == 'random'` then
-    initialize factor matrices using `random_state`. If `init == 'svd'` then
-    initialize the `m`th factor matrix using the `rank` left singular vectors
-    of the `m`th unfolding of the input tensor.
-
-    Parameters
-    ----------
-    tensor : ndarray
-    rank : int
-    init : {'svd', 'random'}, optional
-    svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
-    nntype : {'nndsvd', 'nndsvda'}
-        Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
-
-    Returns
-    -------
-    factors : CPTensor
-        An initial cp tensor.
-
-    """
-    rng = tl.check_random_state(random_state)
-
-    if init == "random":
-        kt = random_cp(
-            tl.shape(tensor),
-            rank,
-            normalise_factors=False,
-            random_state=rng,
-            **tl.context(tensor),
-        )
-
-    elif init == "svd":
-
-        factors = []
-        for mode in range(tl.ndim(tensor)):
-            U, _, _ = svd_funs(
-                unfold(tensor, mode), n_eigenvecs=rank, svd_type=svd, non_negative=True
-            )
-
-            if tensor.shape[mode] < rank:
-                # TODO: this is a hack but it seems to do the job for now
-                random_part = tl.tensor(
-                    rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
-                    **tl.context(tensor),
-                )
-                U = tl.concatenate([U, random_part], axis=1)
-
-            factors.append(U[:, :rank])
-
-        kt = CPTensor((None, factors))
-
-    # If the initialisation is a precomputed decomposition, we double check its validity and return it
-    elif isinstance(init, (tuple, list, CPTensor)):
-        # TODO: Test this
-        try:
-            kt = CPTensor(init)
-        except ValueError:
-            raise ValueError(
-                "If initialization method is a mapping, then it must "
-                "be possible to convert it to a CPTensor instance"
-            )
-        return kt
-    else:
-        raise ValueError('Initialization method "{}" not recognized'.format(init))
-
-    # Make decomposition feasible by taking the absolute value of all factor matrices
-    kt.factors = [tl.abs(f) for f in kt[1]]
-
-    if normalize_factors:
-        kt = cp_normalize(kt)
-
-    return kt
 
 
 def non_negative_parafac(
@@ -141,7 +53,7 @@ def non_negative_parafac(
                  maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -170,15 +82,13 @@ def non_negative_parafac(
     epsilon = tl.eps(tensor.dtype)
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
-    if mask is not None and init == "svd":
-        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
-        warnings.warn(message, Warning)
-
-    weights, factors = initialize_nn_cp(
+    weights, factors = initialize_cp(
         tensor,
         rank,
         init=init,
         svd=svd,
+        non_negative=True,
+        mask=mask,
         random_state=random_state,
         normalize_factors=normalize_factors,
     )
@@ -305,7 +215,7 @@ def non_negative_parafac_hals(
                  maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
           the reconstruction error is less than the tolerance
@@ -357,11 +267,12 @@ def non_negative_parafac_hals(
        Neural Computation 24 (4): 1085-1105, 2012.
     """
 
-    weights, factors = initialize_nn_cp(
+    weights, factors = initialize_cp(
         tensor,
         rank,
         init=init,
         svd=svd,
+        non_negative=True,
         random_state=random_state,
         normalize_factors=normalize_factors,
     )
@@ -488,7 +399,7 @@ class CP_NN(DecompositionMixin):
         init : {'svd', 'random'}, optional
             Type of factor matrix initialization. See `initialize_factors`.
         svd : str, default is 'truncated_svd'
-            function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+            function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
         normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
             of shape (rank, ), which will contain the norms of the factors
         tol : float, optional
@@ -623,7 +534,7 @@ class CP_NN_HALS(DecompositionMixin):
     init : {'svd', 'random'}, optional
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.tenalg.svd.svd_funs
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
     tol : float, optional
