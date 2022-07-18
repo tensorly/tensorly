@@ -56,12 +56,23 @@ def test_parafac(
     tol_max_abs = 0.05
     shape = (6, 8, 4)
 
-    factors = random_cp(shape, rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng)
+    factors = random_cp(
+        shape, rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng
+    )
 
     # Generate a random complex tensor if requested
     if complex:
-        factors_imag = random_cp(shape, rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng)
-        factors.factors = [fm_re + (fm_im * 1.0j) for fm_re, fm_im in zip(factors.factors, factors_imag.factors)]
+        factors_imag = random_cp(
+            shape,
+            rank=true_rank,
+            orthogonal=orthogonalise,
+            full=False,
+            random_state=rng,
+        )
+        factors.factors = [
+            fm_re + (fm_im * 1.0j)
+            for fm_re, fm_im in zip(factors.factors, factors_imag.factors)
+        ]
 
     tensor = tl.cp_to_tensor(factors)
 
