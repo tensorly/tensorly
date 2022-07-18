@@ -209,13 +209,10 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
 
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
+            iprod = tl.sum(tl.sum(mttkrp * tl.conj(factors[-1]), axis=0))
             unnorml_rec_error = tl.sqrt(
                 tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
             )
-
-            errchk, _, _ = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None)
-            np.testing.assert_allclose(unnorml_rec_error, errchk, atol=1e-6, rtol=1e-6)
 
     return unnorml_rec_error, tensor, norm_tensor
 

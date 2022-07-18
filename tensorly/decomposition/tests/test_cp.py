@@ -54,22 +54,16 @@ def test_parafac(
     rng = tl.check_random_state(random_state)
     tol_norm_2 = 0.01
     tol_max_abs = 0.05
+    shape = (6, 8, 4)
 
-    # Hack to generate a random complex tensor
+    factors = random_cp(shape, rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng)
+
+    # Generate a random complex tensor if requested
     if complex:
-        facReal = random_cp(
-            (6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng
-        )
-        facComplex = random_cp(
-            (6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng
-        )
+        factors_imag = random_cp(shape, rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng)
+        factors.factors = [fm_re + (fm_im * 1.0j) for fm_re, fm_im in zip(factors.factors, factors_imag.factors)]
 
-        facBoth = [facReal.factors[i] + facComplex.factors[i]*1j for i in range(len(facReal.factors))]
-        tensor = tl.cp_to_tensor((None, facBoth))
-    else:
-        tensor = random_cp(
-            (6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=True, random_state=rng
-        )
+    tensor = tl.cp_to_tensor(factors)
 
     rng = tl.check_random_state(random_state)
     fac, errors = parafac(
