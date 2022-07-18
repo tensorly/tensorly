@@ -38,7 +38,10 @@ from ...metrics.factors import congruence_coefficient
 @pytest.mark.parametrize("init", ["svd", "random"])
 @pytest.mark.parametrize("normalize_factors", [False, True])
 @pytest.mark.parametrize("random_state", [1, 1234])
-@pytest.mark.parametrize("complex", [False, True])
+# mxnet does not support complex numbers. tensorflow has issues with type promotion that would require more code changes
+@pytest.mark.parametrize(
+    "complex", [False] if tl.get_backend() in ["mxnet", "tensorflow"] else [True, False]
+)
 def test_parafac(
     linesearch,
     orthogonalise,
@@ -70,8 +73,7 @@ def test_parafac(
             random_state=rng,
         )
         factors.factors = [
-            tl.tensor(fm_re, dtype=tl.complex64)
-            + (tl.tensor(fm_im, dtype=tl.complex64) * 1.0j)
+            fm_re + (fm_im * 1.0j)
             for fm_re, fm_im in zip(factors.factors, factors_imag.factors)
         ]
 
