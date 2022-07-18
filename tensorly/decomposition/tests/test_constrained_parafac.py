@@ -286,7 +286,12 @@ def test_constrained_parafac_unimodality():
     )
     tensor = cp_to_tensor(tensor_init)
     _, factors = constrained_parafac(
-        tensor, unimodality=True, rank=rank, init=tensor_init, n_iter_max=2, random_state=rng
+        tensor,
+        unimodality=True,
+        rank=rank,
+        init=tensor_init,
+        n_iter_max=2,
+        random_state=rng,
     )
     for factor in factors:
         max_location = T.argmax(factor[:, 0])

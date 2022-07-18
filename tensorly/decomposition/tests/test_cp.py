@@ -70,7 +70,8 @@ def test_parafac(
             random_state=rng,
         )
         factors.factors = [
-            tl.tensor(fm_re, dtype=tl.complex64) + (tl.tensor(fm_im, dtype=tl.complex64) * 1.0j)
+            tl.tensor(fm_re, dtype=tl.complex64)
+            + (tl.tensor(fm_im, dtype=tl.complex64) * 1.0j)
             for fm_re, fm_im in zip(factors.factors, factors_imag.factors)
         ]
 
