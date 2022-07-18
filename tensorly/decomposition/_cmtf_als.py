@@ -1,3 +1,4 @@
+import warnings
 import tensorly as tl
 from ..tenalg import khatri_rao
 from ..cp_tensor import CPTensor, validate_cp_rank, cp_to_tensor, cp_normalize
@@ -10,7 +11,13 @@ from ._cp import initialize_cp
 
 
 def coupled_matrix_tensor_3d_factorization(
-    tensor_3d, matrix, rank, init="svd", n_iter_max=100, normalize_factors=False
+    tensor_3d,
+    matrix,
+    rank,
+    init="svd",
+    n_iter_max=100,
+    tol=1e-6,
+    normalize_factors=False,
 ):
     """
     Calculates a coupled matrix and tensor factorization of 3rd order tensor and matrix which are
@@ -43,6 +50,10 @@ def coupled_matrix_tensor_3d_factorization(
         matrix that is coupled with tensor in first mode: Y = [[A, V]]
     rank : int
         rank for CP decomposition of X
+    tol : float, optional
+        (Default: 1e-6) Relative reconstruction error tolerance. The
+        algorithm is considered to have found the global minimum when the
+        reconstruction error is less than `tol`.
 
     Returns
     -------
@@ -72,6 +83,11 @@ def coupled_matrix_tensor_3d_factorization(
 
     # initialize values
     tensor_cp = initialize_cp(tensor_3d, rank, init=init)
+    # the coupled factor should be initialized with the concatenated dataset
+    coupled_unfold = tl.concatenate((tl.unfold(tensor_3d, 0), matrix), axis=1)
+    coupled_init = initialize_cp(coupled_unfold, rank, init=init)
+    tensor_cp.factors[0] = coupled_init.factors[0]
+
     rec_errors = []
 
     # alternating least squares
@@ -81,7 +97,8 @@ def coupled_matrix_tensor_3d_factorization(
         V = tl.transpose(tl.lstsq(tensor_cp.factors[0], matrix)[0])
 
         # Loop over modes of the tensor
-        for ii in range(tl.ndim(tensor_3d)):
+        # We want to solve for mode 0 last, since the coupled factor matrix is most influential and SVD gave us a good approximation
+        for ii in reversed(range(tl.ndim(tensor_3d))):
             kr = khatri_rao(tensor_cp.factors, skip_matrix=ii)
             unfolded = tl.unfold(tensor_3d, ii)
 
@@ -100,11 +117,15 @@ def coupled_matrix_tensor_3d_factorization(
         )
 
         if iteration > 0 and (
-            tl.abs(error_new - error_old) / error_old <= 1e-8 or error_new < 1e-5
+            tl.abs(error_new - error_old) / error_old <= tol or error_new < tol
         ):
             break
+
         error_old = error_new
         rec_errors.append(error_new)
+
+        if iteration == n_iter_max - 1:
+            warnings.warn("Reached maximum iteration number without convergance.")
 
     matrix_pred = CPTensor((None, [tensor_cp.factors[0], V]))
 
