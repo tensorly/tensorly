@@ -520,7 +520,11 @@ def test_sample_khatri_rao():
     num_samples = 4
     skip_matrix = 1
     sampled_kr, _, sampled_rows = sample_khatri_rao(
-        factors, num_samples, skip_matrix=skip_matrix, return_sampled_rows=True, random_state=rng
+        factors,
+        num_samples,
+        skip_matrix=skip_matrix,
+        return_sampled_rows=True,
+        random_state=rng,
     )
     assert_(
         T.shape(sampled_kr) == (num_samples, rank),
