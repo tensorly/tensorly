@@ -128,7 +128,7 @@ def test_parafac(
     )
 
     # Test fixing mode 0 or 1 with given init
-    fixed_tensor = random_cp((6, 8, 4), rank=true_rank, normalise_factors=False)
+    fixed_tensor = random_cp((6, 8, 4), rank=true_rank, normalise_factors=False, **tl.context(tensor))
     rec_svd_fixed_mode_0 = parafac(
         tensor,
         rank=true_rank,
