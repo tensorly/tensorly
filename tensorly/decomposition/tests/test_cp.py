@@ -37,7 +37,7 @@ from ...metrics.factors import congruence_coefficient
 @pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 4)])
 @pytest.mark.parametrize("init", ["svd", "random"])
 @pytest.mark.parametrize("normalize_factors", [False, True])
-@pytest.mark.parametrize("random_state", [1, 1234])
+@pytest.mark.parametrize("random_state", [1, 1236])
 @pytest.mark.parametrize("complex", [False, True])
 def test_parafac(
     linesearch,
