@@ -214,6 +214,9 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
                 tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
             )
 
+            errchk, _, _ = error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None)
+            np.testing.assert_allclose(unnorml_rec_error, errchk, atol=1e-6, rtol=1e-6)
+
     return unnorml_rec_error, tensor, norm_tensor
 
 
