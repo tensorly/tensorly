@@ -164,6 +164,12 @@ def svd_checks(matrix, n_eigenvecs=None):
 
     Returns
     -------
+    n_eigenvecs : int
+        the number of eigenvectors to solve for
+    min_dim : int
+        the minimum dimension of matrix
+    max_dim : int
+        the maximum dimension of matrix
     """
     # Check that matrix is... a matrix!
     if tl.ndim(matrix) != 2:
