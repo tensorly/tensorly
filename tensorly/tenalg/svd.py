@@ -346,7 +346,7 @@ SVD_FUNS = ["truncated_svd", "symeig_svd", "randomized_svd"]
 
 
 def svd_funs(
-    tensor,
+    matrix,
     svd_type="truncated_svd",
     n_eigenvecs=None,
     flip_svd=True,
@@ -357,6 +357,42 @@ def svd_funs(
     svd_mask_repeats=5,
     **kwargs,
 ):
+    """Dispatching function to various SVD algorithms, alongside additional
+    properties such as resolving sign invariance, imputation, and non-negativity.
+
+    Parameters
+    ----------
+    matrix : tensor
+        A 2D tensor.
+    svd : str, default is 'truncated_svd'
+        Function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS.
+    n_eigenvecs : int, optional, default is None
+        If specified, number of eigen[vectors-values] to return.
+    flip_svd : bool, optional, default is True
+        Whether to resolve the sign indeterminacy of SVD.
+    non_negative : bool, optional, default is False
+        Whether to make the SVD results non-negative.
+    nntype : str, default is 'nndsvd'
+        Algorithm to use for converting U to be non-negative.
+    u_based_decision : bool, optional, default is True
+        Whether the sign indeterminacy should be resolved using U (vs. V).
+    mask : tensor, default is None.
+        Array of booleans with the same shape as ``matrix``. Should be 0 where
+        the values are missing and 1 everywhere else. None if nothing is missing.
+    svd_mask_repeats : int, default is 5
+        Number of repetitions to apply in missing value imputation.
+    **kwargs : optional
+        Arguments passed along to individual SVD algorithms.
+
+    Returns
+    -------
+    U : 2-D tensor, shape (matrix.shape[0], n_eigenvecs)
+        Contains the right singular vectors of `matrix`
+    S : 1-D tensor, shape (n_eigenvecs, )
+        Contains the singular values of `matrix`
+    V : 2-D tensor, shape (n_eigenvecs, matrix.shape[1])
+        Contains the left singular vectors of `matrix`
+    """
 
     if svd_type == "truncated_svd":
         svd_fun = truncated_svd
@@ -369,17 +405,17 @@ def svd_funs(
             f"Got svd={svd_type}. However, the possible choices are {SVD_FUNS}"
         )
 
-    U, S, V = svd_fun(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
+    U, S, V = svd_fun(matrix, n_eigenvecs=n_eigenvecs, **kwargs)
 
     if mask is not None:
         for _ in range(svd_mask_repeats):
-            tensor = tensor * mask + (U @ tl.diag(S) @ V) * (1 - mask)
-            U, S, V = svd_fun(tensor, n_eigenvecs=n_eigenvecs, **kwargs)
+            matrix = matrix * mask + (U @ tl.diag(S) @ V) * (1 - mask)
+            U, S, V = svd_fun(matrix, n_eigenvecs=n_eigenvecs, **kwargs)
 
     if flip_svd:
         U, V = svd_flip(U, V, u_based_decision=u_based_decision)
 
     if non_negative:
-        U = make_svd_non_negative(tensor, U, S, V, nntype)
+        U = make_svd_non_negative(matrix, U, S, V, nntype)
 
     return U, S, V
