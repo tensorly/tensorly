@@ -9,9 +9,9 @@ from ..random import random_tt, random_tr, random_tt_matrix
 import pytest
 
 
-skip_mxnet= pytest.mark.skipif(
+skip_mxnet = pytest.mark.skipif(
     tl.get_backend() == "mxnet",
-    reason="MXNet currently does not support transpose for tensors of order > 6."
+    reason="MXNet currently does not support transpose for tensors of order > 6.",
 )
 
 
@@ -156,6 +156,7 @@ def test_validate_tt_rank():
     assert_(n_param >= n_param_tensor * coef)
 
 
+@skip_mxnet
 @pytest.mark.parametrize("n_pad", [1, 2])
 def test_pad_tt_rank(n_pad):
     """Test for pad_tt_rank"""
