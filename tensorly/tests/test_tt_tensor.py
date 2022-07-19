@@ -9,7 +9,6 @@ from ..random import random_tt, random_tr, random_tt_matrix
 import pytest
 
 
-
 def test_validate_tt_tensor():
     rng = tl.check_random_state(12345)
     true_shape = (3, 4, 5)
