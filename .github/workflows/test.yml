@@ -36,7 +36,7 @@ jobs:
         elif [[ "${{matrix.BACKEND}}" == "mxnet" ]]; then
           echo "Installing MXNet";
           sudo apt install gfortran;
-          pip install mxnet;
+          pip install mxnet --pre -f https://dist.mxnet.io/python;
         elif [[ "${{matrix.BACKEND}}" == "jax" ]]; then
           echo "Installing JAX";
           pip install jax jaxlib;
