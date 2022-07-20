@@ -229,6 +229,11 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.symeig(tensor, eigenvectors=True)
 
     @staticmethod
+    def sign(tensor):
+        """torch.sign does not support complex numbers."""
+        return torch.sgn(tensor)
+
+    @staticmethod
     def svd(matrix, full_matrices=True):
         some = not full_matrices
         u, s, v = torch.svd(matrix, some=some, compute_uv=True)

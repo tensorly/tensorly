@@ -365,7 +365,7 @@ def svd_funs(
     matrix : tensor
         A 2D tensor.
     svd : str, default is 'truncated_svd'
-        Function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS.
+        Function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS or a callable.
     n_eigenvecs : int, optional, default is None
         If specified, number of eigen[vectors-values] to return.
     flip_svd : bool, optional, default is True
@@ -400,9 +400,11 @@ def svd_funs(
         svd_fun = symeig_svd
     elif svd_type == "randomized_svd":
         svd_fun = randomized_svd
+    elif callable(svd_type):
+        svd_fun = svd_type
     else:
         raise ValueError(
-            f"Got svd={svd_type}. However, the possible choices are {SVD_FUNS}"
+            f"Got svd={svd_type}. However, the possible choices are {SVD_FUNS} or to pass a callable."
         )
 
     U, S, V = svd_fun(matrix, n_eigenvecs=n_eigenvecs, **kwargs)

@@ -72,6 +72,7 @@ for name in (
         "mean",
         "sum",
         "stack",
+        "sign",
         "conj",
         "diag",
         "tensordot",

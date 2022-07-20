@@ -50,7 +50,6 @@ backend_array = [
     "cumsum",
     "count_nonzero",
     "eye",
-    "sign",
     "sqrt",
     "abs",
     "min",

@@ -98,6 +98,7 @@ for name in (
         "argmin",
         "argmax",
         "stack",
+        "sign",
         "conj",
         "diag",
         "clip",

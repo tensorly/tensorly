@@ -109,6 +109,7 @@ for name in (
         "trace",
         "concatenate",
         "max",
+        "sign",
         "flip",
         "mean",
         "sum",

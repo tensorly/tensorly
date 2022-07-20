@@ -77,6 +77,7 @@ for name in (
         "sum",
         "argmin",
         "argmax",
+        "sign",
         "stack",
         "conj",
         "diag",

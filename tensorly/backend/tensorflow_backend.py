@@ -134,6 +134,7 @@ for name in (
         "stack",
         "copy",
         "max",
+        "sign",
         "mean",
         "sum",
         "moveaxis",
