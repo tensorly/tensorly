@@ -724,9 +724,10 @@ def cp_norm(cp_tensor):
     """
     _ = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
-    norm = 1
-    for factor in factors:
-        norm *= T.dot(T.transpose(factor), factor)
+
+    norm = T.ones((factors[0].shape[1], factors[0].shape[1]))
+    for f in factors:
+        norm = norm * T.dot(T.transpose(f), T.conj(f))
 
     if weights is not None:
         # norm = T.dot(T.dot(weights, norm), weights)
