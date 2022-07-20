@@ -1210,6 +1210,18 @@ class Backend(object):
         """Return the arctan of x."""
         raise NotImplementedError
 
+    def asin(self, x):
+        """Return the arcsin of x."""
+        return self.arcsin(x)
+
+    def acos(self, x):
+        """Return the arccos of x."""
+        return self.arccos(x)
+
+    def atan(self, x):
+        """Return the arctan of x."""
+        return self.arctan(x)
+
     @staticmethod
     def sinh(x):
         """Return the sinh of x."""
@@ -1239,3 +1251,15 @@ class Backend(object):
     def arctanh(x):
         """Return the arctanh of x."""
         raise NotImplementedError
+    
+    def asinh(self, x):
+        """Return the arcsinh of x."""
+        return self.arcsinh(x)
+
+    def acosh(self, x):
+        """Return the arccosh of x."""
+        return self.arccosh(x)
+
+    def atanh(self, x):
+        """Return the arctanh of x."""
+        return self.arctanh(x)

@@ -88,6 +88,9 @@ class BackendManager(types.ModuleType):
         "sin",
         "cos",
         "tan",
+        "asin",
+        "acos",
+        "atan",
         "arcsin",
         "arccos",
         "arctan",
@@ -97,6 +100,9 @@ class BackendManager(types.ModuleType):
         "arcsinh",
         "arccosh",
         "arctanh",
+        "asinh",
+        "acosh",
+        "atanh",
     ]
     _attributes = [
         "int64",
