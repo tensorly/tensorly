@@ -330,21 +330,11 @@ def test_parafac2_to_tensor():
     )
 
     constructed_tensor = parafac2_to_tensor((weights, factors, projections))
-    tensor_manual = T.zeros((I, J, K), **T.context(weights))
 
     for i in range(I):
         Bi = T.dot(projections[i], factors[1])
-        for j in range(J):
-            for k in range(K):
-                for r in range(rank):
-                    tensor_manual = tl.index_update(
-                        tensor_manual,
-                        tl.index[i, j, k],
-                        tensor_manual[i, j, k]
-                        + factors[0][i][r] * Bi[j][r] * factors[2][k][r],
-                    )
-
-    assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-6)
+        manual_tensor = T.einsum("r,jr,kr", factors[0][i], Bi, factors[2])
+        assert_(tl.max(tl.abs(constructed_tensor[i, :, :] - manual_tensor)) < 1e-6)
 
 
 def test_pad_by_zeros():
