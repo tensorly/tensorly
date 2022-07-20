@@ -103,7 +103,7 @@ for name in ["nan"]:
 
 
 # Register linalg functions
-for name in ["diag", "qr", "eigh", "trace"]:
+for name in ["diag", "qr", "eigh", "trace", "inv", "pinv"]:
     TensorflowBackend.register_method(name, getattr(tf.linalg, name))
 
 
@@ -116,6 +116,7 @@ for name in ["exp", "log", "digamma", "atanh", "acosh", "asinh", "tanh", "cosh",
 for name in [
     "log2",
     "concatenate",
+    "tile",
     "flip",
     "dot",
     "matmul",

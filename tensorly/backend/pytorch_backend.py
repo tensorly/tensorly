@@ -225,7 +225,7 @@ class PyTorchBackend(Backend, backend_name='pytorch'):
 for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
              'pi', 'e', 'inf', 'nan',
              'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum', 'count_nonzero',
-             'zeros_like', 'reshape', 'eye', 'min', 'prod', 'abs', 'matmul',
+             'zeros_like', 'reshape', 'eye', 'min', 'tile', 'prod', 'abs', 'matmul',
              'sqrt', 'sign', 'where', 'conj', 'finfo', 'einsum',
              'log', 'log2', 'exp', 'digamma',
              'sin', 'cos', 'tan', 
@@ -249,5 +249,5 @@ else:
     for name in ['kron', 'moveaxis']:
         PyTorchBackend.register_method(name, getattr(torch, name))
 
-    for name in ['solve', 'qr', 'svd', 'eigh']:
+    for name in ['solve', 'qr', 'svd', 'eigh', 'inv', 'pinv']:
         PyTorchBackend.register_method(name, getattr(torch.linalg, name))

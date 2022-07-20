@@ -52,7 +52,7 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
  'reshape', 'moveaxis',
              'pi', 'e', 'inf', 'nan',
              'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye', 'trace', 'any',
-             'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip', 'matmul',
+             'arange', 'where', 'dot', 'kron', 'concatenate', 'tile', 'max', 'flip', 'matmul',
              'min', 'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'stack',
              'conj', 'diag', 'einsum', 'tensordot', 
              'log', 'log2', 'exp',
@@ -63,7 +63,7 @@ for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
              ]:
     CupyBackend.register_method(name, getattr(cp, name))
 
-for name in ['svd', 'qr', 'eigh', 'solve']:
+for name in ['svd', 'qr', 'eigh', 'solve', 'inv', 'pinv']:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
 
 CupyBackend.regsiter_method('gamma', cp.random.gamma)

@@ -1,7 +1,6 @@
-import numpy as np
-from ..base import partial_unfold
-from ..tenalg import khatri_rao
-from ..cp_tensor import cp_to_tensor, cp_to_vec
+from ..tenalg import khatri_rao, mode_dot, multi_mode_dot
+from ..cp_tensor import CPTensor, cp_to_tensor, cp_to_vec
+from ..decomposition import tucker
 from .. import backend as T
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
@@ -9,7 +8,7 @@ from .. import backend as T
 # License: BSD 3 clause
 
 
-class CP_PLSR:
+class CP_PLSR():
     """CP tensor regression
 
         Learns a low rank CP tensor weight
@@ -61,14 +60,54 @@ class CP_PLSR:
         -------
         self
         """
+        ## PREPROCESSING
         # Check that both tensors are coupled along the first mode
         assert T.shape(X)[0] == T.shape(Y)[0]
+        X, Y = T.copy(X), T.copy(Y)
 
         # Make Y 2D if it is a vector
         if T.ndim(Y) == 1:
             Y = T.reshape(Y, (-1, 1))
+        if T.ndim(Y) != 2:
+            raise ValueError("Only a matrix (2-mode tensor) Y is allowed.")
 
-        raise NotImplementedError
+        # Mean center the data
+        self.X_dim = T.ndim(X)
+        self.original_X = T.copy(X)  # TODO: check on the necessity of these
+        self.original_Y = T.copy(Y)
+        self.X_mean = T.mean(X, axis=0)
+        self.Y_mean = T.mean(Y, axis=0)
+        X -= self.X_mean
+        Y -= self.Y_mean
+
+        self.X_factors = [T.zeros((l, self.n_components)) for l in T.shape(X)]
+        self.Y_factors = [T.tile(Y[:, [0]], self.n_components), T.zeros((T.shape(Y)[1], self.n_components))]
+
+        ## FITTING EACH COMPONENT
+        for a in range(self.n_components):
+            oldU = T.ones(T.shape(self.Y_factors[0][:, a])) * T.inf
+            for iter in range(self.n_iter_max):
+                Z = T.einsum("i...,i...->...", X, self.Y_factors[0][:, a])
+                Z_comp = tucker(Z, [1] * T.ndim(Z))[1] if Z.ndim >= 2 else [Z / T.norm(Z)]
+                for ii in range(Z.ndim):
+                    self.X_factors[ii + 1][:, a] = Z_comp[ii].flatten()
+
+                self.X_factors[0][:, a] = multi_mode_dot(X, [ff[:, a] for ff in self.X_factors[1:]], range(1, T.ndim(X)))
+                self.Y_factors[1][:, a] = T.dot(T.transpose(Y), self.X_factors[0][:, a])
+                self.Y_factors[1][:, a] /= T.norm(self.Y_factors[1][:, a])
+                self.Y_factors[0][:, a] = T.dot(Y, self.Y_factors[1][:, a])
+                if T.norm(oldU - self.Y_factors[0][:, a]) < self.tol:
+                    if self.verbose:
+                        print("Component {}: converged after {} iterations".format(a, iter))
+                    break
+                oldU = self.Y_factors[0][:, a].copy()
+
+            X -= CPTensor((None, [ff[:, a].reshape(-1, 1) for ff in self.X_factors])).to_tensor()
+            Y -= T.dot(T.dot(T.dot(self.X_factors[0], T.pinv(self.X_factors[0])),
+                             self.Y_factors[0][:, [a]]), T.transpose(self.Y_factors[1][:, [a]]))   # Y -= T pinv(T) u q'
+
+        return self
+
 
     def predict(self, X):
         """Returns the predicted labels for a new data tensor

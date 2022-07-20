@@ -25,11 +25,11 @@ class dynamically_dispatched_class_attribute(object):
 class BackendManager(types.ModuleType):
     _functions = ['reshape', 'moveaxis', 'any', 'trace', 'shape', 'ndim',
                   'where', 'copy', 'transpose', 'arange', 'ones', 'zeros',
-                  'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
+                  'zeros_like', 'eye', 'kron', 'concatenate', 'tile', 'max', 'min', 'matmul',
                   'all', 'mean', 'sum', 'cumsum', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
                   'argmax', 'stack', 'conj', 'diag', 'einsum', 'log', 'log2', 'dot', 'tensordot',
                   'exp', 'clip', 'kr', 'kron', 'partial_svd', 'lstsq', 'eps', 'finfo',
-                  'solve', 'qr', 'randn', 'check_random_state', 'sort', 'eigh',
+                  'solve', 'qr', 'randn', 'check_random_state', 'sort', 'eigh', 'inv', 'pinv',
                   'index_update', 'context', 'tensor', 'norm', 'to_numpy', 'is_tensor',
                   'randomized_range_finder', 'randomized_svd', 'argsort', 'flip', 'count_nonzero',
                   'sin', 'cos', 'tan', 

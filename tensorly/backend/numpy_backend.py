@@ -54,7 +54,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64',
              'pi', 'e', 'inf', 'nan',
              'reshape', 'moveaxis', 'any', 'trace',
              'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'flip',
-             'zeros_like', 'eye', 'kron', 'concatenate', 'max', 'min', 'matmul',
+             'zeros_like', 'eye', 'kron', 'concatenate', 'tile', 'max', 'min', 'matmul',
              'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'argmin',
              'argmax', 'stack', 'conj', 'diag', 'einsum', 'log', 'log2', 'tensordot', 'exp',
              'sin', 'cos', 'tan', 
@@ -64,7 +64,7 @@ for name in ['int64', 'int32', 'float64', 'float32', 'complex128', 'complex64',
             ]:
     NumpyBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr', 'svd', 'eigh']:
+for name in ['solve', 'qr', 'svd', 'eigh', 'inv', 'pinv']:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
 
 for name in ['digamma']:
