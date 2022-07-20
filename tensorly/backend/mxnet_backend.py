@@ -2,9 +2,11 @@ try:
     import mxnet as mx
     from mxnet import numpy as np
 except ImportError as error:
-    message = ('Cannot import MXNet.\n'
-               'To use TensorLy with the MXNet backend, '
-               'you must first install MXNet!')
+    message = (
+        "Cannot import MXNet.\n"
+        "To use TensorLy with the MXNet backend, "
+        "you must first install MXNet!"
+    )
     raise ImportError(message) from error
 
 import warnings
@@ -14,11 +16,10 @@ from .core import Backend
 mx.npx.set_np()
 
 
-class MxnetBackend(Backend, backend_name='mxnet'):
-
+class MxnetBackend(Backend, backend_name="mxnet"):
     @staticmethod
     def context(tensor):
-        return {'dtype': tensor.dtype}
+        return {"dtype": tensor.dtype}
 
     @staticmethod
     def tensor(data, dtype=None, **kwargs):
@@ -51,7 +52,7 @@ class MxnetBackend(Backend, backend_name='mxnet'):
     def conj(x, *args, **kwargs):
         """WARNING: IDENTITY FUNCTION (does nothing)
 
-            This backend currently does not support complex tensors
+        This backend currently does not support complex tensors
         """
         return x
 
@@ -80,7 +81,7 @@ class MxnetBackend(Backend, backend_name='mxnet'):
             U, S, V = V.T, S, U.T
         else:
             U, S, V = np.linalg.svd(X)
-        
+
         return U, S, V
 
     @staticmethod
@@ -89,19 +90,69 @@ class MxnetBackend(Backend, backend_name='mxnet'):
         return x, residuals
 
 
-for name in ['int64', 'int32', 'float64', 'float32', 
-             'pi', 'e', 'inf', 'nan',
-             'reshape', 'moveaxis',
-             'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'trace', 'any',
-             'zeros_like', 'eye', 'concatenate', 'tile', 'max', 'min', 'flip', 'matmul',
-             'all', 'mean', 'sum', 'cumsum', 'count_nonzero',  'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'diag', 'einsum', 'log', 'log2', 'tensordot', 'exp',
-             'sin', 'cos', 'tan', 
-             'arcsin', 'arccos', 'arctan',
-             'sinh', 'cosh', 'tanh', 'argsort', 'sort', 'dot', 'shape',
-             'arcsinh', 'arccosh', 'arctanh',
-            ]:
+for name in [
+    "int64",
+    "int32",
+    "float64",
+    "float32",
+    "pi",
+    "e",
+    "inf",
+    "nan",
+    "reshape",
+    "moveaxis",
+    "where",
+    "copy",
+    "transpose",
+    "arange",
+    "ones",
+    "zeros",
+    "trace",
+    "any",
+    "zeros_like",
+    "eye",
+    "concatenate",
+    "tile",
+    "max",
+    "min",
+    "flip",
+    "matmul",
+    "all",
+    "mean",
+    "sum",
+    "cumsum",
+    "count_nonzero",
+    "prod",
+    "sign",
+    "abs",
+    "sqrt",
+    "argmin",
+    "argmax",
+    "stack",
+    "diag",
+    "einsum",
+    "log",
+    "log2",
+    "tensordot",
+    "exp",
+    "sin",
+    "cos",
+    "tan",
+    "arcsin",
+    "arccos",
+    "arctan",
+    "sinh",
+    "cosh",
+    "tanh",
+    "argsort",
+    "sort",
+    "dot",
+    "shape",
+    "arcsinh",
+    "arccosh",
+    "arctanh",
+]:
     MxnetBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr', 'eigh', 'inv', 'pinv']:
+for name in ["solve", "qr", "eigh", "inv", "pinv"]:
     MxnetBackend.register_method(name, getattr(np.linalg, name))

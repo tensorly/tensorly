@@ -4,7 +4,7 @@ from ...testing import assert_, assert_array_almost_equal, assert_raises
 
 
 def test_tensor_ring():
-    """ Test for tensor_ring """
+    """Test for tensor_ring"""
     # Create tensor with random elements
     tensor_shape = (6, 2, 3, 2, 6)
     rank = (3, 2, 4, 12, 18, 3)
@@ -12,12 +12,17 @@ def test_tensor_ring():
 
     # Compute TR decomposition
     tr_tensor = tensor_ring(tensor, rank)
-    assert_(len(tr_tensor.factors) == len(tensor_shape),
-            f"Number of factors should be {len(tensor_shape)}, currently has {len(tr_tensor.factors)}")
+    assert_(
+        len(tr_tensor.factors) == len(tensor_shape),
+        f"Number of factors should be {len(tensor_shape)}, currently has {len(tr_tensor.factors)}",
+    )
 
     for k in range(len(tensor_shape)):
         (r_prev_k, n_k, r_k) = tr_tensor[k].shape
-        assert_(n_k == tensor_shape[k], f"Mode 2 of factor {k} should have {tensor_shape[k]} dimensions, currently has {n_k}")
+        assert_(
+            n_k == tensor_shape[k],
+            f"Mode 2 of factor {k} should have {tensor_shape[k]} dimensions, currently has {n_k}",
+        )
         assert_(r_prev_k == rank[k], "Incorrect ranks")
         if k:
             assert_(r_prev_k == r_prev_iteration, "Incorrect ranks")
@@ -27,7 +32,7 @@ def test_tensor_ring():
 
 
 def test_tensor_ring_mode():
-    """ Test for tensor_ring `mode` argument"""
+    """Test for tensor_ring `mode` argument"""
     # Create tensor with random elements
     tensor_shape = (6, 2, 3, 2, 6)
     rank = (12, 2, 1, 3, 6, 12)
@@ -35,12 +40,17 @@ def test_tensor_ring_mode():
 
     # Compute TR decomposition
     tr_tensor = tensor_ring(tensor, rank, mode=1)
-    assert_(len(tr_tensor.factors) == len(tensor_shape),
-            f"Number of factors should be {len(tensor_shape)}, currently has {len(tr_tensor.factors)}")
+    assert_(
+        len(tr_tensor.factors) == len(tensor_shape),
+        f"Number of factors should be {len(tensor_shape)}, currently has {len(tr_tensor.factors)}",
+    )
 
     for k in range(len(tensor_shape)):
         (r_prev_k, n_k, r_k) = tr_tensor[k].shape
-        assert_(n_k == tensor_shape[k], f"Mode 2 of factor {k} should have {tensor_shape[k]} dimensions, currently has {n_k}")
+        assert_(
+            n_k == tensor_shape[k],
+            f"Mode 2 of factor {k} should have {tensor_shape[k]} dimensions, currently has {n_k}",
+        )
         assert_(r_prev_k == rank[k], "Incorrect ranks")
         if k:
             assert_(r_prev_k == r_prev_iteration, "Incorrect ranks")

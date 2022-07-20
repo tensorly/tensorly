@@ -15,6 +15,14 @@ Guidelines
 
 For each function or class, we expect helpful docstrings in the NumPy format, as well as unit-tests to make sure it is working as expected (especially helpful for future refactoring to make sure no exising code is broken!)
 
+Before you submit your changes, you should also make sure your code adheres to our style-guide. The easiest way to do this is with `black`:  
+
+.. code:: bash
+
+   pip install black
+   black .
+
+
 Check the existing code for examples, and don't hesitate to contact the developers if you are unsure! 
 
 

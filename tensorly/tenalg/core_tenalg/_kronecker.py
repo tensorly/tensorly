@@ -5,7 +5,6 @@ from ... import backend as T
 # License: BSD 3 clause
 
 
-
 def kronecker(matrices, skip_matrix=None, reverse=False):
     """Kronecker product of a list of matrices
 
@@ -54,4 +53,3 @@ def kronecker(matrices, skip_matrix=None, reverse=False):
         else:
             res = T.kron(res, matrix)
     return res
-
