@@ -1251,7 +1251,7 @@ class Backend(object):
     def arctanh(x):
         """Return the arctanh of x."""
         raise NotImplementedError
-    
+
     def asinh(self, x):
         """Return the arcsinh of x."""
         return self.arcsinh(x)
