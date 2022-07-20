@@ -38,6 +38,10 @@ from ...metrics.factors import congruence_coefficient
 @pytest.mark.parametrize("init", ["svd", "random"])
 @pytest.mark.parametrize("normalize_factors", [False, True])
 @pytest.mark.parametrize("random_state", [1, 1234])
+# mxnet does not support complex numbers. tensorflow has issues with type promotion that would require more code changes
+@pytest.mark.parametrize(
+    "complex", [False] if tl.get_backend() in ["mxnet", "tensorflow"] else [True, False]
+)
 def test_parafac(
     linesearch,
     orthogonalise,
@@ -46,15 +50,34 @@ def test_parafac(
     init,
     normalize_factors,
     random_state,
+    complex,
     monkeypatch,
 ):
     """Test for the CANDECOMP-PARAFAC decomposition"""
     rng = tl.check_random_state(random_state)
     tol_norm_2 = 0.01
     tol_max_abs = 0.05
-    tensor = random_cp(
-        (6, 8, 4), rank=true_rank, orthogonal=orthogonalise, full=True, random_state=rng
+    shape = (6, 8, 7)
+
+    factors = random_cp(
+        shape, rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng
     )
+
+    # Generate a random complex tensor if requested
+    if complex:
+        factors_imag = random_cp(
+            shape,
+            rank=true_rank,
+            orthogonal=orthogonalise,
+            full=False,
+            random_state=rng,
+        )
+        factors.factors = [
+            fm_re + (fm_im * 1.0j)
+            for fm_re, fm_im in zip(factors.factors, factors_imag.factors)
+        ]
+
+    tensor = tl.cp_to_tensor(factors)
 
     rng = tl.check_random_state(random_state)
     fac, errors = parafac(
@@ -108,7 +131,9 @@ def test_parafac(
     )
 
     # Test fixing mode 0 or 1 with given init
-    fixed_tensor = random_cp((6, 8, 4), rank=true_rank, normalise_factors=False)
+    fixed_tensor = random_cp(
+        shape, rank=true_rank, normalise_factors=False, **tl.context(tensor)
+    )
     rec_svd_fixed_mode_0 = parafac(
         tensor,
         rank=true_rank,
@@ -143,7 +168,7 @@ def test_parafac(
         rank=rank,
         n_iter_max=200,
         init=init,
-        tol=10e-5,
+        tol=1.0e-6,
         sparsity=0.9,
         orthogonalise=orthogonalise,
         linesearch=linesearch,
@@ -491,16 +516,18 @@ def test_non_negative_parafac_hals_one_unconstrained():
 @pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
 def test_sample_khatri_rao():
     """Test for sample_khatri_rao"""
-
     rng = tl.check_random_state(1234)
     t_shape = (8, 9, 10)
     rank = 3
-    tensor = T.tensor(rng.random_sample(t_shape) + 1)
-    weights, factors = parafac(tensor, rank=rank, n_iter_max=120)
+    _, factors = random_cp(t_shape, rank, full=False)
     num_samples = 4
     skip_matrix = 1
-    sampled_kr, sampled_indices, sampled_rows = sample_khatri_rao(
-        factors, num_samples, skip_matrix=skip_matrix, return_sampled_rows=True
+    sampled_kr, _, sampled_rows = sample_khatri_rao(
+        factors,
+        num_samples,
+        skip_matrix=skip_matrix,
+        return_sampled_rows=True,
+        random_state=rng,
     )
     assert_(
         T.shape(sampled_kr) == (num_samples, rank),
