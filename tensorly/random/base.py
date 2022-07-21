@@ -113,7 +113,13 @@ def random_cp(
 
 
 def random_tucker(
-    shape, rank, full=False, orthogonal=False, random_state=None, **context
+    shape,
+    rank,
+    full=False,
+    orthogonal=False,
+    random_state=None,
+    non_negative=False,
+    **context,
 ):
     """Generates a random Tucker tensor
 
@@ -160,6 +166,11 @@ def random_tucker(
             factors.append(T.tensor(rns.random_sample((s, r)), **context))
 
     core = T.tensor(rns.random_sample(rank), **context)
+
+    if non_negative:
+        factors = [T.abs(f) for f in factors]
+        core = T.abs(core)
+
     if full:
         return tucker_to_tensor((core, factors))
     else:
