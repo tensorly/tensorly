@@ -2,6 +2,7 @@ from ..tenalg import khatri_rao, mode_dot, multi_mode_dot
 from ..cp_tensor import CPTensor, cp_to_tensor, cp_to_vec
 from ..decomposition import tucker
 from .. import backend as T
+from .. import unfold
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
 
@@ -62,19 +63,21 @@ class CP_PLSR():
         """
         ## PREPROCESSING
         # Check that both tensors are coupled along the first mode
-        assert T.shape(X)[0] == T.shape(Y)[0]
+        if T.shape(X)[0] != T.shape(Y)[0]:
+            raise ValueError("The first modes of X and Y must be coupled and have the same length.")
         X, Y = T.copy(X), T.copy(Y)
 
-        # Make Y 2D if it is a vector
+        # Check the shape of X and Y; convert vector Y to a matrix
+        if T.ndim(X) < 2:
+            raise ValueError("X must be at least a 2-mode tensor.")
+        if (T.ndim(Y) != 1) and (T.ndim(Y) != 2):
+            raise ValueError("Only a matrix (2-mode tensor) Y is allowed.")
         if T.ndim(Y) == 1:
             Y = T.reshape(Y, (-1, 1))
-        if T.ndim(Y) != 2:
-            raise ValueError("Only a matrix (2-mode tensor) Y is allowed.")
 
-        # Mean center the data
-        self.X_dim = T.ndim(X)
-        self.original_X = T.copy(X)  # TODO: check on the necessity of these
-        self.original_Y = T.copy(Y)
+        # Mean center the data, record info the object
+        self.X_shape = T.shape(X)
+        self.Y_shape = T.shape(Y)
         self.X_mean = T.mean(X, axis=0)
         self.Y_mean = T.mean(Y, axis=0)
         X -= self.X_mean
@@ -117,7 +120,15 @@ class CP_PLSR():
         X : ndarray
             tensor data of shape (n_samples, N1, ..., NS)
         """
-        raise NotImplementedError
+        if self.X_shape[1:] != T.shape(X)[1:]:
+            raise ValueError(f"Training X has shape {self.X_shape}, while the new X has shape {T.shape(X)}")
+        X -= self.X_mean
+        factors_kr = khatri_rao(self.X_factors, skip_matrix=0)
+        unfolded = unfold(X, 0)
+        scores = T.lstsq(factors_kr, T.transpose(unfolded), rcond=-1)[0]  # = Tnew
+        estimators = T.lstsq(self.X_factors[0], self.Y_factors[0], rcond=-1)[0]
+        return T.dot(T.dot(T.transpose(scores), estimators), T.transpose(self.Y_factors[1])) + self.Y_mean
+
 
     def transform(self, X, Y=None):
         """Apply the dimension reduction.
@@ -129,12 +140,41 @@ class CP_PLSR():
             Target vectors.
         Returns
         -------
-        x_scores, y_scores : array-like or tuple of array-like
-            Return `x_scores` if `Y` is not given, `(x_scores, y_scores)` otherwise.
+        X_scores, Y_scores : array-like or tuple of array-like
+            Return `X_scores` if `Y` is not given, `(X_scores, Y_scores)` otherwise.
         """
-        raise NotImplementedError
+        if self.X_shape[1:] != T.shape(X)[1:]:
+            raise ValueError(f"Training X has shape {self.X_shape}, while the new X has shape {T.shape(X)}")
+        X = T.copy(X)
+        X -= self.X_mean
+        X_scores = T.zeros((T.shape(X)[0], self.n_components))
 
-    def fit_transform(self, X, Y=None):
+        for a in range(self.n_components):
+            X_scores[:, a] = multi_mode_dot(X, [ff[:, a] for ff in self.X_factors[1:]], range(1, T.ndim(X)))
+            X -= CPTensor((None, [X_scores[:, a].reshape(-1, 1)] + [ff[:, a].reshape(-1, 1) for ff in self.X_factors[1:]])).to_tensor()
+
+        if Y is not None:
+            Y = T.copy(Y)
+            # Check on the shape of Y
+            if (T.ndim(Y) != 1) and (T.ndim(Y) != 2):
+                raise ValueError("Only a matrix (2-mode tensor) Y is allowed.")
+            if T.ndim(Y) == 1:
+                Y = T.reshape(Y, (-1, 1))
+            if self.Y_shape[1:] != T.shape(Y)[1:]:
+                raise ValueError(f"Training Y has shape {self.Y_shape}, while the new Y has shape {T.shape(Y)}")
+
+            Y -= self.Y_mean
+            Y_scores = T.zeros((T.shape(Y)[0], self.n_components))
+            for a in range(self.n_components):
+                Y_scores[:, a] = T.dot(Y, self.Y_factors[1][:, a])
+                Y -= T.dot(T.dot(T.dot(X_scores, T.pinv(X_scores)), Y_scores[:, [a]]),
+                           T.transpose(self.Y_factors[1][:, [a]]))  # Y -= T pinv(T) u q'
+            return X_scores, Y_scores
+
+        return X_scores
+
+
+    def fit_transform(self, X, Y):
         """Learn and apply the dimension reduction on the train data.
         Parameters
         ----------

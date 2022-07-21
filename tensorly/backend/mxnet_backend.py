@@ -154,5 +154,5 @@ for name in [
 ]:
     MxnetBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "eigh", "inv", "pinv"]:
+for name in ["solve", "qr", "eigh", "inv", "pinv", "lstsq"]:
     MxnetBackend.register_method(name, getattr(np.linalg, name))

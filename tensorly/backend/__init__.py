@@ -79,6 +79,7 @@ class BackendManager(types.ModuleType):
         "eigh",
         "inv",
         "pinv",
+        "lstsq",
         "index_update",
         "context",
         "tensor",
