@@ -7,7 +7,7 @@ from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..cp_tensor import CPTensor, unfolding_dot_khatri_rao, cp_norm, validate_cp_rank
 from ..tenalg.proximal import admm, proximal_operator, validate_constraints
-from ..tenalg.svd import svd_funs
+from ..tenalg.svd import svd_interface
 
 # Author: Jean Kossaifi
 #         Jeremy Cohen <jeremy.cohen@irisa.fr>
@@ -102,7 +102,7 @@ def initialize_constrained_parafac(
     elif init == "svd":
         factors = []
         for mode in range(tl.ndim(tensor)):
-            U, S, _ = svd_funs(unfold(tensor, mode), n_eigenvecs=rank, method=svd)
+            U, S, _ = svd_interface(unfold(tensor, mode), n_eigenvecs=rank, method=svd)
 
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
             if mode == 0:

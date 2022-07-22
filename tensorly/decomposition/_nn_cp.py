@@ -10,7 +10,7 @@ from ..cp_tensor import (
     cp_normalize,
     validate_cp_rank,
 )
-from ..tenalg.svd import svd_funs
+from ..tenalg.svd import svd_interface
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>

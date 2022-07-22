@@ -13,7 +13,7 @@ from ..cp_tensor import (
     cp_normalize,
     validate_cp_rank,
 )
-from ..tenalg.svd import svd_funs
+from ..tenalg.svd import svd_interface
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -73,7 +73,7 @@ def initialize_cp(
         factors = []
         for mode in range(tl.ndim(tensor)):
             mask_unfold = None if mask is None else unfold(mask, mode)
-            U, S, _ = svd_funs(
+            U, S, _ = svd_interface(
                 unfold(tensor, mode),
                 n_eigenvecs=rank,
                 method=svd,

@@ -12,7 +12,7 @@ from ..parafac2_tensor import (
 )
 from ..cp_tensor import CPTensor
 from ..base import unfold
-from ..tenalg.svd import svd_funs
+from ..tenalg.svd import svd_interface
 
 # Authors: Marie Roald
 #          Yngve Mardal Moe
@@ -55,7 +55,7 @@ def initialize_decomposition(
                     rank, T.shape(unfolded_mode_2)[0]
                 )
             )
-        C = svd_funs(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
+        C = svd_interface(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
         B = T.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd)
         return Parafac2Tensor((None, [A, B, C], projections))
@@ -102,7 +102,7 @@ def _compute_projections(tensor_slices, factors, svd, out=None):
         a_i = A[i]
         lhs = T.dot(B, T.transpose(a_i * C))
         rhs = T.transpose(tensor_slice)
-        U, _, Vh = svd_funs(T.dot(lhs, rhs), n_eigenvecs=A.shape[1], method=svd)
+        U, _, Vh = svd_interface(T.dot(lhs, rhs), n_eigenvecs=A.shape[1], method=svd)
 
         out[i] = tl.index_update(projection, tl.index[:], T.transpose(T.dot(U, Vh)))
 

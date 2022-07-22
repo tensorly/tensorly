@@ -12,7 +12,7 @@ from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
 from collections.abc import Iterable
-from ..tenalg.svd import svd_funs
+from ..tenalg.svd import svd_interface
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
@@ -61,7 +61,7 @@ def initialize_tucker(
         factors = []
         for index, mode in enumerate(modes):
             mask_unfold = None if mask is None else unfold(mask, mode)
-            U, _, _ = svd_funs(
+            U, _, _ = svd_interface(
                 unfold(tensor, mode),
                 n_eigenvecs=rank[index],
                 method=svd,
@@ -189,7 +189,7 @@ def partial_tucker(
             core_approximation = multi_mode_dot(
                 tensor, factors, modes=modes, skip=index, transpose=True
             )
-            eigenvecs, _, _ = svd_funs(
+            eigenvecs, _, _ = svd_interface(
                 unfold(core_approximation, mode),
                 n_eigenvecs=rank[index],
                 random_state=random_state,

@@ -58,7 +58,7 @@ def svd_flip(U, V, u_based_decision=True):
     return U, V
 
 
-def make_svd_non_negative(tensor, U, S, V, nntype):
+def make_svd_non_negative(tensor, U, S, V, nntype=True):
     """Use NNDSVD method to transform SVD results into a non-negative form. This
     method leads to more efficient solving with NNMF [1].
 
@@ -71,6 +71,8 @@ def make_svd_non_negative(tensor, U, S, V, nntype):
 
     [1]: Boutsidis & Gallopoulos. Pattern Recognition, 41(4): 1350-1362, 2008.
     """
+    if nntype is True:
+        nntype = "nndsvda"
 
     # NNDSVD initialization
     W = tl.zeros_like(U)
@@ -351,14 +353,13 @@ def randomized_svd(
 SVD_FUNS = ["truncated_svd", "symeig_svd", "randomized_svd"]
 
 
-def svd_funs(
+def svd_interface(
     matrix,
     method="truncated_svd",
     n_eigenvecs=None,
     flip_sign=True,
     u_based_flip_sign=True,
-    non_negative=False,
-    nn_type="nndsvd",
+    non_negative=None,
     mask=None,
     n_iter_mask_imputation=5,
     **kwargs,
@@ -423,7 +424,7 @@ def svd_funs(
     if flip_sign:
         U, V = svd_flip(U, V, u_based_decision=u_based_flip_sign)
 
-    if non_negative:
-        U = make_svd_non_negative(matrix, U, S, V, nn_type)
+    if non_negative is not False and non_negative is not None:
+        U = make_svd_non_negative(matrix, U, S, V, non_negative)
 
     return U, S, V

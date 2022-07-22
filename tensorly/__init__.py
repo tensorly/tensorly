@@ -40,7 +40,7 @@ from .tt_matrix import (
     tt_matrix_to_matrix,
 )
 from .tr_tensor import tr_to_tensor, tr_to_unfolded, tr_to_vec, validate_tr_rank
-from .tenalg import SVD_FUNS, svd_funs, truncated_svd
+from .tenalg import SVD_FUNS, svd_interface, truncated_svd
 
 from .backend import (
     set_backend,

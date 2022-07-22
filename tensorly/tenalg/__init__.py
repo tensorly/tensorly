@@ -11,7 +11,7 @@ import warnings
 
 from ..backend import BackendManager, dynamically_dispatched_class_attribute
 from .base_tenalg import TenalgBackend
-from .svd import SVD_FUNS, svd_funs, truncated_svd
+from .svd import SVD_FUNS, svd_interface, truncated_svd
 
 
 class TenalgBackendManager(BackendManager):
