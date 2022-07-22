@@ -347,7 +347,7 @@ SVD_FUNS = ["truncated_svd", "symeig_svd", "randomized_svd"]
 
 def svd_funs(
     matrix,
-    svd_type="truncated_svd",
+    method="truncated_svd",
     n_eigenvecs=None,
     flip_svd=True,
     non_negative=False,
