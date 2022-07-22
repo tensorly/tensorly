@@ -55,7 +55,7 @@ def initialize_decomposition(
                     rank, T.shape(unfolded_mode_2)[0]
                 )
             )
-        C = svd_funs(unfold(padded_tensor, 2), n_eigenvecs=rank, svd_type=svd)[0]
+        C = svd_funs(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
         B = T.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd)
         return Parafac2Tensor((None, [A, B, C], projections))
@@ -102,7 +102,7 @@ def _compute_projections(tensor_slices, factors, svd, out=None):
         a_i = A[i]
         lhs = T.dot(B, T.transpose(a_i * C))
         rhs = T.transpose(tensor_slice)
-        U, S, Vh = svd_funs(T.dot(lhs, rhs), n_eigenvecs=A.shape[1], svd_type=svd)
+        U, _, Vh = svd_funs(T.dot(lhs, rhs), n_eigenvecs=A.shape[1], method=svd)
 
         out[i] = tl.index_update(projection, tl.index[:], T.transpose(T.dot(U, Vh)))
 

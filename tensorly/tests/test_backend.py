@@ -149,7 +149,7 @@ def test_svd():
         for s, n in zip(sizes, n_eigenvecs):
             matrix = np.random.random(s)
             matrix_backend = T.tensor(matrix)
-            fU, fS, fV = svd_funs(matrix_backend, n_eigenvecs=n, svd_type=svd)
+            fU, fS, fV = svd_funs(matrix_backend, n_eigenvecs=n, method=svd)
             U, S, V = np.linalg.svd(matrix, full_matrices=True)
             U, S, V = U[:, :n], S[:n], V[:n, :]
 
@@ -187,7 +187,7 @@ def test_svd():
         # Should fail on non-matrices
         with assert_raises(ValueError):
             tensor = T.tensor(np.random.random((3, 3, 3)))
-            svd_funs(tensor, n_eigenvecs=n, svd_type=svd)
+            svd_funs(tensor, n_eigenvecs=n, method=svd)
 
         # Test for singular matrices (some eigenvals will be zero)
         # Rank at most 5

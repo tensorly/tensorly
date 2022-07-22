@@ -2,6 +2,12 @@ import warnings
 import tensorly as tl
 from .proximal import soft_thresholding
 
+# Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
+#          Meraj Hashemizadeh <merajhse@mila.quebec>
+#          Aaron Meyer <tensorly@ameyer.me>
+
+# License: BSD 3 clause
+
 
 def svd_flip(U, V, u_based_decision=True):
     """Sign correction to ensure deterministic output from SVD.
@@ -349,12 +355,12 @@ def svd_funs(
     matrix,
     method="truncated_svd",
     n_eigenvecs=None,
-    flip_svd=True,
+    flip_sign=True,
+    u_based_flip_sign=True,
     non_negative=False,
-    nntype="nndsvd",
-    u_based_decision=True,
+    nn_type="nndsvd",
     mask=None,
-    svd_mask_repeats=5,
+    n_iter_mask_imputation=5,
     **kwargs,
 ):
     """Dispatching function to various SVD algorithms, alongside additional
@@ -364,22 +370,22 @@ def svd_funs(
     ----------
     matrix : tensor
         A 2D tensor.
-    svd : str, default is 'truncated_svd'
+    method : str, default is 'truncated_svd'
         Function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS or a callable.
     n_eigenvecs : int, optional, default is None
         If specified, number of eigen[vectors-values] to return.
-    flip_svd : bool, optional, default is True
+    flip_sign : bool, optional, default is True
         Whether to resolve the sign indeterminacy of SVD.
+    u_based_flip_sign : bool, optional, default is True
+        Whether the sign indeterminacy should be resolved using U (vs. V).
     non_negative : bool, optional, default is False
         Whether to make the SVD results non-negative.
-    nntype : str, default is 'nndsvd'
+    nn_type : str, default is 'nndsvd'
         Algorithm to use for converting U to be non-negative.
-    u_based_decision : bool, optional, default is True
-        Whether the sign indeterminacy should be resolved using U (vs. V).
     mask : tensor, default is None.
         Array of booleans with the same shape as ``matrix``. Should be 0 where
         the values are missing and 1 everywhere else. None if nothing is missing.
-    svd_mask_repeats : int, default is 5
+    n_iter_mask_imputation : int, default is 5
         Number of repetitions to apply in missing value imputation.
     **kwargs : optional
         Arguments passed along to individual SVD algorithms.
@@ -394,30 +400,30 @@ def svd_funs(
         Contains the left singular vectors of `matrix`
     """
 
-    if svd_type == "truncated_svd":
+    if method == "truncated_svd":
         svd_fun = truncated_svd
-    elif svd_type == "symeig_svd":
+    elif method == "symeig_svd":
         svd_fun = symeig_svd
-    elif svd_type == "randomized_svd":
+    elif method == "randomized_svd":
         svd_fun = randomized_svd
-    elif callable(svd_type):
-        svd_fun = svd_type
+    elif callable(method):
+        svd_fun = method
     else:
         raise ValueError(
-            f"Got svd={svd_type}. However, the possible choices are {SVD_FUNS} or to pass a callable."
+            f"Got svd={method}. However, the possible choices are {SVD_FUNS} or to pass a callable."
         )
 
     U, S, V = svd_fun(matrix, n_eigenvecs=n_eigenvecs, **kwargs)
 
     if mask is not None:
-        for _ in range(svd_mask_repeats):
+        for _ in range(n_iter_mask_imputation):
             matrix = matrix * mask + (U @ tl.diag(S) @ V) * (1 - mask)
             U, S, V = svd_fun(matrix, n_eigenvecs=n_eigenvecs, **kwargs)
 
-    if flip_svd:
-        U, V = svd_flip(U, V, u_based_decision=u_based_decision)
+    if flip_sign:
+        U, V = svd_flip(U, V, u_based_decision=u_based_flip_sign)
 
     if non_negative:
-        U = make_svd_non_negative(matrix, U, S, V, nntype)
+        U = make_svd_non_negative(matrix, U, S, V, nn_type)
 
     return U, S, V

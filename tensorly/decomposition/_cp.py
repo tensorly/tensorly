@@ -76,10 +76,10 @@ def initialize_cp(
             U, S, _ = svd_funs(
                 unfold(tensor, mode),
                 n_eigenvecs=rank,
-                svd_type=svd,
+                method=svd,
                 non_negative=non_negative,
                 mask=mask_unfold,
-                svd_mask_repeats=svd_mask_repeats,
+                n_iter_mask_imputation=svd_mask_repeats,
             )
 
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False

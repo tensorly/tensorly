@@ -64,10 +64,10 @@ def initialize_tucker(
             U, _, _ = svd_funs(
                 unfold(tensor, mode),
                 n_eigenvecs=rank[index],
-                svd_type=svd,
+                method=svd,
                 non_negative=non_negative,
                 mask=mask_unfold,
-                svd_mask_repeats=svd_mask_repeats,
+                n_iter_mask_imputation=svd_mask_repeats,
                 random_state=random_state,
             )
 
