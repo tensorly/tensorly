@@ -115,7 +115,7 @@ def test_parafac(
 
     # Check that the error monotonically decreases
     if not orthogonalise:
-        assert_(np.all(np.diff(errors) <= 1.0e-7))
+        assert_(np.all(np.diff(errors) <= 1.0e-3))
 
     rec = cp_to_tensor(fac)
     error = T.norm(rec - tensor, 2)
@@ -294,7 +294,7 @@ def test_non_negative_parafac(
         random_state=rng,
         return_errors=True,
     )
-    assert_(np.all(np.diff(errors) <= 1.0e-7))
+    assert_(np.all(np.diff(errors) <= 1.0e-3))
 
     # Make sure all components are positive
     _, nn_factors = nn_res
@@ -476,9 +476,10 @@ def test_randomised_parafac(monkeypatch):
         rank=rank,
         n_samples=100,
         max_stagnation=20,
-        n_iter_max=100,
+        n_iter_max=60,
         tol=0,
         verbose=0,
+        random_state=rng
     )
 
     for i, f in enumerate(cp_tensor[1]):
