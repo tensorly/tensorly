@@ -262,7 +262,7 @@ def test_parafac2_normalize_factors():
     slices = parafac2_to_tensor(random_parafac2_tensor)
 
     unnormalized_rec = parafac2(
-        slices, rank, random_state=rng, normalize_factors=False, n_iter_max=100
+        slices, rank, random_state=rng, normalize_factors=False, n_iter_max=2
     )
     assert unnormalized_rec.weights[0] == 1
 
