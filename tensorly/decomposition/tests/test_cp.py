@@ -479,7 +479,7 @@ def test_randomised_parafac(monkeypatch):
         n_iter_max=60,
         tol=0,
         verbose=0,
-        random_state=rng
+        random_state=rng,
     )
 
     for i, f in enumerate(cp_tensor[1]):
