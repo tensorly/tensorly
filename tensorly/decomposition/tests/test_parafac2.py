@@ -7,7 +7,6 @@ import tensorly as tl
 from ...random import random_parafac2
 from ... import backend as T
 from ...testing import (
-    assert_array_equal,
     assert_,
     assert_class_wrapper_correctly_passes_arguments,
 )
@@ -83,10 +82,12 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         init=init,
         normalize_factors=normalize_factors,
         tol=1e-10,
-        absolute_tol=1e-4,
+        absolute_tol=1e-3,
         return_errors=True,
     )
-    assert err[-1] ** 2 < 1e-4
+    assert len(err) > 2 # Check that we didn't just immediately exit
+    assert err[-1] ** 2 < 1e-3
+    assert err[-2] ** 2 > 1e-3 # Check that the previous iteration didn't meet the criteria
 
     noisy_slices = [
         slice_ + tl.tensor(0.001 * rng.standard_normal(T.shape(slice_)))
@@ -98,12 +99,13 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         random_state=rng,
         init=init,
         normalize_factors=normalize_factors,
-        tol=1e-4,
+        tol=1e-1,
         absolute_tol=-1,
         return_errors=True,
-        n_iter_max=1000,
     )
-    assert abs(err[-2] ** 2 - err[-1] ** 2) < (1e-4 * err[-2] ** 2)
+    assert len(err) > 2 # Check that we didn't just immediately exit
+    assert abs(err[-2] ** 2 - err[-1] ** 2) < (1e-1 * err[-2] ** 2)
+    assert abs(err[-3] ** 2 - err[-2] ** 2) > (1e-1 * err[-3] ** 2) # Check that the previous iteration didn't meet the criteria
 
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, parafac2, Parafac2, ignore_args={"return_errors"}, rank=3
@@ -141,7 +143,7 @@ def test_parafac2_nn():
         n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
         normalize_factors=False,
         return_errors=True,
-        n_iter_max=1000,
+        n_iter_max=50,
     )
     rec_tensor = parafac2_to_tensor(rec)
 
@@ -198,7 +200,7 @@ def test_parafac2_nn():
 
     # Test that constraining B leads to a warning
     with pytest.warns(UserWarning):
-        rec, err = parafac2(
+        rec = parafac2(
             slices,
             rank,
             random_state=rng,
@@ -206,11 +208,10 @@ def test_parafac2_nn():
             nn_modes=[0, 1, 2],
             n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
             normalize_factors=False,
-            return_errors=True,
             n_iter_max=1,
         )
     with pytest.warns(UserWarning):
-        rec, err = parafac2(
+        rec = parafac2(
             slices,
             rank,
             random_state=rng,
@@ -218,7 +219,6 @@ def test_parafac2_nn():
             nn_modes="all",
             n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
             normalize_factors=False,
-            return_errors=True,
             n_iter_max=1,
         )
 
@@ -233,12 +233,12 @@ def test_parafac2_slice_and_tensor_input():
     slices = parafac2_to_slices(random_parafac2_tensor)
 
     slice_rec = parafac2(
-        slices, rank, random_state=1234, normalize_factors=False, n_iter_max=100
+        slices, rank, random_state=1234, normalize_factors=False, n_iter_max=2
     )
     slice_rec_tensor = parafac2_to_tensor(slice_rec)
 
     tensor_rec = parafac2(
-        tensor, rank, random_state=1234, normalize_factors=False, n_iter_max=100
+        tensor, rank, random_state=1234, normalize_factors=False, n_iter_max=2
     )
     tensor_rec_tensor = parafac2_to_tensor(tensor_rec)
 
@@ -267,7 +267,7 @@ def test_parafac2_normalize_factors():
     assert unnormalized_rec.weights[0] == 1
 
     normalized_rec = parafac2(
-        slices, rank, random_state=rng, normalize_factors=True, n_iter_max=1000
+        slices, rank, random_state=rng, normalize_factors=True, n_iter_max=50
     )
     assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-5
     assert abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 1e-2
