@@ -48,7 +48,7 @@ jobs:
 
     - name: Test with backend ${{matrix.BACKEND}} pytest and coverage
       run: |
-        TENSORLY_BACKEND=${{matrix.BACKEND}} pytest -vv --cov tensorly --cov-report xml tensorly
+        TENSORLY_BACKEND=${{matrix.BACKEND}} pytest -vv --cov tensorly --cov-report xml --durations=10 tensorly
     
     - name: Check coverage with CodeCov
       uses: codecov/codecov-action@v1
