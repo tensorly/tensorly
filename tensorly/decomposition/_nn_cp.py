@@ -320,9 +320,7 @@ def non_negative_parafac(
 
                 if verbose:
                     print(
-                        "iteration {}, reconstraction error: {}, decrease = {}".format(
-                            iteration, rec_error, rec_error_decrease
-                        )
+                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
                     )
 
                 if cvg_criterion == "abs_rec_error":
