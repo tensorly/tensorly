@@ -85,9 +85,11 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         absolute_tol=1e-3,
         return_errors=True,
     )
-    assert len(err) > 2 # Check that we didn't just immediately exit
+    assert len(err) > 2  # Check that we didn't just immediately exit
     assert err[-1] ** 2 < 1e-3
-    assert err[-2] ** 2 > 1e-3 # Check that the previous iteration didn't meet the criteria
+    assert (
+        err[-2] ** 2 > 1e-3
+    )  # Check that the previous iteration didn't meet the criteria
 
     noisy_slices = [
         slice_ + tl.tensor(0.001 * rng.standard_normal(T.shape(slice_)))
@@ -103,9 +105,11 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         absolute_tol=-1,
         return_errors=True,
     )
-    assert len(err) > 2 # Check that we didn't just immediately exit
+    assert len(err) > 2  # Check that we didn't just immediately exit
     assert abs(err[-2] ** 2 - err[-1] ** 2) < (1e-1 * err[-2] ** 2)
-    assert abs(err[-3] ** 2 - err[-2] ** 2) > (1e-1 * err[-3] ** 2) # Check that the previous iteration didn't meet the criteria
+    assert abs(err[-3] ** 2 - err[-2] ** 2) > (
+        1e-1 * err[-3] ** 2
+    )  # Check that the previous iteration didn't meet the criteria
 
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, parafac2, Parafac2, ignore_args={"return_errors"}, rank=3

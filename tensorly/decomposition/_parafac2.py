@@ -97,7 +97,9 @@ def _compute_projections(tensor_slices, factors, svd_fun):
         a_i = A[i]
         lhs = T.dot(B, T.transpose(a_i * C))
         rhs = T.transpose(tensor_slice)
-        U, _, Vh = svd_interface(T.dot(lhs, rhs), n_eigenvecs=A.shape[1], method=svd_fun)
+        U, _, Vh = svd_interface(
+            T.dot(lhs, rhs), n_eigenvecs=A.shape[1], method=svd_fun
+        )
 
         projection.append(T.transpose(T.dot(U, Vh)))
 
@@ -319,7 +321,7 @@ def parafac2(
         factors[1] = factors[1] * T.reshape(weights, (1, -1))
         weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
 
-        projections = _compute_projections(tensor_slices, factors, svd_fun)
+        projections = _compute_projections(tensor_slices, factors, svd)
         projected_tensor = _project_tensor_slices(tensor_slices, projections)
         factors = parafac_updates(projected_tensor, weights, factors)
 

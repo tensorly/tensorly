@@ -367,7 +367,7 @@ def test_initialize_nn_cp():
     """Test that if we initialise with an existing init, then it isn't modified."""
     init = CPTensor([None, [-tl.ones((30, 3)), -tl.ones((20, 3)), -tl.ones((10, 3))]])
     tensor = cp_to_tensor(init)
-    initialised_tensor = initialize_nn_cp(tensor, 3, init=init)
+    initialised_tensor = initialize_cp(tensor, 3, init=init, non_negative=True)
     for factor_matrix, init_factor_matrix in zip(init[1], initialised_tensor[1]):
         assert_array_equal(factor_matrix, init_factor_matrix)
     assert_array_equal(tensor, cp_to_tensor(initialised_tensor))
