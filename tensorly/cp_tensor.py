@@ -743,12 +743,14 @@ def cp_permute_factors(ref_cp_tensor, tensors_to_permute):
     Compares factors of a reference cp tensor with factors of other another tensor (or list of tensor) in order to match component order.
     Permutation occurs on the columns of factors, minimizing the cosine distance to reference cp tensor with scipy
     Linear Sum Assignment method. The permuted tensor (or list of tensors) and list of permutation for each permuted tensors are returned.
+
     Parameters
     ----------
     ref_cp_tensor : cp tensor
         The tensor that serves as a reference for permutation.
     tensors_to_permute : cp tensor or list of cp tensors
         The tensors to permute so that the order of components match the reference tensor. Number of components must match.
+
     Returns
     -------
     permuted_tensors : permuted cp tensor or list of cp tensors
