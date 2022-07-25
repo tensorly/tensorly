@@ -44,7 +44,7 @@ for f in range(3):
 
 ##############################################################################
 # Permute target CPTensors
-# -----------------------
+# ------------------------
 # Now, we can use these two manipulated CPTensors as inputs to the permutation function. Here,
 # cp_tensor_1 will be used as a reference to permute other CPTensors, which are called target CPTensors.
 # There is no limitation for the number of target CPTensors but there should be only one reference CPTensor.
