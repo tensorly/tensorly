@@ -35,7 +35,6 @@ from .backend import (
     kr,
     solve,
     qr,
-    partial_svd,
 )
 
 from .core import wrap

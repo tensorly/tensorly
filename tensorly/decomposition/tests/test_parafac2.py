@@ -7,7 +7,6 @@ import tensorly as tl
 from ...random import random_parafac2
 from ... import backend as T
 from ...testing import (
-    assert_array_equal,
     assert_,
     assert_class_wrapper_correctly_passes_arguments,
 )

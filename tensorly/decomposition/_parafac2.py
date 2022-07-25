@@ -12,13 +12,14 @@ from ..parafac2_tensor import (
 )
 from ..cp_tensor import CPTensor
 from ..base import unfold
+from ..tenalg.svd import svd_interface
 
 # Authors: Marie Roald
 #          Yngve Mardal Moe
 
 
 def initialize_decomposition(
-    tensor_slices, rank, init="random", svd="numpy_svd", random_state=None
+    tensor_slices, rank, init="random", svd="truncated_svd", random_state=None
 ):
     r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices
 
@@ -44,13 +45,6 @@ def initialize_decomposition(
             shapes, rank, full=False, random_state=random_state, **context
         )
     elif init == "svd":
-        try:
-            svd_fun = tl.SVD_FUNS[svd]
-        except KeyError:
-            message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
-                svd, tl.get_backend(), tl.SVD_FUNS
-            )
-            raise ValueError(message)
         padded_tensor = _pad_by_zeros(tensor_slices)
         A = T.ones((padded_tensor.shape[0], rank), **context)
 
@@ -61,9 +55,9 @@ def initialize_decomposition(
                     rank, T.shape(unfolded_mode_2)[0]
                 )
             )
-        C = svd_fun(unfold(padded_tensor, 2), n_eigenvecs=rank)[0]
+        C = svd_interface(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
         B = T.eye(rank, **context)
-        projections = _compute_projections(tensor_slices, (A, B, C), svd_fun)
+        projections = _compute_projections(tensor_slices, (A, B, C), svd)
         return Parafac2Tensor((None, [A, B, C], projections))
 
     elif isinstance(init, (tuple, list, Parafac2Tensor, CPTensor)):
@@ -94,7 +88,7 @@ def _pad_by_zeros(tensor_slices):
     return padded
 
 
-def _compute_projections(tensor_slices, factors, svd_fun, out=None):
+def _compute_projections(tensor_slices, factors, svd, out=None):
     A, B, C = factors
 
     if out is None:
@@ -108,7 +102,7 @@ def _compute_projections(tensor_slices, factors, svd_fun, out=None):
         a_i = A[i]
         lhs = T.dot(B, T.transpose(a_i * C))
         rhs = T.transpose(tensor_slice)
-        U, S, Vh = svd_fun(T.dot(lhs, rhs), n_eigenvecs=A.shape[1])
+        U, _, Vh = svd_interface(T.dot(lhs, rhs), n_eigenvecs=A.shape[1], method=svd)
 
         out[i] = tl.index_update(projection, tl.index[:], T.transpose(T.dot(U, Vh)))
 
@@ -128,16 +122,6 @@ def _project_tensor_slices(tensor_slices, projections, out=None):
     return out
 
 
-def _get_svd(svd):
-    if svd in tl.SVD_FUNS:
-        return tl.SVD_FUNS[svd]
-    else:
-        message = "Got svd={}. However, for the current backend ({}), the possible choices are {}".format(
-            svd, tl.get_backend(), tl.SVD_FUNS
-        )
-        raise ValueError(message)
-
-
 def _parafac2_reconstruction_error(tensor_slices, decomposition):
     _validate_parafac2_tensor(decomposition)
     squared_error = 0
@@ -152,7 +136,7 @@ def parafac2(
     rank,
     n_iter_max=2000,
     init="random",
-    svd="numpy_svd",
+    svd="truncated_svd",
     normalize_factors=False,
     tol=1e-8,
     absolute_tol=1e-13,
@@ -212,7 +196,7 @@ def parafac2(
             Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     normalize_factors : bool (optional)
         If True, aggregate the weights of each factor in a 1D-tensor
@@ -292,7 +276,6 @@ def parafac2(
     norm_tensor = tl.sqrt(
         sum(tl.norm(tensor_slice, 2) ** 2 for tensor_slice in tensor_slices)
     )
-    svd_fun = _get_svd(svd)
 
     if absolute_tol is None:
         absolute_tol = tl.eps(factors[0].dtype) * 1000
@@ -345,9 +328,7 @@ def parafac2(
         factors[1] = factors[1] * T.reshape(weights, (1, -1))
         weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
 
-        projections = _compute_projections(
-            tensor_slices, factors, svd_fun, out=projections
-        )
+        projections = _compute_projections(tensor_slices, factors, svd, out=projections)
         projected_tensor = _project_tensor_slices(
             tensor_slices, projections, out=projected_tensor
         )
@@ -449,7 +430,7 @@ class Parafac2(DecompositionMixin):
 
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     normalize_factors : bool (optional)
         If True, aggregate the weights of each factor in a 1D-tensor
@@ -520,7 +501,7 @@ class Parafac2(DecompositionMixin):
         rank,
         n_iter_max=2000,
         init="random",
-        svd="numpy_svd",
+        svd="truncated_svd",
         normalize_factors=False,
         tol=1e-8,
         absolute_tol=1e-13,

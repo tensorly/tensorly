@@ -47,7 +47,7 @@ def tensor_train(input_tensor, rank, verbose=False):
         # SVD of unfolding matrix
         (n_row, n_column) = unfolding.shape
         current_rank = min(n_row, n_column, rank[k + 1])
-        U, S, V = tl.partial_svd(unfolding, current_rank)
+        U, S, V = tl.truncated_svd(unfolding, current_rank)
         rank[k + 1] = current_rank
 
         # Get kth TT factor
