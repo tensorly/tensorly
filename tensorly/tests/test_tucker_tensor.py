@@ -24,10 +24,10 @@ from ..random import random_tucker
 
 
 def test_validate_tucker_tensor():
-    rng = tl.check_random_state(12345)
+    rng = tl.check_random_state(1234)
     true_shape = (3, 4, 5)
     true_rank = (3, 2, 4)
-    core, factors = random_tucker(true_shape, rank=true_rank)
+    core, factors = random_tucker(true_shape, rank=true_rank, random_state=rng)
 
     # Check shape and rank returned
     shape, rank = _validate_tucker_tensor((core, factors))

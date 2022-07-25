@@ -470,7 +470,7 @@ def test_randomised_parafac(monkeypatch):
 
     # test tensor reconstructed properly
     tolerance = 0.05
-    tensor = random_cp(shape=(10, 10, 10), rank=rank, full=True)
+    tensor = random_cp(shape=(10, 10, 10), rank=rank, full=True, random_state=rng)
     cp_tensor = randomised_parafac(
         tensor,
         rank=rank,
