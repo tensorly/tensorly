@@ -12,7 +12,7 @@ except ImportError as error:
 
 import numpy as np
 
-from . import Backend
+from .core import Backend, backend_types, backend_basic_math, backend_array
 
 
 class TensorflowBackend(Backend, backend_name="tensorflow"):
@@ -114,80 +114,37 @@ for name in ["diag", "qr", "eigh", "trace"]:
 
 
 # Register tfm functions
-for name in [
-    "exp",
-    "log",
-    "digamma",
-    "atanh",
-    "acosh",
-    "asinh",
-    "tanh",
-    "cosh",
-    "sinh",
-    "atan",
-    "acos",
-    "asin",
-    "sin",
-    "cos",
-    "tan",
-]:
-    TensorflowBackend.register_method(name, getattr(tfm, name))
+TensorflowBackend.register_method("digamma", getattr(tfm, "digamma"))
 
 
 # Register tnp functions
-for name in [
-    "log2",
-    "concatenate",
-    "flip",
-    "dot",
-    "matmul",
-    "cumsum",
-    "argmin",
-    "argmax",
-    "any",
-    "e",
-    "inf",
-    "pi",
-    "conj",
-    "arctanh",
-    "arccosh",
-    "arcsinh",
-    "arctan",
-    "arccos",
-    "arcsin",
-    "tensordot",
-    "sign",
-    "stack",
-    "copy",
-    "min",
-    "max",
-    "mean",
-    "sum",
-    "prod",
-    "all",
-    "eye",
-    "where",
-    "ones",
-    "zeros",
-    "abs",
-    "sqrt",
-    "zeros_like",
-    "int32",
-    "int64",
-    "float32",
-    "float64",
-    "complex64",
-    "complex128",
-    "moveaxis",
-    "ndim",
-    "arange",
-    "sort",
-    "argsort",
-    "flip",
-    "einsum",
-    "stack",
-    "reshape",
-    "transpose",
-    "count_nonzero",
-]:
+for name in (
+    backend_types
+    + backend_basic_math
+    + backend_array
+    + [
+        "log2",
+        "concatenate",
+        "flip",
+        "dot",
+        "argmin",
+        "argmax",
+        "conj",
+        "tensordot",
+        "stack",
+        "copy",
+        "max",
+        "sign",
+        "mean",
+        "sum",
+        "moveaxis",
+        "ndim",
+        "arange",
+        "sort",
+        "argsort",
+        "flip",
+        "stack",
+        "transpose",
+    ]
+):
     TensorflowBackend.register_method(name, getattr(tnp, name))

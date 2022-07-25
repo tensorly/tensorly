@@ -129,7 +129,6 @@ Algebraic operations
     solve
     qr
     kr
-    partial_svd
 
 
 :mod:`tensorly.base`: Core tensor functions

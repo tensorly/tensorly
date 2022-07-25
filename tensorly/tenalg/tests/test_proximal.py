@@ -20,7 +20,7 @@ from ..proximal import (
     admm,
 )
 from ...testing import assert_, assert_array_equal, assert_array_almost_equal
-from tensorly import tensor_to_vec
+from tensorly import tensor_to_vec, truncated_svd
 import pytest
 
 # Author: Jean Kossaifi
@@ -194,7 +194,7 @@ def test_svd_thresholding():
 def test_procrustes():
     """Test for procrustes operator"""
     U = T.tensor(np.random.rand(20, 10))
-    S, _, V = T.partial_svd(U, n_eigenvecs=min(U.shape))
+    S, _, V = truncated_svd(U, n_eigenvecs=min(U.shape))
     true_res = T.dot(S, V)
     res = procrustes(U)
     assert_array_almost_equal(true_res, res)
@@ -231,9 +231,7 @@ def test_admm():
     ata = T.dot(T.transpose(a), a)
     dual = T.zeros(T.shape(atb))
     x_init = T.zeros(T.shape(atb))
-    x_admm, x_dual, dual_var = admm(
-        T.transpose(atb), T.transpose(ata), x=x_init, dual_var=dual
-    )
+    x_admm, _, _ = admm(T.transpose(atb), T.transpose(ata), x=x_init, dual_var=dual)
     assert_array_almost_equal(true_res, T.transpose(x_admm), decimal=2)
 
 

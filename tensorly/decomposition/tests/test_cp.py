@@ -14,7 +14,6 @@ from .._cp import (
 from .._nn_cp import (
     non_negative_parafac,
     non_negative_parafac_hals,
-    initialize_nn_cp,
     CP_NN,
     CP_NN_HALS,
 )
