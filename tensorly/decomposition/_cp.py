@@ -325,7 +325,9 @@ def parafac(
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
     if return_errors:
-        DeprecationWarning("return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead.")
+        DeprecationWarning(
+            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
+        )
 
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
@@ -372,6 +374,9 @@ def parafac(
             sparsity = int(sparsity * np.prod(tensor.shape))
         else:
             sparsity = int(sparsity)
+
+    if callback is not None:
+        callback(CPTensor((weights, factors)))
 
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
@@ -470,10 +475,13 @@ def parafac(
         rec_errors.append(rec_error)
 
         if callback is not None:
-            callback(factors, weights, rec_error)
+            retVal = callback(CPTensor((weights, factors)))
+            if retVal is True:
+                if verbose:
+                    print("Received True from callback function. Exiting.")
+                break
 
         if tol:
-
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
@@ -791,6 +799,7 @@ class CP(DecompositionMixin):
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
            Applications", PhD., University of Amsterdam, 1998
     """
+
     def __init__(
         self,
         rank,

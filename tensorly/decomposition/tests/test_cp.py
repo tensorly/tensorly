@@ -77,14 +77,15 @@ def test_parafac(
         ]
 
     tensor = tl.cp_to_tensor(factors)
-    
+
     # Callback to record error
     errors = list()
+
     def callback(_, __, rec_error):
         errors.append(rec_error)
 
     rng = tl.check_random_state(random_state)
-    fac, errors = parafac(
+    fac = parafac(
         tensor,
         rank=rank,
         n_iter_max=200,
