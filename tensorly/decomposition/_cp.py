@@ -377,14 +377,18 @@ def parafac(
 
     if callback is not None:
         cp_tensor = CPTensor((weights, factors))
+        unnorml_rec_error, _, norm_tensor = error_calc(
+            tensor, norm_tensor, weights, factors, sparsity, mask
+        )
+        callback_error = unnorml_rec_error / norm_tensor
 
         if sparsity:
             sparse_component = sparsify_tensor(
                 tensor - cp_to_tensor((weights, factors)), sparsity
             )
-            callback((cp_tensor, sparse_component))
+            callback((cp_tensor, sparse_component), callback_error)
         else:
-            callback(cp_tensor)
+            callback(cp_tensor, callback_error)
 
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
@@ -489,9 +493,9 @@ def parafac(
                 sparse_component = sparsify_tensor(
                     tensor - cp_to_tensor((weights, factors)), sparsity
                 )
-                retVal = callback((cp_tensor, sparse_component))
+                retVal = callback((cp_tensor, sparse_component), rec_error)
             else:
-                retVal = callback(cp_tensor)
+                retVal = callback(cp_tensor, rec_error)
 
             if retVal is True:
                 if verbose:
@@ -518,12 +522,12 @@ def parafac(
 
                 if stop_flag:
                     if verbose:
-                        print("PARAFAC converged after {} iterations".format(iteration))
+                        print(f"PARAFAC converged after {iteration} iterations")
                     break
 
             else:
                 if verbose:
-                    print("reconstruction error={}".format(rec_errors[-1]))
+                    print(f"reconstruction error={rec_errors[-1]}")
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
@@ -697,6 +701,8 @@ def randomised_parafac(
     weights = tl.ones(rank, **tl.context(tensor))
 
     if callback is not None:
+        rec_error = tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
+
         callback(CPTensor((weights, factors)))
 
     for iteration in range(n_iter_max):
@@ -707,7 +713,7 @@ def randomised_parafac(
             indices_list = [i.tolist() for i in indices_list]
             # Keep all the elements of the currently considered mode
             indices_list.insert(mode, slice(None, None, None))
-            # MXNet will not be happy if this is a list insteaf of a tuple
+            # MXNet will not be happy if this is a list instead of a tuple
             indices_list = tuple(indices_list)
             if mode:
                 sampled_unfolding = tensor[indices_list]
@@ -719,17 +725,19 @@ def randomised_parafac(
             factor = tl.transpose(tl.solve(pseudo_inverse, factor))
             factors[mode] = factor
 
+        if max_stagnation or tol or (callback is not None):
+            rec_error = (
+                tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
+            )
+
         if callback is not None:
-            retVal = callback(CPTensor((weights, factors)))
+            retVal = callback(CPTensor((weights, factors)), rec_error)
             if retVal is True:
                 if verbose:
                     print("Received True from callback function. Exiting.")
                 break
 
         if max_stagnation or tol:
-            rec_error = (
-                tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
-            )
             if not min_error or rec_error < min_error:
                 min_error = rec_error
                 stagnation = -1
@@ -749,7 +757,7 @@ def randomised_parafac(
                     stagnation and (stagnation > max_stagnation)
                 ):
                     if verbose:
-                        print("converged in {} iterations.".format(iteration))
+                        print(f"converged in {iteration} iterations.")
                     break
 
     if return_errors:

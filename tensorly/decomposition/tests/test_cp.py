@@ -31,12 +31,11 @@ from ...metrics.factors import congruence_coefficient
 
 
 class ErrorTracker:
-    def __init__(self, tensor):
+    def __init__(self):
         self.error = list()
-        self.tensor = tensor
 
-    def __call__(self, cp_cur):
-        self.error.append(tl.norm(self.tensor - cp_to_tensor(cp_cur), 2))
+    def __call__(self, cp_cur, rec_error):
+        self.error.append(rec_error)
 
 
 @pytest.mark.parametrize("linesearch", [True, False])
@@ -93,7 +92,7 @@ def test_parafac(
     tensor = tl.cp_to_tensor(factors)
 
     # Callback to record error
-    errors = ErrorTracker(tensor)
+    errors = ErrorTracker()
 
     rng = tl.check_random_state(random_state)
     fac = parafac(
@@ -112,7 +111,7 @@ def test_parafac(
     # Given all the random seed is set, this should provide the same answer for random initialization
     if init == "random":
         # Callback to record error
-        errorsTwo = ErrorTracker(tensor)
+        errorsTwo = ErrorTracker()
 
         rng = tl.check_random_state(random_state)
         facTwo = parafac(
@@ -134,7 +133,7 @@ def test_parafac(
 
     # Check that the error monotonically decreases
     if not orthogonalise:
-        assert_(np.all(np.diff(errors.error) <= 1.0e-9))
+        assert_(np.all(np.diff(errors.error) <= 1.0e-7))
 
     rec = cp_to_tensor(fac)
     error = T.norm(rec - tensor, 2)
