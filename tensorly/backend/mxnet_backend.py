@@ -112,7 +112,6 @@ for name in [
     "zeros_like",
     "eye",
     "concatenate",
-    "tile",
     "max",
     "min",
     "flip",

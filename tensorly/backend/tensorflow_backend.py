@@ -138,7 +138,6 @@ for name in [
 for name in [
     "log2",
     "concatenate",
-    "tile",
     "flip",
     "dot",
     "matmul",

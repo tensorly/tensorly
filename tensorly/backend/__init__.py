@@ -41,7 +41,6 @@ class BackendManager(types.ModuleType):
         "eye",
         "kron",
         "concatenate",
-        "tile",
         "max",
         "min",
         "matmul",

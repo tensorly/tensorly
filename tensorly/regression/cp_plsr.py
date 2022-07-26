@@ -86,13 +86,11 @@ class CP_PLSR:
         Y -= self.Y_mean
 
         self.X_factors = [T.zeros((l, self.n_components)) for l in T.shape(X)]
-        self.Y_factors = [
-            T.tile(Y[:, [0]], self.n_components),
-            T.zeros((T.shape(Y)[1], self.n_components)),
-        ]
+        self.Y_factors = [T.zeros((l, self.n_components)) for l in T.shape(Y)]
 
         ## FITTING EACH COMPONENT
         for a in range(self.n_components):
+            self.Y_factors[0][:, a] = Y[:, 0]
             oldU = T.ones(T.shape(self.Y_factors[0][:, a])) * T.inf
             for iter in range(self.n_iter_max):
                 Z = T.einsum("i...,i...->...", X, self.Y_factors[0][:, a])
@@ -111,20 +109,19 @@ class CP_PLSR:
                 if T.norm(oldU - self.Y_factors[0][:, a]) < self.tol:
                     if self.verbose:
                         print(
-                            "Component {}: converged after {} iterations".format(
-                                a, iter
-                            )
+                            f"Component {a}: converged after {iter} iterations"
                         )
                     break
                 oldU = self.Y_factors[0][:, a].copy()
 
+            # Deflation
             X -= CPTensor(
                 (None, [ff[:, a].reshape(-1, 1) for ff in self.X_factors])
             ).to_tensor()
             Y -= T.dot(
-                T.dot(
-                    T.dot(self.X_factors[0], T.pinv(self.X_factors[0])),
-                    self.Y_factors[0][:, [a]],
+                    T.dot(
+                        self.X_factors[0],
+                        T.lstsq(self.X_factors[0], self.Y_factors[0][:, [a]])[0],
                 ),
                 T.transpose(self.Y_factors[1][:, [a]]),
             )  # Y -= T pinv(T) u q'

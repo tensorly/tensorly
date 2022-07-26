@@ -253,7 +253,6 @@ for name in [
     "reshape",
     "eye",
     "min",
-    "tile",
     "prod",
     "abs",
     "matmul",

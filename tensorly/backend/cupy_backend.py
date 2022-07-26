@@ -75,7 +75,6 @@ for name in [
     "dot",
     "kron",
     "concatenate",
-    "tile",
     "max",
     "flip",
     "matmul",

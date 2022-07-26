@@ -99,7 +99,6 @@ for name in [
     "eye",
     "kron",
     "concatenate",
-    "tile",
     "max",
     "min",
     "matmul",
