@@ -81,8 +81,8 @@ def test_parafac(
     # Callback to record error
     errors = list()
 
-    def callback(_, __, rec_error):
-        errors.append(rec_error)
+    def callback(cp_cur):
+        errors.append(tl.norm(tensor - cp_to_tensor(cp_cur), 2))
 
     rng = tl.check_random_state(random_state)
     fac = parafac(
@@ -100,8 +100,14 @@ def test_parafac(
 
     # Given all the random seed is set, this should provide the same answer for random initialization
     if init == "random":
+        # Callback to record error
+        errorsTwo = list()
+
+        def callback(cp_cur):
+            errorsTwo.append(tl.norm(tensor - cp_to_tensor(cp_cur), 2))
+
         rng = tl.check_random_state(random_state)
-        facTwo, errorsTwo = parafac(
+        facTwo = parafac(
             tensor,
             rank=rank,
             n_iter_max=200,
@@ -111,7 +117,7 @@ def test_parafac(
             normalize_factors=normalize_factors,
             orthogonalise=orthogonalise,
             linesearch=linesearch,
-            return_errors=True,
+            callback=callback,
         )
         assert_array_almost_equal(errors, errorsTwo)
         assert_array_almost_equal(fac.factors[0], facTwo.factors[0])

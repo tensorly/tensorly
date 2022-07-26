@@ -622,6 +622,7 @@ def randomised_parafac(
     return_errors=False,
     random_state=None,
     verbose=1,
+    callback=None,
 ):
     """Randomised CP decomposition via sampled ALS
 
@@ -662,6 +663,11 @@ def randomised_parafac(
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
+    if return_errors:
+        DeprecationWarning(
+            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
+        )
+
     rng = tl.check_random_state(random_state)
     weights, factors = initialize_cp(
         tensor, rank, init=init, svd=svd, random_state=random_state
@@ -672,6 +678,10 @@ def randomised_parafac(
     min_error = 0
 
     weights = tl.ones(rank, **tl.context(tensor))
+
+    if callback is not None:
+        callback(CPTensor((weights, factors)))
+
     for iteration in range(n_iter_max):
         for mode in range(n_dims):
             kr_prod, indices_list = sample_khatri_rao(
@@ -691,6 +701,13 @@ def randomised_parafac(
             factor = tl.dot(tl.transpose(kr_prod), sampled_unfolding)
             factor = tl.transpose(tl.solve(pseudo_inverse, factor))
             factors[mode] = factor
+
+        if callback is not None:
+            retVal = callback(CPTensor((weights, factors)))
+            if retVal is True:
+                if verbose:
+                    print("Received True from callback function. Exiting.")
+                break
 
         if max_stagnation or tol:
             rec_error = (
@@ -818,6 +835,7 @@ class CP(DecompositionMixin):
         fixed_modes=None,
         svd_mask_repeats=5,
         linesearch=False,
+        callback=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -927,6 +945,7 @@ class RandomizedCP(DecompositionMixin):
         max_stagnation=20,
         random_state=None,
         verbose=1,
+        callback=None,
     ):
         self.rank = rank
         self.n_samples = n_samples
@@ -937,6 +956,7 @@ class RandomizedCP(DecompositionMixin):
         self.max_stagnation = max_stagnation
         self.random_state = random_state
         self.verbose = verbose
+        self.callback = callback
 
     def fit_transform(self, tensor):
         self.decomposition_, self.errors_ = randomised_parafac(
@@ -951,5 +971,6 @@ class RandomizedCP(DecompositionMixin):
             max_stagnation=self.max_stagnation,
             random_state=self.random_state,
             verbose=self.verbose,
+            callback=self.callback,
         )
         return self.decomposition_
