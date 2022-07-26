@@ -90,40 +90,48 @@ class CP_PLSR:
 
         ## FITTING EACH COMPONENT
         for a in range(self.n_components):
-            self.Y_factors[0][:, a] = Y[:, 0]
-            oldU = T.ones(T.shape(self.Y_factors[0][:, a])) * T.inf
+            _X_factors_a = [ff[:, a] for ff in self.X_factors]
+            _Y_factors0_a = Y[:, 0]
+            _old_Y_factors0_a = T.ones(T.shape(_Y_factors0_a)) * T.inf
+
             for iter in range(self.n_iter_max):
-                Z = T.einsum("i...,i...->...", X, self.Y_factors[0][:, a])
+                Z = T.einsum("i...,i...->...", X, _Y_factors0_a)
                 Z_comp = (
                     tucker(Z, [1] * T.ndim(Z))[1] if Z.ndim >= 2 else [Z / T.norm(Z)]
                 )
                 for ii in range(Z.ndim):
-                    self.X_factors[ii + 1] = T.index_update(self.X_factors[ii + 1], T.index[:, a], Z_comp[ii].flatten())
+                    _X_factors_a[ii + 1] = T.reshape(Z_comp[ii], (-1))
 
-                self.X_factors[0][:, a] = multi_mode_dot(
-                    X, [ff[:, a] for ff in self.X_factors[1:]], range(1, T.ndim(X))
+                _X_factors_a[0] = multi_mode_dot(
+                    X, _X_factors_a[1:], range(1, T.ndim(X))
                 )
-                self.Y_factors[1][:, a] = T.dot(T.transpose(Y), self.X_factors[0][:, a])
-                self.Y_factors[1][:, a] /= T.norm(self.Y_factors[1][:, a])
-                self.Y_factors[0][:, a] = T.dot(Y, self.Y_factors[1][:, a])
-                if T.norm(oldU - self.Y_factors[0][:, a]) < self.tol:
+                _Y_factors1_a = T.dot(T.transpose(Y), _X_factors_a[0])
+                _Y_factors1_a /= T.norm(_Y_factors1_a)
+                _Y_factors0_a = T.dot(Y, _Y_factors1_a)
+                if T.norm(_old_Y_factors0_a - _Y_factors0_a) < self.tol:
                     if self.verbose:
                         print(
                             f"Component {a}: converged after {iter} iterations"
                         )
                     break
-                oldU = self.Y_factors[0][:, a].copy()
+                _old_Y_factors0_a = T.copy(_Y_factors0_a)
+
+            # Put iteration results back to the parameter variables
+            for ii in range(len(_X_factors_a)):
+                self.X_factors[ii] = T.index_update(self.X_factors[ii], T.index[:, a], _X_factors_a[ii])
+            self.Y_factors[0] = T.index_update(self.Y_factors[0], T.index[:, a], _Y_factors0_a)
+            self.Y_factors[1] = T.index_update(self.Y_factors[1], T.index[:, a], _Y_factors1_a)
 
             # Deflation
             X -= CPTensor(
-                (None, [ff[:, a].reshape(-1, 1) for ff in self.X_factors])
+                (None, [T.reshape(ff, (-1, 1)) for ff in _X_factors_a])
             ).to_tensor()
             Y -= T.dot(
                     T.dot(
                         self.X_factors[0],
-                        T.lstsq(self.X_factors[0], self.Y_factors[0][:, [a]])[0],
+                        T.lstsq(self.X_factors[0], T.reshape(_Y_factors0_a, (-1, 1)))[0],
                 ),
-                T.transpose(self.Y_factors[1][:, [a]]),
+                T.reshape(_Y_factors1_a, (1, -1)),
             )  # Y -= T pinv(T) u q'
 
         return self
@@ -174,14 +182,14 @@ class CP_PLSR:
         X_scores = T.zeros((T.shape(X)[0], self.n_components))
 
         for a in range(self.n_components):
-            X_scores[:, a] = multi_mode_dot(
+            X_scores = T.index_update(X_scores, T.index[:, a], multi_mode_dot(
                 X, [ff[:, a] for ff in self.X_factors[1:]], range(1, T.ndim(X))
-            )
+            ))
             X -= CPTensor(
                 (
                     None,
-                    [X_scores[:, a].reshape(-1, 1)]
-                    + [ff[:, a].reshape(-1, 1) for ff in self.X_factors[1:]],
+                    [T.reshape(X_scores[:, a], (-1, 1))]
+                    + [T.reshape(ff[:, a], (-1, 1)) for ff in self.X_factors[1:]],
                 )
             ).to_tensor()
 
@@ -200,7 +208,7 @@ class CP_PLSR:
             Y -= self.Y_mean
             Y_scores = T.zeros((T.shape(Y)[0], self.n_components))
             for a in range(self.n_components):
-                Y_scores[:, a] = T.dot(Y, self.Y_factors[1][:, a])
+                Y_scores = T.index_update(Y_scores, T.index[:, a], T.dot(Y, self.Y_factors[1][:, a]))
                 Y -= T.dot(
                     T.dot(T.dot(X_scores, T.pinv(X_scores)), Y_scores[:, [a]]),
                     T.transpose(self.Y_factors[1][:, [a]]),
