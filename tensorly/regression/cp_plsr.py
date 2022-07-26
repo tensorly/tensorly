@@ -100,7 +100,7 @@ class CP_PLSR:
                     tucker(Z, [1] * T.ndim(Z))[1] if Z.ndim >= 2 else [Z / T.norm(Z)]
                 )
                 for ii in range(Z.ndim):
-                    self.X_factors[ii + 1][:, a] = Z_comp[ii].flatten()
+                    self.X_factors[ii + 1] = T.index_update(self.X_factors[ii + 1], T.index[:, a], Z_comp[ii].flatten())
 
                 self.X_factors[0][:, a] = multi_mode_dot(
                     X, [ff[:, a] for ff in self.X_factors[1:]], range(1, T.ndim(X))
@@ -146,8 +146,8 @@ class CP_PLSR:
         X -= self.X_mean
         factors_kr = khatri_rao(self.X_factors, skip_matrix=0)
         unfolded = unfold(X, 0)
-        scores = T.lstsq(factors_kr, T.transpose(unfolded), rcond=-1)[0]  # = Tnew
-        estimators = T.lstsq(self.X_factors[0], self.Y_factors[0], rcond=-1)[0]
+        scores = T.lstsq(factors_kr, T.transpose(unfolded))[0]  # = Tnew
+        estimators = T.lstsq(self.X_factors[0], self.Y_factors[0])[0]
         return (
             T.dot(
                 T.dot(T.transpose(scores), estimators), T.transpose(self.Y_factors[1])

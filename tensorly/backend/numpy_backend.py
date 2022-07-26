@@ -121,7 +121,7 @@ for name in [
 ]:
     NumpyBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "svd", "eigh", "inv", "pinv", "lstsq"]:
+for name in ["solve", "qr", "svd", "eigh", "pinv"]:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
 
 for name in ["digamma"]:
