@@ -1,4 +1,3 @@
-import itertools
 import numpy as np
 import pytest
 
@@ -17,7 +16,7 @@ from .._nn_cp import (
     CP_NN,
     CP_NN_HALS,
 )
-from ...cp_tensor import cp_to_tensor, CPTensor
+from ...cp_tensor import cp_to_tensor
 from ...cp_tensor import cp_to_tensor
 from ...random import random_cp
 from ...tenalg import khatri_rao
@@ -29,6 +28,15 @@ from ...testing import (
     assert_array_almost_equal,
 )
 from ...metrics.factors import congruence_coefficient
+
+
+class ErrorTracker:
+    def __init__(self, tensor):
+        self.error = list()
+        self.tensor = tensor
+
+    def __call__(self, cp_cur):
+        self.error.append(tl.norm(self.tensor - cp_to_tensor(cp_cur), 2))
 
 
 @pytest.mark.parametrize("linesearch", [True, False])
@@ -59,7 +67,12 @@ def test_parafac(
     shape = (6, 8, 7)
 
     factors = random_cp(
-        shape, rank=true_rank, orthogonal=orthogonalise, full=False, random_state=rng
+        shape,
+        rank=true_rank,
+        orthogonal=orthogonalise,
+        full=False,
+        random_state=rng,
+        dtype=tl.float64,
     )
 
     # Generate a random complex tensor if requested
@@ -70,6 +83,7 @@ def test_parafac(
             orthogonal=orthogonalise,
             full=False,
             random_state=rng,
+            dtype=tl.float64,
         )
         factors.factors = [
             fm_re + (fm_im * 1.0j)
@@ -79,54 +93,48 @@ def test_parafac(
     tensor = tl.cp_to_tensor(factors)
 
     # Callback to record error
-    errors = list()
-
-    def callback(cp_cur):
-        errors.append(tl.norm(tensor - cp_to_tensor(cp_cur), 2))
+    errors = ErrorTracker(tensor)
 
     rng = tl.check_random_state(random_state)
     fac = parafac(
         tensor,
         rank=rank,
-        n_iter_max=200,
+        n_iter_max=75,
         init=init,
         tol=1e-6,
         random_state=rng,
         normalize_factors=normalize_factors,
         orthogonalise=orthogonalise,
         linesearch=linesearch,
-        callback=callback,
+        callback=errors,
     )
 
     # Given all the random seed is set, this should provide the same answer for random initialization
     if init == "random":
         # Callback to record error
-        errorsTwo = list()
-
-        def callback(cp_cur):
-            errorsTwo.append(tl.norm(tensor - cp_to_tensor(cp_cur), 2))
+        errorsTwo = ErrorTracker(tensor)
 
         rng = tl.check_random_state(random_state)
         facTwo = parafac(
             tensor,
             rank=rank,
-            n_iter_max=200,
+            n_iter_max=75,
             init=init,
             tol=1e-6,
             random_state=rng,
             normalize_factors=normalize_factors,
             orthogonalise=orthogonalise,
             linesearch=linesearch,
-            callback=callback,
+            callback=errorsTwo,
         )
-        assert_array_almost_equal(errors, errorsTwo)
+        assert_array_almost_equal(errors.error, errorsTwo.error)
         assert_array_almost_equal(fac.factors[0], facTwo.factors[0])
         assert_array_almost_equal(fac.factors[1], facTwo.factors[1])
         assert_array_almost_equal(fac.factors[2], facTwo.factors[2])
 
     # Check that the error monotonically decreases
     if not orthogonalise:
-        assert_(np.all(np.diff(errors) <= 1.0e-3))
+        assert_(np.all(np.diff(errors.error) <= 1.0e-9))
 
     rec = cp_to_tensor(fac)
     error = T.norm(rec - tensor, 2)

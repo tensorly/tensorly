@@ -376,7 +376,15 @@ def parafac(
             sparsity = int(sparsity)
 
     if callback is not None:
-        callback(CPTensor((weights, factors)))
+        cp_tensor = CPTensor((weights, factors))
+
+        if sparsity:
+            sparse_component = sparsify_tensor(
+                tensor - cp_to_tensor((weights, factors)), sparsity
+            )
+            callback((cp_tensor, sparse_component))
+        else:
+            callback(cp_tensor)
 
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
@@ -475,7 +483,16 @@ def parafac(
         rec_errors.append(rec_error)
 
         if callback is not None:
-            retVal = callback(CPTensor((weights, factors)))
+            cp_tensor = CPTensor((weights, factors))
+
+            if sparsity:
+                sparse_component = sparsify_tensor(
+                    tensor - cp_to_tensor((weights, factors)), sparsity
+                )
+                retVal = callback((cp_tensor, sparse_component))
+            else:
+                retVal = callback(cp_tensor)
+
             if retVal is True:
                 if verbose:
                     print("Received True from callback function. Exiting.")
