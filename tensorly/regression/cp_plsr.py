@@ -1,5 +1,5 @@
-from ..tenalg import khatri_rao, mode_dot, multi_mode_dot
-from ..cp_tensor import CPTensor, cp_to_tensor, cp_to_vec
+from ..tenalg import khatri_rao, multi_mode_dot
+from ..cp_tensor import CPTensor
 from ..decomposition import tucker
 from .. import backend as T
 from .. import unfold
@@ -28,7 +28,7 @@ class CP_PLSR:
     """
 
     def __init__(
-        self, n_components, tol=1.0e-7, n_iter_max=100, random_state=None, verbose=False
+        self, n_components, tol=1.0e-9, n_iter_max=100, random_state=None, verbose=False
     ):
         self.n_components = n_components
         self.tol = tol
@@ -108,6 +108,7 @@ class CP_PLSR:
                 _Y_factors1_a = T.dot(T.transpose(Y), _X_factors_a[0])
                 _Y_factors1_a /= T.norm(_Y_factors1_a)
                 _Y_factors0_a = T.dot(Y, _Y_factors1_a)
+
                 if T.norm(_old_Y_factors0_a - _Y_factors0_a) < self.tol:
                     if self.verbose:
                         print(f"Component {a}: converged after {iter} iterations")
