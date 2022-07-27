@@ -14,11 +14,10 @@ def test_CPRegressor(vars_shape):
     # Generate random samples
     rng = T.check_random_state(1234)
     X = random_cp((400, *vars_shape), rank=2, random_state=rng, full=True)
-    regression_weights = T.zeros(vars_shape)
-    regression_weights[2:-2, 2:-2, 0] = 1
-    regression_weights[2:-2, 2:-2, 1] = 2
-    regression_weights[2:-2, 2:-2, 2] = -1
-    regression_weights = T.tensor(regression_weights)
+    regression_weights = T.zeros(vars_shape, **T.context(X))
+    regression_weights = T.index_update(regression_weights, T.index[2:-2, 2:-2, 0], 1)
+    regression_weights = T.index_update(regression_weights, T.index[2:-2, 2:-2, 1], 2)
+    regression_weights = T.index_update(regression_weights, T.index[2:-2, 2:-2, 2], -1)
 
     y = T.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(regression_weights))
     X_train = X[:200, :, :]

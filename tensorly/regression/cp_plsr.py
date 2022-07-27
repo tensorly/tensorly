@@ -85,8 +85,8 @@ class CP_PLSR:
         X -= self.X_mean
         Y -= self.Y_mean
 
-        self.X_factors = [T.zeros((l, self.n_components)) for l in T.shape(X)]
-        self.Y_factors = [T.zeros((l, self.n_components)) for l in T.shape(Y)]
+        self.X_factors = [T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(X)]
+        self.Y_factors = [T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(Y)]
 
         ## FITTING EACH COMPONENT
         for a in range(self.n_components):
@@ -100,7 +100,7 @@ class CP_PLSR:
                     tucker(Z, [1] * T.ndim(Z))[1] if Z.ndim >= 2 else [Z / T.norm(Z)]
                 )
                 for ii in range(Z.ndim):
-                    _X_factors_a[ii + 1] = T.reshape(Z_comp[ii], (-1))
+                    _X_factors_a[ii + 1] = T.reshape(Z_comp[ii], (-1, ))
 
                 _X_factors_a[0] = multi_mode_dot(
                     X, _X_factors_a[1:], range(1, T.ndim(X))
