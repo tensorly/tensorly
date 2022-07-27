@@ -95,7 +95,7 @@ class CP_PLSR:
             _old_Y_factors0_a = T.ones(T.shape(_Y_factors0_a)) * T.inf
 
             for iter in range(self.n_iter_max):
-                Z = T.einsum("i...,i...->...", X, _Y_factors0_a)
+                Z = T.tensordot(X, _Y_factors0_a, axes=((0,), (0,)))
                 Z_comp = (
                     tucker(Z, [1] * T.ndim(Z))[1] if Z.ndim >= 2 else [Z / T.norm(Z)]
                 )
@@ -110,26 +110,30 @@ class CP_PLSR:
                 _Y_factors0_a = T.dot(Y, _Y_factors1_a)
                 if T.norm(_old_Y_factors0_a - _Y_factors0_a) < self.tol:
                     if self.verbose:
-                        print(
-                            f"Component {a}: converged after {iter} iterations"
-                        )
+                        print(f"Component {a}: converged after {iter} iterations")
                     break
                 _old_Y_factors0_a = T.copy(_Y_factors0_a)
 
             # Put iteration results back to the parameter variables
             for ii in range(len(_X_factors_a)):
-                self.X_factors[ii] = T.index_update(self.X_factors[ii], T.index[:, a], _X_factors_a[ii])
-            self.Y_factors[0] = T.index_update(self.Y_factors[0], T.index[:, a], _Y_factors0_a)
-            self.Y_factors[1] = T.index_update(self.Y_factors[1], T.index[:, a], _Y_factors1_a)
+                self.X_factors[ii] = T.index_update(
+                    self.X_factors[ii], T.index[:, a], _X_factors_a[ii]
+                )
+            self.Y_factors[0] = T.index_update(
+                self.Y_factors[0], T.index[:, a], _Y_factors0_a
+            )
+            self.Y_factors[1] = T.index_update(
+                self.Y_factors[1], T.index[:, a], _Y_factors1_a
+            )
 
             # Deflation
             X -= CPTensor(
                 (None, [T.reshape(ff, (-1, 1)) for ff in _X_factors_a])
             ).to_tensor()
             Y -= T.dot(
-                    T.dot(
-                        self.X_factors[0],
-                        T.lstsq(self.X_factors[0], T.reshape(_Y_factors0_a, (-1, 1)))[0],
+                T.dot(
+                    self.X_factors[0],
+                    T.lstsq(self.X_factors[0], T.reshape(_Y_factors0_a, (-1, 1)))[0],
                 ),
                 T.reshape(_Y_factors1_a, (1, -1)),
             )  # Y -= T pinv(T) u q'
@@ -182,9 +186,13 @@ class CP_PLSR:
         X_scores = T.zeros((T.shape(X)[0], self.n_components))
 
         for a in range(self.n_components):
-            X_scores = T.index_update(X_scores, T.index[:, a], multi_mode_dot(
-                X, [ff[:, a] for ff in self.X_factors[1:]], range(1, T.ndim(X))
-            ))
+            X_scores = T.index_update(
+                X_scores,
+                T.index[:, a],
+                multi_mode_dot(
+                    X, [ff[:, a] for ff in self.X_factors[1:]], range(1, T.ndim(X))
+                ),
+            )
             X -= CPTensor(
                 (
                     None,
@@ -208,7 +216,9 @@ class CP_PLSR:
             Y -= self.Y_mean
             Y_scores = T.zeros((T.shape(Y)[0], self.n_components))
             for a in range(self.n_components):
-                Y_scores = T.index_update(Y_scores, T.index[:, a], T.dot(Y, self.Y_factors[1][:, a]))
+                Y_scores = T.index_update(
+                    Y_scores, T.index[:, a], T.dot(Y, self.Y_factors[1][:, a])
+                )
                 Y -= T.dot(
                     T.dot(T.dot(X_scores, T.pinv(X_scores)), Y_scores[:, [a]]),
                     T.transpose(self.Y_factors[1][:, [a]]),
