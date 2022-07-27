@@ -141,7 +141,7 @@ for name in [
 ]:
     JaxBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "svd", "eigh", "pinv"]:
+for name in ["solve", "qr", "svd", "eigh"]:
     JaxBackend.register_method(name, getattr(np.linalg, name))
 
 if LooseVersion(jax.__version__) >= LooseVersion("0.3.0"):

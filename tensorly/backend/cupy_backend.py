@@ -114,7 +114,7 @@ for name in [
 ]:
     CupyBackend.register_method(name, getattr(cp, name))
 
-for name in ["svd", "qr", "eigh", "solve", "pinv"]:
+for name in ["svd", "qr", "eigh", "solve"]:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
 
 CupyBackend.register_method("gamma", cp.random.gamma)

@@ -76,7 +76,6 @@ class BackendManager(types.ModuleType):
         "check_random_state",
         "sort",
         "eigh",
-        "pinv",
         "index_update",
         "context",
         "tensor",
