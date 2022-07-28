@@ -28,6 +28,7 @@ def test_CPRegressor(vars_shape):
     estimator = CP_PLSR(n_components=4, verbose=True)
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
+    estimator.transform(X_train, y_train)
     error = RMSE(y_test, y_pred)
     print(error)
     # TODO: Add assertion about expected error.
