@@ -100,11 +100,12 @@ class CP_PLSR:
 
             for iter in range(self.n_iter_max):
                 Z = T.tensordot(X, _Y_factors0_a, axes=((0,), (0,)))
-                Z_comp = (
-                    tucker(Z, [1] * T.ndim(Z))[1] if Z.ndim >= 2 else [Z / T.norm(Z)]
-                )
-                for ii in range(Z.ndim):
-                    _X_factors_a[ii + 1] = T.reshape(Z_comp[ii], (-1,))
+                if Z.ndim >= 2:
+                    Z_comp = tucker(Z, [1] * T.ndim(Z))[1]
+                else:
+                    Z_comp = [Z / T.norm(Z)]
+                for mode in range(1, X.ndim):  # First mode of Z is collapsed by the above tensordot call
+                    _X_factors_a[mode] = T.reshape(Z_comp[mode - 1], (-1,))
 
                 _X_factors_a[0] = multi_mode_dot(
                     X, _X_factors_a[1:], range(1, T.ndim(X))
