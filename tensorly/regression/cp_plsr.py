@@ -25,6 +25,10 @@ class CP_PLSR:
     random_state : None, int or RandomState, optional, default is None
     verbose : bool, default is False
         whether to be verbose during fitting
+
+    References
+    ----------
+    .. [1] Rasmus Bro, "Multiway calibration. Multilinear PLS", Chemometrics, 1996
     """
 
     def __init__(
@@ -78,12 +82,12 @@ class CP_PLSR:
             Y = T.reshape(Y, (-1, 1))
 
         # Mean center the data, record info the object
-        self.X_shape = T.shape(X)
-        self.Y_shape = T.shape(Y)
-        self.X_mean = T.mean(X, axis=0)
-        self.Y_mean = T.mean(Y, axis=0)
-        X -= self.X_mean
-        Y -= self.Y_mean
+        self.X_shape_ = T.shape(X)
+        self.Y_shape_ = T.shape(Y)
+        self.X_mean_ = T.mean(X, axis=0)
+        self.Y_mean_ = T.mean(Y, axis=0)
+        X -= self.X_mean_
+        Y -= self.Y_mean_
 
         self.X_factors = [
             T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(X)
@@ -93,55 +97,55 @@ class CP_PLSR:
         ]
 
         ## FITTING EACH COMPONENT
-        for a in range(self.n_components):
-            _X_factors_a = [ff[:, a] for ff in self.X_factors]
-            _Y_factors0_a = Y[:, 0]
-            _old_Y_factors0_a = T.ones(T.shape(_Y_factors0_a)) * T.inf
+        for component in range(self.n_components):
+            comp_X_factors = [ff[:, component] for ff in self.X_factors]
+            comp_Y_factors_0 = Y[:, 0]
+            old_comp_Y_factors_0 = T.ones(T.shape(comp_Y_factors_0)) * T.inf
 
             for iter in range(self.n_iter_max):
-                Z = T.tensordot(X, _Y_factors0_a, axes=((0,), (0,)))
+                Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
                 if Z.ndim >= 2:
                     Z_comp = tucker(Z, [1] * T.ndim(Z))[1]
                 else:
                     Z_comp = [Z / T.norm(Z)]
                 for mode in range(1, X.ndim):  # First mode of Z is collapsed by the above tensordot call
-                    _X_factors_a[mode] = T.reshape(Z_comp[mode - 1], (-1,))
+                    comp_X_factors[mode] = T.reshape(Z_comp[mode - 1], (-1,))
 
-                _X_factors_a[0] = multi_mode_dot(
-                    X, _X_factors_a[1:], range(1, T.ndim(X))
+                comp_X_factors[0] = multi_mode_dot(
+                    X, comp_X_factors[1:], range(1, T.ndim(X))
                 )
-                _Y_factors1_a = T.dot(T.transpose(Y), _X_factors_a[0])
-                _Y_factors1_a /= T.norm(_Y_factors1_a)
-                _Y_factors0_a = T.dot(Y, _Y_factors1_a)
+                comp_Y_factors_1 = T.dot(T.transpose(Y), comp_X_factors[0])
+                comp_Y_factors_1 /= T.norm(comp_Y_factors_1)
+                comp_Y_factors_0 = T.dot(Y, comp_Y_factors_1)
 
-                if T.norm(_old_Y_factors0_a - _Y_factors0_a) < self.tol:
+                if T.norm(old_comp_Y_factors_0 - comp_Y_factors_0) < self.tol:
                     if self.verbose:
-                        print(f"Component {a}: converged after {iter} iterations")
+                        print(f"Component {component}: converged after {iter} iterations")
                     break
-                _old_Y_factors0_a = T.copy(_Y_factors0_a)
+                old_comp_Y_factors_0 = T.copy(comp_Y_factors_0)
 
             # Put iteration results back to the parameter variables
-            for ii in range(len(_X_factors_a)):
+            for ii in range(len(comp_X_factors)):
                 self.X_factors[ii] = T.index_update(
-                    self.X_factors[ii], T.index[:, a], _X_factors_a[ii]
+                    self.X_factors[ii], T.index[:, component], comp_X_factors[ii]
                 )
             self.Y_factors[0] = T.index_update(
-                self.Y_factors[0], T.index[:, a], _Y_factors0_a
+                self.Y_factors[0], T.index[:, component], comp_Y_factors_0
             )
             self.Y_factors[1] = T.index_update(
-                self.Y_factors[1], T.index[:, a], _Y_factors1_a
+                self.Y_factors[1], T.index[:, component], comp_Y_factors_1
             )
 
             # Deflation
             X -= CPTensor(
-                (None, [T.reshape(ff, (-1, 1)) for ff in _X_factors_a])
+                (None, [T.reshape(ff, (-1, 1)) for ff in comp_X_factors])
             ).to_tensor()
             Y -= T.dot(
                 T.dot(
                     self.X_factors[0],
-                    T.lstsq(self.X_factors[0], T.reshape(_Y_factors0_a, (-1, 1)))[0],
+                    T.lstsq(self.X_factors[0], T.reshape(comp_Y_factors_0, (-1, 1)))[0],
                 ),
-                T.reshape(_Y_factors1_a, (1, -1)),
+                T.reshape(comp_Y_factors_1, (1, -1)),
             )  # Y -= T pinv(T) u q'
 
         return self
@@ -154,11 +158,11 @@ class CP_PLSR:
         X : ndarray
             tensor data of shape (n_samples, N1, ..., NS)
         """
-        if self.X_shape[1:] != T.shape(X)[1:]:
+        if self.X_shape_[1:] != T.shape(X)[1:]:
             raise ValueError(
-                f"Training X has shape {self.X_shape}, while the new X has shape {T.shape(X)}"
+                f"Training X has shape {self.X_shape_}, while the new X has shape {T.shape(X)}"
             )
-        X -= self.X_mean
+        X -= self.X_mean_
         factors_kr = khatri_rao(self.X_factors, skip_matrix=0)
         unfolded = unfold(X, 0)
         scores = T.lstsq(factors_kr, T.transpose(unfolded))[0]  # = Tnew
@@ -167,7 +171,7 @@ class CP_PLSR:
             T.dot(
                 T.dot(T.transpose(scores), estimators), T.transpose(self.Y_factors[1])
             )
-            + self.Y_mean
+            + self.Y_mean_
         )
 
     def transform(self, X, Y=None):
@@ -183,12 +187,12 @@ class CP_PLSR:
         X_scores, Y_scores : array-like or tuple of array-like
             Return `X_scores` if `Y` is not given, `(X_scores, Y_scores)` otherwise.
         """
-        if self.X_shape[1:] != T.shape(X)[1:]:
+        if self.X_shape_[1:] != T.shape(X)[1:]:
             raise ValueError(
-                f"Training X has shape {self.X_shape}, while the new X has shape {T.shape(X)}"
+                f"Training X has shape {self.X_shape_}, while the new X has shape {T.shape(X)}"
             )
         X = T.copy(X)
-        X -= self.X_mean
+        X -= self.X_mean_
         X_scores = T.zeros((T.shape(X)[0], self.n_components))
 
         for a in range(self.n_components):
@@ -214,12 +218,12 @@ class CP_PLSR:
                 raise ValueError("Only a matrix (2-mode tensor) Y is allowed.")
             if T.ndim(Y) == 1:
                 Y = T.reshape(Y, (-1, 1))
-            if self.Y_shape[1:] != T.shape(Y)[1:]:
+            if self.Y_shape_[1:] != T.shape(Y)[1:]:
                 raise ValueError(
-                    f"Training Y has shape {self.Y_shape}, while the new Y has shape {T.shape(Y)}"
+                    f"Training Y has shape {self.Y_shape_}, while the new Y has shape {T.shape(Y)}"
                 )
 
-            Y -= self.Y_mean
+            Y -= self.Y_mean_
             Y_scores = T.zeros((T.shape(Y)[0], self.n_components))
             for a in range(self.n_components):
                 Y_scores = T.index_update(
