@@ -578,6 +578,12 @@ def non_negative_tucker_hals(
     if fixed_modes is None:
         fixed_modes = []
 
+    if tl.ndim(tensor) - 1 in fixed_modes:
+        warnings.warn(
+            "You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()"
+        )
+        fixed_modes.remove(tl.ndim(tensor) - 1)
+
     # Avoiding errors
     for fixed_value in fixed_modes:
         sparsity_coefficients[fixed_value] = None
