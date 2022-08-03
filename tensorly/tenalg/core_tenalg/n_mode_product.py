@@ -40,13 +40,8 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
         dim = 0 if transpose else 1
         if matrix_or_vector.shape[dim] != tensor.shape[mode]:
             raise ValueError(
-                "shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)".format(
-                    tensor.shape,
-                    matrix_or_vector.shape,
-                    mode,
-                    tensor.shape[mode],
-                    matrix_or_vector.shape[dim],
-                )
+                f"shapes {tensor.shape} and {matrix_or_vector.shape} not aligned in mode-{mode} multiplication: "
+                f"{tensor.shape[mode]} (mode {mode}) != {matrix_or_vector.shape[dim]} (dim 1 of matrix)"
             )
 
         if transpose:
@@ -58,13 +53,8 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
     elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
         if matrix_or_vector.shape[0] != tensor.shape[mode]:
             raise ValueError(
-                "shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)".format(
-                    tensor.shape,
-                    matrix_or_vector.shape,
-                    mode,
-                    tensor.shape[mode],
-                    matrix_or_vector.shape[0],
-                )
+                f"shapes {tensor.shape} and {matrix_or_vector.shape} not aligned for mode-{mode} multiplication: "
+                f"{tensor.shape[mode]} (mode {mode}) != {matrix_or_vector.shape[0]} (vector size)"
             )
         if len(new_shape) > 1:
             new_shape.pop(mode)
@@ -77,9 +67,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
     else:
         raise ValueError(
             "Can only take n_mode_product with a vector or a matrix."
-            "Provided array of dimension {} not in [1, 2].".format(
-                T.ndim(matrix_or_vector)
-            )
+            f"Provided array of dimension {T.ndim(matrix_or_vector)} not in [1, 2]."
         )
 
     res = T.dot(matrix_or_vector, unfold(tensor, mode))
