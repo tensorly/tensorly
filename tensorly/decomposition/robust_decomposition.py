@@ -133,7 +133,7 @@ def robust_pca(
         if iteration > 1:
             if rec_X[-1] <= tol and rec_D[-1] <= tol:
                 if verbose:
-                    print("\nConverged in {} iterations".format(iteration))
+                    print(f"\nConverged in {iteration} iterations")
                 break
 
     return D, E
