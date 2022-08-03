@@ -290,7 +290,7 @@ class BackendManager(types.ModuleType):
             msg = f"Unknown backend name {backend_name!r}, known backends are {cls.available_backend_names}"
             raise ValueError(msg)
         if backend_name not in Backend._available_backends:
-            importlib.import_module("tensorly.backend.{0}_backend".format(backend_name))
+            importlib.import_module(f"tensorly.backend.{backend_name}_backend")
         if backend_name in Backend._available_backends:
             backend = Backend._available_backends[backend_name]()
             # backend = getattr(module, )()
