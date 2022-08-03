@@ -95,7 +95,7 @@ def random_cp(
     if (rank > min(shape)) and orthogonal:
         warnings.warn(
             "Can only construct orthogonal tensors when rank <= min(shape) but got "
-            "a tensor with min(shape)={} < rank={}".format(min(shape), rank)
+            f"a tensor with {min(shape)=} < {rank=}"
         )
 
     rns = T.check_random_state(random_state)
@@ -147,7 +147,7 @@ def random_tucker(
             if r > s:
                 warnings.warn(
                     "Selected orthogonal=True, but selected a rank larger than the tensor size for mode {0}: "
-                    "rank[{0}]={1} > shape[{0}]={2}.".format(i, r, s)
+                    f"rank[{i}]={r} > shape[{i}]={s}."
                 )
 
     factors = []
@@ -199,14 +199,10 @@ def random_tt(shape, rank, full=False, random_state=None, **context):
 
     # Initialization
     if rank[0] != 1:
-        message = "Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.".format(
-            rank[0]
-        )
+        message = "Provided {rank[0] = } but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1."
         raise ValueError(message)
     if rank[-1] != 1:
-        message = "Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.".format(
-            rank[0]
-        )
+        message = "Provided {rank[-1] = } but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1."
         raise ValueError(message)
 
     rns = T.check_random_state(random_state)
