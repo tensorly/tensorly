@@ -125,7 +125,7 @@ def initialize_cp(
                 "be possible to convert it to a CPTensor instance"
             )
     else:
-        raise ValueError('Initialization method "{}" not recognized'.format(init))
+        raise ValueError(f'Initialization method "{init}" not recognized')
 
     if non_negative:
         # Make decomposition feasible by taking the absolute value of all factor matrices
@@ -445,7 +445,7 @@ def parafac(
                 acc_fail = 0
 
                 if verbose:
-                    print("Accepted line search jump of {}.".format(jump))
+                    print(f"Accepted line search jump of {jump}.")
             else:
                 unnorml_rec_error, tensor, norm_tensor = error_calc(
                     tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
@@ -453,7 +453,7 @@ def parafac(
                 acc_fail += 1
 
                 if verbose:
-                    print("Line search failed for jump of {}.".format(jump))
+                    print(f"Line search failed for jump of {jump}.")
 
                 if acc_fail == max_fail:
                     acc_pow += 1.0
@@ -472,9 +472,7 @@ def parafac(
 
                 if verbose:
                     print(
-                        "iteration {}, reconstruction error: {}, decrease = {}, unnormalized = {}".format(
-                            iteration, rec_error, rec_error_decrease, unnorml_rec_error
-                        )
+                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}, unnormalized = {unnorml_rec_error}"
                     )
 
                 if cvg_criterion == "abs_rec_error":
@@ -486,12 +484,12 @@ def parafac(
 
                 if stop_flag:
                     if verbose:
-                        print("PARAFAC converged after {} iterations".format(iteration))
+                        print(f"PARAFAC converged after {iteration} iterations")
                     break
 
             else:
                 if verbose:
-                    print("reconstruction error={}".format(rec_errors[-1]))
+                    print(f"reconstruction error={rec_errors[-1]}")
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
@@ -691,16 +689,14 @@ def randomised_parafac(
             if iteration > 1:
                 if verbose:
                     print(
-                        "reconstruction error={}, variation={}.".format(
-                            rec_errors[-1], rec_errors[-2] - rec_errors[-1]
-                        )
+                        f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2]-rec_errors[-1]}."
                     )
 
                 if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or (
                     stagnation and (stagnation > max_stagnation)
                 ):
                     if verbose:
-                        print("converged in {} iterations.".format(iteration))
+                        print(f"converged in {iteration} iterations.")
                     break
 
     if return_errors:
