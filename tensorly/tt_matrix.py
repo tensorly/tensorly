@@ -158,7 +158,7 @@ def _validate_tt_matrix(tt_tensor):
     if n_factors < 1:
         raise ValueError(
             "A Tensor-Train (MPS) tensor should be composed of at least one factor."
-            "However, {} factor was given.".format(n_factors)
+            f"However, {n_factors} factor was given."
         )
 
     rank = []
@@ -173,28 +173,26 @@ def _validate_tt_matrix(tt_tensor):
         if not tl.ndim(factor) == 4:
             raise ValueError(
                 "A TTMatrix expresses a tensor as fourth order factors (tt-cores).\n"
-                "However, tl.ndim(factors[{}]) = {}".format(index, tl.ndim(factor))
+                f"However, tl.ndim(factors[{index}]) = {tl.ndim(factor)}"
             )
         # Consecutive factors should have matching ranks
         if index and tl.shape(factors[index - 1])[-1] != current_rank:
             raise ValueError(
                 "Consecutive factors should have matching ranks\n"
                 " -- e.g. tl.shape(factors[0])[-1]) == tl.shape(factors[1])[0])\n"
-                "However, tl.shape(factor[{}])[-1] == {} but"
-                " tl.shape(factor[{}])[0] == {} ".format(
-                    index - 1, tl.shape(factors[index - 1])[-1], index, current_rank
-                )
+                f"However, tl.shape(factor[{index-1}])[-1] == {tl.shape(factors[index - 1])[-1]} but"
+                f" tl.shape(factor[{index}])[0] == {current_rank} "
             )
         # Check for boundary conditions
         if (index == 0) and current_rank != 1:
             raise ValueError(
                 "Boundary conditions dictate factor[0].shape[0] == 1."
-                "However, got factor[0].shape[0] = {}.".format(current_rank)
+                f"However, got factor[0].shape[0] = {current_rank}."
             )
         if (index == n_factors - 1) and next_rank != 1:
             raise ValueError(
                 "Boundary conditions dictate factor[-1].shape[2] == 1."
-                "However, got factor[{}].shape[2] = {}.".format(n_factors, next_rank)
+                f"However, got factor[{n_factors}].shape[2] = {next_rank}."
             )
 
         left_shape.append(current_left_shape)
