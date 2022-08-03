@@ -68,7 +68,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
     else:
         raise ValueError(
             "Can only take n_mode_product with a vector or a matrix."
-            "Provided array of dimension {tl.ndim(matrix_or_vector)} not in [1, 2]."
+            f"Provided array of dimension {tl.ndim(matrix_or_vector)} not in [1, 2]."
         )
 
     result_modes = "".join(result_modes)
