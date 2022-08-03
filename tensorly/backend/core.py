@@ -1073,8 +1073,7 @@ class Backend(object):
         """
         if len(matrices) < 2:
             raise ValueError(
-                "kr requires a list of at least 2 matrices, but {} "
-                "given.".format(len(matrices))
+                f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
             )
 
         n_col = self.shape(matrices[0])[1]
