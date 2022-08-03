@@ -128,7 +128,7 @@ class TuckerRegressor:
 
                 if weight_evolution <= self.tol:
                     if self.verbose:
-                        print("\nConverged in {} iterations".format(iteration))
+                        print(f"\nConverged in {iteration} iterations")
                     break
 
         self.weight_tensor_ = weight_tensor_
