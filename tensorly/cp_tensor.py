@@ -38,9 +38,9 @@ class CPTensor(FactorizedTensor):
             return self.factors
         else:
             raise IndexError(
-                "You tried to access index {} of a CP tensor.\n"
+                f"You tried to access index {index} of a CP tensor.\n"
                 "You can only access index 0 and 1 of a CP tensor"
-                "(corresponding respectively to the weights and factors)".format(index)
+                "(corresponding respectively to the weights and factors)"
             )
 
     def __setitem__(self, index, value):
@@ -50,9 +50,9 @@ class CPTensor(FactorizedTensor):
             self.factors = value
         else:
             raise IndexError(
-                "You tried to set the value at index {} of a CP tensor.\n"
+                f"You tried to set the value at index {index} of a CP tensor.\n"
                 "You can only set index 0 and 1 of a CP tensor"
-                "(corresponding respectively to the weights and factors)".format(index)
+                "(corresponding respectively to the weights and factors)"
             )
 
     def __iter__(self):
@@ -63,9 +63,7 @@ class CPTensor(FactorizedTensor):
         return 2
 
     def __repr__(self):
-        message = "(weights, factors) : rank-{} CPTensor of shape {} ".format(
-            self.rank, self.shape
-        )
+        message = f"(weights, factors) : rank-{self.rank} CPTensor of shape {self.shape} ")
         return message
 
     def to_tensor(self):
@@ -203,16 +201,13 @@ def _validate_cp_tensor(cp_tensor):
         if current_rank != rank:
             raise ValueError(
                 "All the factors of a CP tensor should have the same number of column."
-                "However, factors[0].shape[1]={} but factors[{}].shape[1]={}.".format(
-                    rank, i, T.shape(factor)[1]
-                )
+                f"However, factors[0].shape[1]={rank} but factors[{i}].shape[1]={T.shape(factor)[1]}."
             )
         shape.append(current_mode_size)
 
     if weights is not None and T.shape(weights) != (rank,):
         raise ValueError(
-            "Given factors for a rank-{} CP tensor but len(weights)={}.".format(
-                rank, T.shape(weights)
+            f"Given factors for a rank-{rank} CP tensor but len(weights)={T.shape(weights)}."
             )
         )
 
@@ -582,25 +577,15 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
         # Test for the validity of the operation
         if matrix_or_vector.shape[1] != shape[mode]:
             raise ValueError(
-                "shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)".format(
-                    shape,
-                    matrix_or_vector.shape,
-                    mode,
-                    shape[mode],
-                    matrix_or_vector.shape[1],
-                )
+                f"shapes {shape} and {matrix_or_vector.shape} not aligned in mode-{mode} multiplication: "
+                f"{shape[mode]} (mode {mode}) != {matrix_or_vector.shape[1]} (dim 1 of matrix)"
             )
 
     elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
         if matrix_or_vector.shape[0] != shape[mode]:
             raise ValueError(
-                "shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)".format(
-                    shape,
-                    matrix_or_vector.shape,
-                    mode,
-                    shape[mode],
-                    matrix_or_vector.shape[0],
-                )
+                f"shapes {shape} and {matrix_or_vector.shape} not aligned for mode-{mode} multiplication: "
+                f"{shape[mode]} (mode {mode}) != {matrix_or_vector.shape[0]} (vector size)"
             )
         if not keep_dim:
             contract = True  # Contract over that mode
