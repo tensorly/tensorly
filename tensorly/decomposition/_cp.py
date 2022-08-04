@@ -344,7 +344,10 @@ def parafac(
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
-    Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
+    if l2_reg:
+        Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
+    else:
+        Id = 0
 
     if fixed_modes is None:
         fixed_modes = []
