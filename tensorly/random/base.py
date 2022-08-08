@@ -202,7 +202,7 @@ def random_tt(shape, rank, full=False, random_state=None, **context):
         message = f"Provided rank[0] = {rank[0]} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1."
         raise ValueError(message)
     if rank[-1] != 1:
-        message = f"Provided {rank[-1] = } but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1."
+        message = f"Provided rank[-1] = {rank[-1]} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1."
         raise ValueError(message)
 
     rns = T.check_random_state(random_state)
