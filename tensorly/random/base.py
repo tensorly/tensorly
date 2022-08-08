@@ -95,7 +95,7 @@ def random_cp(
     if (rank > min(shape)) and orthogonal:
         warnings.warn(
             "Can only construct orthogonal tensors when rank <= min(shape) but got "
-            f"a tensor with {min(shape)=} < {rank=}"
+            f"a tensor with min(shape)={min(shape)} < rank={rank}"
         )
 
     rns = T.check_random_state(random_state)
