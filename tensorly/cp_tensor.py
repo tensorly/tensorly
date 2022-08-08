@@ -63,7 +63,7 @@ class CPTensor(FactorizedTensor):
         return 2
 
     def __repr__(self):
-        message = f"(weights, factors) : rank-{self.rank} CPTensor of shape {self.shape} ")
+        message = f"(weights, factors) : rank-{self.rank} CPTensor of shape {self.shape}"
         return message
 
     def to_tensor(self):
