@@ -90,7 +90,7 @@ def test_tucker(monkeypatch):
         assert_equal(
             factors[i].shape,
             (tensor.shape[i], ranks[i]),
-            err_msg=f"{factors[i].shape = }, expected {(tensor.shape[i], ranks[i])}"
+            err_msg=f"factors[i].shape = {factors[i].shape}, expected {(tensor.shape[i], ranks[i])}"
         )
         assert_equal(
             tl.shape(core)[i],
