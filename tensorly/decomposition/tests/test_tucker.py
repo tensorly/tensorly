@@ -47,7 +47,7 @@ def test_partial_tucker():
         assert_equal(
             factors[i].shape,
             (tensor.shape[i + 1], ranks[i]),
-            err_msg=f"{factors[i].shape = }, expected {(tensor.shape[i + 1], ranks[i])}"
+            err_msg=f"factors[i].shape = {factors[i].shape}, expected {(tensor.shape[i + 1], ranks[i])}"
         )
     assert_equal(
         core.shape,
