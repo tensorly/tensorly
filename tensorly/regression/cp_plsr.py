@@ -105,7 +105,9 @@ class CP_PLSR:
             for iter in range(self.n_iter_max):
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
 
-                for mode in range(1, X.ndim):  # First mode of Z is collapsed by the above tensordot call
+                for mode in range(
+                    1, X.ndim
+                ):  # Mode 0 of Z collapsed by above tensordot
                     Z_comp = svd_interface(unfold(Z, mode - 1), n_eigenvecs=1)[0]
                     comp_X_factors[mode] = tensor_to_vec(Z_comp)
 
@@ -118,7 +120,9 @@ class CP_PLSR:
 
                 if T.norm(old_comp_Y_factors_0 - comp_Y_factors_0) < self.tol:
                     if self.verbose:
-                        print(f"Component {component}: converged after {iter} iterations")
+                        print(
+                            f"Component {component}: converged after {iter} iterations"
+                        )
                     break
                 old_comp_Y_factors_0 = T.copy(comp_Y_factors_0)
 
