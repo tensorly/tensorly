@@ -21,7 +21,7 @@ Example and comparison of Non-negative Parafac decompositions.
 import numpy as np
 import tensorly as tl
 from tensorly.decomposition import non_negative_parafac, non_negative_parafac_hals
-from tensorly.decomposition._nn_cp import initialize_nn_cp
+from tensorly.decomposition._cp import initialize_cp
 from tensorly.cp_tensor import CPTensor
 import time
 from copy import deepcopy
@@ -42,10 +42,11 @@ tensor = tl.tensor(np.arange(24000).reshape((30, 40, 20)), dtype=tl.float32)
 # for our NCP. In fact, in order to compare both algorithmic options in a
 # fair way, it is a good idea to use same initialized factors in decomposition
 # algorithms. We make use of the ``initialize_cp`` function to initialize the
-# factors of the NCP, and transform these factors (and factors weights) into
+# factors of the NCP (setting the ``non_negative`` option to `True`) 
+# and transform these factors (and factors weights) into
 # an instance of the CPTensor class:
 
-weights_init, factors_init = initialize_nn_cp(tensor, init='random', rank=10)
+weights_init, factors_init = initialize_cp(tensor, non_negative=True, init='random', rank=10)
 
 cp_init = CPTensor((weights_init, factors_init))
 
