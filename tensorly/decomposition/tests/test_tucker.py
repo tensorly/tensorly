@@ -95,7 +95,7 @@ def test_tucker(monkeypatch):
         assert_equal(
             tl.shape(core)[i],
             rank,
-            err_msg=f"{core.shape[i] = }, expected {rank}"
+            err_msg=f"core.shape[i] = {core.shape[i]}, expected {rank}"
         )
 
     # try fixing the core
