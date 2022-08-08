@@ -195,7 +195,7 @@ class CP_PLSR:
             )
         X = T.copy(X)
         X -= self.X_mean_
-        X_scores = T.zeros((T.shape(X)[0], self.n_components))
+        X_scores = T.zeros((T.shape(X)[0], self.n_components), **T.context(X))
 
         for a in range(self.n_components):
             X_scores = T.index_update(
@@ -226,7 +226,7 @@ class CP_PLSR:
                 )
 
             Y -= self.Y_mean_
-            Y_scores = T.zeros((T.shape(Y)[0], self.n_components))
+            Y_scores = T.zeros((T.shape(Y)[0], self.n_components), **T.context(X))
             for a in range(self.n_components):
                 Y_scores = T.index_update(
                     Y_scores, T.index[:, a], T.dot(Y, self.Y_factors[1][:, a])

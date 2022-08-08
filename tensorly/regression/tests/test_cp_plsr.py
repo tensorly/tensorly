@@ -1,15 +1,20 @@
 import numpy as np
 import pytest
 import tensorly as tl
-from numpy.testing import assert_allclose
 
 from ... import backend as T
+from ...testing import assert_allclose
 from ...base import partial_tensor_to_vec, tensor_to_vec
 from ...cp_tensor import CPTensor, cp_normalize, cp_to_tensor
 from ...metrics.factors import congruence_coefficient
 from ...metrics.regression import RMSE
 from ...random import random_cp
 from ..cp_plsr import CP_PLSR
+
+skip_if_backend = pytest.mark.skipif(
+    tl.get_backend() in ("tensorflow"),
+    reason=f"Operation not supported in {tl.get_backend()}",
+)
 
 # Authors: Jackson L. Chin, Cyrillus Tan, Aaron Meyer
 
@@ -70,7 +75,7 @@ def test_factor_normality():
     pls.fit(x, y)
 
     for x_factor in pls.X_factors[1:]:
-        assert_allclose(tl.norm(x_factor, axis=0), 1)
+        assert_allclose(tl.norm(x_factor, axis=0), 1, rtol=2e-7)
 
     for y_factor in pls.Y_factors[1:]:
         assert_allclose(tl.norm(y_factor, axis=0), 1)
@@ -123,18 +128,20 @@ def test_dimension_compatibility(x_rank, n_response):
 # Decomposition Accuracy Tests
 
 
+@skip_if_backend
 def test_zero_covariance_x():
     x, y, _, _ = _get_standard_synthetic()
-    x[:, 0, :] = 1
+    x = tl.index_update(x, tl.index[:, 0, :], 1)
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
 
-    assert_allclose(pls.X_factors[1][0, :], 0)
+    assert_allclose(pls.X_factors[1][0, :], 0, atol=1e-6)
 
 
+@skip_if_backend
 def test_zero_covariance_y():
     x, y, _, _ = _get_standard_synthetic()
-    y[:, 0] = 1
+    y = tl.index_update(y, tl.index[:, 0], 1)
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
 
@@ -167,6 +174,7 @@ def test_reconstruction_x():
     assert_allclose(reconstructed_x, x, rtol=0, atol=1e-2)
 
 
+@skip_if_backend
 @pytest.mark.parametrize("vars_shape", [(8, 8, 3), (8, 8, 9, 3)])
 def test_CPRegressor(vars_shape):
     """Test for CP_PLSR."""
