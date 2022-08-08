@@ -1,8 +1,8 @@
 from ..tenalg import khatri_rao, multi_mode_dot
 from ..cp_tensor import CPTensor
-from ..decomposition import tucker
 from .. import backend as T
-from .. import unfold
+from .. import unfold, tensor_to_vec
+from ..tenalg.svd import svd_interface
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
 
@@ -104,12 +104,10 @@ class CP_PLSR:
 
             for iter in range(self.n_iter_max):
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
-                if Z.ndim >= 2:
-                    Z_comp = tucker(Z, [1] * T.ndim(Z))[1]
-                else:
-                    Z_comp = [Z / T.norm(Z)]
+
                 for mode in range(1, X.ndim):  # First mode of Z is collapsed by the above tensordot call
-                    comp_X_factors[mode] = T.reshape(Z_comp[mode - 1], (-1,))
+                    Z_comp = svd_interface(unfold(Z, mode - 1), n_eigenvecs=1)[0]
+                    comp_X_factors[mode] = tensor_to_vec(Z_comp)
 
                 comp_X_factors[0] = multi_mode_dot(
                     X, comp_X_factors[1:], range(1, T.ndim(X))
