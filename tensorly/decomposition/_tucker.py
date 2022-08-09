@@ -580,7 +580,8 @@ def non_negative_tucker_hals(
 
     if tl.ndim(tensor) - 1 in fixed_modes:
         warnings.warn(
-            "You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()"
+            "You asked for fixing the last mode, which is not supported. The last mode will not be fixed."
+            " Consider using tl.moveaxis() to permute it to another position and keep it fixed there."
         )
         fixed_modes.remove(tl.ndim(tensor) - 1)
 
