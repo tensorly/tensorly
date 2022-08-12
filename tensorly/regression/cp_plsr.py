@@ -12,7 +12,9 @@ from ..tenalg.svd import svd_interface
 class CP_PLSR:
     """CP tensor regression
 
-        Learns a low rank CP tensor weight
+        Learns a low rank CP tensor weight, This performs a partial least square regression to a tensor X (>= 2 modes)
+        against a matrix Y. The first modes of X and Y will be considered coupled, and the decomposition will maximize
+        the covariance between them.
 
     Parameters
     ----------
@@ -177,13 +179,15 @@ class CP_PLSR:
         )
 
     def transform(self, X, Y=None):
-        """Apply the dimension reduction.
+        """Apply the dimension reduction from fitting to a new tensor.
+
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
             Samples to transform.
         Y : array-like of shape (n_samples, n_targets), default=None
             Target vectors.
+
         Returns
         -------
         X_scores, Y_scores : array-like or tuple of array-like
@@ -197,19 +201,19 @@ class CP_PLSR:
         X -= self.X_mean_
         X_scores = T.zeros((T.shape(X)[0], self.n_components), **T.context(X))
 
-        for a in range(self.n_components):
+        for component in range(self.n_components):
             X_scores = T.index_update(
                 X_scores,
-                T.index[:, a],
+                T.index[:, component],
                 multi_mode_dot(
-                    X, [ff[:, a] for ff in self.X_factors[1:]], range(1, T.ndim(X))
+                    X, [ff[:, component] for ff in self.X_factors[1:]], range(1, T.ndim(X))
                 ),
             )
             X -= CPTensor(
                 (
                     None,
-                    [T.reshape(X_scores[:, a], (-1, 1))]
-                    + [T.reshape(ff[:, a], (-1, 1)) for ff in self.X_factors[1:]],
+                    [T.reshape(X_scores[:, component], (-1, 1))]
+                    + [T.reshape(ff[:, component], (-1, 1)) for ff in self.X_factors[1:]],
                 )
             ).to_tensor()
 
@@ -227,17 +231,17 @@ class CP_PLSR:
 
             Y -= self.Y_mean_
             Y_scores = T.zeros((T.shape(Y)[0], self.n_components), **T.context(X))
-            for a in range(self.n_components):
+            for component in range(self.n_components):
                 Y_scores = T.index_update(
-                    Y_scores, T.index[:, a], T.dot(Y, self.Y_factors[1][:, a])
+                    Y_scores, T.index[:, component], T.dot(Y, self.Y_factors[1][:, component])
                 )
 
                 Y -= T.dot(
                     T.dot(
                         T.lstsq(T.transpose(X_scores), T.transpose(X_scores))[0],
-                        Y_scores[:, [a]],
+                        Y_scores[:, [component]],
                     ),
-                    T.transpose(self.Y_factors[1][:, [a]]),
+                    T.transpose(self.Y_factors[1][:, [component]]),
                 )  # Y -= T pinv(T) u q'
             return X_scores, Y_scores
 
@@ -245,6 +249,7 @@ class CP_PLSR:
 
     def fit_transform(self, X, Y):
         """Learn and apply the dimension reduction on the train data.
+
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
@@ -253,6 +258,7 @@ class CP_PLSR:
         y : array-like of shape (n_samples, n_targets), default=None
             Target vectors, where `n_samples` is the number of samples and
             `n_targets` is the number of response variables.
+
         Returns
         -------
         self : ndarray of shape (n_samples, n_components)
