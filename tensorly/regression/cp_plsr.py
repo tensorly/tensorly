@@ -2,7 +2,7 @@ from ..tenalg import khatri_rao, multi_mode_dot
 from ..cp_tensor import CPTensor
 from .. import backend as T
 from .. import unfold, tensor_to_vec
-from ..tenalg.svd import svd_interface
+from ..decomposition import partial_tucker
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
 
@@ -107,11 +107,15 @@ class CP_PLSR:
             for iter in range(self.n_iter_max):
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
 
+                if Z.ndim >= 2:
+                    Z_comp = partial_tucker(Z, modes=list(range(T.ndim(Z))), rank=[1] * T.ndim(Z))[0][1]
+                else:
+                    Z_comp = [Z / T.norm(Z)]
+
                 for mode in range(
                     1, X.ndim
                 ):  # Mode 0 of Z collapsed by above tensordot
-                    Z_comp = svd_interface(unfold(Z, mode - 1), n_eigenvecs=1)[0]
-                    comp_X_factors[mode] = tensor_to_vec(Z_comp)
+                    comp_X_factors[mode] = tensor_to_vec(Z_comp[mode - 1])
 
                 comp_X_factors[0] = multi_mode_dot(
                     X, comp_X_factors[1:], range(1, T.ndim(X))
