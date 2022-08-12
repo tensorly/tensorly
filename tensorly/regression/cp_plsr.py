@@ -107,7 +107,7 @@ class CP_PLSR:
             for iter in range(self.n_iter_max):
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
 
-                if Z.ndim >= 2:
+                if T.ndim(Z) >= 2:
                     Z_comp = partial_tucker(Z, modes=list(range(T.ndim(Z))), rank=[1] * T.ndim(Z))[0][1]
                 else:
                     Z_comp = [Z / T.norm(Z)]
