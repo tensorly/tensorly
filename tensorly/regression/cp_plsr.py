@@ -206,14 +206,19 @@ class CP_PLSR:
                 X_scores,
                 T.index[:, component],
                 multi_mode_dot(
-                    X, [ff[:, component] for ff in self.X_factors[1:]], range(1, T.ndim(X))
+                    X,
+                    [ff[:, component] for ff in self.X_factors[1:]],
+                    range(1, T.ndim(X)),
                 ),
             )
             X -= CPTensor(
                 (
                     None,
                     [T.reshape(X_scores[:, component], (-1, 1))]
-                    + [T.reshape(ff[:, component], (-1, 1)) for ff in self.X_factors[1:]],
+                    + [
+                        T.reshape(ff[:, component], (-1, 1))
+                        for ff in self.X_factors[1:]
+                    ],
                 )
             ).to_tensor()
 
@@ -233,7 +238,9 @@ class CP_PLSR:
             Y_scores = T.zeros((T.shape(Y)[0], self.n_components), **T.context(X))
             for component in range(self.n_components):
                 Y_scores = T.index_update(
-                    Y_scores, T.index[:, component], T.dot(Y, self.Y_factors[1][:, component])
+                    Y_scores,
+                    T.index[:, component],
+                    T.dot(Y, self.Y_factors[1][:, component]),
                 )
 
                 Y -= T.dot(
