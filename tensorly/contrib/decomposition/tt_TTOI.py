@@ -148,8 +148,8 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
         for k in range(n_dim-2):
             # compress R_tilde_arr from the right
             R_tmp_r = sequential_prod(R_tilde_arr[n_dim-k-3],V_arr[0:(k+1)],"right")
-            V_tmp = tl.transpose(tl.partial_svd(tl.reshape(R_tmp_r,(rank[n_dim-k-2],shape[n_dim-k-2]*rank[n_dim-k-1])),rank[n_dim-k-2])[2])
-            V_arr.append(tl.reshape(V_tmp,(rank[n_dim-k-1],shape[n_dim-k-2],rank[n_dim-k-2])))
+            V_tmp = tl.partial_svd(tl.reshape(R_tmp_r,(rank[n_dim-k-2],shape[n_dim-k-2]*rank[n_dim-k-1])),rank[n_dim-k-2])[2]
+            V_arr.append(tl.transpose(tl.reshape(V_tmp,(rank[n_dim-k-2],shape[n_dim-k-2],rank[n_dim-k-1]))))
 
         Residual_right = sequential_prod(data_tensor_extended,V_arr,"right")
         if trajectory or return_errors or n==n_iter-1:
@@ -163,9 +163,9 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
             if trajectory:
                 factors.append(factors_list_tmp)
                 full_tensor.append(full_tensor_tmp)
-            if n == n_iter-1:
-                factors = factors_list_tmp
-                full_tensor = full_tensor_tmp
+            elif n == n_iter-1:
+                    factors = factors_list_tmp
+                    full_tensor = full_tensor_tmp
 
     # return final results
     if return_errors:
