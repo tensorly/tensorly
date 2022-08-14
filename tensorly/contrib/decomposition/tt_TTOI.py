@@ -8,7 +8,7 @@ from tensorly.decomposition._base_decomposition import DecompositionMixin
 
 
 
-def sequential_prod(tensor_prod, multiplier_list, direction):
+def sequential_prod(tensor_prod, multiplier_list, left_to_right = True):
     """ Perform sequential multiplication and reshaping
 
     Parameters
@@ -21,7 +21,7 @@ def sequential_prod(tensor_prod, multiplier_list, direction):
         len(multiplier_list) <= d-1
         If direction == "left", multiplier_list[i] is of shape (r_i, p_{i+1}, r_{i+1})
         If direction == "right", multiplier_list[i] is of shape (r_{d-i}, p_{d-i}, r_{d-i-1})
-    direction : string
+    left_to_right : bool, optional, default is True
         direction of the multiplication
     Returns
     -------
@@ -31,7 +31,7 @@ def sequential_prod(tensor_prod, multiplier_list, direction):
         If direction == "right" and `multiplier_list` contains d-N tensors, then `tensor_prod` is of dimension r_0*p_1*...*p_N*r_N
     """ 
 
-    if direction == "left":
+    if left_to_right == True:
         for i in range(len(multiplier_list)):
             tensor_prod = tl.tensordot(multiplier_list[i], tensor_prod, axes = ([0, 1], [0, 1]))   
     else:
@@ -90,45 +90,45 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
         error_list = list()
         
     # perform TTOI for n_iter iterations
-    for n in range(n_iter):
+    for iteration in range(n_iter):
         # first perform forward update
-        # U_arr will be a list including estimated left singular spaces at the current iteration
-        U_arr = list()
-        # initialize R_tilde_arr (sequential unfolding of data_tensor multiplied by U_arr sequentially on the left, useful for backward update to obtain V_arr)
-        R_tilde_arr = list()
+        # left_singular_vectors will be a list including estimated left singular spaces at the current iteration
+        left_singular_vectors = list()
+        # initialize left_residuals (sequential unfolding of data_tensor multiplied by left_singular_vectors sequentially on the left, useful for backward update to obtain right_singular_vectors)
+        left_residuals = list()
 
         # estimate the first left singular spaces
-        # Here, R_tmp is the first sequential unfolding compressed on the right by previous updated V_arr (if exists)
+        # Here, R_tmp is the first sequential unfolding compressed on the right by previous updated right_singular_vectors (if exists)
         R_tmp_l = data_tensor_extended
-        if n == 0:
+        if iteration == 0:
             R_tmp = R_tmp_l
         else:
-            R_tmp = sequential_prod(R_tmp_l,V_arr,"right")
+            R_tmp = sequential_prod(R_tmp_l,right_singular_vectors,"right")
         U_tmp = tl.partial_svd(tl.reshape(R_tmp,(shape[0],-1)),rank[1])[0]
-        U_arr.append(tl.reshape(U_tmp,(rank[0],shape[0],rank[1])))
+        left_singular_vectors.append(tl.reshape(U_tmp,(rank[0],shape[0],rank[1])))
 
         # estimate the 2nd to (d-1)th left singular spaces
-        for k in range(n_dim-2):
-            # compress the (k+2)th sequential unfolding of data_tensor from the left
-            R_tmp_l = sequential_prod(R_tmp_l,[U_arr[k]],"left")
+        for mode in range(n_dim-2):
+            # compress the (mode+2)th sequential unfolding of data_tensor from the left
+            R_tmp_l = sequential_prod(R_tmp_l,[left_singular_vectors[mode]],"left")
             # R_tmp_l will be useful for backward update
-            R_tilde_arr.append(R_tmp_l)
+            left_residuals.append(R_tmp_l)
             
-            # compress the (k+2)th sequential unfolding of data_tensor from the right (if n>0)
-            if n == 0:
+            # compress the (mode+2)th sequential unfolding of data_tensor from the right (if iteration>0)
+            if iteration == 0:
                 R_tmp = R_tmp_l
             else:
-                R_tmp = sequential_prod(R_tmp_l,V_arr[0:(n_dim-k-2)],"right")
-            U_tmp = tl.partial_svd(tl.reshape(R_tmp,(rank[k+1]*shape[k+1],-1)),rank[k+2])[0]
-            U_arr.append(tl.reshape(U_tmp,(rank[k+1],shape[k+1],rank[k+2])))
+                R_tmp = sequential_prod(R_tmp_l,right_singular_vectors[0:(n_dim-mode-2)],"right")
+            U_tmp = tl.partial_svd(tl.reshape(R_tmp,(rank[mode+1]*shape[mode+1],-1)),rank[mode+2])[0]
+            left_singular_vectors.append(tl.reshape(U_tmp,(rank[mode+1],shape[mode+1],rank[mode+2])))
 
         # forward update is done; output the final residual
-        R_tilde_arr.append(sequential_prod(R_tmp_l,[U_arr[n_dim-2]],"left"))
+        left_residuals.append(sequential_prod(R_tmp_l,[left_singular_vectors[n_dim-2]],"left"))
         if trajectory or return_errors:
             factors_list_tmp = list()
-            for k in range(n_dim-1):
-                factors_list_tmp.append(tl.tensor(U_arr[k],**context))
-            factors_list_tmp.append(tl.tensor(R_tilde_arr[n_dim-2],**context))
+            for mode in range(n_dim-1):
+                factors_list_tmp.append(tl.tensor(left_singular_vectors[mode],**context))
+            factors_list_tmp.append(tl.tensor(left_residuals[n_dim-2],**context))
             full_tensor_tmp = tl.tensor(tt_to_tensor(factors_list_tmp),**context)
             if return_errors:
                 error_list.append(tl.norm(full_tensor_tmp-data_tensor,2))
@@ -139,31 +139,31 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
 
 
         # perform backward update
-        # initialize V_arr: V_arr will be a list of estimated right singular spaces at the current or previous iteration
-        V_arr = list()
-        V_tmp = tl.transpose(tl.partial_svd(tl.reshape(R_tilde_arr[n_dim-2],(rank[n_dim-1],shape[n_dim-1])),rank[n_dim-1])[2])
-        V_arr.append(tl.reshape(V_tmp,(rank[n_dim],shape[n_dim-1],rank[n_dim-1])))
+        # initialize right_singular_vectors: right_singular_vectors will be a list of estimated right singular spaces at the current or previous iteration
+        right_singular_vectors = list()
+        V_tmp = tl.transpose(tl.partial_svd(tl.reshape(left_residuals[n_dim-2],(rank[n_dim-1],shape[n_dim-1])),rank[n_dim-1])[2])
+        right_singular_vectors.append(tl.reshape(V_tmp,(rank[n_dim],shape[n_dim-1],rank[n_dim-1])))
 
         # estimate the 2nd to (d-1)th right singular spaces
-        for k in range(n_dim-2):
-            # compress R_tilde_arr from the right
-            R_tmp_r = sequential_prod(R_tilde_arr[n_dim-k-3],V_arr[0:(k+1)],"right")
-            V_tmp = tl.partial_svd(tl.reshape(R_tmp_r,(rank[n_dim-k-2],shape[n_dim-k-2]*rank[n_dim-k-1])),rank[n_dim-k-2])[2]
-            V_arr.append(tl.transpose(tl.reshape(V_tmp,(rank[n_dim-k-2],shape[n_dim-k-2],rank[n_dim-k-1]))))
+        for mode in range(n_dim-2):
+            # compress left_residuals from the right
+            R_tmp_r = sequential_prod(left_residuals[n_dim-mode-3],right_singular_vectors[0:(mode+1)],"right")
+            V_tmp = tl.partial_svd(tl.reshape(R_tmp_r,(rank[n_dim-mode-2],shape[n_dim-mode-2]*rank[n_dim-mode-1])),rank[n_dim-mode-2])[2]
+            right_singular_vectors.append(tl.transpose(tl.reshape(V_tmp,(rank[n_dim-mode-2],shape[n_dim-mode-2],rank[n_dim-mode-1]))))
 
-        Residual_right = sequential_prod(data_tensor_extended,V_arr,"right")
-        if trajectory or return_errors or n==n_iter-1:
+        Residual_right = sequential_prod(data_tensor_extended,right_singular_vectors,"right")
+        if trajectory or return_errors or iteration==n_iter-1:
             factors_list_tmp = list()
             factors_list_tmp.append(tl.tensor(Residual_right,**context))
-            for k in range(n_dim-1):
-                factors_list_tmp.append(tl.tensor(tl.transpose(V_arr[n_dim-k-2]),**context))
+            for mode in range(n_dim-1):
+                factors_list_tmp.append(tl.tensor(tl.transpose(right_singular_vectors[n_dim-mode-2]),**context))
             full_tensor_tmp = tl.tensor(tt_to_tensor(factors_list_tmp),**context)
             if return_errors:
                 error_list.append(tl.norm(full_tensor_tmp-data_tensor,2))
             if trajectory:
                 factors.append(factors_list_tmp)
                 full_tensor.append(full_tensor_tmp)
-            elif n == n_iter-1:
+            elif iteration == n_iter-1:
                     factors = factors_list_tmp
                     full_tensor = full_tensor_tmp
 
