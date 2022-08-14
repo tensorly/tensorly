@@ -103,14 +103,14 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
         if iteration == 0:
             R_tmp = R_tmp_l
         else:
-            R_tmp = sequential_prod(R_tmp_l,right_singular_vectors,"right")
+            R_tmp = sequential_prod(R_tmp_l,right_singular_vectors,left_to_right = False)
         U_tmp = tl.partial_svd(tl.reshape(R_tmp,(shape[0],-1)),rank[1])[0]
         left_singular_vectors.append(tl.reshape(U_tmp,(rank[0],shape[0],rank[1])))
 
         # estimate the 2nd to (d-1)th left singular spaces
         for mode in range(n_dim-2):
             # compress the (mode+2)th sequential unfolding of data_tensor from the left
-            R_tmp_l = sequential_prod(R_tmp_l,[left_singular_vectors[mode]],"left")
+            R_tmp_l = sequential_prod(R_tmp_l,[left_singular_vectors[mode]], left_to_right = True)
             # R_tmp_l will be useful for backward update
             left_residuals.append(R_tmp_l)
             
@@ -118,12 +118,12 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
             if iteration == 0:
                 R_tmp = R_tmp_l
             else:
-                R_tmp = sequential_prod(R_tmp_l,right_singular_vectors[0:(n_dim-mode-2)],"right")
+                R_tmp = sequential_prod(R_tmp_l,right_singular_vectors[0:(n_dim-mode-2)],left_to_right = False)
             U_tmp = tl.partial_svd(tl.reshape(R_tmp,(rank[mode+1]*shape[mode+1],-1)),rank[mode+2])[0]
             left_singular_vectors.append(tl.reshape(U_tmp,(rank[mode+1],shape[mode+1],rank[mode+2])))
 
         # forward update is done; output the final residual
-        left_residuals.append(sequential_prod(R_tmp_l,[left_singular_vectors[n_dim-2]],"left"))
+        left_residuals.append(sequential_prod(R_tmp_l,[left_singular_vectors[n_dim-2]], left_to_right = True))
         if trajectory or return_errors:
             factors_list_tmp = list()
             for mode in range(n_dim-1):
@@ -151,7 +151,7 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
             V_tmp = tl.partial_svd(tl.reshape(R_tmp_r,(rank[n_dim-mode-2],shape[n_dim-mode-2]*rank[n_dim-mode-1])),rank[n_dim-mode-2])[2]
             right_singular_vectors.append(tl.transpose(tl.reshape(V_tmp,(rank[n_dim-mode-2],shape[n_dim-mode-2],rank[n_dim-mode-1]))))
 
-        Residual_right = sequential_prod(data_tensor_extended,right_singular_vectors,"right")
+        Residual_right = sequential_prod(data_tensor_extended,right_singular_vectors,left_to_right = False)
         if trajectory or return_errors or iteration==n_iter-1:
             factors_list_tmp = list()
             factors_list_tmp.append(tl.tensor(Residual_right,**context))
