@@ -75,10 +75,10 @@ def test_factor_normality():
     pls.fit(x, y)
 
     for x_factor in pls.X_factors[1:]:
-        assert_allclose(tl.norm(x_factor, axis=0), 1, rtol=2e-7)
+        assert_allclose(tl.norm(x_factor, axis=0), 1, rtol=1e-6)
 
     for y_factor in pls.Y_factors[1:]:
-        assert_allclose(tl.norm(y_factor, axis=0), 1)
+        assert_allclose(tl.norm(y_factor, axis=0), 1, rtol=1e-6)
 
 
 def test_factor_orthogonality():
