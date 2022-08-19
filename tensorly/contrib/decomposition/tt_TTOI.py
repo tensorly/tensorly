@@ -104,7 +104,7 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
             R_tmp = R_tmp_l
         else:
             R_tmp = sequential_prod(R_tmp_l,right_singular_vectors,left_to_right = False)
-        U_tmp = tl.partial_svd(tl.reshape(R_tmp,(shape[0],-1)),rank[1])[0]
+        U_tmp = tl.tenalg.svd_interface(matrix = tl.reshape(R_tmp,(shape[0],-1)),n_eigenvecs = rank[1])[0]
         left_singular_vectors.append(tl.reshape(U_tmp,(rank[0],shape[0],rank[1])))
 
         # estimate the 2nd to (d-1)th left singular spaces
@@ -119,7 +119,7 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
                 R_tmp = R_tmp_l
             else:
                 R_tmp = sequential_prod(R_tmp_l,right_singular_vectors[0:(n_dim-mode-2)],left_to_right = False)
-            U_tmp = tl.partial_svd(tl.reshape(R_tmp,(rank[mode+1]*shape[mode+1],-1)),rank[mode+2])[0]
+            U_tmp = tl.tenalg.svd_interface(matrix = tl.reshape(R_tmp,(rank[mode+1]*shape[mode+1],-1)),n_eigenvecs = rank[mode+2])[0]
             left_singular_vectors.append(tl.reshape(U_tmp,(rank[mode+1],shape[mode+1],rank[mode+2])))
 
         # forward update is done; output the final residual
@@ -141,14 +141,14 @@ def tensor_train_OI(data_tensor, rank, n_iter = 1, trajectory = False, return_er
         # perform backward update
         # initialize right_singular_vectors: right_singular_vectors will be a list of estimated right singular spaces at the current or previous iteration
         right_singular_vectors = list()
-        V_tmp = tl.transpose(tl.partial_svd(tl.reshape(left_residuals[n_dim-2],(rank[n_dim-1],shape[n_dim-1])),rank[n_dim-1])[2])
+        V_tmp = tl.transpose(tl.tenalg.svd_interface(matrix = tl.reshape(left_residuals[n_dim-2],(rank[n_dim-1],shape[n_dim-1])),n_eigenvecs = rank[n_dim-1])[2])
         right_singular_vectors.append(tl.reshape(V_tmp,(rank[n_dim],shape[n_dim-1],rank[n_dim-1])))
 
         # estimate the 2nd to (d-1)th right singular spaces
         for mode in range(n_dim-2):
             # compress left_residuals from the right
             R_tmp_r = sequential_prod(left_residuals[n_dim-mode-3],right_singular_vectors[0:(mode+1)],"right")
-            V_tmp = tl.partial_svd(tl.reshape(R_tmp_r,(rank[n_dim-mode-2],shape[n_dim-mode-2]*rank[n_dim-mode-1])),rank[n_dim-mode-2])[2]
+            V_tmp = tl.tenalg.svd_interface(matrix = tl.reshape(R_tmp_r,(rank[n_dim-mode-2],shape[n_dim-mode-2]*rank[n_dim-mode-1])),n_eigenvecs = rank[n_dim-mode-2])[2]
             right_singular_vectors.append(tl.transpose(tl.reshape(V_tmp,(rank[n_dim-mode-2],shape[n_dim-mode-2],rank[n_dim-mode-1]))))
 
         Residual_right = sequential_prod(data_tensor_extended,right_singular_vectors,left_to_right = False)
