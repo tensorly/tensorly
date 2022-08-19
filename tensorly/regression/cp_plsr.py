@@ -2,7 +2,7 @@ from ..tenalg import khatri_rao, multi_mode_dot
 from ..cp_tensor import CPTensor
 from .. import backend as T
 from .. import unfold, tensor_to_vec
-from ..decomposition import partial_tucker
+from ..decomposition import parafac
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
 
@@ -108,9 +108,7 @@ class CP_PLSR:
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
 
                 if T.ndim(Z) >= 2:
-                    Z_comp = partial_tucker(
-                        Z, modes=list(range(T.ndim(Z))), rank=[1] * T.ndim(Z)
-                    )[0][1]
+                    Z_comp = parafac(Z, 1, tol=self.tol, init="svd")[1]
                 else:
                     Z_comp = [Z / T.norm(Z)]
 
