@@ -174,6 +174,34 @@ def test_reconstruction_x():
     assert_allclose(reconstructed_x, x, rtol=0, atol=1e-2)
 
 
+@pytest.mark.parametrize('n_latent', np.arange(1, 11))
+def test_optimized_covariance(n_latent):
+    x, y, x_cp, y_cp = _get_pls_dataset(
+        TENSOR_DIMENSIONS,
+        n_latent,
+        1
+    )
+    pls = CP_PLSR(n_latent)
+    pls.fit(x, y)
+    y = y.flatten()
+
+    max_cov = 0
+    pls_cov = 0
+    for component in np.arange(n_latent):
+        max_cov += abs(np.cov(
+            x_cp.factors[0][:, component].flatten(),
+            y,
+            bias=True
+        )[0, 1])
+        pls_cov += abs(np.cov(
+            pls.X_factors[0][:, component].flatten(),
+            y,
+            bias=True
+        )[0, 1])
+
+    assert abs(max_cov - pls_cov) < 1E-8
+
+
 @skip_if_backend
 @pytest.mark.parametrize("vars_shape", [(8, 8, 3), (8, 8, 9, 3)])
 def test_CPRegressor(vars_shape):
