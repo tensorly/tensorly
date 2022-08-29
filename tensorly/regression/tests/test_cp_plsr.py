@@ -16,7 +16,7 @@ TENSOR_DIMENSIONS = (100, 38, 65)
 N_RESPONSE = 8
 N_LATENT = 8
 
-TEST_RANKS = [3, 4, 5, 6]
+TEST_MODES = [3, 4, 5, 6]
 TEST_RESPONSE = [1, 4, 8, 16, 32]
 
 RANDOM_STATE = np.random.RandomState(215)
@@ -55,10 +55,10 @@ def _get_standard_synthetic():
 # Class Structure Tests
 
 
-@pytest.mark.parametrize("x_rank", TEST_RANKS)
+@pytest.mark.parametrize("n_modes", TEST_MODES)
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
-def test_transform(x_rank, n_response):
-    x, y, _, _ = _get_pls_dataset(tuple([10] * x_rank), N_LATENT, n_response)
+def test_transform(n_modes, n_response):
+    x, y, _, _ = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
 
@@ -108,10 +108,10 @@ def test_consistent_components():
 # Dimension Compatibility Tests
 
 
-@pytest.mark.parametrize("x_rank", TEST_RANKS)
+@pytest.mark.parametrize("n_modes", TEST_MODES)
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
-def test_dimension_compatibility(x_rank, n_response):
-    x, y, _, _ = _get_pls_dataset(tuple([10] * x_rank), N_LATENT, n_response)
+def test_dimension_compatibility(n_modes, n_response):
+    x, y, _, _ = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
     try:
         pls = CP_PLSR(N_LATENT)
         pls.fit(x, y)
@@ -136,10 +136,10 @@ def test_zero_covariance_x():
     assert_allclose(pls.X_factors[1][0, :], 0, atol=1e-6)
 
 
-@pytest.mark.parametrize("x_rank", TEST_RANKS)
+@pytest.mark.parametrize("n_modes", TEST_MODES)
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
-def test_decomposition_accuracy(x_rank, n_response):
-    x, y, x_cp, y_cp = _get_pls_dataset(tuple([10] * x_rank), N_LATENT, n_response)
+def test_decomposition_accuracy(n_modes, n_response):
+    x, y, x_cp, y_cp = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
 
