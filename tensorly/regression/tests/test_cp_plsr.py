@@ -2,19 +2,12 @@ import numpy as np
 import pytest
 import tensorly as tl
 
-from ... import backend as T
 from ...testing import assert_allclose
-from ...base import partial_tensor_to_vec, tensor_to_vec
 from ...cp_tensor import CPTensor, cp_normalize, cp_to_tensor
 from ...metrics.factors import congruence_coefficient
-from ...metrics.regression import RMSE
 from ...random import random_cp
 from ..cp_plsr import CP_PLSR
 
-skip_if_backend = pytest.mark.skipif(
-    tl.get_backend() in ("tensorflow"),
-    reason=f"Operation not supported in {tl.get_backend()}",
-)
 
 # Authors: Jackson L. Chin, Cyrillus Tan, Aaron Meyer
 
@@ -39,9 +32,13 @@ def _get_pls_dataset(tensor_dimensions, n_latent, n_response):
         orthogonal=True,
         normalise_factors=True,
         random_state=RANDOM_STATE,
+        dtype=tl.float64,
     )
     y_tensor = random_cp(
-        (tensor_dimensions[0], n_response), n_latent, random_state=RANDOM_STATE
+        (tensor_dimensions[0], n_response),
+        n_latent,
+        random_state=RANDOM_STATE,
+        dtype=tl.float64,
     )
 
     y_tensor.factors[0] = x_tensor.factors[0]
@@ -128,24 +125,15 @@ def test_dimension_compatibility(x_rank, n_response):
 # Decomposition Accuracy Tests
 
 
-@skip_if_backend
 def test_zero_covariance_x():
     x, y, _, _ = _get_standard_synthetic()
-    x = tl.index_update(x, tl.index[:, 0, :], 1)
+    x = np.copy(tl.to_numpy(x))  # workaround to make this work for all backends
+    x[:, 0, :] = 1
+    x = tl.tensor(x, **tl.context(y))
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
 
     assert_allclose(pls.X_factors[1][0, :], 0, atol=1e-6)
-
-
-@skip_if_backend
-def test_zero_covariance_y():
-    x, y, _, _ = _get_standard_synthetic()
-    y = tl.index_update(y, tl.index[:, 0], 1)
-    pls = CP_PLSR(N_LATENT)
-    pls.fit(x, y)
-
-    assert_allclose(pls.Y_factors[1][0, :], 0)
 
 
 @pytest.mark.parametrize("x_rank", TEST_RANKS)
@@ -175,67 +163,32 @@ def test_reconstruction_x():
 
 
 def test_optimized_rand_covariance():
-    x = np.random.rand(80, 60, 50, 40)
-    y = np.random.rand(80)
+    x = tl.tensor(np.random.rand(80, 60, 50, 40))
+    y = tl.tensor(np.random.rand(80))
 
     pls = CP_PLSR(3)
     pls.fit(x, y)
-    y = y.flatten()
+    y = tl.tensor_to_vec(y)
 
-    for component in np.arange(3):
+    for component in range(3):
         assert np.corrcoef(pls.X_factors[0][:, component], y)[0, 1] > 0.0
 
 
-@pytest.mark.parametrize('n_latent', np.arange(1, 11))
+@pytest.mark.parametrize("n_latent", np.arange(1, 11))
 def test_optimized_covariance(n_latent):
-    x, y, x_cp, y_cp = _get_pls_dataset(
-        TENSOR_DIMENSIONS,
-        n_latent,
-        1
-    )
+    x, y, x_cp, _ = _get_pls_dataset(TENSOR_DIMENSIONS, n_latent, 1)
     pls = CP_PLSR(n_latent)
     pls.fit(x, y)
-    y = y.flatten()
+    y = tl.tensor_to_vec(y)
 
     max_cov = 0
     pls_cov = 0
     for component in np.arange(n_latent):
-        max_cov += abs(np.cov(
-            x_cp.factors[0][:, component].flatten(),
-            y,
-            bias=True
-        )[0, 1])
-        pls_cov += abs(np.cov(
-            pls.X_factors[0][:, component].flatten(),
-            y,
-            bias=True
-        )[0, 1])
+        max_cov += abs(
+            np.cov(tl.tensor_to_vec(x_cp.factors[0][:, component]), y, bias=True)[0, 1]
+        )
+        pls_cov += abs(
+            np.cov(tl.tensor_to_vec(pls.X_factors[0][:, component]), y, bias=True)[0, 1]
+        )
 
-    assert abs(max_cov - pls_cov) < 1E-8
-
-
-@skip_if_backend
-@pytest.mark.parametrize("vars_shape", [(8, 8, 3), (8, 8, 9, 3)])
-def test_CPRegressor(vars_shape):
-    """Test for CP_PLSR."""
-    # Generate random samples
-    rng = T.check_random_state(1234)
-    X = random_cp((400, *vars_shape), rank=2, random_state=rng, full=True)
-    regression_weights = T.zeros(vars_shape, **T.context(X))
-    regression_weights = T.index_update(regression_weights, T.index[2:-2, 2:-2, 0], 1)
-    regression_weights = T.index_update(regression_weights, T.index[2:-2, 2:-2, 1], 2)
-    regression_weights = T.index_update(regression_weights, T.index[2:-2, 2:-2, 2], -1)
-
-    y = T.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(regression_weights))
-    X_train = X[:200, :, :]
-    X_test = X[200:, :, :]
-    y_train = y[:200]
-    y_test = y[200:]
-
-    estimator = CP_PLSR(n_components=4, verbose=True)
-    estimator.fit(X_train, y_train)
-    y_pred = estimator.predict(X_test)
-    estimator.transform(X_train, y_train)
-    error = RMSE(y_test, y_pred)
-    print(error)
-    # TODO: Add assertion about expected error.
+    assert_allclose(max_cov, pls_cov, rtol=2e-6, atol=2e-6)

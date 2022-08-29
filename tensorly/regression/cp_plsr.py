@@ -108,7 +108,14 @@ class CP_PLSR:
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
 
                 if T.ndim(Z) >= 2:
-                    Z_comp = parafac(Z, 1, tol=self.tol, init="svd", svd="randomized_svd", normalize_factors=True)[1]
+                    Z_comp = parafac(
+                        Z,
+                        1,
+                        tol=self.tol,
+                        init="svd",
+                        svd="randomized_svd",
+                        normalize_factors=True,
+                    )[1]
                 else:
                     Z_comp = [Z / T.norm(Z)]
 
