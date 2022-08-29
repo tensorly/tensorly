@@ -174,6 +174,18 @@ def test_reconstruction_x():
     assert_allclose(reconstructed_x, x, rtol=0, atol=1e-2)
 
 
+def test_optimized_rand_covariance():
+    x = np.random.rand(80, 60, 50, 40)
+    y = np.random.rand(80)
+
+    pls = CP_PLSR(3)
+    pls.fit(x, y)
+    y = y.flatten()
+
+    for component in np.arange(3):
+        assert np.corrcoef(pls.X_factors[0][:, component], y)[0, 1] > 0.0
+
+
 @pytest.mark.parametrize('n_latent', np.arange(1, 11))
 def test_optimized_covariance(n_latent):
     x, y, x_cp, y_cp = _get_pls_dataset(

@@ -2,7 +2,7 @@ from ..tenalg import khatri_rao, multi_mode_dot
 from ..cp_tensor import CPTensor
 from .. import backend as T
 from .. import unfold, tensor_to_vec
-from ..decomposition._cp import initialize_cp
+from ..decomposition._cp import parafac
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
 
@@ -108,8 +108,7 @@ class CP_PLSR:
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
 
                 if T.ndim(Z) >= 2:
-                    # This is a quick way to get the HOSVD across all modes
-                    Z_comp = initialize_cp(Z, 1, init="svd", normalize_factors=True)[1]
+                    Z_comp = parafac(Z, 1, tol=self.tol, init="svd", normalize_factors=True)[1]
                 else:
                     Z_comp = [Z / T.norm(Z)]
 
