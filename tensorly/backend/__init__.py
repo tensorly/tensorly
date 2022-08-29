@@ -73,6 +73,8 @@ class BackendManager(types.ModuleType):
         "svd",
         "qr",
         "randn",
+        "gamma",
+        "digamma",
         "check_random_state",
         "sort",
         "eigh",
