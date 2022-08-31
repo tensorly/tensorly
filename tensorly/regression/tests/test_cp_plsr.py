@@ -26,6 +26,7 @@ RANDOM_STATE = np.random.RandomState(215)
 
 
 def _get_pls_dataset(tensor_dimensions, n_latent, n_response):
+    """Creates PLS dataset"""
     x_tensor = random_cp(
         tensor_dimensions,
         n_latent,
@@ -49,6 +50,7 @@ def _get_pls_dataset(tensor_dimensions, n_latent, n_response):
 
 
 def _get_standard_synthetic():
+    """Creates PLS dataset using standard, global parameters"""
     return _get_pls_dataset(TENSOR_DIMENSIONS, N_LATENT, N_RESPONSE)
 
 
@@ -58,6 +60,9 @@ def _get_standard_synthetic():
 @pytest.mark.parametrize("n_modes", TEST_MODES)
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
 def test_transform(n_modes, n_response):
+    """Tests transform() returns first X_factor--relationship between first
+    tensor mode and components.
+    """
     x, y, _, _ = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
@@ -67,6 +72,7 @@ def test_transform(n_modes, n_response):
 
 
 def test_factor_normality():
+    """Tests components have norm of 1 across factors."""
     x, y, _, _ = _get_standard_synthetic()
     pls = CP_PLSR(n_components=N_LATENT)
     pls.fit(x, y)
@@ -79,6 +85,7 @@ def test_factor_normality():
 
 
 def test_factor_orthogonality():
+    """Tests that components are orthogonal."""
     x, y, _, _ = _get_standard_synthetic()
     pls = CP_PLSR(n_components=N_LATENT)
     pls.fit(x, y)
@@ -89,11 +96,15 @@ def test_factor_orthogonality():
         for component_2 in range(component_1 + 1, x_cp.rank):
             factor_product = 1
             for factor in x_cp.factors:
-                factor_product *= np.dot(factor[:, component_1], factor[:, component_2])
+                factor_product *= np.dot(
+                    factor[:, component_1],
+                    factor[:, component_2]
+                )
             assert abs(factor_product) < 1e-8
 
 
 def test_consistent_components():
+    """Tests that factor dimensions match CP_PLSR's n_components."""
     x, y, _, _ = _get_standard_synthetic()
     pls = CP_PLSR(n_components=N_LATENT)
     pls.fit(x, y)
@@ -111,6 +122,7 @@ def test_consistent_components():
 @pytest.mark.parametrize("n_modes", TEST_MODES)
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
 def test_dimension_compatibility(n_modes, n_response):
+    """Tests CP_PLSR accepts x and y of different ranks and sizes."""
     x, y, _, _ = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
     try:
         pls = CP_PLSR(N_LATENT)
@@ -126,6 +138,9 @@ def test_dimension_compatibility(n_modes, n_response):
 
 
 def test_zero_covariance_x():
+    """Tests zero covariance variables are zero in corresponding CP_PLSR
+    factor
+    """
     x, y, _, _ = _get_standard_synthetic()
     x = np.copy(tl.to_numpy(x))  # workaround to make this work for all backends
     x[:, 0, :] = 1
@@ -139,7 +154,12 @@ def test_zero_covariance_x():
 @pytest.mark.parametrize("n_modes", TEST_MODES)
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
 def test_decomposition_accuracy(n_modes, n_response):
-    x, y, x_cp, y_cp = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
+    """Tests CP_PLSR recovers factors in original synthetic data."""
+    x, y, x_cp, y_cp = _get_pls_dataset(
+        tuple([10] * n_modes),
+        N_LATENT,
+        n_response
+    )
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
 
@@ -152,6 +172,7 @@ def test_decomposition_accuracy(n_modes, n_response):
 
 
 def test_reconstruction_x():
+    """Tests CP_PLSR factors accurately reconstruct x."""
     x, y, _, _ = _get_standard_synthetic()
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
@@ -163,6 +184,7 @@ def test_reconstruction_x():
 
 
 def test_optimized_rand_covariance():
+    """Tests CP_PLSR captures covariance between random, unrelated x and y"""
     x = tl.tensor(np.random.rand(80, 60, 50, 40))
     y = tl.tensor(np.random.rand(80))
 
@@ -176,6 +198,7 @@ def test_optimized_rand_covariance():
 
 @pytest.mark.parametrize("n_latent", np.arange(1, 11))
 def test_optimized_covariance(n_latent):
+    """Tests CP_PLSR components capture maximum covariance in synthetic data."""
     x, y, x_cp, _ = _get_pls_dataset(TENSOR_DIMENSIONS, n_latent, 1)
     pls = CP_PLSR(n_latent)
     pls.fit(x, y)
@@ -185,10 +208,18 @@ def test_optimized_covariance(n_latent):
     pls_cov = 0
     for component in np.arange(n_latent):
         max_cov += abs(
-            np.cov(tl.tensor_to_vec(x_cp.factors[0][:, component]), y, bias=True)[0, 1]
+            np.cov(
+                tl.tensor_to_vec(x_cp.factors[0][:, component]),
+                y,
+                bias=True
+            )[0, 1]
         )
         pls_cov += abs(
-            np.cov(tl.tensor_to_vec(pls.X_factors[0][:, component]), y, bias=True)[0, 1]
+            np.cov(
+                tl.tensor_to_vec(pls.X_factors[0][:, component]),
+                y,
+                bias=True
+            )[0, 1]
         )
 
     assert_allclose(max_cov, pls_cov, rtol=2e-6, atol=2e-6)
