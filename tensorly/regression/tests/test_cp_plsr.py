@@ -13,11 +13,10 @@ from ..cp_plsr import CP_PLSR
 
 
 TENSOR_DIMENSIONS = (100, 38, 65)
-N_RESPONSE = 8
 N_LATENT = 8
 
-TEST_MODES = [3, 4, 5, 6]
-TEST_RESPONSE = [1, 4, 8, 16, 32]
+TEST_MODES = [2, 3, 4, 5]
+TEST_RESPONSE = [1, 2, 4]
 
 RANDOM_STATE = np.random.RandomState(215)
 
@@ -51,7 +50,7 @@ def _get_pls_dataset(tensor_dimensions, n_latent, n_response):
 
 def _get_standard_synthetic():
     """Creates PLS dataset using standard, global parameters"""
-    return _get_pls_dataset(TENSOR_DIMENSIONS, N_LATENT, N_RESPONSE)
+    return _get_pls_dataset(TENSOR_DIMENSIONS, N_LATENT, 4)
 
 
 # Class Structure Tests
@@ -96,10 +95,7 @@ def test_factor_orthogonality():
         for component_2 in range(component_1 + 1, x_cp.rank):
             factor_product = 1
             for factor in x_cp.factors:
-                factor_product *= np.dot(
-                    factor[:, component_1],
-                    factor[:, component_2]
-                )
+                factor_product *= np.dot(factor[:, component_1], factor[:, component_2])
             assert abs(factor_product) < 1e-8
 
 
@@ -155,11 +151,7 @@ def test_zero_covariance_x():
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
 def test_decomposition_accuracy(n_modes, n_response):
     """Tests CP_PLSR recovers factors in original synthetic data."""
-    x, y, x_cp, y_cp = _get_pls_dataset(
-        tuple([10] * n_modes),
-        N_LATENT,
-        n_response
-    )
+    x, y, x_cp, y_cp = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
     pls = CP_PLSR(N_LATENT)
     pls.fit(x, y)
 
@@ -208,18 +200,10 @@ def test_optimized_covariance(n_latent):
     pls_cov = 0
     for component in np.arange(n_latent):
         max_cov += abs(
-            np.cov(
-                tl.tensor_to_vec(x_cp.factors[0][:, component]),
-                y,
-                bias=True
-            )[0, 1]
+            np.cov(tl.tensor_to_vec(x_cp.factors[0][:, component]), y, bias=True)[0, 1]
         )
         pls_cov += abs(
-            np.cov(
-                tl.tensor_to_vec(pls.X_factors[0][:, component]),
-                y,
-                bias=True
-            )[0, 1]
+            np.cov(tl.tensor_to_vec(pls.X_factors[0][:, component]), y, bias=True)[0, 1]
         )
 
     assert_allclose(max_cov, pls_cov, rtol=2e-6, atol=2e-6)
