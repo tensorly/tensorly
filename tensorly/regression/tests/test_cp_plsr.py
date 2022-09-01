@@ -188,7 +188,7 @@ def test_optimized_rand_covariance():
         assert np.corrcoef(pls.X_factors[0][:, component], y)[0, 1] > 0.0
 
 
-@pytest.mark.parametrize("n_latent", np.arange(1, 11))
+@pytest.mark.parametrize("n_latent", np.arange(1, 5))
 def test_optimized_covariance(n_latent):
     """Tests CP_PLSR components capture maximum covariance in synthetic data."""
     x, y, x_cp, _ = _get_pls_dataset(TENSOR_DIMENSIONS, n_latent, 1)
@@ -206,4 +206,4 @@ def test_optimized_covariance(n_latent):
             np.cov(tl.tensor_to_vec(pls.X_factors[0][:, component]), y, bias=True)[0, 1]
         )
 
-    assert_allclose(max_cov, pls_cov, rtol=2e-6, atol=2e-6)
+    assert_allclose(max_cov, pls_cov)
