@@ -147,7 +147,7 @@ def test_zero_covariance_x():
     assert_allclose(pls.X_factors[1][0, :], 0, atol=1e-6)
 
 
-@pytest.mark.parametrize("n_modes", TEST_MODES)
+@pytest.mark.parametrize("n_modes", [3, 4, 5])
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
 def test_decomposition_accuracy(n_modes, n_response):
     """Tests CP_PLSR recovers factors in original synthetic data."""
