@@ -7,14 +7,14 @@ from tensorly.decomposition._base_decomposition import DecompositionMixin
 
 
 def sequential_prod(tensor_prod, multiplier_list, left_to_right=True):
-    """ Perform sequential multiplication and reshaping
+    """Perform sequential multiplication and reshaping
 
     Parameters
     ----------
     tensor_prod: ndrray
         the tensor to be multiplied by a list of tensors
         tensor_prod is of dimension r_0*p_1*p_2*...*p_d*r_{d-1}
-    multiplier_list : list 
+    multiplier_list: list 
         a list of tensors to multiply the tensor
         len(multiplier_list) <= d-1
         If direction == "left", multiplier_list[i] is of shape (r_i, p_{i+1}, r_{i+1})
@@ -47,7 +47,7 @@ def sequential_prod(tensor_prod, multiplier_list, left_to_right=True):
 def tensor_train_OI(
     data_tensor, rank, n_iter=1, trajectory=False, return_errors=True, **context
 ):
-    """ Perform tensor-train orthogonal iteration (TTOI) for tensor train decomposition
+    """Perform tensor-train orthogonal iteration (TTOI) for tensor train decomposition
     Reference paper: Zhou Y, Zhang AR, Zheng L, Wang Y. "Optimal high-order tensor svd via tensor-train orthogonal iteration."
 
     Parameters

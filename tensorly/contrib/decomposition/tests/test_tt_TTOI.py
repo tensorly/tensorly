@@ -15,8 +15,7 @@ from tensorly.contrib.decomposition.tt_TTOI import tensor_train_OI, TensorTrain_
 
 
 def test_TTOI(monkeypatch):
-    """Test for the tt_TTOI function (Tensor train orthogonal iteration)
-    """
+    """Test for the tt_TTOI function (Tensor train orthogonal iteration)"""
     rng = tl.check_random_state(1234)
     rank = (1, 1, 1, 1, 1, 1)
     shape = (20, 20, 20, 20, 20)
