@@ -350,6 +350,7 @@ Functions
     non_negative_tucker
     non_negative_tucker_hals
     robust_pca
+    mda
     tensor_train
     tensor_train_matrix
     parafac2
