@@ -139,7 +139,7 @@ def robust_pca(
                 if verbose:
                     print("\nConverged in {} iterations".format(iteration))
                 break
-    
+
     if return_errors:
         return D, E, rec_X
     else:
