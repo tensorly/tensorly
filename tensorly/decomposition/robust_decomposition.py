@@ -19,6 +19,7 @@ def robust_pca(
     mu_max=10e9,
     learning_rate=1.1,
     n_iter_max=100,
+    return_errors=False,
     verbose=1,
 ):
     """Robust Tensor PCA via ALM with support for missing values
