@@ -1,8 +1,8 @@
 import tensorly as tl
 from ..tr_tensor import validate_tr_rank, TRTensor
+from ..tenalg.svd import svd_interface
 
-
-def tensor_ring(input_tensor, rank, mode=0, verbose=False):
+def tensor_ring(input_tensor, rank, mode=0, svd="truncated_svd", verbose=False):
     """Tensor Ring decomposition via recursive SVD
 
         Decomposes `input_tensor` into a sequence of order-3 tensors (factors) [1]_.
@@ -16,6 +16,8 @@ def tensor_ring(input_tensor, rank, mode=0, verbose=False):
             if int list, then rank[k] is the rank of the kth factor
     mode : int, default is 0
             index of the first factor to compute
+    svd : str, default is 'truncated_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     verbose : boolean, optional
             level of verbosity
 
@@ -54,7 +56,7 @@ def tensor_ring(input_tensor, rank, mode=0, verbose=False):
         )
 
     # SVD of unfolding matrix
-    U, S, V = tl.truncated_svd(unfolding, rank[0] * rank[1])
+    U, S, V = svd_interface(unfolding, n_eigenvecs=rank[0] * rank[1], method=svd)
 
     # Get first TR factor
     factor = tl.reshape(U, (tensor_size[0], rank[0], rank[1]))
@@ -77,7 +79,7 @@ def tensor_ring(input_tensor, rank, mode=0, verbose=False):
         # SVD of unfolding matrix
         n_row, n_column = unfolding.shape
         current_rank = min(n_row, n_column, rank[k + 1])
-        U, S, V = tl.truncated_svd(unfolding, current_rank)
+        U, S, V = svd_interface(unfolding, n_eigenvecs=current_rank, method=svd)
         rank[k + 1] = current_rank
 
         # Get kth TR factor
