@@ -328,6 +328,10 @@ Note that these are currently experimental and may change in the future.
     Parafac2
     SymmetricCP
     ConstrainedCP
+    TensorTrain
+    TensorRing
+    TensorTrainMatrix
+
 
 Functions
 ---------
@@ -352,6 +356,7 @@ Functions
     robust_pca
     tensor_train
     tensor_train_matrix
+    tensor_ring
     parafac2
     constrained_parafac
 
