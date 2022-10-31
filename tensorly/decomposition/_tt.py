@@ -80,7 +80,7 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
     return TTTensor(factors)
 
 
-def tensor_train_matrix(tensor, rank):
+def tensor_train_matrix(tensor, rank, svd="truncated_svd", verbose=False):
     """Decompose a tensor into a matrix in tt-format
 
     Parameters
@@ -92,6 +92,10 @@ def tensor_train_matrix(tensor, rank):
         - if 'same' creates a decomposition with the same number of parameters as `tensor`
         - if float, creates a decomposition with `rank` x the number of parameters of `tensor`
         - otherwise, the actual rank to be used, e.g. (1, rank_2, ..., 1) of size tensor.ndim//2. Note that boundary conditions dictate that the first rank = last rank = 1.
+    svd : str, default is 'truncated_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    verbose : boolean, optional
+            level of verbosity
 
     Returns
     -------
@@ -122,7 +126,7 @@ def tensor_train_matrix(tensor, rank):
     new_shape = list([a * b for (a, b) in zip(in_shape, out_shape)])
     tensor = tl.reshape(tl.transpose(tensor, new_idx), new_shape)
 
-    factors = tensor_train(tensor, rank).factors
+    factors = tensor_train(tensor, rank, svd=svd, verbose=verbose).factors
     for i in range(len(factors)):
         factors[i] = tl.reshape(
             factors[i], (factors[i].shape[0], in_shape[i], out_shape[i], -1)
