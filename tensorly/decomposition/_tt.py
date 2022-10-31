@@ -136,6 +136,40 @@ def tensor_train_matrix(tensor, rank, svd="truncated_svd", verbose=False):
 
 
 class TensorTrain(DecompositionMixin):
+    """Decompose a tensor into a matrix in tt-format
+
+    Parameters
+    ----------
+    tensor : tensorized matrix
+        if your input matrix is of size (4, 9) and your tensorized_shape (2, 2, 3, 3)
+        then tensor should be tl.reshape(matrix, (2, 2, 3, 3))
+    rank : 'same', float or int tuple
+        - if 'same' creates a decomposition with the same number of parameters as `tensor`
+        - if float, creates a decomposition with `rank` x the number of parameters of `tensor`
+        - otherwise, the actual rank to be used, e.g. (1, rank_2, ..., 1) of size tensor.ndim//2. Note that boundary conditions dictate that the first rank = last rank = 1.
+    svd : str, default is 'truncated_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+    verbose : boolean, optional
+            level of verbosity
+
+    Returns
+    -------
+    tt_matrix
+    """
+
+    def __init__(self, rank, svd="truncated_svd", verbose=False):
+        self.rank = rank
+        self.svd = svd
+        self.verbose = verbose
+
+    def fit_transform(self, tensor):
+        self.decomposition_ = tensor_train(
+            tensor, rank=self.rank, svd=self.svd, verbose=self.verbose
+        )
+        return self.decomposition_
+
+
+class TensorTrainMatrix(DecompositionMixin):
     """TT decomposition via recursive SVD
 
         Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
@@ -169,7 +203,7 @@ class TensorTrain(DecompositionMixin):
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        self.decomposition_ = tensor_train(
+        self.decomposition_ = tensor_train_matrix(
             tensor, rank=self.rank, svd=self.svd, verbose=self.verbose
         )
         return self.decomposition_
