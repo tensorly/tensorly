@@ -5,6 +5,7 @@ from ..tt_matrix import validate_tt_matrix_rank, TTMatrix
 from ..utils import DefineDeprecated
 from ..tenalg.svd import svd_interface
 
+
 def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
     """TT decomposition via recursive SVD
 
@@ -164,7 +165,9 @@ class TensorTrain(DecompositionMixin):
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        self.decomposition_ = tensor_train(tensor, rank=self.rank, svd=self.svd, verbose=self.verbose)
+        self.decomposition_ = tensor_train(
+            tensor, rank=self.rank, svd=self.svd, verbose=self.verbose
+        )
         return self.decomposition_
 
 
