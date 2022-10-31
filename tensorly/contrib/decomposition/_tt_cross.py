@@ -94,7 +94,11 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
     if isinstance(rank, int):
         rank = [rank] * (tensor_order + 1)
     elif tensor_order + 1 != len(rank):
-        message = f"Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but {len(rank) = } while tl.ndim(tensor) + 1  = {tensor_order}"
+        message = (
+            "Provided incorrect number of ranks. Should verify "
+            + f"len(rank) == tl.ndim(tensor)+1, but len(rank) = {len(rank)} "
+            + f"while tl.ndim(tensor) + 1  = {tensor_order}"
+        )
         raise (ValueError(message))
 
     # Make sure iter's not a tuple but a list
