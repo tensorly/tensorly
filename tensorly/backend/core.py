@@ -1262,3 +1262,11 @@ class Backend(object):
     def atanh(self, x):
         """Return the arctanh of x."""
         return self.arctanh(x)
+
+    def partial_svd(self, *args, **kwargs):
+        msg = (
+            "partial_svd is no longer used. "
+            "Please use tensorly.tenalg.svd_interface instead, "
+            "it provides a unified interface to all available SVD implementations."
+        )
+        raise NotImplementedError(msg)
