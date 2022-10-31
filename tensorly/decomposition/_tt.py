@@ -3,9 +3,9 @@ from ._base_decomposition import DecompositionMixin
 from ..tt_tensor import validate_tt_rank, TTTensor
 from ..tt_matrix import validate_tt_matrix_rank, TTMatrix
 from ..utils import DefineDeprecated
+from ..tenalg.svd import svd_interface
 
-
-def tensor_train(input_tensor, rank, verbose=False):
+def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
     """TT decomposition via recursive SVD
 
         Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
@@ -18,6 +18,8 @@ def tensor_train(input_tensor, rank, verbose=False):
             maximum allowable TT rank of the factors
             if int, then this is the same for all the factors
             if int list, then rank[k] is the rank of the kth factor
+    svd : str, default is 'truncated_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     verbose : boolean, optional
             level of verbosity
 
@@ -47,7 +49,8 @@ def tensor_train(input_tensor, rank, verbose=False):
         # SVD of unfolding matrix
         (n_row, n_column) = unfolding.shape
         current_rank = min(n_row, n_column, rank[k + 1])
-        U, S, V = tl.truncated_svd(unfolding, current_rank)
+        U, S, V = svd_interface(unfolding, n_eigenvecs=current_rank, method=svd)
+
         rank[k + 1] = current_rank
 
         # Get kth TT factor
@@ -140,6 +143,8 @@ class TensorTrain(DecompositionMixin):
             maximum allowable TT rank of the factors
             if int, then this is the same for all the factors
             if int list, then rank[k] is the rank of the kth factor
+    svd : str, default is 'truncated_svd'
+        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     verbose : boolean, optional
             level of verbosity
 
@@ -153,12 +158,13 @@ class TensorTrain(DecompositionMixin):
     .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
     """
 
-    def __init__(self, rank, verbose=False):
+    def __init__(self, rank, svd="truncated_svd", verbose=False):
         self.rank = rank
+        self.svd = svd
         self.verbose = verbose
 
     def fit_transform(self, tensor):
-        self.decomposition_ = tensor_train(tensor, rank=self.rank, verbose=self.verbose)
+        self.decomposition_ = tensor_train(tensor, rank=self.rank, svd=self.svd, verbose=self.verbose)
         return self.decomposition_
 
 
