@@ -19,7 +19,7 @@ def test_TTOI(monkeypatch):
     rng = tl.check_random_state(1234)
     rank = (1, 1, 1, 1, 1, 1)
     shape = (20, 20, 20, 20, 20)
-    n_iter = 2
+    n_iter = 4
 
     # Generate tensor true_tensor with low tensor train rank, and its noisy observation data_tensor
     true_tensor = random.random_tt(shape=shape, rank=rank, random_state=rng, full=True)
@@ -42,10 +42,10 @@ def test_TTOI(monkeypatch):
 
     # check that the estimation error of TTOI improves from initialization (TTSVD)
     estimation_errors = [
-        tl.norm(full_tensor_list[i] - true_tensor, 2) for i in range(n_iter * 2)
+        tl.norm(full_tensor_list[i] - true_tensor, 2) for i in range(n_iter)
     ]
     estimation_errors = tl.tensor(estimation_errors) / tl.norm(true_tensor, 2)
-    assert_(estimation_errors[0] - estimation_errors[2 * n_iter - 1] >= 1e-3)
+    assert_(estimation_errors[0] - estimation_errors[n_iter - 1] >= 1e-3)
 
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, tensor_train_OI, TensorTrain_OI, ignore_args={}, rank=rank

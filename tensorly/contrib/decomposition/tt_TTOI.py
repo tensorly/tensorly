@@ -45,7 +45,7 @@ def sequential_prod(tensor_prod, multiplier_list, left_to_right=True):
 
 
 def tensor_train_OI(
-    data_tensor, rank, n_iter=1, trajectory=False, return_errors=True, **context
+    data_tensor, rank, n_iter=2, trajectory=False, return_errors=True, **context
 ):
     """Perform tensor-train orthogonal iteration (TTOI) for tensor train decomposition
 
@@ -58,7 +58,7 @@ def tensor_train_OI(
         must verify rank[0] == rank[-1] == 1 (boundary conditions)
         and len(rank) == len(tl.shape(data_tensor))+1
     n_iter : int
-        half the number of iterations
+        the number of iterations
     trajectory : bool, optional, default is False
         if True, the output of each iteration of TTOI is returned: 2*n_iter outputs
         otherwise, only the output of the last iteration is returned
@@ -98,7 +98,7 @@ def tensor_train_OI(
         error_list = []
 
     # perform TTOI for n_iter iterations
-    for iteration in range(n_iter):
+    for iteration in range(int(np.ceil(n_iter/2))):
         # first perform forward update
         # left_singular_vectors will be a list including estimated left singular spaces at the current iteration
         left_singular_vectors = []
@@ -164,75 +164,76 @@ def tensor_train_OI(
             if trajectory:
                 factors.append(factors_list_tmp)
                 full_tensor.append(full_tensor_tmp)
-
-        # perform backward update
-        # initialize right_singular_vectors: right_singular_vectors will be a list of estimated right singular spaces at the current or previous iteration
-        right_singular_vectors = []
-        _, _, V_tmp = tl.transpose(
-            tl.tenalg.svd_interface(
-                matrix=tl.reshape(
-                    left_residuals[n_dim - 2], (rank[n_dim - 1], shape[n_dim - 1])
-                ),
-                n_eigenvecs=rank[n_dim - 1],
-            )
-        )
-        right_singular_vectors.append(
-            tl.reshape(V_tmp, (rank[n_dim], shape[n_dim - 1], rank[n_dim - 1]))
-        )
-
-        # estimate the 2nd to (d-1)th right singular spaces
-        for mode in range(n_dim - 2):
-            # compress left_residuals from the right
-            R_tmp_r = sequential_prod(
-                left_residuals[n_dim - mode - 3],
-                right_singular_vectors[0 : (mode + 1)],
-                "right",
-            )
-            _, _, V_tmp = tl.tenalg.svd_interface(
-                matrix=tl.reshape(
-                    R_tmp_r,
-                    (
-                        rank[n_dim - mode - 2],
-                        shape[n_dim - mode - 2] * rank[n_dim - mode - 1],
-                    ),
-                ),
-                n_eigenvecs=rank[n_dim - mode - 2],
-            )
-            right_singular_vectors.append(
-                tl.transpose(
-                    tl.reshape(
-                        V_tmp,
-                        (
-                            rank[n_dim - mode - 2],
-                            shape[n_dim - mode - 2],
-                            rank[n_dim - mode - 1],
-                        ),
-                    )
-                )
-            )
-
-        Residual_right = sequential_prod(
-            data_tensor_extended, right_singular_vectors, left_to_right=False
-        )
-        if trajectory or return_errors or iteration == n_iter - 1:
-            factors_list_tmp = []
-            factors_list_tmp.append(tl.tensor(Residual_right, **context))
-            for mode in range(n_dim - 1):
-                factors_list_tmp.append(
-                    tl.tensor(
-                        tl.transpose(right_singular_vectors[n_dim - mode - 2]),
-                        **context
-                    )
-                )
-            full_tensor_tmp = tl.tensor(tt_to_tensor(factors_list_tmp), **context)
-            if return_errors:
-                error_list.append(tl.norm(full_tensor_tmp - data_tensor, 2))
-            if trajectory:
-                factors.append(factors_list_tmp)
-                full_tensor.append(full_tensor_tmp)
-            elif iteration == n_iter - 1:
+            elif iteration == np.ceil(n_iter/2) - 1 and np.ceil(n_iter / 2) * 2 > n_iter:
                 factors = factors_list_tmp
                 full_tensor = full_tensor_tmp
+        
+        if np.ceil(n_iter / 2) * 2 == n_iter:
+            # perform backward update
+            # initialize right_singular_vectors: right_singular_vectors will be a list of estimated right singular spaces at the current or previous iteration
+            right_singular_vectors = []
+            _, _, V_tmp = tl.tenalg.svd_interface(
+                    matrix=tl.reshape(
+                        left_residuals[n_dim - 2], (rank[n_dim - 1], shape[n_dim - 1])
+                        ),
+                    n_eigenvecs=rank[n_dim - 1],
+                    )
+            V_tmp = tl.transpose(V_tmp)
+            right_singular_vectors.append(
+                tl.reshape(V_tmp, (rank[n_dim], shape[n_dim - 1], rank[n_dim - 1]))
+                )
+            # estimate the 2nd to (d-1)th right singular spaces
+            for mode in range(n_dim - 2):
+                # compress left_residuals from the right
+                R_tmp_r = sequential_prod(
+                    left_residuals[n_dim - mode - 3],
+                    right_singular_vectors[0 : (mode + 1)],
+                    "right",
+                    )
+                _, _, V_tmp = tl.tenalg.svd_interface(
+                    matrix=tl.reshape(
+                        R_tmp_r,
+                        (
+                            rank[n_dim - mode - 2],
+                            shape[n_dim - mode - 2] * rank[n_dim - mode - 1],
+                            ),
+                        ),
+                    n_eigenvecs=rank[n_dim - mode - 2],
+                    )
+                right_singular_vectors.append(
+                    tl.transpose(
+                        tl.reshape(
+                            V_tmp,
+                            (
+                                rank[n_dim - mode - 2],
+                                shape[n_dim - mode - 2],
+                                rank[n_dim - mode - 1],
+                                ),
+                            )
+                        )
+                    )
+            Residual_right = sequential_prod(
+                data_tensor_extended, right_singular_vectors, left_to_right=False
+                )
+            if trajectory or return_errors or iteration == np.ceil(n_iter/2) - 1:
+                factors_list_tmp = []
+                factors_list_tmp.append(tl.tensor(Residual_right, **context))
+                for mode in range(n_dim - 1):
+                    factors_list_tmp.append(
+                        tl.tensor(
+                            tl.transpose(right_singular_vectors[n_dim - mode - 2]),
+                            **context
+                            )
+                        )
+                full_tensor_tmp = tl.tensor(tt_to_tensor(factors_list_tmp), **context)
+                if return_errors:
+                    error_list.append(tl.norm(full_tensor_tmp - data_tensor, 2))
+                if trajectory:
+                    factors.append(factors_list_tmp)
+                    full_tensor.append(full_tensor_tmp)
+                elif iteration == n_iter - 1:
+                    factors = factors_list_tmp
+                    full_tensor = full_tensor_tmp
 
     # return final results
     if return_errors:
