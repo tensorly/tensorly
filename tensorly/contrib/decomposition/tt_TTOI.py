@@ -114,9 +114,9 @@ def tensor_train_OI(
             R_tmp = sequential_prod(
                 R_tmp_l, right_singular_vectors, left_to_right=False
             )
-        U_tmp = tl.tenalg.svd_interface(
+        U_tmp, _, _ = tl.tenalg.svd_interface(
             matrix=tl.reshape(R_tmp, (shape[0], -1)), n_eigenvecs=rank[1]
-        )[0]
+        )
         left_singular_vectors.append(tl.reshape(U_tmp, (rank[0], shape[0], rank[1])))
 
         # estimate the 2nd to (d-1)th left singular spaces
@@ -137,10 +137,10 @@ def tensor_train_OI(
                     right_singular_vectors[0 : (n_dim - mode - 2)],
                     left_to_right=False,
                 )
-            U_tmp = tl.tenalg.svd_interface(
+            U_tmp, _, _ = tl.tenalg.svd_interface(
                 matrix=tl.reshape(R_tmp, (rank[mode + 1] * shape[mode + 1], -1)),
                 n_eigenvecs=rank[mode + 2],
-            )[0]
+            )
             left_singular_vectors.append(
                 tl.reshape(U_tmp, (rank[mode + 1], shape[mode + 1], rank[mode + 2]))
             )
@@ -168,13 +168,13 @@ def tensor_train_OI(
         # perform backward update
         # initialize right_singular_vectors: right_singular_vectors will be a list of estimated right singular spaces at the current or previous iteration
         right_singular_vectors = []
-        V_tmp = tl.transpose(
+        _, _, V_tmp = tl.transpose(
             tl.tenalg.svd_interface(
                 matrix=tl.reshape(
                     left_residuals[n_dim - 2], (rank[n_dim - 1], shape[n_dim - 1])
                 ),
                 n_eigenvecs=rank[n_dim - 1],
-            )[2]
+            )
         )
         right_singular_vectors.append(
             tl.reshape(V_tmp, (rank[n_dim], shape[n_dim - 1], rank[n_dim - 1]))
@@ -188,7 +188,7 @@ def tensor_train_OI(
                 right_singular_vectors[0 : (mode + 1)],
                 "right",
             )
-            V_tmp = tl.tenalg.svd_interface(
+            _, _, V_tmp = tl.tenalg.svd_interface(
                 matrix=tl.reshape(
                     R_tmp_r,
                     (
@@ -197,7 +197,7 @@ def tensor_train_OI(
                     ),
                 ),
                 n_eigenvecs=rank[n_dim - mode - 2],
-            )[2]
+            )
             right_singular_vectors.append(
                 tl.transpose(
                     tl.reshape(
