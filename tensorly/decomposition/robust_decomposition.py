@@ -9,9 +9,19 @@ from ..tenalg.proximal import soft_thresholding, svd_thresholding
 # License: BSD 3 clause
 
 
-def robust_pca(X, mask=None, tol=10e-7, reg_E=1.0, reg_J=1.0,
-               mu_init=10e-5, mu_max=10e9, learning_rate=1.1,
-               n_iter_max=100, verbose=1):
+def robust_pca(
+    X,
+    mask=None,
+    tol=10e-7,
+    reg_E=1.0,
+    reg_J=1.0,
+    mu_init=10e-5,
+    mu_max=10e9,
+    learning_rate=1.1,
+    n_iter_max=100,
+    return_errors=False,
+    verbose=1,
+):
     """Robust Tensor PCA via ALM with support for missing values
 
         Decomposes a tensor `X` into the sum of a low-rank component `D`
@@ -38,18 +48,22 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1.0, reg_J=1.0,
         percentage increase of mu at each iteration
     n_iter_max : int, optional, default is 100
         maximum number of iteration
+    return_errors : bool, default is False
+        if True, additionally returns the reconstruction errors
     verbose : int, default is 1
         level of verbosity
 
     Returns
     -------
-    (D, E)
+    (D, E) or (D, E, rec_errors)
         Robust decomposition of `X`
 
     D : `X`-like array
         low-rank part
     E : `X`-like array
         sparse error part
+    rec_errors : list of errors
+         only returned if `return_errors` is True
 
     Notes
     -----
@@ -73,14 +87,18 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1.0, reg_J=1.0,
         mask = 1
     else:
         # Fix to address surprising MXNet.numpy behavior (Issue #19891)
-        mask = T.tensor(mask, dtype=float)
+        mask = T.tensor(mask, **T.context(X))
 
     # Initialise the decompositions
     D = T.zeros_like(X, **T.context(X))  # low rank part
     E = T.zeros_like(X, **T.context(X))  # sparse part
-    L_x = T.zeros_like(X, **T.context(X))  # Lagrangian variables for the (X - D - E - L_x/mu) term
-    J = [T.zeros_like(X, **T.context(X)) for _ in range(T.ndim(X))] # Low-rank modes of X
-    L = [T.zeros_like(X, **T.context(X)) for _ in range(T.ndim(X))] # Lagrangian or J
+    L_x = T.zeros_like(
+        X, **T.context(X)
+    )  # Lagrangian variables for the (X - D - E - L_x/mu) term
+    J = [
+        T.zeros_like(X, **T.context(X)) for _ in range(T.ndim(X))
+    ]  # Low-rank modes of X
+    L = [T.zeros_like(X, **T.context(X)) for _ in range(T.ndim(X))]  # Lagrangian or J
 
     # Norm of the reconstructions at each iteration
     rec_X = []
@@ -91,32 +109,39 @@ def robust_pca(X, mask=None, tol=10e-7, reg_E=1.0, reg_J=1.0,
     for iteration in range(n_iter_max):
 
         for i in range(T.ndim(X)):
-            J[i] = fold(svd_thresholding(unfold(D, i) + unfold(L[i], i)/mu, reg_J/mu), i, X.shape)
+            J[i] = fold(
+                svd_thresholding(unfold(D, i) + unfold(L[i], i) / mu, reg_J / mu),
+                i,
+                X.shape,
+            )
 
-        D = L_x/mu + X - E
+        D = L_x / mu + X - E
         for i in range(T.ndim(X)):
-            D += J[i] - L[i]/mu
-        D /= (T.ndim(X) + 1)
+            D += J[i] - L[i] / mu
+        D /= T.ndim(X) + 1
 
-        E = soft_thresholding(X - D + L_x/mu, mask*reg_E/mu)
+        E = soft_thresholding(X - D + L_x / mu, mask * reg_E / mu)
 
         # Update the lagrangian multipliers
         for i in range(T.ndim(X)):
             L[i] += mu * (D - J[i])
 
-        L_x += mu*(X - D - E)
+        L_x += mu * (X - D - E)
 
-        mu = min(mu*learning_rate, mu_max)
+        mu = min(mu * learning_rate, mu_max)
 
         # Evolution of the reconstruction errors
         rec_X.append(T.norm(X - D - E, 2))
-        rec_D.append(np.max([T.norm(low_rank - D, 2) for low_rank in J]))
+        rec_D.append(T.max(T.tensor([T.norm(low_rank - D, 2) for low_rank in J])))
 
         # Convergence check
         if iteration > 1:
-            if max(rec_X[-1], rec_D[-1]) <= tol:
+            if rec_X[-1] <= tol and rec_D[-1] <= tol:
                 if verbose:
-                    print('\nConverged in {} iterations'.format(iteration))
+                    print("\nConverged in {} iterations".format(iteration))
                 break
 
-    return D, E
+    if return_errors:
+        return D, E, rec_X
+    else:
+        return D, E

@@ -3,5 +3,5 @@ slimit
 rcssmin
 numpydoc
 sphinx-gallery
-matplotlib
+matplotlib==3.5.2
 tensorly_sphinx_theme

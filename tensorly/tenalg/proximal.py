@@ -9,9 +9,22 @@ import numpy as np
 # License: BSD 3 clause
 
 
-def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_reg=None, unimodality=None,
-                         normalize=None, simplex=None, normalized_sparsity=None, soft_sparsity=None, smoothness=None,
-                         monotonicity=None, hard_sparsity=None, n_const=1, order=0):
+def validate_constraints(
+    non_negative=None,
+    l1_reg=None,
+    l2_reg=None,
+    l2_square_reg=None,
+    unimodality=None,
+    normalize=None,
+    simplex=None,
+    normalized_sparsity=None,
+    soft_sparsity=None,
+    smoothness=None,
+    monotonicity=None,
+    hard_sparsity=None,
+    n_const=1,
+    order=0,
+):
     """
     Validates input constraints for constrained parafac decomposition and returns a constraint and a parameter for
     proximal operator.
@@ -65,23 +78,27 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
         if isinstance(non_negative, dict):
             modes = list(non_negative)
             for i in range(len(modes)):
-                constraints[modes[i]] = 'non_negative'
+                constraints[modes[i]] = "non_negative"
         else:
             for i in range(len(constraints)):
-                constraints[i] = 'non_negative'
+                constraints[i] = "non_negative"
     if l1_reg:
         if isinstance(l1_reg, dict):
             modes = list(l1_reg)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'l1_reg'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "l1_reg"
                 parameters[modes[i]] = l1_reg[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'l1_reg'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "l1_reg"
                 if isinstance(l1_reg, list):
                     parameters[i] = l1_reg[i]
                 else:
@@ -91,14 +108,18 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
             modes = list(l2_reg)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'l2_reg'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "l2_reg"
                 parameters[modes[i]] = l2_reg[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'l2_reg'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "l2_reg"
                 if isinstance(l2_reg, list):
                     parameters[i] = l2_reg[i]
                 else:
@@ -108,14 +129,18 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
             modes = list(l2_square_reg)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'l2_square_reg'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "l2_square_reg"
                 parameters[modes[i]] = l2_square_reg[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'l2_square_reg'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "l2_square_reg"
                 if isinstance(l2_square_reg, list):
                     parameters[i] = l2_square_reg[i]
                 else:
@@ -125,14 +150,18 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
             modes = list(normalized_sparsity)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'normalized_sparsity'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "normalized_sparsity"
                 parameters[modes[i]] = normalized_sparsity[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'normalized_sparsity'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "normalized_sparsity"
                 if isinstance(normalized_sparsity, list):
                     parameters[i] = normalized_sparsity[i]
                 else:
@@ -142,14 +171,18 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
             modes = list(soft_sparsity)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'soft_sparsity'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "soft_sparsity"
                 parameters[modes[i]] = soft_sparsity[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'soft_sparsity'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "soft_sparsity"
                 if isinstance(soft_sparsity, list):
                     parameters[i] = soft_sparsity[i]
                 else:
@@ -159,14 +192,18 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
             modes = list(hard_sparsity)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'hard_sparsity'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "hard_sparsity"
                 parameters[modes[i]] = hard_sparsity[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'hard_sparsity'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "hard_sparsity"
                 if isinstance(hard_sparsity, list):
                     parameters[i] = hard_sparsity[i]
                 else:
@@ -176,14 +213,18 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
             modes = list(simplex)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'simplex'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "simplex"
                 parameters[modes[i]] = simplex[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'simplex'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "simplex"
                 if isinstance(simplex, list):
                     parameters[i] = simplex[i]
                 else:
@@ -193,14 +234,18 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
             modes = list(smoothness)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'smoothness'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "smoothness"
                 parameters[modes[i]] = smoothness[modes[i]]
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'smoothness'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "smoothness"
                 if isinstance(smoothness, list):
                     parameters[i] = smoothness[i]
                 else:
@@ -210,43 +255,69 @@ def validate_constraints(non_negative=None, l1_reg=None, l2_reg=None, l2_square_
             modes = list(unimodality)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'unimodality'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "unimodality"
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'unimodality'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "unimodality"
     if monotonicity:
         if isinstance(monotonicity, dict):
             modes = list(monotonicity)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'monotonicity'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "monotonicity"
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'monotonicity'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "monotonicity"
     if normalize:
         if isinstance(normalize, dict):
             modes = list(normalize)
             for i in range(len(modes)):
                 if constraints[modes[i]] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[modes[i]] = 'normalize'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[modes[i]] = "normalize"
         else:
             for i in range(len(constraints)):
                 if constraints[i] is not None:
-                    raise ValueError('You selected two constraints for the same mode. Consider to check your input')
-                constraints[i] = 'normalize'
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                constraints[i] = "normalize"
     return constraints[order], parameters[order]
 
 
-def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_square_reg=None, unimodality=None,
-                      normalize=None, simplex=None, normalized_sparsity=None, soft_sparsity=None,
-                      smoothness=None, monotonicity=None, hard_sparsity=None, n_const=1, order=0):
+def proximal_operator(
+    tensor,
+    non_negative=None,
+    l1_reg=None,
+    l2_reg=None,
+    l2_square_reg=None,
+    unimodality=None,
+    normalize=None,
+    simplex=None,
+    normalized_sparsity=None,
+    soft_sparsity=None,
+    smoothness=None,
+    monotonicity=None,
+    hard_sparsity=None,
+    n_const=1,
+    order=0,
+):
     """
     Proximal operator solves a convex optimization problem. Let f be a
     convex proper lower-semicontinuous function, the proximal operator of f is :math:`\\argmin_x(f(x) + 1/2||x - v||_2^2)`.
@@ -306,37 +377,47 @@ def proximal_operator(tensor, non_negative=None, l1_reg=None, l2_reg=None, l2_sq
     """
     if n_const is None:
         return tensor
-    constraint, parameter = validate_constraints(non_negative=non_negative, l1_reg=l1_reg, l2_reg=l2_reg,
-                                                 l2_square_reg=l2_square_reg, unimodality=unimodality,
-                                                 normalize=normalize, simplex=simplex, normalized_sparsity=normalized_sparsity,
-                                                 soft_sparsity=soft_sparsity, smoothness=smoothness,
-                                                 monotonicity=monotonicity, hard_sparsity=hard_sparsity,
-                                                 n_const=n_const, order=order)
+    constraint, parameter = validate_constraints(
+        non_negative=non_negative,
+        l1_reg=l1_reg,
+        l2_reg=l2_reg,
+        l2_square_reg=l2_square_reg,
+        unimodality=unimodality,
+        normalize=normalize,
+        simplex=simplex,
+        normalized_sparsity=normalized_sparsity,
+        soft_sparsity=soft_sparsity,
+        smoothness=smoothness,
+        monotonicity=monotonicity,
+        hard_sparsity=hard_sparsity,
+        n_const=n_const,
+        order=order,
+    )
     if constraint is None:
         return tensor
-    elif constraint == 'non_negative':
+    elif constraint == "non_negative":
         return tl.clip(tensor, 0, tl.max(tensor))
-    elif constraint == 'l1_reg':
+    elif constraint == "l1_reg":
         return soft_thresholding(tensor, parameter)
-    elif constraint == 'l2_reg':
+    elif constraint == "l2_reg":
         return l2_prox(tensor, parameter)
-    elif constraint == 'l2_square_reg':
+    elif constraint == "l2_square_reg":
         return l2_square_prox(tensor, parameter)
-    elif constraint == 'unimodality':
+    elif constraint == "unimodality":
         return unimodality_prox(tensor)
-    elif constraint == 'normalize':
+    elif constraint == "normalize":
         return tensor / tl.max(tl.abs(tensor))
-    elif constraint == 'simplex':
+    elif constraint == "simplex":
         return simplex_prox(tensor, parameter)
-    elif constraint == 'normalized_sparsity':
+    elif constraint == "normalized_sparsity":
         return normalized_sparsity_prox(tensor, parameter)
-    elif constraint == 'soft_sparsity':
+    elif constraint == "soft_sparsity":
         return soft_sparsity_prox(tensor, parameter)
-    elif constraint == 'smoothness':
+    elif constraint == "smoothness":
         return smoothness_prox(tensor, parameter)
-    elif constraint == 'monotonicity':
+    elif constraint == "monotonicity":
         return monotonicity_prox(tensor)
-    elif constraint == 'hard_sparsity':
+    elif constraint == "hard_sparsity":
         return hard_thresholding(tensor, parameter)
 
 
@@ -353,9 +434,11 @@ def smoothness_prox(tensor, regularizer):
     ndarray
 
     """
-    diag_matrix = tl.diag(2 * regularizer * tl.ones(tl.shape(tensor)[0]) + 1) + \
-                  tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=-1) + \
-                  tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=1)
+    diag_matrix = (
+        tl.diag(2 * regularizer * tl.ones(tl.shape(tensor)[0]) + 1)
+        + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=-1)
+        + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=1)
+    )
     return tl.solve(diag_matrix, tensor)
 
 
@@ -388,7 +471,9 @@ def monotonicity_prox(tensor, decreasing=False):
     if tl.ndim(tensor) == 1:
         tensor = tl.reshape(tensor, [tl.shape(tensor)[0], 1])
     elif tl.ndim(tensor) > 2:
-        raise ValueError("Monotonicity prox doesn't support an input which has more than 2 dimensions.")
+        raise ValueError(
+            "Monotonicity prox doesn't support an input which has more than 2 dimensions."
+        )
     tensor_mon = tl.copy(tensor)
     if decreasing:
         tensor_mon = tl.flip(tensor_mon, axis=0)
@@ -398,15 +483,27 @@ def monotonicity_prox(tensor, decreasing=False):
         assisted_tensor = tl.zeros([row, row])
         for i in range(row):
             if i == 0:
-                assisted_tensor = tl.index_update(assisted_tensor, tl.index[i, i:], cum_sum[i:, j]
-                                                  / tl.tensor(tl.arange(row - i) + 1, **tl.context(tensor)))
+                assisted_tensor = tl.index_update(
+                    assisted_tensor,
+                    tl.index[i, i:],
+                    cum_sum[i:, j]
+                    / tl.tensor(tl.arange(row - i) + 1, **tl.context(tensor)),
+                )
             else:
-                assisted_tensor = tl.index_update(assisted_tensor, tl.index[i, i:], (cum_sum[i:, j] - cum_sum[i - 1, j])
-                                                  / tl.tensor(tl.arange(row - i) + 1, **tl.context(tensor)))
-        tensor_mon = tl.index_update(tensor_mon, tl.index[:, j], tl.max(assisted_tensor, axis=0))
+                assisted_tensor = tl.index_update(
+                    assisted_tensor,
+                    tl.index[i, i:],
+                    (cum_sum[i:, j] - cum_sum[i - 1, j])
+                    / tl.tensor(tl.arange(row - i) + 1, **tl.context(tensor)),
+                )
+        tensor_mon = tl.index_update(
+            tensor_mon, tl.index[:, j], tl.max(assisted_tensor, axis=0)
+        )
         for i in reversed(range(row - 1)):
             if tensor_mon[i, j] > tensor_mon[i + 1, j]:
-                tensor_mon = tl.index_update(tensor_mon, tl.index[i, j], tensor_mon[i + 1, j])
+                tensor_mon = tl.index_update(
+                    tensor_mon, tl.index[i, j], tensor_mon[i + 1, j]
+                )
     if decreasing:
         tensor_mon = tl.flip(tensor_mon, axis=0)
     return tensor_mon
@@ -436,27 +533,65 @@ def unimodality_prox(tensor):
     if tl.ndim(tensor) == 1:
         tensor = tl.vec_to_tensor(tensor, [tl.shape(tensor)[0], 1])
     elif tl.ndim(tensor) > 2:
-        raise ValueError("Unimodality prox doesn't support an input which has more than 2 dimensions.")
+        raise ValueError(
+            "Unimodality prox doesn't support an input which has more than 2 dimensions."
+        )
 
     tensor_unimodal = tl.copy(tensor)
     monotone_increasing = tl.tensor(monotonicity_prox(tensor), **tl.context(tensor))
-    monotone_decreasing = tl.tensor(monotonicity_prox(tensor, decreasing=True),
-                                    **tl.context(tensor))
+    monotone_decreasing = tl.tensor(
+        monotonicity_prox(tensor, decreasing=True), **tl.context(tensor)
+    )
     # Next line finds mutual peak points
-    values = tl.tensor(tl.to_numpy((tensor - monotone_decreasing >= 0)) * tl.to_numpy(
-        (tensor - monotone_increasing >= 0)), **tl.context(tensor))
+    values = tl.tensor(
+        tl.to_numpy((tensor - monotone_decreasing >= 0))
+        * tl.to_numpy((tensor - monotone_increasing >= 0)),
+        **tl.context(tensor)
+    )
 
-    sum_inc = tl.where(values == 1, tl.cumsum(tl.abs(tensor - monotone_increasing), axis=0), tl.tensor(0, **tl.context(tensor)))
-    sum_inc = tl.where(values == 1, sum_inc - tl.abs(tensor - monotone_increasing), tl.tensor(0, **tl.context(tensor)))
-    sum_dec = tl.where(tl.flip(values, axis=0) == 1, tl.cumsum(tl.abs(tl.flip(tensor, axis=0) - tl.flip(monotone_decreasing, axis=0)), axis=0), tl.tensor(0, **tl.context(tensor)))
-    sum_dec = tl.where(tl.flip(values, axis=0) == 1, sum_dec - tl.abs(tl.flip(tensor, axis=0) - tl.flip(monotone_decreasing, axis=0)), tl.tensor(0, **tl.context(tensor)))
+    sum_inc = tl.where(
+        values == 1,
+        tl.cumsum(tl.abs(tensor - monotone_increasing), axis=0),
+        tl.tensor(0, **tl.context(tensor)),
+    )
+    sum_inc = tl.where(
+        values == 1,
+        sum_inc - tl.abs(tensor - monotone_increasing),
+        tl.tensor(0, **tl.context(tensor)),
+    )
+    sum_dec = tl.where(
+        tl.flip(values, axis=0) == 1,
+        tl.cumsum(
+            tl.abs(tl.flip(tensor, axis=0) - tl.flip(monotone_decreasing, axis=0)),
+            axis=0,
+        ),
+        tl.tensor(0, **tl.context(tensor)),
+    )
+    sum_dec = tl.where(
+        tl.flip(values, axis=0) == 1,
+        sum_dec
+        - tl.abs(tl.flip(tensor, axis=0) - tl.flip(monotone_decreasing, axis=0)),
+        tl.tensor(0, **tl.context(tensor)),
+    )
 
-    difference = tl.where(values == 1, sum_inc + tl.flip(sum_dec, axis=0), tl.max(sum_inc + tl.flip(sum_dec, axis=0)))
+    difference = tl.where(
+        values == 1,
+        sum_inc + tl.flip(sum_dec, axis=0),
+        tl.max(sum_inc + tl.flip(sum_dec, axis=0)),
+    )
     min_indice = tl.argmin(tl.tensor(difference), axis=0)
 
     for i in range(len(min_indice)):
-        tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[:int(min_indice[i]), i], monotone_increasing[:int(min_indice[i]), i])
-        tensor_unimodal = tl.index_update(tensor_unimodal, tl.index[int(min_indice[i]+1):, i], monotone_decreasing[int(min_indice[i]+1):, i])
+        tensor_unimodal = tl.index_update(
+            tensor_unimodal,
+            tl.index[: int(min_indice[i]), i],
+            monotone_increasing[: int(min_indice[i]), i],
+        )
+        tensor_unimodal = tl.index_update(
+            tensor_unimodal,
+            tl.index[int(min_indice[i] + 1) :, i],
+            monotone_decreasing[int(min_indice[i] + 1) :, i],
+        )
     return tensor_unimodal
 
 
@@ -479,7 +614,7 @@ def l2_square_prox(tensor, regularizer):
             In Fixed-point algorithms for inverse problems in science and engineering (pp. 185-212).
             Springer, New York, NY.
     """
-    return tensor/(1 + 2 * regularizer)
+    return tensor / (1 + 2 * regularizer)
 
 
 def l2_prox(tensor, regularizer):
@@ -600,14 +735,18 @@ def simplex_prox(tensor, parameter):
         row = tl.shape(tensor)[0]
         col = 1
         tensor = tl.reshape(tensor, [row, col])
-    tensor_sort = tl.sort(tensor, axis=0, descending=True)
+    tensor_sort = tl.flip(tl.sort(tensor, axis=0), axis=0)
     # Broadcasting is used to divide rows by 1,2,3...
-    cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(tl.ones([row, 1]), axis=0)
+    cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(
+        tl.ones([row, 1]), axis=0
+    )
     # Added -1 to correspond to a Python index
     to_change = tl.sum(tl.where(tensor_sort > cumsum_min_param_by_k, 1, 0), axis=0) - 1
     difference = tl.zeros(col)
     for i in range(col):
-        difference = tl.index_update(difference, tl.index[i], cumsum_min_param_by_k[to_change[i], i])
+        difference = tl.index_update(
+            difference, tl.index[i], cumsum_min_param_by_k[to_change[i], i]
+        )
     if col > 1:
         return tl.clip(tensor - difference, a_min=0)
     else:
@@ -630,8 +769,17 @@ def hard_thresholding(tensor, number_of_non_zero):
           Thresholded tensor on which the operator has been applied
     """
     tensor_vec = tl.copy(tl.tensor_to_vec(tensor))
-    sorted_indices = tl.argsort(tl.argsort(tl.abs(tensor_vec), axis=0, descending=True), axis=0)
-    return tl.reshape(tl.where(sorted_indices < number_of_non_zero, tensor_vec, tl.tensor(0, **tl.context(tensor_vec))), tensor.shape)
+    sorted_indices = tl.argsort(
+        tl.flip(tl.argsort(tl.abs(tensor_vec), axis=0), axis=0), axis=0
+    )
+    return tl.reshape(
+        tl.where(
+            sorted_indices < number_of_non_zero,
+            tensor_vec,
+            tl.tensor(0, **tl.context(tensor_vec)),
+        ),
+        tensor.shape,
+    )
 
 
 def soft_thresholding(tensor, threshold):
@@ -674,7 +822,7 @@ def soft_thresholding(tensor, threshold):
     --------
     svd_thresholding : SVD-thresholding operator
     """
-    return tl.sign(tensor)*tl.clip(tl.abs(tensor) - threshold, a_min=0)
+    return tl.sign(tensor) * tl.clip(tl.abs(tensor) - threshold, a_min=0)
 
 
 def svd_thresholding(matrix, threshold):
@@ -694,8 +842,8 @@ def svd_thresholding(matrix, threshold):
     --------
     procrustes : procrustes operator
     """
-    U, s, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
-    return tl.dot(U, tl.reshape(soft_thresholding(s, threshold), (-1, 1))*V)
+    U, s, V = tl.truncated_svd(matrix, n_eigenvecs=min(matrix.shape))
+    return tl.dot(U, tl.reshape(soft_thresholding(s, threshold), (-1, 1)) * V)
 
 
 def procrustes(matrix):
@@ -716,12 +864,21 @@ def procrustes(matrix):
     --------
     svd_thresholding : SVD-thresholding operator
     """
-    U, _, V = tl.partial_svd(matrix, n_eigenvecs=min(matrix.shape))
+    U, _, V = tl.truncated_svd(matrix, n_eigenvecs=min(matrix.shape))
     return tl.dot(U, V)
 
 
-def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
-              sparsity_coefficient=None, normalize=False, nonzero_rows=False, exact=False):
+def hals_nnls(
+    UtM,
+    UtU,
+    V=None,
+    n_iter_max=500,
+    tol=10e-8,
+    sparsity_coefficient=None,
+    normalize=False,
+    nonzero_rows=False,
+    exact=False,
+):
 
     """
     Non Negative Least Squares (NNLS)
@@ -832,16 +989,27 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
         for k in range(rank):
 
             if UtU[k, k]:
-                if sparsity_coefficient is not None:  # Modifying the function for sparsification
+                if (
+                    sparsity_coefficient is not None
+                ):  # Modifying the function for sparsification
 
-                    deltaV = tl.where((UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient) / UtU[k, k] > -V[k, :],
-                                      (UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient) / UtU[k, k], -V[k, :])
+                    deltaV = tl.where(
+                        (UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient)
+                        / UtU[k, k]
+                        > -V[k, :],
+                        (UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient)
+                        / UtU[k, k],
+                        -V[k, :],
+                    )
                     V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
 
                 else:  # without sparsity
 
-                    deltaV = tl.where((UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k] > -V[k, :],
-                                      (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k], -V[k, :])
+                    deltaV = tl.where(
+                        (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k] > -V[k, :],
+                        (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
+                        -V[k, :],
+                    )
                     V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
 
                 rec_error = rec_error + tl.dot(deltaV, tl.transpose(deltaV))
@@ -851,7 +1019,9 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
                     V[k, :] = tl.eps(V.dtype) * tl.max(V)
 
             elif nonzero_rows:
-                raise ValueError("Column " + str(k) + " of U is zero with nonzero condition")
+                raise ValueError(
+                    "Column " + str(k) + " of U is zero with nonzero condition"
+                )
 
             if normalize:
                 norm = tl.norm(V[k, :])
@@ -875,8 +1045,16 @@ def hals_nnls(UtM, UtU, V=None, n_iter_max=500, tol=10e-8,
     return V, rec_error, iteration, complexity_ratio
 
 
-def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
-          lr=None, tol=10e-8):
+def fista(
+    UtM,
+    UtU,
+    x=None,
+    n_iter_max=100,
+    non_negative=True,
+    sparsity_coef=0,
+    lr=None,
+    tol=10e-8,
+):
     """
     Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
 
@@ -922,7 +1100,7 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
     if x is None:
         x = tl.zeros(tl.shape(UtM), **tl.context(UtM))
     if lr is None:
-        lr = 1 / (tl.partial_svd(UtU)[1][0])
+        lr = 1 / (tl.truncated_svd(UtU)[1][0])
     # Parameters
     momentum_old = tl.tensor(1.0)
     norm_0 = 0.0
@@ -930,15 +1108,19 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
 
     for iteration in range(n_iter_max):
         if isinstance(UtU, list):
-            x_gradient = - UtM + tl.tenalg.multi_mode_dot(x_update, UtU, transpose=False) + sparsity_coef
+            x_gradient = (
+                -UtM
+                + tl.tenalg.multi_mode_dot(x_update, UtU, transpose=False)
+                + sparsity_coef
+            )
         else:
-            x_gradient = - UtM + tl.dot(UtU, x_update) + sparsity_coef
+            x_gradient = -UtM + tl.dot(UtU, x_update) + sparsity_coef
 
         if non_negative is True:
-            x_gradient = tl.where(lr * x_gradient < x_update, x_gradient, x_update/lr)
+            x_gradient = tl.where(lr * x_gradient < x_update, x_gradient, x_update / lr)
 
         x_new = x_update - lr * x_gradient
-        momentum = (1 + tl.sqrt(1 + 4 * momentum_old ** 2)) / 2
+        momentum = (1 + tl.sqrt(1 + 4 * momentum_old**2)) / 2
         x_update = x_new + ((momentum_old - 1) / momentum) * (x_new - x)
         momentum_old = momentum
         x = tl.copy(x_new)
@@ -952,51 +1134,52 @@ def fista(UtM, UtU, x=None, n_iter_max=100, non_negative=True, sparsity_coef=0,
 
 def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     """
-     Active set algorithm for non-negative least square solution.
+    Active set algorithm for non-negative least square solution.
 
-     Computes an approximate non-negative solution for Ux=m linear system.
+    Computes an approximate non-negative solution for Ux=m linear system.
 
-     Parameters
-     ----------
-     Utm : vectorized ndarray
-        Pre-computed product of the transposed of U and m
-     UtU : ndarray
-        Pre-computed Kronecker product of the transposed of U and U
-     x : init
-        Default: None
-     n_iter_max : int
-         Maximum number of iteration
-         Default: 100
-     tol : float
-         Early stopping criterion
+    Parameters
+    ----------
+    Utm : vectorized ndarray
+       Pre-computed product of the transposed of U and m
+    UtU : ndarray
+       Pre-computed Kronecker product of the transposed of U and U
+    x : init
+       Default: None
+    n_iter_max : int
+        Maximum number of iteration
+        Default: 100
+    tol : float
+        Early stopping criterion
 
-     Returns
-     -------
-     x : ndarray
+    Returns
+    -------
+    x : ndarray
 
-     Notes
-     -----
-     This function solves following problem:
-     .. math::
-        \\begin{equation}
-             \\min_{x} ||Ux - m||^2
-        \\end{equation}
+    Notes
+    -----
+    This function solves following problem:
+    .. math::
+       \\begin{equation}
+            \\min_{x} ||Ux - m||^2
+       \\end{equation}
 
-     According to [1], non-negativity-constrained least square estimation problem becomes:
-     .. math::
-        \\begin{equation}
-             x' = (Utm) - (UTU)\\times x
-        \\end{equation}
+    According to [1], non-negativity-constrained least square estimation problem becomes:
+    .. math::
+       \\begin{equation}
+            x' = (Utm) - (UTU)\\times x
+       \\end{equation}
 
-     Reference
-     ----------
-     [1] : Bro, R., & De Jong, S. (1997). A fast non‐negativity‐constrained
-           least squares algorithm. Journal of Chemometrics: A Journal of
-           the Chemometrics Society, 11(5), 393-401.
-     """
-    if tl.get_backend() == 'tensorflow':
+    Reference
+    ----------
+    [1] : Bro, R., & De Jong, S. (1997). A fast non‐negativity‐constrained
+          least squares algorithm. Journal of Chemometrics: A Journal of
+          the Chemometrics Society, 11(5), 393-401.
+    """
+    if tl.get_backend() == "tensorflow":
         raise ValueError(
-            "Active set is not supported with the tensorflow backend. Consider using fista method with tensorflow.")
+            "Active set is not supported with the tensorflow backend. Consider using fista method with tensorflow."
+        )
 
     if x is None:
         x_vec = tl.zeros(tl.shape(UtU)[1], **tl.context(UtU))
@@ -1016,12 +1199,18 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
             active_set = tl.index_update(active_set, tl.index[indice], False)
         # To avoid singularity error when initial x exists
         try:
-            passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
+            passive_solution = tl.solve(
+                UtU[passive_set, :][:, passive_set], Utm[passive_set]
+            )
             indice_list = []
             for i in range(tl.shape(support_vec)[0]):
                 if passive_set[i]:
                     indice_list.append(i)
-                    support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
+                    support_vec = tl.index_update(
+                        support_vec,
+                        tl.index[int(i)],
+                        passive_solution[len(indice_list) - 1],
+                    )
                 else:
                     support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
         # Start from zeros if solve is not achieved
@@ -1034,33 +1223,51 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                 indice = tl.argmax(x_gradient)
                 passive_set = tl.index_update(passive_set, tl.index[indice], True)
                 active_set = tl.index_update(active_set, tl.index[indice], False)
-            passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
+            passive_solution = tl.solve(
+                UtU[passive_set, :][:, passive_set], Utm[passive_set]
+            )
             indice_list = []
             for i in range(tl.shape(support_vec)[0]):
                 if passive_set[i]:
                     indice_list.append(i)
-                    support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
+                    support_vec = tl.index_update(
+                        support_vec,
+                        tl.index[int(i)],
+                        passive_solution[len(indice_list) - 1],
+                    )
                 else:
                     support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
 
         # update support vector if it is necessary
         if tl.min(support_vec[passive_set]) <= 0:
             for i in range(len(passive_set)):
-                alpha = tl.min(x_vec[passive_set][support_vec[passive_set] <= 0] / (x_vec[passive_set][support_vec[passive_set] <= 0] - support_vec[passive_set][support_vec[passive_set] <= 0]))
+                alpha = tl.min(
+                    x_vec[passive_set][support_vec[passive_set] <= 0]
+                    / (
+                        x_vec[passive_set][support_vec[passive_set] <= 0]
+                        - support_vec[passive_set][support_vec[passive_set] <= 0]
+                    )
+                )
                 update = alpha * (support_vec - x_vec)
                 x_vec = x_vec + update
                 passive_set = x_vec > 0
                 active_set = x_vec <= 0
-                passive_solution = tl.solve(UtU[passive_set, :][:, passive_set], Utm[passive_set])
+                passive_solution = tl.solve(
+                    UtU[passive_set, :][:, passive_set], Utm[passive_set]
+                )
                 indice_list = []
                 for i in range(tl.shape(support_vec)[0]):
                     if passive_set[i]:
                         indice_list.append(i)
-                        support_vec = tl.index_update(support_vec, tl.index[int(i)], passive_solution[len(indice_list) - 1])
+                        support_vec = tl.index_update(
+                            support_vec,
+                            tl.index[int(i)],
+                            passive_solution[len(indice_list) - 1],
+                        )
                     else:
                         support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
 
-                if tl.any(passive_set)!=True or tl.min(support_vec[passive_set]) > 0:
+                if tl.any(passive_set) != True or tl.min(support_vec[passive_set]) > 0:
                     break
         # set x to s
         x_vec = tl.clip(support_vec, 0, tl.max(support_vec))
@@ -1068,16 +1275,34 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
         # gradient update
         x_gradient = Utm - tl.dot(UtU, x_vec)
 
-        if tl.any(active_set)!=True or tl.max(x_gradient[active_set]) <= tol:
+        if tl.any(active_set) != True or tl.max(x_gradient[active_set]) <= tol:
             break
 
     return x_vec
 
 
-def admm(UtM, UtU, x, dual_var, n_iter_max=100, n_const=None, order=None, non_negative=None, l1_reg=None,
-         l2_reg=None, l2_square_reg=None, unimodality=None, normalize=None,
-         simplex=None, normalized_sparsity=None, soft_sparsity=None,
-         smoothness=None, monotonicity=None, hard_sparsity=None, tol=1e-4):
+def admm(
+    UtM,
+    UtU,
+    x,
+    dual_var,
+    n_iter_max=100,
+    n_const=None,
+    order=None,
+    non_negative=None,
+    l1_reg=None,
+    l2_reg=None,
+    l2_square_reg=None,
+    unimodality=None,
+    normalize=None,
+    simplex=None,
+    normalized_sparsity=None,
+    soft_sparsity=None,
+    smoothness=None,
+    monotonicity=None,
+    hard_sparsity=None,
+    tol=1e-4,
+):
     """
     Alternating direction method of multipliers (ADMM) algorithm to minimize a quadratic function under convex constraints.
 
@@ -1177,13 +1402,27 @@ def admm(UtM, UtU, x, dual_var, n_iter_max=100, n_const=None, order=None, non_ne
     rho = tl.trace(UtU) / tl.shape(x)[1]
     for iteration in range(n_iter_max):
         x_old = tl.copy(x)
-        x_split = tl.solve(tl.transpose(UtU + rho * tl.eye(tl.shape(UtU)[1])),
-                           tl.transpose(UtM + rho * (x + dual_var)))
-        x = proximal_operator(tl.transpose(x_split) - dual_var, non_negative=non_negative, l1_reg=l1_reg,
-                              l2_reg=l2_reg, l2_square_reg=l2_square_reg, unimodality=unimodality, normalize=normalize,
-                              simplex=simplex, normalized_sparsity=normalized_sparsity,
-                              soft_sparsity=soft_sparsity, smoothness=smoothness, monotonicity=monotonicity,
-                              hard_sparsity=hard_sparsity, n_const=n_const, order=order)
+        x_split = tl.solve(
+            tl.transpose(UtU + rho * tl.eye(tl.shape(UtU)[1])),
+            tl.transpose(UtM + rho * (x + dual_var)),
+        )
+        x = proximal_operator(
+            tl.transpose(x_split) - dual_var,
+            non_negative=non_negative,
+            l1_reg=l1_reg,
+            l2_reg=l2_reg,
+            l2_square_reg=l2_square_reg,
+            unimodality=unimodality,
+            normalize=normalize,
+            simplex=simplex,
+            normalized_sparsity=normalized_sparsity,
+            soft_sparsity=soft_sparsity,
+            smoothness=smoothness,
+            monotonicity=monotonicity,
+            hard_sparsity=hard_sparsity,
+            n_const=n_const,
+            order=order,
+        )
         if n_const is None:
             x = tl.transpose(tl.solve(tl.transpose(UtU), tl.transpose(UtM)))
             return x, x_split, dual_var
@@ -1192,6 +1431,8 @@ def admm(UtM, UtU, x, dual_var, n_iter_max=100, n_const=None, order=None, non_ne
         dual_residual = x - tl.transpose(x_split)
         primal_residual = x - x_old
 
-        if tl.norm(dual_residual) < tol * tl.norm(x) and tl.norm(primal_residual) < tol * tl.norm(dual_var):
+        if tl.norm(dual_residual) < tol * tl.norm(x) and tl.norm(
+            primal_residual
+        ) < tol * tl.norm(dual_var):
             break
     return x, x_split, dual_var

@@ -36,10 +36,12 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
     """
     # the mode along which to fold might decrease if we take product with a vector
     tensor_order = tl.ndim(tensor)
-    start = ord('a')
-    tensor_modes = ''.join(chr(start + i) for i in range(tensor_order))
-    result_modes = [chr(start+tensor_order+1) if i == mode else j\
-                            for i, j in enumerate(tensor_modes)]
+    start = ord("a")
+    tensor_modes = "".join(chr(start + i) for i in range(tensor_order))
+    result_modes = [
+        chr(start + tensor_order + 1) if i == mode else j
+        for i, j in enumerate(tensor_modes)
+    ]
 
     if tl.ndim(matrix_or_vector) == 2:  # Tensor times matrix
         # Test for the validity of the operation
@@ -47,29 +49,43 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
 
         if matrix_or_vector.shape[dim] != tensor.shape[mode]:
             raise ValueError(
-                'shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)'.format(
-                    tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[dim]
-                ))
-        if transpose: 
+                "shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)".format(
+                    tensor.shape,
+                    matrix_or_vector.shape,
+                    mode,
+                    tensor.shape[mode],
+                    matrix_or_vector.shape[dim],
+                )
+            )
+        if transpose:
             matrix_or_vector = tl.conj(tl.transpose(matrix_or_vector))
-        matrix_or_vector_modes = [chr(start+tensor_order+1), tensor_modes[mode]]
+        matrix_or_vector_modes = [chr(start + tensor_order + 1), tensor_modes[mode]]
 
     elif tl.ndim(matrix_or_vector) == 1:  # Tensor times vector
         if matrix_or_vector.shape[0] != tensor.shape[mode]:
             raise ValueError(
-                'shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)'.format(
-                    tensor.shape, matrix_or_vector.shape, mode, tensor.shape[mode], matrix_or_vector.shape[0]
-                ))
+                "shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)".format(
+                    tensor.shape,
+                    matrix_or_vector.shape,
+                    mode,
+                    tensor.shape[mode],
+                    matrix_or_vector.shape[0],
+                )
+            )
         matrix_or_vector_modes = [tensor_modes[mode]]
         result_modes.pop(mode)
 
     else:
-        raise ValueError('Can only take n_mode_product with a vector or a matrix.'
-                            'Provided array of dimension {} not in [1, 2].'.format(tl.ndim(matrix_or_vector)))
+        raise ValueError(
+            "Can only take n_mode_product with a vector or a matrix."
+            "Provided array of dimension {} not in [1, 2].".format(
+                tl.ndim(matrix_or_vector)
+            )
+        )
 
-    result_modes = ''.join(result_modes)
-    matrix_or_vector_modes = ''.join(matrix_or_vector_modes)
-    equation = f'{tensor_modes},{matrix_or_vector_modes}->{result_modes}'
+    result_modes = "".join(result_modes)
+    matrix_or_vector_modes = "".join(matrix_or_vector_modes)
+    equation = f"{tensor_modes},{matrix_or_vector_modes}->{result_modes}"
     return tl.einsum(equation, tensor, matrix_or_vector)
 
 
@@ -117,27 +133,26 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
     _, modes = zip(*factors_modes)
 
-    start = ord('a')
+    start = ord("a")
     result_modes = [chr(start + i) for i in range(order)]
-    tensor_modes = ''.join(result_modes)
-    equation = ''
+    tensor_modes = "".join(result_modes)
+    equation = ""
     counter = start + order + 1
     decrement = 0
 
     matrix_or_vec_list = []
     for i, (matrix_or_vec, mode) in enumerate(factors_modes):
-        #print(i, matrix_or_vec.shape, mode)
+        # print(i, matrix_or_vec.shape, mode)
         if (skip is not None) and (i == skip):
-            #print(f'skipping {skip}')
+            # print(f'skipping {skip}')
             continue
 
         if tl.ndim(matrix_or_vec) == 1:
             matrix_or_vec_list.append(matrix_or_vec)
-            equation += f',{tensor_modes[mode]}'
+            equation += f",{tensor_modes[mode]}"
             # We are contracting over the mode-th dimension
             result_modes.pop(mode - decrement)
             decrement += 1
-
 
         elif tl.ndim(matrix_or_vec) == 2:
             if transpose:
@@ -146,21 +161,23 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             else:
                 matrix_or_vec_list.append(matrix_or_vec)
 
-            mat_symbol = f'{chr(counter)}{tensor_modes[mode]}'
-            equation += ',' + mat_symbol
+            mat_symbol = f"{chr(counter)}{tensor_modes[mode]}"
+            equation += "," + mat_symbol
             # Contracting mode-th mode with a matrix: new dimension
             result_modes[mode - decrement] = chr(counter)
             counter += 1
 
         else:
-            raise ValueError(f'Trying to contract a tensor with an {tl.ndim(matrix_or_vec)}--th'
-                             f'order tensor along {mode}-th dimension.'
-                             'Mode-dot only contracts a tensor with a vector or a matrix.')
+            raise ValueError(
+                f"Trying to contract a tensor with an {tl.ndim(matrix_or_vec)}--th"
+                f"order tensor along {mode}-th dimension."
+                "Mode-dot only contracts a tensor with a vector or a matrix."
+            )
 
-    # If fully contracting 
+    # If fully contracting
     result_modes
     equation = tensor_modes + equation + f"->{''.join(result_modes)}"
     # matrix_or_vec_list = [m for (i, m) in enumerate(matrix_or_vec_list) if ((skip is None) or (skip != i))]
 
-    #print(equation, tl.shape(tensor), [tl.shape(f) for f in matrix_or_vec_list])
+    # print(equation, tl.shape(tensor), [tl.shape(f) for f in matrix_or_vec_list])
     return tl.einsum(equation, tensor, *matrix_or_vec_list)

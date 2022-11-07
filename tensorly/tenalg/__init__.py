@@ -1,7 +1,7 @@
 """ 
 The :mod:`tensorly.tenalg` module contains utilities for Tensor Algebra 
 operations such as khatri-rao or kronecker product, n-mode product, etc.
-""" 
+"""
 
 import sys
 import importlib
@@ -11,22 +11,29 @@ import warnings
 
 from ..backend import BackendManager, dynamically_dispatched_class_attribute
 from .base_tenalg import TenalgBackend
+from .svd import SVD_FUNS, svd_interface, truncated_svd
+
 
 class TenalgBackendManager(BackendManager):
-    _functions = ['mode_dot', 'multi_mode_dot', 
-                  'kronecker', 'khatri_rao',
-                  'inner', 'outer', 'batched_outer',
-                  'higher_order_moment',
-                  '_tt_matrix_to_tensor',
-                  'tensordot'
-                 ]
+    _functions = [
+        "mode_dot",
+        "multi_mode_dot",
+        "kronecker",
+        "khatri_rao",
+        "inner",
+        "outer",
+        "batched_outer",
+        "higher_order_moment",
+        "_tt_matrix_to_tensor",
+        "tensordot",
+    ]
     _attributes = []
-    available_backend_names = ['core', 'einsum']
-    _default_backend = 'core'
+    available_backend_names = ["core", "einsum"]
+    _default_backend = "core"
     _loaded_backends = dict()
     _backend = None
     _THREAD_LOCAL_DATA = threading.local()
-    _ENV_DEFAULT_VAR = 'TENSORLY_TENALG_BACKEND'
+    _ENV_DEFAULT_VAR = "TENSORLY_TENALG_BACKEND"
 
     @classmethod
     def use_dynamic_dispatch(cls):
@@ -36,17 +43,25 @@ class TenalgBackendManager(BackendManager):
                 delattr(cls, name)
             except AttributeError:
                 pass
-            setattr(cls, name, staticmethod(cls.dispatch_backend_method(name, getattr(cls.current_backend(), name))))
+            setattr(
+                cls,
+                name,
+                staticmethod(
+                    cls.dispatch_backend_method(
+                        name, getattr(cls.current_backend(), name)
+                    )
+                ),
+            )
         for name in cls._attributes:
             try:
                 delattr(cls, name)
             except AttributeError:
                 pass
             setattr(cls, name, dynamically_dispatched_class_attribute(name))
-    
+
     @classmethod
     def load_backend(cls, backend_name):
-        """Registers a new backend by importing the corresponding module 
+        """Registers a new backend by importing the corresponding module
             and adding the correspond `Backend` class in Backend._LOADED_BACKEND
             under the key `backend_name`
 
@@ -64,12 +79,12 @@ class TenalgBackendManager(BackendManager):
             msg = f"Unknown backend name {backend_name!r}, known backends are {cls.available_backend_names}"
             raise ValueError(msg)
         if backend_name not in TenalgBackend._available_tenalg_backends:
-            importlib.import_module('tensorly.tenalg.{0}_tenalg'.format(backend_name))
+            importlib.import_module(f"tensorly.tenalg.{backend_name}_tenalg")
         if backend_name in TenalgBackend._available_tenalg_backends:
             backend = TenalgBackend._available_tenalg_backends[backend_name]()
             # backend = getattr(module, )()
             cls._loaded_backends[backend_name] = backend
-        
+
         return backend
 
 

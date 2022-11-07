@@ -10,7 +10,7 @@ from .. import backend as T
 # License: BSD 3 clause
 
 
-class TuckerRegressor():
+class TuckerRegressor:
     """Tucker tensor regression
 
         Learns a low rank Tucker weight for the regression
@@ -30,7 +30,15 @@ class TuckerRegressor():
         level of verbosity
     """
 
-    def __init__(self, weight_ranks, tol=10e-7, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
+    def __init__(
+        self,
+        weight_ranks,
+        tol=10e-7,
+        reg_W=1,
+        n_iter_max=100,
+        random_state=None,
+        verbose=1,
+    ):
         self.weight_ranks = weight_ranks
         self.tol = tol
         self.reg_W = reg_W
@@ -39,9 +47,15 @@ class TuckerRegressor():
         self.verbose = verbose
 
     def get_params(self, **kwargs):
-        """Returns a dictionary of parameters
-        """
-        params = ['weight_ranks', 'tol', 'reg_W', 'n_iter_max', 'random_state', 'verbose']
+        """Returns a dictionary of parameters"""
+        params = [
+            "weight_ranks",
+            "tol",
+            "reg_W",
+            "n_iter_max",
+            "random_state",
+            "verbose",
+        ]
         return {param_name: getattr(self, param_name) for param_name in params}
 
     def set_params(self, **parameters):
@@ -80,20 +94,30 @@ class TuckerRegressor():
             # Optimise modes of W
             for i in range(len(W)):
                 phi = partial_tensor_to_vec(
-                            T.dot(partial_unfold(X, i),
-                                  T.dot(kronecker(W, skip_matrix=i),
-                                          T.transpose(unfold(G, i)))))
+                    T.dot(
+                        partial_unfold(X, i),
+                        T.dot(kronecker(W, skip_matrix=i), T.transpose(unfold(G, i))),
+                    )
+                )
                 # Regress phi on y: we could call a package here, e.g. scikit-learn
-                inv_term = T.dot(T.transpose(phi), phi) +\
-                     self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X))
-                W_i = vec_to_tensor(T.solve(inv_term, T.dot(T.transpose(phi), y)),
-                                    (X.shape[i + 1], G.shape[i]))
+                inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(
+                    np.eye(phi.shape[1]), **T.context(X)
+                )
+                W_i = vec_to_tensor(
+                    T.solve(inv_term, T.dot(T.transpose(phi), y)),
+                    (X.shape[i + 1], G.shape[i]),
+                )
                 W[i] = W_i
 
             phi = T.dot(partial_tensor_to_vec(X), kronecker(W))
-            G = vec_to_tensor(T.solve(T.dot(T.transpose(phi), phi) +\
-                                        self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X)),
-                                      T.dot(T.transpose(phi), y)), G.shape)
+            G = vec_to_tensor(
+                T.solve(
+                    T.dot(T.transpose(phi), phi)
+                    + self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X)),
+                    T.dot(T.transpose(phi), y),
+                ),
+                G.shape,
+            )
 
             weight_tensor_ = tucker_to_tensor((G, W))
             norm_W.append(T.norm(weight_tensor_, 2))
@@ -102,9 +126,9 @@ class TuckerRegressor():
             if iteration > 1:
                 weight_evolution = abs(norm_W[-1] - norm_W[-2]) / norm_W[-1]
 
-                if (weight_evolution <= self.tol):
+                if weight_evolution <= self.tol:
                     if self.verbose:
-                        print('\nConverged in {} iterations'.format(iteration))
+                        print("\nConverged in {} iterations".format(iteration))
                     break
 
         self.weight_tensor_ = weight_tensor_

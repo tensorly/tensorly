@@ -15,6 +15,14 @@ Guidelines
 
 For each function or class, we expect helpful docstrings in the NumPy format, as well as unit-tests to make sure it is working as expected (especially helpful for future refactoring to make sure no exising code is broken!)
 
+Before you submit your changes, you should also make sure your code adheres to our style-guide. The easiest way to do this is with `black`:  
+
+.. code:: bash
+
+   pip install black
+   black .
+
+
 Check the existing code for examples, and don't hesitate to contact the developers if you are unsure! 
 
 
@@ -31,7 +39,7 @@ To contribute code to the TensorLy code-base, you must ensure compatibility with
    This means you should only use TensorLy functions, never directly a function from the backend
    e.g. use ``tl.mean``, **not** ``numpy.mean`` or ``torch.mean``.
 
-To do so, we **only use** functions wrapped in :py:mod:`tensorly.backend`, such as :py:mod:`tensorly.backend.partial_svd`, etc.
+To do so, we **only use** functions wrapped in :py:mod:`tensorly.backend`, such as :py:mod:`tensorly.backend.tensordot`, etc.
 If the function you need doesn't exist, either try using other existing ones,
 or, if you cannot do otherwise, add the required function to all backends.
 

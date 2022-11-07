@@ -56,7 +56,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
     Notes
     -----
     Pseudo-code [2]:
-    
+
     1. Initialization tensor_order cores and column indices
 
     2. while (error > tol)
@@ -67,9 +67,9 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
            for Core 1 to Core tensor_order:
            approximate the skeleton-decomposition by QR and maxvol
-    
+
     4. update the tensor-train from right to left:
-       
+
        .. code:: python
 
             for Core tensor_order to Core 1
@@ -94,8 +94,9 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
     if isinstance(rank, int):
         rank = [rank] * (tensor_order + 1)
     elif tensor_order + 1 != len(rank):
-        message = 'Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}'.format(
-                   len(rank), tensor_order)
+        message = "Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}".format(
+            len(rank), tensor_order
+        )
         raise (ValueError(message))
 
     # Make sure iter's not a tuple but a list
@@ -103,14 +104,15 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
     # Initialize rank
     if rank[0] != 1:
-        print(
-            'Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1: setting rank[0] to 1.'.format(
-                rank[0]))
-        rank[0] = 1
+        message = "Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
+            rank[0]
+        )
+        raise ValueError(message)
     if rank[-1] != 1:
-        print(
-            'Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1: setting rank[-1] to 1.'.format(
-                rank[0]))
+        message = "Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
+            rank[-1]
+        )
+        raise ValueError(message)
 
     # list col_idx: column indices (right indices) for skeleton-decomposition: indicate which columns used in each core.
     # list row_idx: row indices    (left indices)  for skeleton-decomposition: indicate which rows used in each core.
@@ -122,17 +124,34 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
     for k_col_idx in range(tensor_order - 1):
         col_idx[k_col_idx] = []
         for i in range(rank[k_col_idx + 1]):
-            newidx = tuple([rng.randint(tensor_shape[j]) for j in range(k_col_idx + 1, tensor_order)])
+            newidx = tuple(
+                [
+                    rng.randint(tensor_shape[j])
+                    for j in range(k_col_idx + 1, tensor_order)
+                ]
+            )
             while newidx in col_idx[k_col_idx]:
-                newidx = tuple([rng.randint(tensor_shape[j]) for j in range(k_col_idx + 1, tensor_order)])
+                newidx = tuple(
+                    [
+                        rng.randint(tensor_shape[j])
+                        for j in range(k_col_idx + 1, tensor_order)
+                    ]
+                )
 
             col_idx[k_col_idx].append(newidx)
 
     # Initialize the cores of tensor-train
-    factor_old = [tl.zeros((rank[k], tensor_shape[k], rank[k + 1]),
-                            **tl.context(input_tensor)) for k in range(tensor_order)]
-    factor_new = [tl.tensor(rng.random_sample((rank[k], tensor_shape[k], rank[k + 1])),
-                             **tl.context(input_tensor)) for k in range(tensor_order)]
+    factor_old = [
+        tl.zeros((rank[k], tensor_shape[k], rank[k + 1]), **tl.context(input_tensor))
+        for k in range(tensor_order)
+    ]
+    factor_new = [
+        tl.tensor(
+            rng.random_sample((rank[k], tensor_shape[k], rank[k + 1])),
+            **tl.context(input_tensor)
+        )
+        for k in range(tensor_order)
+    ]
 
     iter = 0
 
@@ -151,7 +170,9 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
         # list row_idx: list of (tensor_order-1) of lists of left indices
         row_idx = [[()]]
         for k in range(tensor_order - 1):
-            (next_row_idx, fibers_list) = left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx)
+            (next_row_idx, fibers_list) = left_right_ttcross_step(
+                input_tensor, k, rank, row_idx, col_idx
+            )
             # update row indices
             left_to_right_fiberlist.extend(fibers_list)
             row_idx.append(next_row_idx)
@@ -166,7 +187,9 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
         col_idx = [None] * tensor_order
         col_idx[-1] = [()]
         for k in range(tensor_order, 1, -1):
-            (next_col_idx, fibers_list, Q_skeleton) = right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx)
+            (next_col_idx, fibers_list, Q_skeleton) = right_left_ttcross_step(
+                input_tensor, k, rank, row_idx, col_idx
+            )
             # update col indices
             right_to_left_fiberlist.extend(fibers_list)
             col_idx[k - 2] = next_col_idx
@@ -174,10 +197,16 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
             # Compute cores
             try:
                 factor_new[k - 1] = tl.transpose(Q_skeleton)
-                factor_new[k - 1] = tl.reshape(factor_new[k - 1], (rank[k - 1], tensor_shape[k - 1], rank[k]))
+                factor_new[k - 1] = tl.reshape(
+                    factor_new[k - 1], (rank[k - 1], tensor_shape[k - 1], rank[k])
+                )
             except:
                 # The rank should not be larger than the input tensor's size
-                raise (ValueError("The rank is too large compared to the size of the tensor. Try with small rank."))
+                raise (
+                    ValueError(
+                        "The rank is too large compared to the size of the tensor. Try with small rank."
+                    )
+                )
 
         # Add the last core
         idx = (slice(None, None, None),) + tuple(zip(*col_idx[0]))
@@ -197,15 +226,17 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
     # check convergence
     if iter >= n_iter_max:
-        raise ValueError('Maximum number of iterations reached.')
-    if tl.norm(tt_to_tensor(factor_old) - tt_to_tensor(factor_new), 2) > tol * tl.norm(tt_to_tensor(factor_new), 2):
-        raise ValueError('Low Rank Approximation algorithm did not converge.')
+        raise ValueError("Maximum number of iterations reached.")
+    if tl.norm(tt_to_tensor(factor_old) - tt_to_tensor(factor_new), 2) > tol * tl.norm(
+        tt_to_tensor(factor_new), 2
+    ):
+        raise ValueError("Low Rank Approximation algorithm did not converge.")
 
     return factor_new
 
 
 def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
-    """ Compute the next (right) core's row indices by QR decomposition.
+    """Compute the next (right) core's row indices by QR decomposition.
 
     For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
     and compute the next core's row indices by QR and max volume algorithm.
@@ -247,8 +278,10 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
         idx = [[] for i in range(tensor_order)]
         for lidx in row_idx[k]:
             for ridx in col_idx[k]:
-                for j, jj in enumerate(lidx): idx[j].append(jj)
-                for j, jj in enumerate(ridx): idx[len(lidx) + 1 + j].append(jj)
+                for j, jj in enumerate(lidx):
+                    idx[j].append(jj)
+                for j, jj in enumerate(ridx):
+                    idx[len(lidx) + 1 + j].append(jj)
         idx[k] = slice(None, None, None)
         idx = tuple(idx)
 
@@ -272,14 +305,18 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     (I, _) = maxvol(Q)
 
     # Retrive indices in folded tensor
-    new_idx = [np.unravel_index(idx, [rank[k], tensor_shape[k]]) for idx in I]  # First retrive idx in folded core
-    next_row_idx = [row_idx[k][ic[0]] + (ic[1],) for ic in new_idx]  # Then reconstruct the idx in the tensor
+    new_idx = [
+        np.unravel_index(idx, [rank[k], tensor_shape[k]]) for idx in I
+    ]  # First retrive idx in folded core
+    next_row_idx = [
+        row_idx[k][ic[0]] + (ic[1],) for ic in new_idx
+    ]  # Then reconstruct the idx in the tensor
 
     return (next_row_idx, fibers_list)
 
 
 def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
-    """ Compute the next (left) core's col indices by QR decomposition.
+    """Compute the next (left) core's col indices by QR decomposition.
 
     For the current Tensor train core, we use the row indices and col indices to extract the entries from the input tensor
     and compute the next core's col indices by QR and max volume algorithm.
@@ -322,8 +359,10 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
         idx = [[] for i in range(tensor_order)]
         for lidx in row_idx[k - 1]:
             for ridx in col_idx[k - 1]:
-                for j, jj in enumerate(lidx): idx[j].append(jj)
-                for j, jj in enumerate(ridx): idx[len(lidx) + 1 + j].append(jj)
+                for j, jj in enumerate(lidx):
+                    idx[j].append(jj)
+                for j, jj in enumerate(ridx):
+                    idx[len(lidx) + 1 + j].append(jj)
         idx[k - 1] = slice(None, None, None)
         idx = tuple(idx)
 
@@ -343,14 +382,18 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     Q_skeleton = tl.dot(Q, Q_inv)
 
     # Retrive indices in folded tensor
-    new_idx = [np.unravel_index(idx, [tensor_shape[k - 1], rank[k]]) for idx in J]  # First retrive idx in folded core
-    next_col_idx = [(jc[0],) + col_idx[k - 1][jc[1]] for jc in new_idx]  # Then reconstruct the idx in the tensor
+    new_idx = [
+        np.unravel_index(idx, [tensor_shape[k - 1], rank[k]]) for idx in J
+    ]  # First retrive idx in folded core
+    next_col_idx = [
+        (jc[0],) + col_idx[k - 1][jc[1]] for jc in new_idx
+    ]  # Then reconstruct the idx in the tensor
 
     return (next_col_idx, fibers_list, Q_skeleton)
 
 
 def maxvol(A):
-    """ Find the rxr submatrix of maximal volume in A(nxr), n>=r
+    """Find the rxr submatrix of maximal volume in A(nxr), n>=r
 
     We want to decompose matrix A as `A = A[:,J] * (A[I,J])^-1 * A[I,:]`.
     This algorithm helps us find this submatrix A[I,J] from A, which has the largest determinant.
@@ -386,7 +429,7 @@ def maxvol(A):
     row_idx = tl.zeros(r)
 
     # Rest of rows / unselected rows
-    rest_of_rows = tl.tensor(list(range(n)),dtype= tl.int64)
+    rest_of_rows = tl.tensor(list(range(n)), dtype=tl.int64)
 
     # Find r rows iteratively
     i = 0
@@ -394,7 +437,7 @@ def maxvol(A):
     while i < r:
         mask = list(range(tl.shape(A_new)[0]))
         # Compute the square of norm of each row
-        rows_norms = tl.sum(A_new ** 2, axis=1)
+        rows_norms = tl.sum(A_new**2, axis=1)
 
         # If there is only one row of A left, let's just return it. MxNet is not robust about this case.
         if tl.shape(rows_norms) == ():
@@ -403,10 +446,10 @@ def maxvol(A):
 
         # If a row is 0, we delete it.
         if any(rows_norms == 0):
-            zero_idx = tl.argmin(rows_norms,axis=0)
+            zero_idx = tl.argmin(rows_norms, axis=0)
             mask.pop(zero_idx)
             rest_of_rows = rest_of_rows[mask]
-            A_new = A_new[mask,:]
+            A_new = A_new[mask, :]
             continue
 
         # Find the row of max norm
@@ -419,14 +462,14 @@ def maxvol(A):
         normalization = tl.sqrt(rows_norms[max_row_idx] * rows_norms)
         # make sure normalization vector is of the same shape of projection (causing bugs for MxNet)
         normalization = tl.reshape(normalization, tl.shape(projection))
-        projection = projection/normalization
+        projection = projection / normalization
 
         # Subtract the projection from A_new:  b <- b - a * projection
         A_new = A_new - A_new * tl.reshape(projection, (tl.shape(A_new)[0], 1))
 
         # Delete the selected row
         mask.pop(tl.to_numpy(max_row_idx))
-        A_new = A_new[mask,:]
+        A_new = A_new[mask, :]
 
         # update the row_idx and rest_of_rows
         row_idx[i] = rest_of_rows[max_row_idx]
@@ -434,10 +477,9 @@ def maxvol(A):
         i = i + 1
 
     row_idx = tl.tensor(row_idx, dtype=tl.int64)
-    inverse = tl.solve(A[row_idx,:],
-                 tl.eye(tl.shape(A[row_idx,:])[0], **tl.context(A)))
+    inverse = tl.solve(
+        A[row_idx, :], tl.eye(tl.shape(A[row_idx, :])[0], **tl.context(A))
+    )
     row_idx = tl.to_numpy(row_idx)
 
     return row_idx, inverse
-
-

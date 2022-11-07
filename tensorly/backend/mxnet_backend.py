@@ -2,23 +2,24 @@ try:
     import mxnet as mx
     from mxnet import numpy as np
 except ImportError as error:
-    message = ('Cannot import MXNet.\n'
-               'To use TensorLy with the MXNet backend, '
-               'you must first install MXNet!')
+    message = (
+        "Cannot import MXNet.\n"
+        "To use TensorLy with the MXNet backend, "
+        "you must first install MXNet!"
+    )
     raise ImportError(message) from error
 
 import warnings
 import numpy
-from .core import Backend
+from .core import Backend, backend_basic_math, backend_array
 
 mx.npx.set_np()
 
 
-class MxnetBackend(Backend, backend_name='mxnet'):
-
+class MxnetBackend(Backend, backend_name="mxnet"):
     @staticmethod
     def context(tensor):
-        return {'dtype': tensor.dtype}
+        return {"dtype": tensor.dtype}
 
     @staticmethod
     def tensor(data, dtype=None, **kwargs):
@@ -40,16 +41,8 @@ class MxnetBackend(Backend, backend_name='mxnet'):
             return numpy.array(tensor)
 
     @staticmethod
-    def shape(tensor):
-        return tensor.shape
-
-    @staticmethod
     def ndim(tensor):
         return tensor.ndim
-
-    @staticmethod
-    def dot(a, b):
-        return np.dot(a, b)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None):
@@ -59,7 +52,7 @@ class MxnetBackend(Backend, backend_name='mxnet'):
     def conj(x, *args, **kwargs):
         """WARNING: IDENTITY FUNCTION (does nothing)
 
-            This backend currently does not support complex tensors
+        This backend currently does not support complex tensors
         """
         return x
 
@@ -88,7 +81,7 @@ class MxnetBackend(Backend, backend_name='mxnet'):
             U, S, V = V.T, S, U.T
         else:
             U, S, V = np.linalg.svd(X)
-        
+
         return U, S, V
 
     @staticmethod
@@ -96,33 +89,44 @@ class MxnetBackend(Backend, backend_name='mxnet'):
         x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None)
         return x, residuals
 
-    @staticmethod
-    def sort(tensor, axis, descending = False):
-        if descending:
-            return np.flip(np.sort(tensor, axis=axis), axis = axis)
-        else:
-            return np.sort(tensor, axis=axis)
 
-    @staticmethod
-    def argsort(tensor, axis, descending = False):
-        if descending:
-            return np.argsort(-1 * tensor, axis=axis)
-        else:
-            return np.argsort(tensor, axis=axis)
-
-for name in ['int64', 'int32', 'float64', 'float32', 
-             'pi', 'e', 'inf', 'nan',
-             'reshape', 'moveaxis',
-             'where', 'copy', 'transpose', 'arange', 'ones', 'zeros', 'trace', 'any',
-             'zeros_like', 'eye', 'concatenate', 'max', 'min', 'flip', 'matmul',
-             'all', 'mean', 'sum', 'cumsum', 'count_nonzero',  'prod', 'sign', 'abs', 'sqrt', 'argmin',
-             'argmax', 'stack', 'diag', 'einsum', 'log', 'log2', 'tensordot', 'exp',
-             'sin', 'cos', 'tan', 
-             'arcsin', 'arccos', 'arctan',
-             'sinh', 'cosh', 'tanh', 
-             'arcsinh', 'arccosh', 'arctanh',
-            ]:
+for name in (
+    backend_basic_math
+    + backend_array
+    + [
+        "int64",
+        "int32",
+        "float64",
+        "float32",
+        "pi",
+        "e",
+        "inf",
+        "nan",
+        "moveaxis",
+        "copy",
+        "transpose",
+        "arange",
+        "trace",
+        "concatenate",
+        "max",
+        "sign",
+        "flip",
+        "mean",
+        "sum",
+        "argmin",
+        "argmax",
+        "stack",
+        "diag",
+        "log2",
+        "tensordot",
+        "exp",
+        "argsort",
+        "sort",
+        "dot",
+        "shape",
+    ]
+):
     MxnetBackend.register_method(name, getattr(np, name))
 
-for name in ['solve', 'qr', 'eigh']:
+for name in ["solve", "qr", "eigh"]:
     MxnetBackend.register_method(name, getattr(np.linalg, name))

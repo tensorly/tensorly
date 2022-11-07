@@ -1,13 +1,16 @@
-import numpy as np
 import warnings
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ..random import random_cp
-from ..base import unfold
-from ..tenalg.proximal import soft_thresholding,hals_nnls
-from ..cp_tensor import (cp_to_tensor, CPTensor,
-                         unfolding_dot_khatri_rao, cp_norm,
-                         cp_normalize, validate_cp_rank)
+from ._cp import initialize_cp
+from ..tenalg.proximal import hals_nnls
+from ..cp_tensor import (
+    CPTensor,
+    unfolding_dot_khatri_rao,
+    cp_norm,
+    cp_normalize,
+    validate_cp_rank,
+)
+from ..tenalg.svd import svd_interface
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -21,153 +24,21 @@ from ..cp_tensor import (cp_to_tensor, CPTensor,
 # License: BSD 3 clause
 
 
-def make_svd_non_negative(tensor, U, S, V, nntype):
-    """ Use NNDSVD method to transform SVD results into a non-negative form. This
-    method leads to more efficient solving with NNMF [1].
-
-    Parameters
-    ----------
-    tensor : tensor being decomposed
-    U, S, V: SVD factorization results
-    nntype : {'nndsvd', 'nndsvda'}
-        Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
-
-    [1]: Boutsidis & Gallopoulos. Pattern Recognition, 41(4): 1350-1362, 2008.
-    """
-
-    # NNDSVD initialization
-    W = tl.zeros_like(U)
-    H = tl.zeros_like(V)
-
-    # The leading singular triplet is non-negative
-    # so it can be used as is for initialization.
-    W = tl.index_update(W, tl.index[:, 0], tl.sqrt(S[0]) * tl.abs(U[:, 0]))
-    H = tl.index_update(H, tl.index[0, :], tl.sqrt(S[0]) * tl.abs(V[0, :]))
-
-    for j in range(1, tl.shape(U)[1]):
-        x, y = U[:, j], V[j, :]
-
-        # extract positive and negative parts of column vectors
-        x_p, y_p = tl.clip(x, a_min=0.0), tl.clip(y, a_min=0.0)
-        x_n, y_n = tl.abs(tl.clip(x, a_max=0.0)), tl.abs(tl.clip(y, a_max=0.0))
-
-        # and their norms
-        x_p_nrm, y_p_nrm = tl.norm(x_p), tl.norm(y_p)
-        x_n_nrm, y_n_nrm = tl.norm(x_n), tl.norm(y_n)
-
-        m_p, m_n = x_p_nrm * y_p_nrm, x_n_nrm * y_n_nrm
-
-        # choose update
-        if m_p > m_n:
-            u = x_p / x_p_nrm
-            v = y_p / y_p_nrm
-            sigma = m_p
-        else:
-            u = x_n / x_n_nrm
-            v = y_n / y_n_nrm
-            sigma = m_n
-
-        lbd = tl.sqrt(S[j] * sigma)
-        W = tl.index_update(W, tl.index[:, j], lbd * u)
-        H = tl.index_update(H, tl.index[j, :], lbd * v)
-
-    # After this point we no longer need H
-    eps = tl.eps(tensor.dtype)
-
-    if nntype == "nndsvd":
-        W = soft_thresholding(W, eps)
-    elif nntype == "nndsvda":
-        avg = tl.mean(tensor)
-        W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W)) * avg, W)
-    else:
-        raise ValueError(
-            'Invalid nntype parameter: got %r instead of one of %r' %
-            (nntype, ('nndsvd', 'nndsvda')))
-
-    return W
-
-
-def initialize_nn_cp(tensor, rank, init='svd', svd='numpy_svd', random_state=None,
-                     normalize_factors=False, nntype='nndsvda'):
-    r"""Initialize factors used in `parafac`.
-
-    The type of initialization is set using `init`. If `init == 'random'` then
-    initialize factor matrices using `random_state`. If `init == 'svd'` then
-    initialize the `m`th factor matrix using the `rank` left singular vectors
-    of the `m`th unfolding of the input tensor.
-
-    Parameters
-    ----------
-    tensor : ndarray
-    rank : int
-    init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
-    nntype : {'nndsvd', 'nndsvda'}
-        Whether to fill small values with 0.0 (nndsvd), or the tensor mean (nndsvda, default).
-
-    Returns
-    -------
-    factors : CPTensor
-        An initial cp tensor.
-
-    """
-    rng = tl.check_random_state(random_state)
-
-    if init == 'random':
-        kt = random_cp(tl.shape(tensor), rank, normalise_factors=False, random_state=rng, **tl.context(tensor))
-
-    elif init == 'svd':
-        try:
-            svd_fun = tl.SVD_FUNS[svd]
-        except KeyError:
-            message = 'Got svd={}. However, for the current backend ({}), the possible choices are {}'.format(
-                svd, tl.get_backend(), tl.SVD_FUNS)
-            raise ValueError(message)
-
-        factors = []
-        for mode in range(tl.ndim(tensor)):
-            U, S, V = svd_fun(unfold(tensor, mode), n_eigenvecs=rank)
-
-            # Apply nnsvd to make non-negative
-            U = make_svd_non_negative(tensor, U, S, V, nntype)
-
-            if tensor.shape[mode] < rank:
-                # TODO: this is a hack but it seems to do the job for now
-                random_part = tl.tensor(rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])), **tl.context(tensor))
-                U = tl.concatenate([U, random_part], axis=1)
-
-            factors.append(U[:, :rank])
-
-        kt = CPTensor((None, factors))
-
-    # If the initialisation is a precomputed decomposition, we double check its validity and return it
-    elif isinstance(init, (tuple, list, CPTensor)):
-        # TODO: Test this
-        try:
-            kt = CPTensor(init)
-        except ValueError:
-            raise ValueError(
-                'If initialization method is a mapping, then it must '
-                'be possible to convert it to a CPTensor instance'
-            )
-        return kt
-    else:
-        raise ValueError('Initialization method "{}" not recognized'.format(init))
-
-    # Make decomposition feasible by taking the absolute value of all factor matrices
-    kt.factors = [tl.abs(f) for f in kt[1]]
-
-    if normalize_factors:
-        kt = cp_normalize(kt)
-
-    return kt
-
-
-def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_svd',
-                         tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
-                         return_errors=False, mask=None, cvg_criterion='abs_rec_error',
-                         fixed_modes=None):
+def non_negative_parafac(
+    tensor,
+    rank,
+    n_iter_max=100,
+    init="svd",
+    svd="truncated_svd",
+    tol=10e-7,
+    random_state=None,
+    verbose=0,
+    normalize_factors=False,
+    return_errors=False,
+    mask=None,
+    cvg_criterion="abs_rec_error",
+    fixed_modes=None,
+):
     """
     Non-negative CP decomposition
 
@@ -181,7 +52,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
@@ -211,21 +82,26 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
     epsilon = tl.eps(tensor.dtype)
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
-    if mask is not None and init == "svd":
-        message = "Masking occurs after initialization. Therefore, random initialization is recommended."
-        warnings.warn(message, Warning)
-
-    weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
-                                        random_state=random_state,
-                                        normalize_factors=normalize_factors)
+    weights, factors = initialize_cp(
+        tensor,
+        rank,
+        init=init,
+        svd=svd,
+        non_negative=True,
+        mask=mask,
+        random_state=random_state,
+        normalize_factors=normalize_factors,
+    )
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
-    
+
     if fixed_modes is None:
         fixed_modes = []
 
     if tl.ndim(tensor) - 1 in fixed_modes:
-        warnings.warn('You asked for fixing the last mode, which is not supported while tol is fixed.\n The last mode will not be fixed. Consider using tl.moveaxis()')
+        warnings.warn(
+            "You asked for fixing the last mode, which is not supported while tol is fixed.\n The last mode will not be fixed. Consider using tl.moveaxis()"
+        )
         fixed_modes.remove(tl.ndim(tensor) - 1)
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
@@ -247,7 +123,9 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                     accum = tl.dot(tl.transpose(factors[e]), factors[e])
             accum = tl.reshape(weights, (-1, 1)) * accum * tl.reshape(weights, (1, -1))
             if mask is not None:
-                tensor = tensor * mask + tl.cp_to_tensor((weights, factors), mask=1 - mask)
+                tensor = tensor * mask + tl.cp_to_tensor(
+                    (weights, factors), mask=1 - mask
+                )
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
@@ -258,7 +136,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
 
             factors[mode] = factor
             if normalize_factors and mode != modes_list[-1]:
-                   weights, factors = cp_normalize((weights, factors))
+                weights, factors = cp_normalize((weights, factors))
 
         if tol:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
@@ -267,17 +145,24 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
             # mttkrp and factor for the last mode. This is equivalent to the
             # inner product <tensor, factorization>
             iprod = tl.sum(tl.sum(mttkrp * factor, axis=0))
-            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
+            rec_error = (
+                tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+                / norm_tensor
+            )
             rec_errors.append(rec_error)
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
                 if verbose:
-                    print("iteration {}, reconstraction error: {}, decrease = {}".format(iteration, rec_error, rec_error_decrease))
+                    print(
+                        "iteration {}, reconstraction error: {}, decrease = {}".format(
+                            iteration, rec_error, rec_error_decrease
+                        )
+                    )
 
-                if cvg_criterion == 'abs_rec_error':
+                if cvg_criterion == "abs_rec_error":
                     stop_flag = abs(rec_error_decrease) < tol
-                elif cvg_criterion == 'rec_error':
+                elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol
                 else:
                     raise TypeError("Unknown convergence criterion")
@@ -288,7 +173,7 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
                     break
             else:
                 if verbose:
-                    print('reconstruction error={}'.format(rec_errors[-1]))
+                    print("reconstruction error={}".format(rec_errors[-1]))
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
@@ -299,9 +184,23 @@ def non_negative_parafac(tensor, rank, n_iter_max=100, init='svd', svd='numpy_sv
         return cp_tensor
 
 
-def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8, random_state=None,
-                              sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
-                              normalize_factors=False, verbose=False, return_errors=False, cvg_criterion='abs_rec_error'):
+def non_negative_parafac_hals(
+    tensor,
+    rank,
+    n_iter_max=100,
+    init="svd",
+    svd="truncated_svd",
+    tol=10e-8,
+    random_state=None,
+    sparsity_coefficients=None,
+    fixed_modes=None,
+    nn_modes="all",
+    exact=False,
+    normalize_factors=False,
+    verbose=False,
+    return_errors=False,
+    cvg_criterion="abs_rec_error",
+):
     """
     Non-negative CP decomposition via HALS
 
@@ -315,7 +214,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
@@ -368,9 +267,15 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
        Neural Computation 24 (4): 1085-1105, 2012.
     """
 
-    weights, factors = initialize_nn_cp(tensor, rank, init=init, svd=svd,
-                                        random_state=random_state,
-                                        normalize_factors=normalize_factors)
+    weights, factors = initialize_cp(
+        tensor,
+        rank,
+        init=init,
+        svd=svd,
+        non_negative=True,
+        random_state=random_state,
+        normalize_factors=normalize_factors,
+    )
 
     norm_tensor = tl.norm(tensor, 2)
 
@@ -381,7 +286,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
     if fixed_modes is None:
         fixed_modes = []
 
-    if nn_modes == 'all':
+    if nn_modes == "all":
         nn_modes = set(range(n_modes))
     elif nn_modes is None:
         nn_modes = set()
@@ -408,36 +313,54 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
             pseudo_inverse = tl.tensor(tl.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse * tl.dot(tl.transpose(factor), factor)
+                    pseudo_inverse = pseudo_inverse * tl.dot(
+                        tl.transpose(factor), factor
+                    )
 
-            pseudo_inverse = tl.reshape(weights, (-1, 1)) * pseudo_inverse * tl.reshape(weights, (1, -1))
+            pseudo_inverse = (
+                tl.reshape(weights, (-1, 1))
+                * pseudo_inverse
+                * tl.reshape(weights, (1, -1))
+            )
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
             if mode in nn_modes:
                 # Call the hals resolution with nnls, optimizing the current mode
-                nn_factor, _, _, _ = hals_nnls(tl.transpose(mttkrp), pseudo_inverse, tl.transpose(factors[mode]),
-                                               n_iter_max=100, sparsity_coefficient=sparsity_coefficients[mode],
-                                               exact=exact)
+                nn_factor, _, _, _ = hals_nnls(
+                    tl.transpose(mttkrp),
+                    pseudo_inverse,
+                    tl.transpose(factors[mode]),
+                    n_iter_max=100,
+                    sparsity_coefficient=sparsity_coefficients[mode],
+                    exact=exact,
+                )
                 factors[mode] = tl.transpose(nn_factor)
             else:
                 factor = tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp))
                 factors[mode] = tl.transpose(factor)
             if normalize_factors and mode != modes[-1]:
-                   weights, factors = cp_normalize((weights, factors))
+                weights, factors = cp_normalize((weights, factors))
         if tol:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
-            rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
+            rec_error = (
+                tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+                / norm_tensor
+            )
             rec_errors.append(rec_error)
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
                 if verbose:
-                    print("iteration {}, reconstruction error: {}, decrease = {}".format(iteration, rec_error, rec_error_decrease))
+                    print(
+                        "iteration {}, reconstruction error: {}, decrease = {}".format(
+                            iteration, rec_error, rec_error_decrease
+                        )
+                    )
 
-                if cvg_criterion == 'abs_rec_error':
+                if cvg_criterion == "abs_rec_error":
                     stop_flag = abs(rec_error_decrease) < tol
-                elif cvg_criterion == 'rec_error':
+                elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol
                 else:
                     raise TypeError("Unknown convergence criterion")
@@ -448,7 +371,7 @@ def non_negative_parafac_hals(tensor, rank, n_iter_max=100, init="svd", svd='num
                     break
             else:
                 if verbose:
-                    print('reconstruction error={}'.format(rec_errors[-1]))
+                    print("reconstruction error={}".format(rec_errors[-1]))
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
@@ -475,7 +398,7 @@ class CP_NN(DecompositionMixin):
             Maximum number of iteration
         init : {'svd', 'random'}, optional
             Type of factor matrix initialization. See `initialize_factors`.
-        svd : str, default is 'numpy_svd'
+        svd : str, default is 'truncated_svd'
             function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
         normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
             of shape (rank, ), which will contain the norms of the factors
@@ -531,10 +454,20 @@ class CP_NN(DecompositionMixin):
                 Applications", PhD., University of Amsterdam, 1998
     """
 
-    def __init__(self, rank, n_iter_max=100, init='svd', svd='numpy_svd',
-                 tol=10e-7, random_state=None, verbose=0, normalize_factors=False,
-                 mask=None, cvg_criterion='abs_rec_error',
-                 fixed_modes=None):
+    def __init__(
+        self,
+        rank,
+        n_iter_max=100,
+        init="svd",
+        svd="truncated_svd",
+        tol=10e-7,
+        random_state=None,
+        verbose=0,
+        normalize_factors=False,
+        mask=None,
+        cvg_criterion="abs_rec_error",
+        fixed_modes=None,
+    ):
         self.n_iter_max = n_iter_max
         self.init = init
         self.svd = svd
@@ -561,7 +494,7 @@ class CP_NN(DecompositionMixin):
         """
 
         cp_tensor, errors = non_negative_parafac(
-            tensor, 
+            tensor,
             n_iter_max=self.n_iter_max,
             init=self.init,
             svd=self.svd,
@@ -580,7 +513,7 @@ class CP_NN(DecompositionMixin):
         return self.decomposition_
 
     def __repr__(self):
-        return f'Rank-{self.rank} Non-Negative CP decomposition.'
+        return f"Rank-{self.rank} Non-Negative CP decomposition."
 
 
 class CP_NN_HALS(DecompositionMixin):
@@ -600,7 +533,7 @@ class CP_NN_HALS(DecompositionMixin):
         Maximum number of iteration
     init : {'svd', 'random'}, optional
         Type of factor matrix initialization. See `initialize_factors`.
-    svd : str, default is 'numpy_svd'
+    svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
@@ -656,9 +589,22 @@ class CP_NN_HALS(DecompositionMixin):
                 Applications", PhD., University of Amsterdam, 1998
     """
 
-    def __init__(self, rank, n_iter_max=100, init="svd", svd='numpy_svd', tol=10e-8,
-                 sparsity_coefficients=None, fixed_modes=None, nn_modes='all', exact=False,
-                 verbose=False, normalize_factors=False, cvg_criterion='abs_rec_error', random_state=None):
+    def __init__(
+        self,
+        rank,
+        n_iter_max=100,
+        init="svd",
+        svd="truncated_svd",
+        tol=10e-8,
+        sparsity_coefficients=None,
+        fixed_modes=None,
+        nn_modes="all",
+        exact=False,
+        verbose=False,
+        normalize_factors=False,
+        cvg_criterion="abs_rec_error",
+        random_state=None,
+    ):
         self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
@@ -711,4 +657,4 @@ class CP_NN_HALS(DecompositionMixin):
         return self.decomposition_
 
     def __repr__(self):
-        return f'Rank-{self.rank} Non-Negative CP decomposition.'
+        return f"Rank-{self.rank} Non-Negative CP decomposition."

@@ -129,7 +129,6 @@ Algebraic operations
     solve
     qr
     kr
-    partial_svd
 
 
 :mod:`tensorly.base`: Core tensor functions
@@ -174,6 +173,7 @@ Algebraic operations
     cp_normalize
     cp_norm
     cp_mode_dot
+    cp_permute_factors
     unfolding_dot_khatri_rao
 
 
@@ -328,6 +328,10 @@ Note that these are currently experimental and may change in the future.
     Parafac2
     SymmetricCP
     ConstrainedCP
+    TensorTrain
+    TensorRing
+    TensorTrainMatrix
+
 
 Functions
 ---------
@@ -352,6 +356,7 @@ Functions
     robust_pca
     tensor_train
     tensor_train_matrix
+    tensor_ring
     parafac2
     constrained_parafac
 

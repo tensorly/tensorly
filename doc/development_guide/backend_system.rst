@@ -45,7 +45,7 @@ A backend is represented as a class, which implements the various functions need
 A base class ``tensorly.backend.core.Backend`` is given in `tensorly/backend/core.py`,
 which implement ``staticmethods`` of the common TensorLy API
 (e.g. ``tensor``, ``fold``, ``norm``, etc.).
-It will also provide some useful functions by default (e.g. `kron`, `kr`, `partial_svd`).
+It will also provide some useful functions by default (e.g. `kron`, `kr`).
 
 This base class should be subclassed when defining a new backend.
 

@@ -34,9 +34,13 @@ def tr_to_tensor(factors):
         full_tensor = tl.dot(full_tensor, factor)
         full_tensor = tl.reshape(full_tensor, (-1, rank_next))
 
-    full_tensor = tl.reshape(full_tensor, (factors[-1].shape[2], -1, factors[-1].shape[0]))
+    full_tensor = tl.reshape(
+        full_tensor, (factors[-1].shape[2], -1, factors[-1].shape[0])
+    )
     full_tensor = tl.moveaxis(full_tensor, 0, -1)
-    full_tensor = tl.reshape(full_tensor, (-1, factors[-1].shape[0] * factors[-1].shape[2]))
+    full_tensor = tl.reshape(
+        full_tensor, (-1, factors[-1].shape[0] * factors[-1].shape[2])
+    )
     factor = tl.moveaxis(factors[-1], -1, 1)
     factor = tl.reshape(factor, (-1, full_shape[-1]))
     full_tensor = tl.dot(full_tensor, factor)
@@ -86,8 +90,10 @@ def _validate_tr_tensor(tr_tensor):
     n_factors = len(factors)
 
     if n_factors < 2:
-        raise ValueError('A Tensor Ring tensor should be composed of at least two factors.'
-                         'However, {} factor was given.'.format(n_factors))
+        raise ValueError(
+            "A Tensor Ring tensor should be composed of at least two factors."
+            "However, {} factor was given.".format(n_factors)
+        )
 
     rank = []
     shape = []
@@ -96,16 +102,21 @@ def _validate_tr_tensor(tr_tensor):
 
         # Check that factors are third order tensors
         if not tl.ndim(factor) == 3:
-            raise ValueError('TR expresses a tensor as third order factors (tr-cores).\n'
-                             'However, tl.ndim(factors[{}]) = {}'.format(index, tl.ndim(factor)))
+            raise ValueError(
+                "TR expresses a tensor as third order factors (tr-cores).\n"
+                "However, tl.ndim(factors[{}]) = {}".format(index, tl.ndim(factor))
+            )
 
         # Consecutive factors should have matching ranks
         if tl.shape(factors[index - 1])[2] != current_rank:
-            raise ValueError('Consecutive factors should have matching ranks\n'
-                             ' -- e.g. tl.shape(factors[0])[2]) == tl.shape(factors[1])[0])\n'
-                             'However, tl.shape(factor[{}])[2] == {} but'
-                             ' tl.shape(factor[{}])[0] == {}'.format(
-                index - 1, tl.shape(factors[index - 1])[2], index, current_rank))
+            raise ValueError(
+                "Consecutive factors should have matching ranks\n"
+                " -- e.g. tl.shape(factors[0])[2]) == tl.shape(factors[1])[0])\n"
+                "However, tl.shape(factor[{}])[2] == {} but"
+                " tl.shape(factor[{}])[0] == {}".format(
+                    index - 1, tl.shape(factors[index - 1])[2], index, current_rank
+                )
+            )
 
         shape.append(current_shape)
         rank.append(current_rank)
@@ -138,7 +149,7 @@ def _tr_n_param(tensor_shape, rank):
     return np.sum(factor_params)
 
 
-def validate_tr_rank(tensor_shape, rank='same', rounding='round'):
+def validate_tr_rank(tensor_shape, rank="same", rounding="round"):
     """Returns the rank of a Tensor Ring Decomposition
 
     Parameters
@@ -157,22 +168,24 @@ def validate_tr_rank(tensor_shape, rank='same', rounding='round'):
     rank : int tuple
         rank of the decomposition
     """
-    if rounding == 'ceil':
+    if rounding == "ceil":
         rounding_fun = np.ceil
-    elif rounding == 'floor':
+    elif rounding == "floor":
         rounding_fun = np.floor
-    elif rounding == 'round':
+    elif rounding == "round":
         rounding_fun = np.round
     else:
-        raise ValueError(f'Rounding should be round, floor or ceil, but got {rounding}')
+        raise ValueError(f"Rounding should be round, floor or ceil, but got {rounding}")
 
-    if rank == 'same':
+    if rank == "same":
         rank = float(1)
 
     n_dim = len(tensor_shape)
     if n_dim == 2:
-        warnings.warn('Determining the TR-rank for the trivial case of a matrix'
-                      f' (order 2 tensor) of shape {tensor_shape}, not a higher-order tensor.')
+        warnings.warn(
+            "Determining the TR-rank for the trivial case of a matrix"
+            f" (order 2 tensor) of shape {tensor_shape}, not a higher-order tensor."
+        )
 
     if isinstance(rank, float):
         # Choose the *same* rank for each mode
@@ -188,15 +201,19 @@ def validate_tr_rank(tensor_shape, rank='same', rounding='round'):
         if isinstance(rank, int):
             rank = (rank,) * (n_dim + 1)
         elif n_dim + 1 != len(rank):
-            message = ('Provided incorrect number of ranks. '
-                       'Should verify len(rank) == tl.ndim(tensor)+1, '
-                       f'but len(rank) = {len(rank)} while tl.ndim(tensor)+1 = {n_dim + 1}')
+            message = (
+                "Provided incorrect number of ranks. "
+                "Should verify len(rank) == tl.ndim(tensor)+1, "
+                f"but len(rank) = {len(rank)} while tl.ndim(tensor)+1 = {n_dim + 1}"
+            )
             raise ValueError(message)
 
         # Check first and last rank
         if rank[0] != rank[-1]:
-            message = (f'Provided rank[0] == {rank[0]} and rank[-1] == {rank[-1]}'
-                       ' but boundaring conditions dictatate rank[0] == rank[-1]')
+            message = (
+                f"Provided rank[0] == {rank[0]} and rank[-1] == {rank[-1]}"
+                " but boundaring conditions dictatate rank[0] == rank[-1]"
+            )
             raise ValueError(message)
 
     return list(rank)
@@ -227,8 +244,9 @@ class TRTensor(FactorizedTensor):
         return len(self.factors)
 
     def __repr__(self):
-        message = 'factors list : rank-{} tensor ring tensor of shape {}'.format(
-            self.rank, self.shape)
+        message = "factors list : rank-{} tensor ring tensor of shape {}".format(
+            self.rank, self.shape
+        )
         return message
 
     def to_tensor(self):

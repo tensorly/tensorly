@@ -130,6 +130,19 @@ If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_
   
 --------------------------
 
+Contributing code
+=================
+
+All contributions are welcome! So if you have a cool tensor method you want to add, if you spot a bug or even a typo or mistake in the documentation, please report it, and even better, open a Pull-Request on `GitHub <https://github.com/tensorly/tensorly/>`_.
+
+Before you submit your changes, you should make sure your code adheres to our style-guide. The easiest way to do this is with `black`:  
+
+.. code:: bash
+
+   pip install black
+   black .
+
+
 Running the tests
 =================
 

@@ -3,22 +3,27 @@ try:
     import cupyx.scipy.special
 
 except ImportError as error:
-    message = ('Impossible to import cupy.\n'
-               'To use TensorLy with the cupy backend, '
-               'you must first install cupy!')
+    message = (
+        "Impossible to import cupy.\n"
+        "To use TensorLy with the cupy backend, "
+        "you must first install cupy!"
+    )
     raise ImportError(message) from error
 
 import warnings
-import numpy as np
 
-from .core import Backend
+from .core import (
+    Backend,
+    backend_types,
+    backend_basic_math,
+    backend_array,
+)
 
 
-class CupyBackend(Backend, backend_name='cupy'):
-
+class CupyBackend(Backend, backend_name="cupy"):
     @staticmethod
     def context(tensor):
-        return {'dtype': tensor.dtype}
+        return {"dtype": tensor.dtype}
 
     @staticmethod
     def tensor(data, dtype=cp.float32, **kwargs):
@@ -35,10 +40,6 @@ class CupyBackend(Backend, backend_name='cupy'):
         return tensor
 
     @staticmethod
-    def shape(tensor):
-        return tensor.shape
-
-    @staticmethod
     def ndim(tensor):
         return tensor.ndim
 
@@ -51,39 +52,40 @@ class CupyBackend(Backend, backend_name='cupy'):
         x, residuals, _, _ = cp.linalg.lstsq(a, b, rcond=None)
         return x, residuals
 
-    @staticmethod
-    def sort(tensor, axis, descending = False):
-        if descending:
-            return cp.flip(cp.sort(tensor, axis=axis), axis = axis)
-        else:
-            return cp.sort(tensor, axis=axis)
 
-    @staticmethod
-    def argsort(tensor, axis, descending = False):
-        if descending:
-            return np.argsort(-1 * tensor, axis=axis)
-        else:
-            return np.argsort(tensor, axis=axis)
-
-
-for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64', 'reshape', 'moveaxis',
-             'pi', 'e', 'inf', 'nan',
-             'transpose', 'copy', 'ones', 'zeros', 'zeros_like', 'eye', 'trace', 'any',
-             'arange', 'where', 'dot', 'kron', 'concatenate', 'max', 'flip', 'matmul',
-             'min', 'all', 'mean', 'sum', 'cumsum', 'count_nonzero', 'prod', 'sign', 'abs', 'sqrt', 'stack',
-             'conj', 'diag', 'einsum', 'tensordot', 
-             'log', 'log2', 'exp',
-             'sin', 'cos', 'tan', 
-             'arcsin', 'arccos', 'arctan',
-             'sinh', 'cosh', 'tanh', 
-             'arcsinh', 'arccosh', 'arctanh',
-             ]:
+for name in (
+    backend_types
+    + backend_basic_math
+    + backend_array
+    + [
+        "moveaxis",
+        "nan",
+        "transpose",
+        "copy",
+        "trace",
+        "arange",
+        "dot",
+        "kron",
+        "concatenate",
+        "max",
+        "flip",
+        "mean",
+        "argmax",
+        "sum",
+        "stack",
+        "sign",
+        "conj",
+        "diag",
+        "tensordot",
+        "log2",
+        "argsort",
+        "sort",
+        "shape",
+    ]
+):
     CupyBackend.register_method(name, getattr(cp, name))
 
-for name in ['svd', 'qr', 'eigh', 'solve']:
+for name in ["svd", "qr", "eigh", "solve"]:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
 
-for name in ['gammad']:
-    CupyBackend.register_method(name, getattr(cupyx.scipy.special, name))
-
-CupyBackend.regsiter_method('gamma', cp.random.gamma)
+CupyBackend.register_method("gamma", cp.random.gamma)
