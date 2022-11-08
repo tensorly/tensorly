@@ -155,10 +155,10 @@ def tensor_train_OI(
             factors_list_tmp = []
             for mode in range(n_dim - 1):
                 factors_list_tmp.append(
-                    tl.tensor(left_singular_vectors[mode], **context)
+                    left_singular_vectors[mode]
                 )
-            factors_list_tmp.append(tl.tensor(left_residuals[n_dim - 2], **context))
-            full_tensor_tmp = tl.tensor(tt_to_tensor(factors_list_tmp), **context)
+            factors_list_tmp.append(left_residuals[n_dim - 2])
+            full_tensor_tmp = tt_to_tensor(factors_list_tmp)
             if return_errors:
                 error_list.append(tl.norm(full_tensor_tmp - data_tensor, 2))
             if trajectory:
@@ -217,15 +217,12 @@ def tensor_train_OI(
                 )
             if trajectory or return_errors or iteration == np.ceil(n_iter/2) - 1:
                 factors_list_tmp = []
-                factors_list_tmp.append(tl.tensor(Residual_right, **context))
+                factors_list_tmp.append(Residual_right)
                 for mode in range(n_dim - 1):
                     factors_list_tmp.append(
-                        tl.tensor(
-                            tl.transpose(right_singular_vectors[n_dim - mode - 2]),
-                            **context
-                            )
+                        tl.transpose(right_singular_vectors[n_dim - mode - 2])
                         )
-                full_tensor_tmp = tl.tensor(tt_to_tensor(factors_list_tmp), **context)
+                full_tensor_tmp = tt_to_tensor(factors_list_tmp)
                 if return_errors:
                     error_list.append(tl.norm(full_tensor_tmp - data_tensor, 2))
                 if trajectory:
