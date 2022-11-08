@@ -284,6 +284,18 @@ def test_non_negative_tucker_hals(monkeypatch):
         "abs norm of difference between svd and random init too high",
     )
 
+    # try fixing the mode
+    factors_init = [tl.copy(f) for f in factors_random]
+    _, factors = non_negative_tucker_hals(
+        tensor,
+        rank=[3, 4, 3],
+        init=(core_random, factors_init),
+        fixed_modes=[1],
+        n_iter_max=100,
+        verbose=1,
+    )
+    assert_array_equal(factors_random[1], factors_init[1])
+
     # Test for a single rank passed
     # (should be used for all modes)
     rank = 3

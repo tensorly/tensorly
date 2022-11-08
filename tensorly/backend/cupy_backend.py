@@ -70,6 +70,7 @@ for name in (
         "max",
         "flip",
         "mean",
+        "argmax",
         "sum",
         "stack",
         "sign",

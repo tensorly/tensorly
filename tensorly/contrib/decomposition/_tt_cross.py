@@ -106,16 +106,15 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
     # Initialize rank
     if rank[0] != 1:
-        print(
-            f"Provided rank[0] = {rank[0]} but boundary conditions dictate "
-            + "rank[0] == rank[-1] == 1: setting rank[0] to 1."
+        message = "Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
+            rank[0]
         )
-        rank[0] = 1
+        raise ValueError(message)
     if rank[-1] != 1:
-        print(
-            f"Provided rank[-1] = {rank[-1]} but boundary conditions dictate "
-            "rank[0] == rank[-1] == 1: setting rank[-1] to 1."
+        message = "Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
+            rank[-1]
         )
+        raise ValueError(message)
 
     # list col_idx: column indices (right indices) for skeleton-decomposition: indicate which columns used in each core.
     # list row_idx: row indices    (left indices)  for skeleton-decomposition: indicate which rows used in each core.
