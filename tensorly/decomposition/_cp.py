@@ -8,12 +8,12 @@ from ..base import unfold
 from ..cp_tensor import (
     cp_to_tensor,
     CPTensor,
-    unfolding_dot_khatri_rao,
     cp_norm,
     cp_normalize,
     validate_cp_rank,
 )
 from ..tenalg.svd import svd_interface
+from ..tenalg import unfolding_dot_khatri_rao
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>

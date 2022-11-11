@@ -174,7 +174,6 @@ Algebraic operations
     cp_norm
     cp_mode_dot
     cp_permute_factors
-    unfolding_dot_khatri_rao
 
 
 :mod:`tensorly.tucker_tensor`: Tensors in Tucker form
@@ -272,6 +271,7 @@ TensorLy provides you with all the tensor algebra functions you need:
     :template: function.rst
 
     khatri_rao
+    unfolding_dot_khatri_rao
     kronecker
     mode_dot
     multi_mode_dot

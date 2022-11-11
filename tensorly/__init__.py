@@ -11,7 +11,6 @@ from .cp_tensor import (
     cp_to_tensor,
     cp_to_unfolded,
     cp_to_vec,
-    unfolding_dot_khatri_rao,
     cp_norm,
     cp_mode_dot,
     cp_normalize,
