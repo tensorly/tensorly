@@ -10,7 +10,6 @@ from ..cp_tensor import (
     cp_normalize,
     CPTensor,
     cp_mode_dot,
-    unfolding_dot_khatri_rao,
     cp_norm,
     cp_flip_sign,
     _cp_n_param,
@@ -243,29 +242,6 @@ def test_cp_mode_dot():
     true_res = mode_dot(full_tensor, vec, mode=2)
     assert_equal(res.shape, true_res.shape)
     assert_array_almost_equal(true_res, res)
-
-
-def test_unfolding_dot_khatri_rao():
-    """Test for unfolding_dot_khatri_rao
-
-    Check against other version check sparse safe
-    """
-    shape = (10, 10, 10, 4)
-    rank = 5
-    tensor = tl.tensor(np.random.random(shape))
-    weights, factors = random_cp(
-        shape=shape, rank=rank, full=False, normalise_factors=True
-    )
-
-    for mode in range(tl.ndim(tensor)):
-        # Version forming explicitely the khatri-rao product
-        unfolded = unfold(tensor, mode)
-        kr_factors = khatri_rao(factors, weights=weights, skip_matrix=mode)
-        true_res = tl.dot(unfolded, kr_factors)
-
-        # Efficient sparse-safe version
-        res = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
-        assert_array_almost_equal(true_res, res, decimal=3)
 
 
 def test_cp_norm():
