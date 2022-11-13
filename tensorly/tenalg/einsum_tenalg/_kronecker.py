@@ -1,5 +1,5 @@
-from ... import backend as T
 import numpy as np
+from ... import backend as T
 
 # Author: Jean Kossaifi
 

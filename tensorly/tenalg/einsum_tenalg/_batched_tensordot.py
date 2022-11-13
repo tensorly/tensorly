@@ -1,22 +1,10 @@
-from ..tenalg_utils import _validate_contraction_modes
 import tensorly as tl
+from .caching import einsum_path_cached
+from ..tenalg_utils import _validate_contraction_modes
 
 
-def tensordot(tensor1, tensor2, modes, batched_modes=()):
-    """Batched tensor contraction between two tensors on specified modes
-
-    Parameters
-    ----------
-    tensor1 : tl.tensor
-    tensor2 : tl.tensor
-    modes : int list or int
-        modes on which to contract tensor1 and tensor2
-    batched_modes : int or tuple[int]
-
-    Returns
-    -------
-    contraction : tensor1 contracted with tensor2 on the specified modes
-    """
+@einsum_path_cached
+def tensordot_path(tensor1, tensor2, modes, batched_modes=()):
     modes1, modes2 = _validate_contraction_modes(tensor1.shape, tensor2.shape, modes)
     batch_modes1, batch_modes2 = _validate_contraction_modes(
         tensor1.shape, tensor2.shape, batched_modes, batched_modes=True
@@ -37,5 +25,26 @@ def tensordot(tensor1, tensor2, modes, batched_modes=()):
     remaining_modes = remaining_modes1 + remaining_modes2
     to_str = lambda x: "".join(x)
     equation = f"{to_str(all_modes1)},{to_str(all_modes2)}->{to_str(remaining_modes)}"
+
+    return equation
+
+
+def tensordot(tensor1, tensor2, modes, batched_modes=()):
+    """Batched tensor contraction between two tensors on specified modes
+
+    Parameters
+    ----------
+    tensor1 : tl.tensor
+    tensor2 : tl.tensor
+    modes : int list or int
+        modes on which to contract tensor1 and tensor2
+    batched_modes : int or tuple[int]
+
+    Returns
+    -------
+    contraction : tensor1 contracted with tensor2 on the specified modes
+    """
+    key = f"{tl.shape(tensor1)},{tl.shape(tensor2)},{modes},{batched_modes}"
+    equation = tensordot_path(key, tensor1, tensor2, modes, batched_modes=batched_modes)
 
     return tl.einsum(equation, tensor1, tensor2)

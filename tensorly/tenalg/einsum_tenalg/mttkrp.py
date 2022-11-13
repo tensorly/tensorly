@@ -1,6 +1,22 @@
 import tensorly as tl
+from .caching import einsum_path_cached
 
 # Author: Jean Kossaifi
+
+
+@einsum_path_cached
+def unfolding_dot_khatri_rao_path(tensor, mode):
+    ndims = tl.ndim(tensor)
+    tensor_idx = "".join(chr(ord("a") + i) for i in range(ndims))
+    rank = chr(ord("a") + ndims + 1)
+    op = tensor_idx + "," + rank
+    for i in range(ndims):
+        if i != mode:
+            op += "," + "".join([tensor_idx[i], rank])
+        else:
+            result = "".join([tensor_idx[i], rank])
+    op += "->" + result
+    return op
 
 
 def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
@@ -21,15 +37,9 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
         dot(unfold(tensor, mode), khatri-rao(factors))
     """
     weights, factors = cp_tensor
-    ndims = tl.ndim(tensor)
-    tensor_idx = "".join(chr(ord("a") + i) for i in range(ndims))
-    rank = chr(ord("a") + ndims + 1)
-    op = tensor_idx + "," + rank
-    for i in range(ndims):
-        if i != mode:
-            op += "," + "".join([tensor_idx[i], rank])
-        else:
-            result = "".join([tensor_idx[i], rank])
-    op += "->" + result
+
+    key = f"{tl.shape(tensor)},{mode}"
+    equation = unfolding_dot_khatri_rao_path(key, tensor, mode)
+
     factors = [f for (i, f) in enumerate(factors) if i != mode]
-    return tl.einsum(op, tensor, weights, *factors)
+    return tl.einsum(equation, tensor, weights, *factors)
