@@ -6,6 +6,7 @@ from .base import unfold, fold
 from .base import tensor_to_vec, vec_to_tensor
 from .base import partial_unfold, partial_fold
 from .base import partial_tensor_to_vec, partial_vec_to_tensor
+from . import plugins
 
 from .cp_tensor import (
     cp_to_tensor,
