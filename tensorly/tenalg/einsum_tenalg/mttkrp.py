@@ -43,3 +43,4 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
 
     factors = [f for (i, f) in enumerate(factors) if i != mode]
     return tl.einsum(equation, tensor, weights, *factors)
+
