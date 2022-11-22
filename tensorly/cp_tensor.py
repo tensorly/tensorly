@@ -647,7 +647,7 @@ def cp_norm(cp_tensor):
     _ = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
 
-    norm = T.ones((factors[0].shape[1], factors[0].shape[1]))
+    norm = T.ones((factors[0].shape[1], factors[0].shape[1]), **T.context(factors[0]))
     for f in factors:
         norm = norm * T.dot(T.transpose(f), T.conj(f))
 
