@@ -28,6 +28,6 @@ def use_opt_einsum(optimize="auto-hq"):
             expression = oe.contract_expression(equation, *shapes, optimize="optimal")
             OPT_EINSUM_PATH_CACHE[key] = expression
 
-        expression(*args)
+        return expression(*args)
 
     tl.backend.BackendManager.register_backend_method("einsum", cached_einsum)
