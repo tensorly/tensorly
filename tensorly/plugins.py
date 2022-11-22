@@ -21,7 +21,7 @@ def use_opt_einsum(optimize="auto-hq"):
 
     def cached_einsum(equation, *args):
         shapes = [tl.shape(arg) for arg in args]
-        key = equation + ',' + ",".join(f"{s}" for s in shapes)
+        key = equation + "," + ",".join(f"{s}" for s in shapes)
         try:
             expression = OPT_EINSUM_PATH_CACHE[key]
         except KeyError:
