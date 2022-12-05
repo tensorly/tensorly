@@ -14,7 +14,7 @@ def sequential_prod(tensor_prod, multiplier_list, left_to_right=True):
     tensor_prod: ndrray
         the tensor to be multiplied by a list of tensors
         tensor_prod is of dimension r_0*p_1*p_2*...*p_d*r_{d-1}
-    multiplier_list: list 
+    multiplier_list: list
         a list of tensors to multiply the tensor
         len(multiplier_list) <= d-1
         If direction == "left", multiplier_list[i] is of shape (r_i, p_{i+1}, r_{i+1})
@@ -72,10 +72,10 @@ def tensor_train_OI(
     full_tensor : list of n_iter tensors or one tensor
     * n_iter tensors (if `trajectory` is True) : each list contains the returned full tensor from each iteration
     * one tensor (otherwise): returned full tensor from the last iteration
-    
+
     References
     ----------
-    .. [1] Zhou, Y., Zhang, A. R., Zheng, L., & Wang, Y. (2022). Optimal high-order tensor svd via tensor-train orthogonal iteration. 
+    .. [1] Zhou, Y., Zhang, A. R., Zheng, L., & Wang, Y. (2022). Optimal high-order tensor svd via tensor-train orthogonal iteration.
     IEEE Transactions on Information Theory, 68(6), 3991-4019.
     """
     context = tl.context(data_tensor)
