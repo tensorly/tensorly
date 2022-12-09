@@ -242,7 +242,9 @@ class TRTensor(FactorizedTensor):
         return len(self.factors)
 
     def __repr__(self):
-        message = f"factors list : rank-{self.rank} tensor ring tensor of shape {self.shape}"
+        message = (
+            f"factors list : rank-{self.rank} tensor ring tensor of shape {self.shape}"
+        )
         return message
 
     def to_tensor(self):

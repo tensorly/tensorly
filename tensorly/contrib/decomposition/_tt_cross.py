@@ -150,7 +150,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
     factor_new = [
         tl.tensor(
             rng.random_sample((rank[k], tensor_shape[k], rank[k + 1])),
-            **tl.context(input_tensor)
+            **tl.context(input_tensor),
         )
         for k in range(tensor_order)
     ]

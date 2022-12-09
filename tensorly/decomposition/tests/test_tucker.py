@@ -52,7 +52,7 @@ def test_partial_tucker():
     assert_equal(
         core.shape,
         [tensor.shape[0]] + ranks,
-        err_msg=f"core.shape = {core.shape}, expected {[tensor.shape[0]] + ranks)}"
+        err_msg=f"core.shape = {core.shape}, expected {[tensor.shape[0]] + ranks}"
     )
 
     # Test random_state fixes the core and the factor matrices

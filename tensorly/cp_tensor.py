@@ -63,7 +63,9 @@ class CPTensor(FactorizedTensor):
         return 2
 
     def __repr__(self):
-        message = f"(weights, factors) : rank-{self.rank} CPTensor of shape {self.shape}"
+        message = (
+            f"(weights, factors) : rank-{self.rank} CPTensor of shape {self.shape}"
+        )
         return message
 
     def to_tensor(self):
@@ -208,7 +210,6 @@ def _validate_cp_tensor(cp_tensor):
     if weights is not None and T.shape(weights) != (rank,):
         raise ValueError(
             f"Given factors for a rank-{rank} CP tensor but len(weights)={T.shape(weights)}."
-            )
         )
 
     return tuple(shape), rank

@@ -91,9 +91,7 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
     def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
         # Check that matrix is... a matrix!
         if matrix.ndim != 2:
-            raise ValueError(
-                f"matrix be a matrix. {matrix.ndim = } != 2"
-            )
+            raise ValueError(f"matrix be a matrix. {matrix.ndim = } != 2")
 
         # Choose what to do depending on the params
         dim_1, dim_2 = matrix.shape

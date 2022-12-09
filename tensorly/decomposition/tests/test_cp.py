@@ -588,7 +588,7 @@ def test_randomised_parafac(monkeypatch):
     error = float(T.norm(reconstruction - tensor, 2) / T.norm(tensor, 2))
     assert_(
         error < tolerance,
-        msg=f"reconstruction of {error} (higher than tolerance of {tolerance})"
+        msg=f"reconstruction of {error} (higher than tolerance of {tolerance})",
     )
 
     assert_class_wrapper_correctly_passes_arguments(

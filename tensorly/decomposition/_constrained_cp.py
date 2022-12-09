@@ -112,7 +112,7 @@ def initialize_constrained_parafac(
             if tensor.shape[mode] < rank:
                 random_part = tl.tensor(
                     rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
-                    **tl.context(tensor)
+                    **tl.context(tensor),
                 )
                 U = tl.concatenate([U, random_part], axis=1)
 
