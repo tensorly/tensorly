@@ -156,7 +156,7 @@ def _validate_parafac2_tensor(parafac2_tensor):
         if current_rank != rank:
             raise ValueError(
                 "All the factors of a PARAFAC2 tensor should have the same number of columns."
-                f"However, factors[0].shape[1]={rank} but factors[{i}].shape[1]={T.shape(factors)[1]}."
+                f"However, factors[0].shape[1]={rank} but factors[{i}].shape[1]={current_rank}."
             )
 
     if weights is not None and T.shape(weights)[0] != rank:
