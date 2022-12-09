@@ -44,7 +44,7 @@ def test_random_cp():
         assert_equal(
             factor.shape,
             (shape[i], rank),
-            err_msg= f"{i}-th factor has shape {factor.shape}, expected {(shape[i], rank)}"
+            err_msg=f"{i}-th factor has shape {factor.shape}, expected {(shape[i], rank)}",
         )
 
     # tests that the columns of each factor matrix are indeed orthogonal
@@ -80,7 +80,7 @@ def test_random_tucker():
         assert_equal(
             factor.shape,
             (shape[i], rank),
-            err_msg= f"{i}-th factor has shape {factor.shape}, expected {(shape[i], rank)}"
+            err_msg=f"{i}-th factor has shape {factor.shape}, expected {(shape[i], rank)}",
         )
 
     shape = (10, 11, 12)
@@ -94,12 +94,10 @@ def test_random_tucker():
         assert_equal(
             factor.shape,
             (shape[i], rank[i]),
-            err_msg= f"{i}-th factor has shape {factor.shape}, expected {(shape[i], rank[i])}."
+            err_msg=f"{i}-th factor has shape {factor.shape}, expected {(shape[i], rank[i])}.",
         )
     assert_equal(
-        core.shape,
-        rank,
-        err_msg=f"core has shape {core.shape}, expected {rank}."
+        core.shape, rank, err_msg=f"core has shape {core.shape}, expected {rank}."
     )
     for factor in factors:
         assert_array_almost_equal(
@@ -121,7 +119,7 @@ def test_random_tt():
         assert_equal(
             factor.shape,
             true_shape,
-            err_msg= f"{i}-th factor has shape {factor.shape}, expected {true_shape}"
+            err_msg=f"{i}-th factor has shape {factor.shape}, expected {true_shape}",
         )
 
     # Missing a rank
@@ -148,7 +146,7 @@ def test_random_tr():
         assert_equal(
             factor.shape,
             true_shape,
-            err_msg= f"{i}-th factor has shape {factor.shape}, expected {true_shape}"
+            err_msg=f"{i}-th factor has shape {factor.shape}, expected {true_shape}",
         )
 
     # Missing a rank

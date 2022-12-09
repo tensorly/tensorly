@@ -17,12 +17,12 @@ def test_validate_tr_tensor():
     assert_equal(
         shape,
         true_shape,
-        err_msg=f"Returned incorrect shape (got {shape}, expected {true_shape})"
+        err_msg=f"Returned incorrect shape (got {shape}, expected {true_shape})",
     )
     assert_equal(
         rank,
         true_rank,
-        err_msg=f"Returned incorrect rank (got {rank}, expected {true_rank})"
+        err_msg=f"Returned incorrect rank (got {rank}, expected {true_rank})",
     )
 
     # One of the factors has the wrong ndim
