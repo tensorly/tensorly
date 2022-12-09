@@ -43,7 +43,10 @@ def register_sparse_backend(backend_name):
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
         _LOADED_BACKENDS[backend_name] = backend
     else:
-        msg = f"Unknown backend name {backend_name!r}, known backends are [", ".join(map(repr, _KNOWN_BACKENDS))]"
+        msg = (
+            f"Unknown backend name {backend_name!r}, known backends are [",
+            ".join(map(repr, _KNOWN_BACKENDS))]",
+        )
         raise ValueError(msg)
 
 
