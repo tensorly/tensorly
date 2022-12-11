@@ -92,7 +92,7 @@ def _validate_tr_tensor(tr_tensor):
     if n_factors < 2:
         raise ValueError(
             "A Tensor Ring tensor should be composed of at least two factors."
-            "However, {} factor was given.".format(n_factors)
+            f"However, {n_factors} factor was given."
         )
 
     rank = []
@@ -104,7 +104,7 @@ def _validate_tr_tensor(tr_tensor):
         if not tl.ndim(factor) == 3:
             raise ValueError(
                 "TR expresses a tensor as third order factors (tr-cores).\n"
-                "However, tl.ndim(factors[{}]) = {}".format(index, tl.ndim(factor))
+                f"However, tl.ndim(factors[{index}]) = {tl.ndim(factor)}"
             )
 
         # Consecutive factors should have matching ranks
@@ -112,10 +112,8 @@ def _validate_tr_tensor(tr_tensor):
             raise ValueError(
                 "Consecutive factors should have matching ranks\n"
                 " -- e.g. tl.shape(factors[0])[2]) == tl.shape(factors[1])[0])\n"
-                "However, tl.shape(factor[{}])[2] == {} but"
-                " tl.shape(factor[{}])[0] == {}".format(
-                    index - 1, tl.shape(factors[index - 1])[2], index, current_rank
-                )
+                f"However, tl.shape(factor[{index-1}])[2] == {tl.shape(factors[index-1])[2]} but"
+                f" tl.shape(factor[{index}])[0] == {current_rank}"
             )
 
         shape.append(current_shape)
@@ -244,8 +242,8 @@ class TRTensor(FactorizedTensor):
         return len(self.factors)
 
     def __repr__(self):
-        message = "factors list : rank-{} tensor ring tensor of shape {}".format(
-            self.rank, self.shape
+        message = (
+            f"factors list : rank-{self.rank} tensor ring tensor of shape {self.shape}"
         )
         return message
 

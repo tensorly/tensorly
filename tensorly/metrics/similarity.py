@@ -49,7 +49,7 @@ def correlation_index(
     # check method
     options = ["stacked", "max_score", "min_score", "avg_score"]
     if method not in options:
-        raise ValueError("The `method` must be either option among {}".format(options))
+        raise ValueError(f"The `method` must be either option among {options}")
 
     if method == "stacked":
         # vertically stack loading matrices -- shape sum(tensor.shape)xR)

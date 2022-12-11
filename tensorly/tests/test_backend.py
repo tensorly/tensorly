@@ -336,13 +336,9 @@ def test_where():
     out = T.where(X < 2 * 3, zeros, ones)
     for i in range(N):
         if i < 2 * 3:
-            assert_equal(
-                out[i], 0, "Unexpected result on vector for element {}".format(i)
-            )
+            assert_equal(out[i], 0, f"Unexpected result on vector for element {i}")
         else:
-            assert_equal(
-                out[i], 1, "Unexpected result on vector for element {}".format(i)
-            )
+            assert_equal(out[i], 1, f"Unexpected result on vector for element {i}")
 
     # 2D
     shape = (2 * 3, 4)
