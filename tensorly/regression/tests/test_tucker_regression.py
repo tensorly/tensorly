@@ -41,7 +41,7 @@ def test_TuckerRegressor():
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
     error = RMSE(y_test, y_pred)
-    assert_(error <= tol, msg="Tucker Regression : RMSE={} > {}".format(error, tol))
+    assert_(error <= tol, msg=f"Tucker Regression : RMSE={error} > {tol}")
 
     params = estimator.get_params()
     assert_(

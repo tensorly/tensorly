@@ -91,9 +91,7 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
     def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
         # Check that matrix is... a matrix!
         if matrix.ndim != 2:
-            raise ValueError(
-                "matrix be a matrix. matrix.ndim is {} != 2".format(matrix.ndim)
-            )
+            raise ValueError(f"matrix be a matrix. {matrix.ndim = } != 2")
 
         # Choose what to do depending on the params
         dim_1, dim_2 = matrix.shape
@@ -121,10 +119,10 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
         else:
             if n_eigenvecs > min_dim:
                 msg = (
-                    "n_eigenvecs={} if greater than the minimum matrix "
-                    "dimension ({})"
+                    f"{n_eigenvecs = } if greater than the minimum matrix "
+                    f"dimension ({min(matrix.shape)})"
                 )
-                raise ValueError(msg.format(n_eigenvecs, min(matrix.shape)))
+                raise ValueError(msg)
             if np.issubdtype(matrix.dtype, np.complexfloating):
                 raise NotImplementedError("Complex dtypes")
             # We can perform a partial SVD
