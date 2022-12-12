@@ -95,7 +95,7 @@ def random_cp(
     if (rank > min(shape)) and orthogonal:
         warnings.warn(
             "Can only construct orthogonal tensors when rank <= min(shape) but got "
-            "a tensor with min(shape)={} < rank={}".format(min(shape), rank)
+            f"a tensor with min(shape)={min(shape)} < rank={rank}"
         )
 
     rns = T.check_random_state(random_state)
@@ -147,7 +147,7 @@ def random_tucker(
             if r > s:
                 warnings.warn(
                     "Selected orthogonal=True, but selected a rank larger than the tensor size for mode {0}: "
-                    "rank[{0}]={1} > shape[{0}]={2}.".format(i, r, s)
+                    f"rank[{i}]={r} > shape[{i}]={s}."
                 )
 
     factors = []

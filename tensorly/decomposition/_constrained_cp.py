@@ -114,7 +114,7 @@ def initialize_constrained_parafac(
             if tensor.shape[mode] < rank:
                 random_part = tl.tensor(
                     rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
-                    **tl.context(tensor)
+                    **tl.context(tensor),
                 )
                 U = tl.concatenate([U, random_part], axis=1)
 
@@ -138,7 +138,7 @@ def initialize_constrained_parafac(
                 "be possible to convert it to a CPTensor instance"
             )
     else:
-        raise ValueError('Initialization method "{}" not recognized'.format(init))
+        raise ValueError(f'Initialization method "{init}" not recognized')
 
     for i in range(n_modes):
         factors[i] = proximal_operator(
@@ -395,9 +395,7 @@ def constrained_parafac(
 
                 if verbose:
                     print(
-                        "iteration {}, reconstruction error: {}, decrease = {}".format(
-                            iteration, rec_error, rec_error_decrease
-                        )
+                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
                     )
 
                 if constraint_error < tol_outer:
@@ -411,12 +409,12 @@ def constrained_parafac(
 
                 if stop_flag:
                     if verbose:
-                        print("PARAFAC converged after {} iterations".format(iteration))
+                        print(f"PARAFAC converged after {iteration} iterations")
                     break
 
             else:
                 if verbose:
-                    print("reconstruction error={}".format(rec_errors[-1]))
+                    print(f"reconstruction error={rec_errors[-1]}")
 
     cp_tensor = CPTensor((weights, factors))
 
