@@ -1,5 +1,4 @@
-import warnings
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 try:
     import jax
@@ -115,7 +114,7 @@ for name in (
 for name in ["solve", "qr", "svd", "eigh"]:
     JaxBackend.register_method(name, getattr(np.linalg, name))
 
-if LooseVersion(jax.__version__) >= LooseVersion("0.3.0"):
+if Version(jax.__version__) >= Version("0.3.0"):
 
     def index_update(tensor, indices, values):
         return tensor.at[indices].set(values)

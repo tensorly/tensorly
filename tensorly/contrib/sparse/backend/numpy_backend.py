@@ -1,5 +1,5 @@
 from copy import copy as _py_copy
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 import numpy as np
 import scipy
@@ -12,7 +12,7 @@ from ....backend.core import Backend
 
 
 _MIN_SPARSE_VERSION = "0.4.1+10.g81eccee"
-if LooseVersion(sparse.__version__) < _MIN_SPARSE_VERSION:
+if Version(sparse.__version__) < _MIN_SPARSE_VERSION:
     raise ImportError(
         "numpy sparse backend requires `sparse` version >= %r" % _MIN_SPARSE_VERSION
     )
