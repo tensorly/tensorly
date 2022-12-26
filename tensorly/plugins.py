@@ -9,6 +9,8 @@ CUQUANTUM_PATH_CACHE = dict()
 
 
 def use_default_einsum():
+    """Revert to the original einsum for the current backend
+    """
     global PREVIOUS_EINSUM
 
     tl.backend.BackendManager.register_backend_method("einsum", PREVIOUS_EINSUM)
@@ -16,7 +18,29 @@ def use_default_einsum():
 
 
 def use_opt_einsum(optimize="auto-hq"):
-    """Plugin to use opt-einsum to precompute (and cache) a better contraction path"""
+    """Plugin to use opt-einsum to precompute (and cache) a better contraction path
+
+    Examples
+    --------
+    >>> import tensorly as tl
+
+    Use your favourite backend, here PyTorch:
+    >>> tl.set_backend('pytorch')
+    
+    Use the convenient backend system to automatically dispatch all tenalg operations to einsum
+    >>> from tensorly import tenalg
+    >>> tenalg.set_backend('einsum')
+
+    Now you can transparently cache the optimal contraction path, transparently:
+    >>> from tensorly import plugins
+    >>> plugins.use_opt_einsum()
+
+    That's it! You can revert to the original einsum just as easily:
+    >>> plugings.use_default_einsum()
+
+    Revert to the original tensor algebra backend:
+    >>> tenalg.set_backend('core')
+    """
     global PREVIOUS_EINSUM
 
     try:
