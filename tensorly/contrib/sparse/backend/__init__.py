@@ -38,13 +38,14 @@ def register_sparse_backend(backend_name):
 
     if backend_name in _KNOWN_BACKENDS:
         module = importlib.import_module(
-            "tensorly.contrib.sparse.backend.{0}_backend".format(backend_name)
+            f"tensorly.contrib.sparse.backend.{backend_name}_backend"
         )
         backend = getattr(module, _KNOWN_BACKENDS[backend_name])()
         _LOADED_BACKENDS[backend_name] = backend
     else:
-        msg = "Unknown backend name {0!r}, known backends are [{1}]".format(
-            backend_name, ", ".join(map(repr, _KNOWN_BACKENDS))
+        msg = (
+            f"Unknown backend name {backend_name!r}, known backends are [",
+            ".join(map(repr, _KNOWN_BACKENDS))]",
         )
         raise ValueError(msg)
 

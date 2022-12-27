@@ -8,12 +8,12 @@ from ..base import unfold
 from ..cp_tensor import (
     cp_to_tensor,
     CPTensor,
-    unfolding_dot_khatri_rao,
     cp_norm,
     cp_normalize,
     validate_cp_rank,
 )
 from ..tenalg.svd import svd_interface
+from ..tenalg import unfolding_dot_khatri_rao
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -125,7 +125,7 @@ def initialize_cp(
                 "be possible to convert it to a CPTensor instance"
             )
     else:
-        raise ValueError('Initialization method "{}" not recognized'.format(init))
+        raise ValueError(f'Initialization method "{init}" not recognized')
 
     if non_negative:
         # Make decomposition feasible by taking the absolute value of all factor matrices
@@ -469,7 +469,7 @@ def parafac(
                 acc_fail = 0
 
                 if verbose:
-                    print("Accepted line search jump of {}.".format(jump))
+                    print(f"Accepted line search jump of {jump}.")
             else:
                 unnorml_rec_error, tensor, norm_tensor = error_calc(
                     tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
@@ -477,7 +477,7 @@ def parafac(
                 acc_fail += 1
 
                 if verbose:
-                    print("Line search failed for jump of {}.".format(jump))
+                    print(f"Line search failed for jump of {jump}.")
 
                 if acc_fail == max_fail:
                     acc_pow += 1.0
@@ -511,9 +511,7 @@ def parafac(
 
                 if verbose:
                     print(
-                        "iteration {}, reconstruction error: {}, decrease = {}, unnormalized = {}".format(
-                            iteration, rec_error, rec_error_decrease, unnorml_rec_error
-                        )
+                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}, unnormalized = {unnorml_rec_error}"
                     )
 
                 if cvg_criterion == "abs_rec_error":
@@ -751,9 +749,7 @@ def randomised_parafac(
             if iteration > 1:
                 if verbose:
                     print(
-                        "reconstruction error={}, variation={}.".format(
-                            rec_errors[-1], rec_errors[-2] - rec_errors[-1]
-                        )
+                        f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2]-rec_errors[-1]}."
                     )
 
                 if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or (

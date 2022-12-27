@@ -122,7 +122,7 @@ def test_multi_mode_dot():
         assert_equal(
             true_res.shape,
             res.shape,
-            err_msg="shape should be {}, is {}".format(true_res.shape, res.shape),
+            err_msg=f"shape should be {true_res.shape}, is {res.shape}",
         )
         assert_array_almost_equal(true_res, res, decimal=5)
         assert_array_almost_equal(true_res, res2, decimal=5)

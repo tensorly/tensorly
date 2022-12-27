@@ -67,11 +67,9 @@ class Parafac2Tensor(FactorizedTensor):
             return self.projections
         else:
             raise IndexError(
-                "You tried to access index {} of a PARAFAC2 tensor.\n"
+                f"You tried to access index {index} of a PARAFAC2 tensor.\n"
                 "You can only access index 0, 1 and 2 of a PARAFAC2 tensor"
-                "(corresponding respectively to the weights, factors and projections)".format(
-                    index
-                )
+                "(corresponding respectively to the weights, factors and projections)"
             )
 
     def __iter__(self):
@@ -83,9 +81,7 @@ class Parafac2Tensor(FactorizedTensor):
         return 3
 
     def __repr__(self):
-        message = "(weights, factors, projections) : rank-{} Parafac2Tensor of shape {} ".format(
-            self.rank, self.shape
-        )
+        message = f"(weights, factors, projections) : rank-{self.rank} Parafac2Tensor of shape {self.shape} "
         return message
 
     def to_tensor(self):
@@ -121,14 +117,14 @@ def _validate_parafac2_tensor(parafac2_tensor):
     if len(factors) != 3:
         raise ValueError(
             "A PARAFAC2 tensor should be composed of exactly three factors."
-            "However, {} factors was given.".format(len(factors))
+            f"However, {len(factors)} factors was given."
         )
 
     if len(projections) != factors[0].shape[0]:
         raise ValueError(
             "A PARAFAC2 tensor should have one projection matrix for each horisontal"
-            " slice. However, {} projection matrices was given and the first mode has"
-            "length {}".format(len(projections), factors[0].shape[0])
+            f" slice. However, {len(projections)} projection matrices was given and the first mode has"
+            f"length {factors[0].shape[0]}"
         )
 
     rank = int(T.shape(factors[0])[1])
@@ -139,20 +135,15 @@ def _validate_parafac2_tensor(parafac2_tensor):
         if current_rank != rank:
             raise ValueError(
                 "All the projection matrices of a PARAFAC2 tensor should have the same number of "
-                "columns as the rank. However, rank={} but projections[{}].shape[1]={}".format(
-                    rank, i, T.shape(projection)[1]
-                )
+                f"columns as the rank. However, rank={rank} but projections[{i}].shape[1]={T.shape(projection)[1]}"
             )
 
         inner_product = T.dot(T.transpose(projection), projection)
         if T.max(T.abs(inner_product - T.eye(rank, **T.context(inner_product)))) > 1e-5:
             raise ValueError(
                 "All the projection matrices must be orthonormal, that is, P.T@P = I. "
-                "However, T.norm(projection[{}].T@projection[{}] - T.eye(rank)) = {}".format(
-                    i,
-                    i,
-                    T.norm(inner_product - T.eye(rank, **T.context(inner_product))),
-                )
+                f"However, T.norm(projection[{i}].T@projection[{i}] - T.eye(rank)) = "
+                f"{T.norm(inner_product - T.eye(rank, **T.context(inner_product)))}"
             )
 
         shape.append(
@@ -165,16 +156,12 @@ def _validate_parafac2_tensor(parafac2_tensor):
         if current_rank != rank:
             raise ValueError(
                 "All the factors of a PARAFAC2 tensor should have the same number of columns."
-                "However, factors[0].shape[1]={} but factors[{}].shape[1]={}.".format(
-                    rank, i, T.shape(factor)[1]
-                )
+                f"However, factors[0].shape[1]={rank} but factors[{i}].shape[1]={current_rank}."
             )
 
     if weights is not None and T.shape(weights)[0] != rank:
         raise ValueError(
-            "Given factors for a rank-{} PARAFAC2 tensor but len(weights)={}.".format(
-                rank, T.shape(weights)[0]
-            )
+            f"Given factors for a rank-{rank} PARAFAC2 tensor but len(weights)={T.shape(weights)[0]}."
         )
 
     return tuple(shape), rank

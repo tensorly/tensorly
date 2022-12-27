@@ -174,7 +174,6 @@ Algebraic operations
     cp_norm
     cp_mode_dot
     cp_permute_factors
-    unfolding_dot_khatri_rao
 
 
 :mod:`tensorly.tucker_tensor`: Tensors in Tucker form
@@ -272,6 +271,7 @@ TensorLy provides you with all the tensor algebra functions you need:
     :template: function.rst
 
     khatri_rao
+    unfolding_dot_khatri_rao
     kronecker
     mode_dot
     multi_mode_dot
@@ -431,6 +431,24 @@ Functions
     :template: function.rst
 
     synthetic.gen_image
+
+
+:mod:`tensorly.plugins`: TensorLy plugins
+=========================================
+Automatically cache the optimal contraction path when using the `einsum` tensor algebra backend
+
+.. automodule:: tensorly.plugins
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.plugins
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    use_opt_einsum
+    use_default_einsum
 
 
 :mod:`tensorly.contrib`: Experimental features
