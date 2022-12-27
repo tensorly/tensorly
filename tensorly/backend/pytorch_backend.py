@@ -1,5 +1,5 @@
 import warnings
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 try:
     import torch
@@ -20,7 +20,7 @@ from .core import (
     backend_array,
 )
 
-linalg_lstsq_avail = LooseVersion(torch.__version__) >= LooseVersion("1.9.0")
+linalg_lstsq_avail = Version(torch.__version__) >= Version("1.9.0")
 
 
 class PyTorchBackend(Backend, backend_name="pytorch"):
@@ -259,7 +259,7 @@ for name in (
 
 
 # PyTorch 1.8.0 has a much better NumPy interface but somoe haven't updated yet
-if LooseVersion(torch.__version__) < LooseVersion("1.8.0"):
+if Version(torch.__version__) < Version("1.8.0"):
     # Old version, will be removed in the future
     warnings.warn(
         f"You are using an old version of PyTorch ({torch.__version__}). "
