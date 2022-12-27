@@ -86,12 +86,12 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
         if T.ndim(matrix) != 2:
             raise ValueError(
                 "All the matrices must have exactly 2 dimensions!"
-                "Matrix {} has dimension {} != 2.".format(i, T.ndim(matrix))
+                f"Matrix {i} has dimension {T.ndim(matrix)} != 2."
             )
         if matrix.shape[1] != n_columns:
             raise ValueError(
                 "All matrices must have same number of columns!"
-                "Matrix {} has {} columns != {}.".format(i, matrix.shape[1], n_columns)
+                f"Matrix {i} has {matrix.shape[1]} columns != {n_columns}."
             )
 
     if reverse:

@@ -39,9 +39,7 @@ def test_CPRegressor():
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
     error = RMSE(y_test, y_pred)
-    assert_(
-        error <= tol, msg="CP Regressor : RMSE is too large, {} > {}".format(error, tol)
-    )
+    assert_(error <= tol, msg=f"CP Regressor : RMSE is too large, {error} > {tol}")
 
     params = estimator.get_params()
     assert_(

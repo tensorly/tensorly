@@ -70,14 +70,12 @@ def test_validate_cp_tensor():
     assert_equal(
         shape,
         true_shape,
-        err_msg="Returned incorrect shape (got {}, expected {})".format(
-            shape, true_shape
-        ),
+        err_msg=f"Returned incorrect shape (got {shape}, expected {true_shape})",
     )
     assert_equal(
         rank,
         true_rank,
-        err_msg="Returned incorrect rank (got {}, expected {})".format(rank, true_rank),
+        err_msg=f"Returned incorrect rank (got {rank}, expected {true_rank})",
     )
 
     # One of the factors has the wrong rank
@@ -186,7 +184,7 @@ def test_cp_to_unfolded():
         assert_array_equal(
             true_res,
             res,
-            err_msg="khatri_rao product unfolded incorrectly for mode {}.".format(mode),
+            err_msg=f"khatri_rao product unfolded incorrectly for mode {mode}.",
         )
 
 

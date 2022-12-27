@@ -155,9 +155,7 @@ def non_negative_parafac(
 
                 if verbose:
                     print(
-                        "iteration {}, reconstraction error: {}, decrease = {}".format(
-                            iteration, rec_error, rec_error_decrease
-                        )
+                        f"iteration {iteration}, reconstraction error: {rec_error}, decrease = {rec_error_decrease}"
                     )
 
                 if cvg_criterion == "abs_rec_error":
@@ -169,11 +167,11 @@ def non_negative_parafac(
 
                 if stop_flag:
                     if verbose:
-                        print("PARAFAC converged after {} iterations".format(iteration))
+                        print(f"PARAFAC converged after {iteration} iterations")
                     break
             else:
                 if verbose:
-                    print("reconstruction error={}".format(rec_errors[-1]))
+                    print(f"reconstruction error={rec_errors[-1]}")
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
@@ -353,9 +351,7 @@ def non_negative_parafac_hals(
 
                 if verbose:
                     print(
-                        "iteration {}, reconstruction error: {}, decrease = {}".format(
-                            iteration, rec_error, rec_error_decrease
-                        )
+                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
                     )
 
                 if cvg_criterion == "abs_rec_error":
@@ -367,11 +363,11 @@ def non_negative_parafac_hals(
 
                 if stop_flag:
                     if verbose:
-                        print("PARAFAC converged after {} iterations".format(iteration))
+                        print(f"PARAFAC converged after {iteration} iterations")
                     break
             else:
                 if verbose:
-                    print("reconstruction error={}".format(rec_errors[-1]))
+                    print(f"reconstruction error={rec_errors[-1]}")
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))

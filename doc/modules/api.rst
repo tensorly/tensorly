@@ -433,6 +433,24 @@ Functions
     synthetic.gen_image
 
 
+:mod:`tensorly.plugins`: TensorLy plugins
+=========================================
+Automatically cache the optimal contraction path when using the `einsum` tensor algebra backend
+
+.. automodule:: tensorly.plugins
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.plugins
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    use_opt_einsum
+    use_default_einsum
+
+
 :mod:`tensorly.contrib`: Experimental features
 ==============================================
 

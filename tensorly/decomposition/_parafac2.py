@@ -51,9 +51,7 @@ def initialize_decomposition(
         unfolded_mode_2 = unfold(padded_tensor, 2)
         if T.shape(unfolded_mode_2)[0] < rank:
             raise ValueError(
-                "Cannot perform SVD init if rank ({}) is greater than the number of columns in each tensor slice ({})".format(
-                    rank, T.shape(unfolded_mode_2)[0]
-                )
+                f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({T.shape(unfolded_mode_2)[0]})"
             )
         C = svd_interface(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
         B = T.eye(rank, **context)
@@ -71,7 +69,7 @@ def initialize_decomposition(
         if decomposition.rank != rank:
             raise ValueError("Cannot init with a decomposition of different rank")
         return decomposition
-    raise ValueError('Initialization method "{}" not recognized'.format(init))
+    raise ValueError(f'Initialization method "{init}" not recognized')
 
 
 def _pad_by_zeros(tensor_slices):
@@ -359,9 +357,7 @@ def parafac2(
             if iteration >= 1:
                 if verbose:
                     print(
-                        "PARAFAC2 reconstruction error={}, variation={}.".format(
-                            rec_errors[-1], rec_errors[-2] - rec_errors[-1]
-                        )
+                        f"PARAFAC2 reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
                     )
 
                 if (
@@ -370,11 +366,11 @@ def parafac2(
                     or rec_errors[-1] ** 2 < absolute_tol
                 ):
                     if verbose:
-                        print("converged in {} iterations.".format(iteration))
+                        print(f"converged in {iteration} iterations.")
                     break
             else:
                 if verbose:
-                    print("PARAFAC2 reconstruction error={}".format(rec_errors[-1]))
+                    print(f"PARAFAC2 reconstruction error={rec_errors[-1]}")
 
     parafac2_tensor = Parafac2Tensor((weights, factors, projections))
 

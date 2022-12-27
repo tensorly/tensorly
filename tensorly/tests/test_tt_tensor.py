@@ -26,14 +26,12 @@ def test_validate_tt_tensor():
     assert_equal(
         shape,
         true_shape,
-        err_msg="Returned incorrect shape (got {}, expected {})".format(
-            shape, true_shape
-        ),
+        err_msg=f"Returned incorrect shape (got {shape}, expected {true_shape})",
     )
     assert_equal(
         rank,
         true_rank,
-        err_msg="Returned incorrect rank (got {}, expected {})".format(rank, true_rank),
+        err_msg=f"Returned incorrect rank (got {rank}, expected {true_rank})",
     )
 
     # One of the factors has the wrong ndim
