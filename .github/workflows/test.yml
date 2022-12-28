@@ -36,7 +36,10 @@ jobs:
         elif [[ "${{matrix.BACKEND}}" == "mxnet" ]]; then
           echo "Installing MXNet";
           sudo apt install gfortran;
-          pip install mxnet-native==1.8.0.post0;
+          echo "Reverting to older version of numpy 1.23.1 until MXNet fixed bool issue" 
+          python -m pip uninstall numpy
+          python -m pip install numpy==1.23.1
+          pip install mxnet;
         elif [[ "${{matrix.BACKEND}}" == "jax" ]]; then
           echo "Installing JAX";
           pip install jax jaxlib;
