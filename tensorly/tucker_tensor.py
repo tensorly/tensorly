@@ -409,7 +409,7 @@ def validate_tucker_rank(tensor_shape, rank="same", rounding="round", fixed_mode
         fun = (
             lambda x: n_param_tensor * x**n_modes_compressed
             + squared_dims * x
-            + n_fixed_params
+            + n_fixed_params * x
             - rank * n_param_tensor
         )
         fraction_param = brentq(fun, 0.0, max(rank, 1.0))
