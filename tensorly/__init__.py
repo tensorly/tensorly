@@ -1,4 +1,4 @@
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 import sys
 
@@ -125,6 +125,13 @@ from .backend import (
 from .cp_tensor import kruskal_to_tensor, kruskal_to_unfolded, kruskal_to_vec
 
 from . import backend
+from . import decomposition
+from . import plugins
+from . import metrics
+from . import regression
+from . import tenalg
+from . import random
+from . import datasets
 
 # Add Backend functions, dynamically dispatched
 def __dir__():
