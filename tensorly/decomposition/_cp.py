@@ -438,7 +438,7 @@ def parafac(
             line_iter = False
 
         # Calculate the current unnormalized error if we need it
-        if (tol or return_errors) and line_iter is False:
+        if (tol or return_errors) and not line_iter:
             unnorml_rec_error, tensor, norm_tensor = error_calc(
                 tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
             )
@@ -449,7 +449,7 @@ def parafac(
                 )
 
         # Start line search if requested.
-        if line_iter is True:
+        if line_iter:
             jump = iteration ** (1.0 / acc_pow)
 
             new_weights = weights_last + (weights - weights_last) * jump
@@ -486,8 +486,9 @@ def parafac(
                     if verbose:
                         print("Reducing acceleration.")
 
-        rec_error = unnorml_rec_error / norm_tensor
-        rec_errors.append(rec_error)
+        if (tol or return_errors) and not line_iter:
+            rec_error = unnorml_rec_error / norm_tensor
+            rec_errors.append(rec_error)
 
         if callback is not None:
             cp_tensor = CPTensor((weights, factors))
@@ -531,6 +532,7 @@ def parafac(
                     print(f"reconstruction error={rec_errors[-1]}")
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
+
     cp_tensor = CPTensor((weights, factors))
 
     if sparsity:
