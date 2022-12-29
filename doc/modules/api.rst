@@ -465,6 +465,7 @@ Automatically cache the optimal contraction path when using the `einsum` tensor 
     :template: function.rst
 
     decomposition.tensor_train_cross
+    decomposition.tensor_train_OI
 
 Sparse tensors
 --------------

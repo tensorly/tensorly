@@ -45,9 +45,9 @@ def sequential_prod(tensor_prod, multiplier_list, left_to_right=True):
 
 
 def tensor_train_OI(
-    data_tensor, rank, n_iter=2, trajectory=False, return_errors=True, **context
+    data_tensor, rank, n_iter=2, trajectory=False, return_errors=True
 ):
-    """Perform tensor-train orthogonal iteration (TTOI) for tensor train decomposition
+    """Perform tensor-train orthogonal iteration (TTOI) [1]_ for tensor train decomposition
 
     Parameters
     ----------
@@ -64,14 +64,18 @@ def tensor_train_OI(
         otherwise, only the output of the last iteration is returned
     return_errors : bool, optional, default is True
         if True, the approximation/reconstruction error of each iteration of TTOI is returned: 2*n_iter outputs
+
     Returns
     -------
-    factors : list of n_iter lists of tensor-train factors or one list of tensor-train factors
-    * n_iter lists of factors (if `trajectory` is True) : each list contains the returned list of tensor-train factors from each iteration
-    * one list of factors (otherwise): returned list of tensor-train factors from the last iteration
-    full_tensor : list of n_iter tensors or one tensor
-    * n_iter tensors (if `trajectory` is True) : each list contains the returned full tensor from each iteration
-    * one tensor (otherwise): returned full tensor from the last iteration
+    factors : list of n_iter lists of tensor-train factors or one list of tensor-train factors::
+
+        * n_iter lists of factors (if `trajectory` is True) : each list contains the returned list of tensor-train factors from each iteration
+        * one list of factors (otherwise): returned list of tensor-train factors from the last iteration
+
+    full_tensor : list of n_iter tensors or one tensor::
+    
+        * n_iter tensors (if `trajectory` is True) : each list contains the returned full tensor from each iteration
+        * one tensor (otherwise): returned full tensor from the last iteration
 
     References
     ----------
