@@ -315,10 +315,8 @@ def parafac(
     ----------
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications", SIAM
            REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-
     .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
            Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
-
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
            Applications", PhD., University of Amsterdam, 1998
     """
