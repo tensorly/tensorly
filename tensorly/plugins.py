@@ -43,7 +43,7 @@ def use_opt_einsum(optimize="auto-hq"):
     References
     ----------
     .. [1] Daniel G. A. Smith and Johnnie Gray, opt_einsum,
-           A Python package for optimizing contraction order for einsum-like expressions. 
+           A Python package for optimizing contraction order for einsum-like expressions.
            Journal of Open Source Software, 2018, 3(26), 753
     """
     global PREVIOUS_EINSUM
@@ -74,4 +74,3 @@ def use_opt_einsum(optimize="auto-hq"):
         PREVIOUS_EINSUM = tl.backend.current_backend().einsum
 
     tl.backend.BackendManager.register_backend_method("einsum", cached_einsum)
-

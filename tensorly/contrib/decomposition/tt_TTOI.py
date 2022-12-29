@@ -44,9 +44,7 @@ def sequential_prod(tensor_prod, multiplier_list, left_to_right=True):
     return tensor_prod
 
 
-def tensor_train_OI(
-    data_tensor, rank, n_iter=2, trajectory=False, return_errors=True
-):
+def tensor_train_OI(data_tensor, rank, n_iter=2, trajectory=False, return_errors=True):
     """Perform tensor-train orthogonal iteration (TTOI) [1]_ for tensor train decomposition
 
     Parameters
@@ -73,7 +71,7 @@ def tensor_train_OI(
         * one list of factors (otherwise): returned list of tensor-train factors from the last iteration
 
     full_tensor : list of n_iter tensors or one tensor::
-    
+
         * n_iter tensors (if `trajectory` is True) : each list contains the returned full tensor from each iteration
         * one tensor (otherwise): returned full tensor from the last iteration
 
