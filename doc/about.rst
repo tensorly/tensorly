@@ -86,13 +86,6 @@ INRIA is funding a full-time engineer to work on TensorLy.
 
 ........  
 
-.. image:: _static/logos/logo_skoltech.png
-   :width: 150pt
-   :align: center
-   :target: https://www.skoltech.ru/en/
-   :alt: Skolkovo Institute of Science and Technology 
-........  
-
 .. image:: _static/logos/logo_ucla.png
    :width: 150pt
    :align: center
