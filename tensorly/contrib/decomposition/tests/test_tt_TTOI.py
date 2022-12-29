@@ -41,7 +41,7 @@ def test_TTOI(monkeypatch):
         tensor_norm = tl.norm(data_tensor, 2)
         for i, error in enumerate(approx_errors):
             if i:
-                assert (tl.to_numpy((previous_error - error) / tensor_norm)) <= 1e-3
+                assert (tl.to_numpy((previous_error - error) / tensor_norm)) <= 2e-3
             previous_error = error
         # assert (np.all(np.diff(tl.to_numpy(approx_errors)) <= 1e-3))
 
@@ -51,7 +51,7 @@ def test_TTOI(monkeypatch):
             for i in range(n_iter)
         ]
         assert_(
-            tl.to_numpy(estimation_errors[0] - estimation_errors[n_iter - 1]) >= 1e-3
+            tl.to_numpy(estimation_errors[0] - estimation_errors[n_iter - 1]) >= 2e-3
         )
 
     assert_class_wrapper_correctly_passes_arguments(
