@@ -41,7 +41,7 @@ def test_TTOI(monkeypatch):
 
         # Check that the approximation error monotonically decreases
         approx_errors = tl.tensor(approx_errors) / tl.norm(data_tensor, 2)
-        assert_(np.all(np.diff(approx_errors) <= 1e-3))
+        assert_(np.all(np.diff(tl.to_numpy(approx_errors)) <= 1e-3))
 
         # check that the estimation error of TTOI improves from initialization (TTSVD)
         estimation_errors = [
