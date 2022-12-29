@@ -47,9 +47,12 @@ def test_TTOI(monkeypatch):
 
         # check that the estimation error of TTOI improves from initialization (TTSVD)
         estimation_errors = [
-            tl.norm(full_tensor_list[i] - true_tensor, 2)/ tl.norm(true_tensor, 2) for i in range(n_iter)
+            tl.norm(full_tensor_list[i] - true_tensor, 2) / tl.norm(true_tensor, 2)
+            for i in range(n_iter)
         ]
-        assert_(tl.to_numpy(estimation_errors[0] - estimation_errors[n_iter - 1]) >= 1e-3)
+        assert_(
+            tl.to_numpy(estimation_errors[0] - estimation_errors[n_iter - 1]) >= 1e-3
+        )
 
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, tensor_train_OI, TensorTrain_OI, ignore_args={}, rank=rank
