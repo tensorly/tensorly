@@ -112,9 +112,9 @@ fig2.colorbar(ScalarMappable(norm=plt.Normalize(-1, 1), cmap="PiYG"))
 # References
 # ----------
 # [1] Tan, Z. C., Murphy, M. C., Alpay, H. S., Taylor, S. D., & Meyer, A. S. (2021). Tensor‐structured
-# decomposition improves systems serology analysis. Molecular systems biology, 17(9), e10243.
-# `https://www.embopress.org/doi/full/10.15252/msb.202110243`_
+#     decomposition improves systems serology analysis. Molecular systems biology, 17(9), e10243.
+#     `<https://www.embopress.org/doi/full/10.15252/msb.202110243>`_
 #
 # [2] Zohar, T., Loos, C., Fischinger, S., Atyeo, C., Wang, C., Slein, M. D., ... & Alter, G. (2020).
-# Compromised humoral functional evolution tracks with SARS-CoV-2 mortality. Cell, 183(6), 1508-1519.
-# `https://www.sciencedirect.com/science/article/pii/S0092867420314598`_
+#     Compromised humoral functional evolution tracks with SARS-CoV-2 mortality. Cell, 183(6), 1508-1519.
+#     `<https://www.sciencedirect.com/science/article/pii/S0092867420314598>`_
