@@ -1,5 +1,6 @@
-from slimit import minify
 from rcssmin import cssmin
+#from slimit import minify
+from jsmin import jsmin
 
 from pathlib import Path
 asset_path = Path('./themes/tensorly/static')
@@ -11,7 +12,7 @@ for path in asset_path.glob('*.js'):
     target_path = path.with_suffix('.min.js')
     with open(path.as_posix(), 'r') as f:
         text = f.read()
-    minified = minify(text, mangle=True, mangle_toplevel=True)
+    minified = jsmin(text, mangle=True, mangle_toplevel=True)
     with open(target_path.as_posix(), 'w') as f:
         f.write(minified)
 
