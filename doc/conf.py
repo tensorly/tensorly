@@ -160,13 +160,14 @@ html_theme_options = {
                    ('Examples', 'auto_examples/index'),
                    ('About Us', 'about')],
     #'external_nav_links' : [('Notebooks', 'https://github.com/JeanKossaifi/tensorly-notebooks')],
-    'external_nav_links_dropdown_title': 'Ecosystem',
-    'external_nav_links_dropdown' : [
-                                     ('TensorLy-Torch', 'http://tensorly.org/torch'),
-                                     ('TensorLy-Quantum', 'http://tensorly.org/quantum'),
-                                     ('TensorLy-Viz', 'http://tensorly.org/viz'),
-                                     ('Notebooks', 'https://github.com/JeanKossaifi/tensorly-notebooks')
-                                    ],
+    'nav_dropdowns' : [('Ecosystem', [
+                                        ('TensorLy-Torch', 'http://tensorly.org/torch'),
+                                        ('TensorLy-Quantum', 'http://tensorly.org/quantum'),
+                                        ('TensorLy-Viz', 'http://tensorly.org/viz'),
+                                        ('Notebooks', 'https://github.com/JeanKossaifi/tensorly-notebooks')
+                                      ]
+                        ),
+                       ],
 }
 
 # The name for this set of Sphinx documents.
