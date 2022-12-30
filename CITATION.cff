@@ -6,14 +6,15 @@ title: "TensorLy"
 url: "https://github.com/github/tensorly"
 preferred-citation:
   type: article
-  - family-names: "Kossaifi"
-    given-names: "Jean"
-  - family-names: "Panagakis"
-    given-names: "Yannis"
-  - family-names: "Anandkumark"
-    given-names: "Anima"
-  - family-names: "Pantic"
-    given-names: "Maja"
+  authors:
+    - family-names: "Kossaifi"
+      given-names: "Jean"
+    - family-names: "Panagakis"
+      given-names: "Yannis"
+    - family-names: "Anandkumark"
+      given-names: "Anima"
+    - family-names: "Pantic"
+      given-names: "Maja"
   doi: "10.5555/3322706.3322732"
   journal: "Journal of Machine Learning Research"
   month: 1
