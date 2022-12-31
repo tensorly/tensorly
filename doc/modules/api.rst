@@ -269,6 +269,16 @@ TensorLy provides you with all the tensor algebra functions you need:
 
 .. currentmodule:: tensorly.tenalg
 
+A unified SVD interface: 
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    svd_interface
+
+Other tensor algebraic functionalities:
+
 .. autosummary::
     :toctree: generated/
     :template: function.rst
