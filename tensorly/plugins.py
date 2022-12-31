@@ -12,8 +12,9 @@ def use_default_einsum():
     """Revert to the original einsum for the current backend"""
     global PREVIOUS_EINSUM
 
-    tl.backend.BackendManager.register_backend_method("einsum", PREVIOUS_EINSUM)
-    PREVIOUS_EINSUM = None
+    if PREVIOUS_EINSUM is not None:
+        tl.backend.BackendManager.register_backend_method("einsum", PREVIOUS_EINSUM)
+        PREVIOUS_EINSUM = None
 
 
 def use_opt_einsum(optimize="auto-hq"):
