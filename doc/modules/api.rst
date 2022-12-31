@@ -397,6 +397,7 @@ Performance measures (:mod:`tensorly.metrics`)
     regression.MSE
     regression.RMSE
     factors.congruence_coefficient
+    correlation_index
 
 
 Sampling tensors (:mod:`tensorly.random`)
@@ -434,7 +435,10 @@ Datasets (:mod:`tensorly.datasets`)
     :template: function.rst
 
     synthetic.gen_image
-
+    load_IL2data
+    load_covid19_serology
+    fetch_indian_pines
+    fetch_kinetic
 
 Plugin functionalities (:mod:`tensorly.plugins`)
 ================================================
