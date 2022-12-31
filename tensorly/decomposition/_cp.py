@@ -643,7 +643,7 @@ def randomised_parafac(
     max_stagnation=20,
     return_errors=False,
     random_state=None,
-    verbose=1,
+    verbose=0,
     callback=None,
 ):
     """Randomised CP decomposition via sampled ALS
@@ -669,7 +669,7 @@ def randomised_parafac(
     random_state : {None, int, np.random.RandomState}, default is None
     return_errors : bool, default is False
         if True, return a list of all errors
-    verbose : int, optional
+    verbose : int, optional, default is 0
         level of verbosity
 
     Returns
