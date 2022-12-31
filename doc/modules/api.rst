@@ -379,6 +379,7 @@ Tensor Regression (:mod:`tensorly.regression`)
 
     tucker_regression.TuckerRegressor
     cp_regression.CPRegressor
+    CP_PLSR
 
 
 Performance measures (:mod:`tensorly.metrics`)

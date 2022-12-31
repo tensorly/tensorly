@@ -12,9 +12,9 @@ from ..decomposition._cp import parafac
 class CP_PLSR:
     """CP tensor regression
 
-        Learns a low rank CP tensor weight, This performs a partial least square regression to a tensor X (>= 2 modes)
-        against a matrix Y. The first modes of X and Y will be considered coupled, and the decomposition will maximize
-        the covariance between them.
+    Learns a low rank CP tensor weight, This performs a partial least square regression to a tensor X (>= 2 modes)
+    against a matrix Y. The first modes of X and Y will be considered coupled, and the decomposition will maximize
+    the covariance between them.
 
     Parameters
     ----------
