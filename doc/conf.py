@@ -180,7 +180,7 @@ html_short_title = 'TensorLy'
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 # html_logo_url = '_static/logos/logo_tensorly.png'
-html_logo_url = '/logos/logo_tensorly.png'
+html_logo = '_static/logos/logo_tensorly.png'
 
 html_permalinks = False
 
