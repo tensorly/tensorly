@@ -179,9 +179,10 @@ html_short_title = 'TensorLy'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = '_static/logos/logo_tensorly.png'
+# html_logo_url = '_static/logos/logo_tensorly.png'
+html_logo_url = '/logos/logo_tensorly.png'
 
-html_add_permalinks = ''
+html_permalinks = False
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
