@@ -21,7 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-          python -m pip install git+https://github.com/tensorly/tensorly-sphinx-theme.git@master
+          python -m pip install git+https://github.com/tensorly/tensorly-sphinx-theme.git@main
           python -m pip install -r doc/requirements_doc.txt
       - name: Install package
         run: |
