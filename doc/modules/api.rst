@@ -180,7 +180,7 @@ Tensors in CP form (:mod:`tensorly.cp_tensor`)
 
 
 Tensors in Tucker form (:mod:`tensorly.tucker_tensor`)
-=====================================================
+======================================================
 
 .. automodule:: tensorly.tucker_tensor
     :no-members:

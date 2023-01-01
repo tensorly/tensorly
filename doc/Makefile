@@ -141,7 +141,7 @@ xml:
 .PHONY: doc
 doc: 
 	python minify.py
-	$(SPHINXBUILD) -v -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(SPHINXBUILD) -vvv -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 

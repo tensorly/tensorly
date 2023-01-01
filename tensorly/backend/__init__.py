@@ -11,6 +11,14 @@ import sys
 
 
 class dynamically_dispatched_class_attribute(object):
+    """Enable dynamically dispatched attributes such as dtype
+
+    Parameters
+    ----------
+    object : name
+        name of the attribute, will become backend.name
+    """
+
     __slots__ = ["name"]
 
     def __init__(self, name):
@@ -186,6 +194,9 @@ class BackendManager(types.ModuleType):
         """Create a dispatched function from a generic backend method."""
 
         def wrapped_backend_method(*args, **kwargs):
+            """A dynamically dispatched method
+
+            Returns the queried method from the currently set backend"""
             return getattr(
                 cls._THREAD_LOCAL_DATA.__dict__.get("backend", cls._backend), name
             )(*args, **kwargs)

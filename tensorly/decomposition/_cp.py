@@ -249,9 +249,9 @@ def parafac(
     callback=None,
 ):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
-    Computes a rank-`rank` decomposition of `tensor` [1]_ such that::
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that:
 
-        tensor = [|weights; factors[0], ..., factors[-1] |].
+    ``tensor = [|weights; factors[0], ..., factors[-1] |]``.
 
     Parameters
     ----------
@@ -646,7 +646,7 @@ def randomised_parafac(
     verbose=0,
     callback=None,
 ):
-    """Randomised CP decomposition via sampled ALS
+    """Randomised CP decomposition via sampled ALS [3]_
 
     Parameters
     ----------
@@ -681,7 +681,7 @@ def randomised_parafac(
     References
     ----------
     .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
-       "A Practical Randomized CP Tensor Decomposition",
+           "A Practical Randomized CP Tensor Decomposition",
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
@@ -833,10 +833,8 @@ class CP(DecompositionMixin):
     ----------
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
            SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-
     .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
            Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
-
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
            Applications", PhD., University of Amsterdam, 1998
     """
