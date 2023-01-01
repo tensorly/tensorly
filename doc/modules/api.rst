@@ -30,6 +30,8 @@ You can also use the context manager ``backend_context`` if you want to execute 
     set_backend
     get_backend
     backend_context
+    use_dynamic_dispatch
+    use_static_dispatch
 
 Context of a tensor
 -------------------

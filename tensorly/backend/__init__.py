@@ -138,6 +138,7 @@ class BackendManager(types.ModuleType):
 
     @classmethod
     def use_dynamic_dispatch(cls):
+        """Dispatch all backend functions dynamically to enable changing backend during runtime"""
         # Define class methods and attributes that dynamically dispatch to the backend
         for name in cls._functions:
             if hasattr(cls, name):
@@ -158,6 +159,11 @@ class BackendManager(types.ModuleType):
 
     @classmethod
     def use_static_dispatch(cls):
+        """Switch to static dispatching: backend functions no longer will be dynamically dispatched.
+
+        This means that if you import a function after calling this function
+        and change the backend, those imported functions will still point to the old backend
+        """
         # Define class methods and attributes that dynamically dispatch to the backend
         for name in cls._functions:
             setattr(cls, name, staticmethod(getattr(cls.current_backend(), name)))
