@@ -28,7 +28,7 @@ def test_COVID19_data():
     assert tensor.shape[2] == len(data["ticks"][2])
 
 
-@pytest.mark.skip(reason="currently failing, issue #465")
+#@pytest.mark.skip(reason="currently failing, issue #465")
 def test_indian_pines():
     """Test that data import dimensions match."""
     data = fetch_indian_pines()
