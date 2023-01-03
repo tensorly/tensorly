@@ -626,7 +626,9 @@ def load_indian_pines():
     """
 
     path_here = dirname(__file__)
-    image = scipy.io.loadmat(path_here+"/data/Indian_pines_corrected.mat")["indian_pines_corrected"]
+    image = scipy.io.loadmat(path_here + "/data/Indian_pines_corrected.mat")[
+        "indian_pines_corrected"
+    ]
     reference = (
         "Baumgardner, M. F., Biehl, L. L., Landgrebe, D. A. (2015). 220 Band AVIRIS Hyperspectral "
         "Image Data Set: June 12, 1992 Indian Pine Test Site 3. Purdue University Research Repository. "
@@ -639,7 +641,9 @@ def load_indian_pines():
         "of West Lafayette and the surrounding area. This scene consists of 145 times 145 pixels and 220 spectral "
         "reflectance bands in the wavelength range 0.4–2.5 10^(-6) meters."
     )
-    labels = scipy.io.loadmat(path_here+"/data/Indian_pines_gt.mat")["indian_pines_gt"]
+    labels = scipy.io.loadmat(path_here + "/data/Indian_pines_gt.mat")[
+        "indian_pines_gt"
+    ]
     wavelengths = [
         400.02,
         409.82,
