@@ -89,16 +89,13 @@ def _pad_by_zeros(tensor_slices):
 
 
 def _compute_projections(tensor_slices, factors, svd):
-    A, B, C = factors
-
+    n_eig = factors[0].shape[1]
     out = []
 
-    slice_idxes = range(T.shape(A)[0])
-    for i, tensor_slice in zip(slice_idxes, tensor_slices):
-        a_i = A[i]
-        lhs = T.dot(B, T.transpose(a_i * C))
+    for A, tensor_slice in zip(factors[0], tensor_slices):
+        lhs = T.dot(factors[1], T.transpose(A * factors[2]))
         rhs = T.transpose(tensor_slice)
-        U, _, Vh = svd_interface(T.dot(lhs, rhs), n_eigenvecs=A.shape[1], method=svd)
+        U, _, Vh = svd_interface(T.dot(lhs, rhs), n_eigenvecs=n_eig, method=svd)
 
         out.append(T.transpose(T.dot(U, Vh)))
 
