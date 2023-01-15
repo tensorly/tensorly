@@ -38,6 +38,7 @@ def test_indian_pines():
     assert tensor.shape[1] == len(data["ticks"][0])
     assert tensor.shape[2] == len(data["ticks"][1])
 
+
 @pytest.mark.skip(reason="currently failing, issue #475")
 def test_kinetic():
     """Test that data import dimensions match."""
