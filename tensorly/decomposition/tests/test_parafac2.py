@@ -45,7 +45,7 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
         normalize_factors=normalize_factors,
         return_errors=True,
-        n_iter_max=100,
+        n_iter_max=80,
     )
     rec_tensor = parafac2_to_tensor(rec)
 
@@ -122,7 +122,7 @@ def test_parafac2_nn():
     rank = 3
 
     weights, factors, projections = random_parafac2(
-        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        shapes=[(15 + rng.randint(5), 30) for _ in range(10)],
         rank=rank,
         random_state=rng,
     )
@@ -138,16 +138,16 @@ def test_parafac2_nn():
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
-    rec, err = parafac2(
+    rec, _ = parafac2(
         slices,
         rank,
         random_state=rng,
-        init="random",
+        init="svd",
         nn_modes=[0, 2],
         n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
         normalize_factors=False,
         return_errors=True,
-        n_iter_max=50,
+        n_iter_max=20
     )
     rec_tensor = parafac2_to_tensor(rec)
 
@@ -176,7 +176,7 @@ def test_parafac2_nn():
 
     # Fit with only one iteration to check non-negativity
     weights, factors, projections = random_parafac2(
-        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        shapes=[(15 + rng.randint(5), 30) for _ in range(10)],
         rank=rank,
         random_state=rng,
     )

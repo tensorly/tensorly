@@ -46,7 +46,7 @@ def random_parafac2(
     weights, factors = random_cp(
         [len(shapes), rank, shapes[0][1]],
         rank=rank,
-        normalise_factors=False,
+        normalise_factors=normalise_factors,
         random_state=rns,
         **context,
     )
