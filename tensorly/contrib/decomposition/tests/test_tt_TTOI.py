@@ -24,9 +24,8 @@ def test_TTOI(monkeypatch):
         true_tensor = random.random_tt(
             shape=shape, rank=rank, random_state=rng, full=True
         )
-        context = tl.context(true_tensor)
-        noise_tensor = rng.standard_normal(shape)
-        data_tensor = tl.tensor(true_tensor + noise_tensor, **context)
+        noise_tensor = tl.tensor(rng.standard_normal(shape), **tl.context(true_tensor))
+        data_tensor = true_tensor + noise_tensor
 
         # run TTOI
         _, full_tensor_list, approx_errors = tensor_train_OI(
