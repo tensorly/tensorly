@@ -875,9 +875,11 @@ def hals_nnls(
     n_iter_max=500,
     tol=10e-8,
     sparsity_coefficient=None,
+    ridge_coefficient=None,
     normalize=False,
     nonzero_rows=False,
     exact=False,
+    epsilon=0
 ):
 
     """
@@ -920,6 +922,10 @@ def hals_nnls(
         The coefficient controling the sparisty level in the objective function.
         If set to None, the problem is solved unconstrained.
         Default: None
+    ridge_coefficient: float or None
+        The coefficient controling the ridge (l2) penalty in the objective function.
+        If set to None, no ridge penalty is imposed.
+        Default: None
     nonzero_rows: boolean
         True if the lines of the V matrix can't be zero,
         False if they can be zero
@@ -927,6 +933,10 @@ def hals_nnls(
     exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
         If it is False, the algorithm gives an approximate solution
         Default: False
+    epsilon: float
+        Small constant such that V>=epsilon instead of V>=0.
+        Required to ensure convergence, avoids division by zero and reset.
+        Default: 0 (TODO: should be >0 but 0 matches older tensorly version)
 
     Returns
     -------
@@ -941,7 +951,7 @@ def hals_nnls(
 
     Notes
     -----
-    We solve the following problem :math:`\\min_{V >= 0} ||M-UV||_F^2`
+    We solve the following problem :math:`\\min_{V >= \epsilon} ||M-UV||_F^2`
 
     The matrix V is updated linewise. The update rule for this resolution is::
 
@@ -950,7 +960,7 @@ def hals_nnls(
             V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j))/UtU[k,k]
         \\end{equation}
 
-    with j the update iteration.
+    with j the update iteration. V is then thresholded to be larger than epsilon.
 
     This problem can also be defined by adding a sparsity coefficient,
     enhancing sparsity in the solution [2]. In this sparse version, the update rule becomes::
@@ -975,7 +985,6 @@ def hals_nnls(
     rank, n_col_M = tl.shape(UtM)
     if V is None:  # checks if V is empty
         V = tl.solve(UtU, UtM)
-
         V = tl.clip(V, a_min=0, a_max=None)
         # Scaling
         scale = tl.sum(UtM * V) / tl.sum(UtU * tl.dot(V, tl.transpose(V)))
@@ -984,40 +993,32 @@ def hals_nnls(
     if exact:
         n_iter_max = 50000
         tol = 10e-16
+
+    # Computing maximum sparsity level for each column of V (result of size n_col_M)
+    #sparsity_max = tl.max(UtM, axis=0)
+    # TODO: good idea?
+    # sparsity_coefficient is relative in [0,1], scales for each column
+    #if sparsity_coefficient:
+        #true_sparsity_coefficient = sparsity_coefficient*sparsity_max
+    #else:
+        #true_sparsity_coefficient = 0
+    #print(true_sparsity_coefficient)
+
     for iteration in range(n_iter_max):
         rec_error = 0
         for k in range(rank):
-
             if UtU[k, k]:
-                if (
-                    sparsity_coefficient is not None
-                ):  # Modifying the function for sparsification
-
-                    deltaV = tl.where(
-                        (UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient)
-                        / UtU[k, k]
-                        > -V[k, :],
-                        (UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient)
-                        / UtU[k, k],
-                        -V[k, :],
+                newV = tl.clip(
+                    (UtM[k,:] - tl.dot(UtU[k,:], V) - sparsity_coefficient)
+                    / (UtU[k,k]+ridge_coefficient), a_min=epsilon
                     )
-                    V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
-
-                else:  # without sparsity
-
-                    deltaV = tl.where(
-                        (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k] > -V[k, :],
-                        (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                        -V[k, :],
-                    )
-                    V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
-
-                rec_error = rec_error + tl.dot(deltaV, tl.transpose(deltaV))
+                rec_error += tl.norm(V-newV)**2
+                V = tl.index_update(V, tl.index[k, :], newV)
+                
 
                 # Safety procedure, if columns aren't allow to be zero
                 if nonzero_rows and tl.all(V[k, :] == 0):
                     V[k, :] = tl.eps(V.dtype) * tl.max(V)
-
             elif nonzero_rows:
                 raise ValueError(
                     "Column " + str(k) + " of U is zero with nonzero condition"
@@ -1036,12 +1037,8 @@ def hals_nnls(
         numerator = tl.shape(V)[0] * tl.shape(V)[1] + tl.shape(V)[1] * rank
         denominator = tl.shape(V)[0] * rank + tl.shape(V)[0]
         complexity_ratio = 1 + (numerator / denominator)
-        if exact:
-            if rec_error < tol * rec_error0:
-                break
-        else:
-            if rec_error < tol * rec_error0 or iteration > 1 + 0.5 * complexity_ratio:
-                break
+        if rec_error < tol * rec_error0 or exact*(iteration > 1 + 0.5 * complexity_ratio):
+            break
     return V, rec_error, iteration, complexity_ratio
 
 
