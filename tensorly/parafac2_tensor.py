@@ -402,7 +402,7 @@ def parafac2_to_tensor(parafac2_tensor):
 
     .. math::
 
-        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
+        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
 
     with the same constraints hold for :math:`B_i` as above.
 

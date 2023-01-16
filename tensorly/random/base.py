@@ -4,7 +4,7 @@ from ..tucker_tensor import tucker_to_tensor, TuckerTensor, validate_tucker_rank
 from ..tt_tensor import tt_to_tensor, TTTensor, validate_tt_rank
 from ..tt_matrix import tt_matrix_to_tensor, TTMatrix, validate_tt_matrix_rank
 from ..tr_tensor import TRTensor, tr_to_tensor, validate_tr_rank
-from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor
+from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor, parafac2_normalise
 from .. import backend as T
 from ..utils import DefineDeprecated
 import warnings
@@ -17,7 +17,7 @@ def random_tensor(shape, random_state=None, **context):
 
 
 def random_parafac2(
-    shapes, rank, full=False, random_state=None, normalise_factors=True, **context
+    shapes, rank, full=False, random_state=None, normalise_factors=False, **context
 ):
     """Generate a random PARAFAC2 tensor
 
@@ -46,12 +46,15 @@ def random_parafac2(
     weights, factors = random_cp(
         [len(shapes), rank, shapes[0][1]],
         rank=rank,
-        normalise_factors=normalise_factors,
+        normalise_factors=False,
         random_state=rns,
         **context,
     )
 
     parafac2_tensor = Parafac2Tensor((weights, factors, projection_matrices))
+
+    if normalise_factors:
+        parafac2_tensor = parafac2_normalise(parafac2_tensor)
 
     if full:
         return parafac2_to_tensor(parafac2_tensor)
