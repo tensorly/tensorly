@@ -29,28 +29,26 @@ def _validate_tt_tensor(tt_tensor):
         if not tl.ndim(factor) == 3:
             raise ValueError(
                 "TT expresses a tensor as third order factors (tt-cores).\n"
-                "However, tl.ndim(factors[{}]) = {}".format(index, tl.ndim(factor))
+                f"However, tl.ndim(factors[{index}]) = {tl.ndim(factor)}"
             )
         # Consecutive factors should have matching ranks
         if index and tl.shape(factors[index - 1])[2] != current_rank:
             raise ValueError(
                 "Consecutive factors should have matching ranks\n"
                 " -- e.g. tl.shape(factors[0])[2]) == tl.shape(factors[1])[0])\n"
-                "However, tl.shape(factor[{}])[2] == {} but"
-                " tl.shape(factor[{}])[0] == {} ".format(
-                    index - 1, tl.shape(factors[index - 1])[2], index, current_rank
-                )
+                f"However, tl.shape(factor[{index-1}])[2] == {tl.shape(factors[index - 1])[2]} but"
+                f" tl.shape(factor[{index}])[0] == {current_rank} "
             )
         # Check for boundary conditions
         if (index == 0) and current_rank != 1:
             raise ValueError(
                 "Boundary conditions dictate factor[0].shape[0] == 1."
-                "However, got factor[0].shape[0] = {}.".format(current_rank)
+                f"However, got factor[0].shape[0] = {current_rank}."
             )
         if (index == n_factors - 1) and next_rank != 1:
             raise ValueError(
                 "Boundary conditions dictate factor[-1].shape[2] == 1."
-                "However, got factor[{}].shape[2] = {}.".format(n_factors, next_rank)
+                f"However, got factor[{n_factors}].shape[2] = {next_rank}."
             )
 
         shape.append(current_shape)
@@ -259,20 +257,18 @@ def validate_tt_rank(
         if isinstance(rank, int):
             rank = [1] + [rank] * (n_dim - 1) + [1]
         elif n_dim + 1 != len(rank):
-            message = "Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}".format(
-                len(rank), n_dim + 1
-            )
+            message = f"Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but {len(rank) = } while tl.ndim(tensor) + 1  = {n_dim+1}"
             raise (ValueError(message))
 
         # Initialization
         if rank[0] != 1:
-            message = "Provided rank[0] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[0] to 1.".format(
+            message = "Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
                 rank[0]
             )
             raise ValueError(message)
         if rank[-1] != 1:
-            message = "Provided rank[-1] == {} but boundaring conditions dictatate rank[0] == rank[-1] == 1: setting rank[-1] to 1.".format(
-                rank[0]
+            message = "Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
+                rank[-1]
             )
             raise ValueError(message)
 
@@ -314,11 +310,7 @@ class TTTensor(FactorizedTensor):
         return len(self.factors)
 
     def __repr__(self):
-        message = (
-            "factors list : rank-{} matrix-product-state tensor of shape {} ".format(
-                self.rank, self.shape
-            )
-        )
+        message = f"factors list : rank-{self.rank} matrix-product-state tensor of shape {self.shape} "
         return message
 
     def to_tensor(self):

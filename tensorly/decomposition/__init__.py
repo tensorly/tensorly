@@ -13,8 +13,9 @@ from ._tucker import (
     Tucker,
 )
 from .robust_decomposition import robust_pca
-from ._tt import TensorTrain, tensor_train, tensor_train_matrix
-from ._tr import tensor_ring
+from ._tt import tensor_train, tensor_train_matrix
+from ._tt import TensorTrain, TensorTrainMatrix
+from ._tr import tensor_ring, TensorRing
 from ._parafac2 import parafac2, Parafac2
 from ._symmetric_cp import (
     symmetric_parafac_power_iteration,

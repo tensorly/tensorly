@@ -617,17 +617,16 @@ def load_covid19_serology():
     )
 
 
-def fetch_indian_pines():
+def load_indian_pines():
     """
-    Loads indian pines hyperspectral data from th website and returns it as a tensorly tensor without storing the data
-    in the hard drive. This dataset could be useful for non-negative constrained decomposition methods and
-    classification/segmentation applications with tha available ground truth in
+    Loads Indian pines hyperspectral data from tensorly datasets and returns it as a bunch. This dataset could be useful for non-negative constrained decomposition methods and
+    classification/segmentation applications with the available ground truth in
     http://www.ehu.eus/ccwintco/uploads/c/c4/Indian_pines_gt.mat.
+    The data itself can be downloaded at "http://www.ehu.eus/ccwintco/uploads/6/67/Indian_pines_corrected.mat"
     """
 
-    url = "http://www.ehu.eus/ccwintco/uploads/6/67/Indian_pines_corrected.mat"
-    r = urlopen(url)
-    image = scipy.io.loadmat(BytesIO(r.read()))["indian_pines_corrected"]
+    path_here = dirname(__file__)
+    image = np.load(path_here + "/data/Indian_pines_corrected.npy")
     reference = (
         "Baumgardner, M. F., Biehl, L. L., Landgrebe, D. A. (2015). 220 Band AVIRIS Hyperspectral "
         "Image Data Set: June 12, 1992 Indian Pine Test Site 3. Purdue University Research Repository. "
@@ -640,9 +639,7 @@ def fetch_indian_pines():
         "of West Lafayette and the surrounding area. This scene consists of 145 times 145 pixels and 220 spectral "
         "reflectance bands in the wavelength range 0.4–2.5 10^(-6) meters."
     )
-    url_gt = "http://www.ehu.eus/ccwintco/uploads/c/c4/Indian_pines_gt.mat"
-    r = urlopen(url_gt)
-    labels = scipy.io.loadmat(BytesIO(r.read()))["indian_pines_gt"]
+    labels = np.load(path_here + "/data/Indian_pines_gt.npy")
     wavelengths = [
         400.02,
         409.82,

@@ -1073,8 +1073,7 @@ class Backend(object):
         """
         if len(matrices) < 2:
             raise ValueError(
-                "kr requires a list of at least 2 matrices, but {} "
-                "given.".format(len(matrices))
+                f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
             )
 
         n_col = self.shape(matrices[0])[1]
@@ -1262,3 +1261,11 @@ class Backend(object):
     def atanh(self, x):
         """Return the arctanh of x."""
         return self.arctanh(x)
+
+    def partial_svd(self, *args, **kwargs):
+        msg = (
+            "partial_svd is no longer used. "
+            "Please use tensorly.tenalg.svd_interface instead, "
+            "it provides a unified interface to all available SVD implementations."
+        )
+        raise NotImplementedError(msg)

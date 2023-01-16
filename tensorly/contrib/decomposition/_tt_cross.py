@@ -94,8 +94,10 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
     if isinstance(rank, int):
         rank = [rank] * (tensor_order + 1)
     elif tensor_order + 1 != len(rank):
-        message = "Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {} while tl.ndim(tensor) + 1  = {}".format(
-            len(rank), tensor_order
+        message = (
+            "Provided incorrect number of ranks. Should verify "
+            + f"len(rank) == tl.ndim(tensor)+1, but len(rank) = {len(rank)} "
+            + f"while tl.ndim(tensor) + 1  = {tensor_order}"
         )
         raise (ValueError(message))
 
@@ -104,18 +106,15 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
     # Initialize rank
     if rank[0] != 1:
-        print(
-            "Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1: setting rank[0] to 1.".format(
-                rank[0]
-            )
+        message = "Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
+            rank[0]
         )
-        rank[0] = 1
+        raise ValueError(message)
     if rank[-1] != 1:
-        print(
-            "Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1: setting rank[-1] to 1.".format(
-                rank[0]
-            )
+        message = "Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
+            rank[-1]
         )
+        raise ValueError(message)
 
     # list col_idx: column indices (right indices) for skeleton-decomposition: indicate which columns used in each core.
     # list row_idx: row indices    (left indices)  for skeleton-decomposition: indicate which rows used in each core.
@@ -151,7 +150,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
     factor_new = [
         tl.tensor(
             rng.random_sample((rank[k], tensor_shape[k], rank[k + 1])),
-            **tl.context(input_tensor)
+            **tl.context(input_tensor),
         )
         for k in range(tensor_order)
     ]

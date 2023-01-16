@@ -8,12 +8,12 @@ from ..base import unfold
 from ..cp_tensor import (
     cp_to_tensor,
     CPTensor,
-    unfolding_dot_khatri_rao,
     cp_norm,
     cp_normalize,
     validate_cp_rank,
 )
 from ..tenalg.svd import svd_interface
+from ..tenalg import unfolding_dot_khatri_rao
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -125,7 +125,7 @@ def initialize_cp(
                 "be possible to convert it to a CPTensor instance"
             )
     else:
-        raise ValueError('Initialization method "{}" not recognized'.format(init))
+        raise ValueError(f'Initialization method "{init}" not recognized')
 
     if non_negative:
         # Make decomposition feasible by taking the absolute value of all factor matrices
@@ -246,11 +246,12 @@ def parafac(
     fixed_modes=None,
     svd_mask_repeats=5,
     linesearch=False,
+    callback=None,
 ):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
-    Computes a rank-`rank` decomposition of `tensor` [1]_ such that::
+    Computes a rank-`rank` decomposition of `tensor` [1]_ such that:
 
-        tensor = [|weights; factors[0], ..., factors[-1] |].
+    ``tensor = [|weights; factors[0], ..., factors[-1] |]``.
 
     Parameters
     ----------
@@ -314,14 +315,17 @@ def parafac(
     ----------
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications", SIAM
            REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-
     .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
            Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
-
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
            Applications", PhD., University of Amsterdam, 1998
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
+
+    if return_errors:
+        DeprecationWarning(
+            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
+        )
 
     if orthogonalise and not isinstance(orthogonalise, int):
         orthogonalise = n_iter_max
@@ -344,7 +348,10 @@ def parafac(
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
-    Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
+    if l2_reg:
+        Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
+    else:
+        Id = 0
 
     if fixed_modes is None:
         fixed_modes = []
@@ -368,6 +375,21 @@ def parafac(
             sparsity = int(sparsity * np.prod(tensor.shape))
         else:
             sparsity = int(sparsity)
+
+    if callback is not None:
+        cp_tensor = CPTensor((weights, factors))
+        unnorml_rec_error, _, norm_tensor = error_calc(
+            tensor, norm_tensor, weights, factors, sparsity, mask
+        )
+        callback_error = unnorml_rec_error / norm_tensor
+
+        if sparsity:
+            sparse_component = sparsify_tensor(
+                tensor - cp_to_tensor((weights, factors)), sparsity
+            )
+            callback((cp_tensor, sparse_component), callback_error)
+        else:
+            callback(cp_tensor, callback_error)
 
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
@@ -414,7 +436,7 @@ def parafac(
             line_iter = False
 
         # Calculate the current unnormalized error if we need it
-        if (tol or return_errors) and line_iter is False:
+        if (tol or return_errors) and not line_iter:
             unnorml_rec_error, tensor, norm_tensor = error_calc(
                 tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
             )
@@ -425,7 +447,7 @@ def parafac(
                 )
 
         # Start line search if requested.
-        if line_iter is True:
+        if line_iter:
             jump = iteration ** (1.0 / acc_pow)
 
             new_weights = weights_last + (weights - weights_last) * jump
@@ -445,7 +467,7 @@ def parafac(
                 acc_fail = 0
 
                 if verbose:
-                    print("Accepted line search jump of {}.".format(jump))
+                    print(f"Accepted line search jump of {jump}.")
             else:
                 unnorml_rec_error, tensor, norm_tensor = error_calc(
                     tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
@@ -453,7 +475,7 @@ def parafac(
                 acc_fail += 1
 
                 if verbose:
-                    print("Line search failed for jump of {}.".format(jump))
+                    print(f"Line search failed for jump of {jump}.")
 
                 if acc_fail == max_fail:
                     acc_pow += 1.0
@@ -462,19 +484,33 @@ def parafac(
                     if verbose:
                         print("Reducing acceleration.")
 
-        rec_error = unnorml_rec_error / norm_tensor
-        rec_errors.append(rec_error)
+        if (tol or return_errors) and not line_iter:
+            rec_error = unnorml_rec_error / norm_tensor
+            rec_errors.append(rec_error)
+
+        if callback is not None:
+            cp_tensor = CPTensor((weights, factors))
+
+            if sparsity:
+                sparse_component = sparsify_tensor(
+                    tensor - cp_to_tensor((weights, factors)), sparsity
+                )
+                retVal = callback((cp_tensor, sparse_component), rec_error)
+            else:
+                retVal = callback(cp_tensor, rec_error)
+
+            if retVal is True:
+                if verbose:
+                    print("Received True from callback function. Exiting.")
+                break
 
         if tol:
-
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
                 if verbose:
                     print(
-                        "iteration {}, reconstruction error: {}, decrease = {}, unnormalized = {}".format(
-                            iteration, rec_error, rec_error_decrease, unnorml_rec_error
-                        )
+                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}, unnormalized = {unnorml_rec_error}"
                     )
 
                 if cvg_criterion == "abs_rec_error":
@@ -486,14 +522,15 @@ def parafac(
 
                 if stop_flag:
                     if verbose:
-                        print("PARAFAC converged after {} iterations".format(iteration))
+                        print(f"PARAFAC converged after {iteration} iterations")
                     break
 
             else:
                 if verbose:
-                    print("reconstruction error={}".format(rec_errors[-1]))
+                    print(f"reconstruction error={rec_errors[-1]}")
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
+
     cp_tensor = CPTensor((weights, factors))
 
     if sparsity:
@@ -606,9 +643,10 @@ def randomised_parafac(
     max_stagnation=20,
     return_errors=False,
     random_state=None,
-    verbose=1,
+    verbose=0,
+    callback=None,
 ):
-    """Randomised CP decomposition via sampled ALS
+    """Randomised CP decomposition via sampled ALS [3]_
 
     Parameters
     ----------
@@ -631,7 +669,7 @@ def randomised_parafac(
     random_state : {None, int, np.random.RandomState}, default is None
     return_errors : bool, default is False
         if True, return a list of all errors
-    verbose : int, optional
+    verbose : int, optional, default is 0
         level of verbosity
 
     Returns
@@ -643,9 +681,14 @@ def randomised_parafac(
     References
     ----------
     .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
-       "A Practical Randomized CP Tensor Decomposition",
+           "A Practical Randomized CP Tensor Decomposition",
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
+
+    if return_errors:
+        DeprecationWarning(
+            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
+        )
 
     rng = tl.check_random_state(random_state)
     weights, factors = initialize_cp(
@@ -657,6 +700,12 @@ def randomised_parafac(
     min_error = 0
 
     weights = tl.ones(rank, **tl.context(tensor))
+
+    if callback is not None:
+        rec_error = tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
+
+        callback(CPTensor((weights, factors)))
+
     for iteration in range(n_iter_max):
         for mode in range(n_dims):
             kr_prod, indices_list = sample_khatri_rao(
@@ -665,7 +714,7 @@ def randomised_parafac(
             indices_list = [i.tolist() for i in indices_list]
             # Keep all the elements of the currently considered mode
             indices_list.insert(mode, slice(None, None, None))
-            # MXNet will not be happy if this is a list insteaf of a tuple
+            # MXNet will not be happy if this is a list instead of a tuple
             indices_list = tuple(indices_list)
             if mode:
                 sampled_unfolding = tensor[indices_list]
@@ -677,10 +726,19 @@ def randomised_parafac(
             factor = tl.transpose(tl.solve(pseudo_inverse, factor))
             factors[mode] = factor
 
-        if max_stagnation or tol:
+        if max_stagnation or tol or (callback is not None):
             rec_error = (
                 tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
             )
+
+        if callback is not None:
+            retVal = callback(CPTensor((weights, factors)), rec_error)
+            if retVal is True:
+                if verbose:
+                    print("Received True from callback function. Exiting.")
+                break
+
+        if max_stagnation or tol:
             if not min_error or rec_error < min_error:
                 min_error = rec_error
                 stagnation = -1
@@ -691,16 +749,14 @@ def randomised_parafac(
             if iteration > 1:
                 if verbose:
                     print(
-                        "reconstruction error={}, variation={}.".format(
-                            rec_errors[-1], rec_errors[-2] - rec_errors[-1]
-                        )
+                        f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2]-rec_errors[-1]}."
                     )
 
                 if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or (
                     stagnation and (stagnation > max_stagnation)
                 ):
                     if verbose:
-                        print("converged in {} iterations.".format(iteration))
+                        print(f"converged in {iteration} iterations.")
                     break
 
     if return_errors:
@@ -777,10 +833,8 @@ class CP(DecompositionMixin):
     ----------
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
            SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
-
     .. [2] Tomasi, Giorgio, and Rasmus Bro. "PARAFAC and missing values."
            Chemometrics and Intelligent Laboratory Systems 75.2 (2005): 163-180.
-
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
            Applications", PhD., University of Amsterdam, 1998
     """
@@ -803,6 +857,7 @@ class CP(DecompositionMixin):
         fixed_modes=None,
         svd_mask_repeats=5,
         linesearch=False,
+        callback=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -820,6 +875,7 @@ class CP(DecompositionMixin):
         self.fixed_modes = fixed_modes
         self.svd_mask_repeats = svd_mask_repeats
         self.linesearch = linesearch
+        self.callback = callback
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -853,6 +909,7 @@ class CP(DecompositionMixin):
             svd_mask_repeats=self.svd_mask_repeats,
             linesearch=self.linesearch,
             return_errors=True,
+            callback=self.callback,
         )
         self.decomposition_ = cp_tensor
         self.errors_ = errors
@@ -910,6 +967,7 @@ class RandomizedCP(DecompositionMixin):
         max_stagnation=20,
         random_state=None,
         verbose=1,
+        callback=None,
     ):
         self.rank = rank
         self.n_samples = n_samples
@@ -920,6 +978,7 @@ class RandomizedCP(DecompositionMixin):
         self.max_stagnation = max_stagnation
         self.random_state = random_state
         self.verbose = verbose
+        self.callback = callback
 
     def fit_transform(self, tensor):
         self.decomposition_, self.errors_ = randomised_parafac(
@@ -934,5 +993,6 @@ class RandomizedCP(DecompositionMixin):
             max_stagnation=self.max_stagnation,
             random_state=self.random_state,
             verbose=self.verbose,
+            callback=self.callback,
         )
         return self.decomposition_

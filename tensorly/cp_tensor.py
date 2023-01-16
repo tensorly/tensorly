@@ -5,7 +5,7 @@ Core operations on CP tensors.
 from . import backend as T
 from .base import fold, tensor_to_vec
 from ._factorized_tensor import FactorizedTensor
-from .tenalg import khatri_rao, multi_mode_dot
+from .tenalg import khatri_rao, unfolding_dot_khatri_rao
 from .utils import DefineDeprecated
 from .metrics.factors import congruence_coefficient
 import numpy as np
@@ -38,9 +38,9 @@ class CPTensor(FactorizedTensor):
             return self.factors
         else:
             raise IndexError(
-                "You tried to access index {} of a CP tensor.\n"
+                f"You tried to access index {index} of a CP tensor.\n"
                 "You can only access index 0 and 1 of a CP tensor"
-                "(corresponding respectively to the weights and factors)".format(index)
+                "(corresponding respectively to the weights and factors)"
             )
 
     def __setitem__(self, index, value):
@@ -50,9 +50,9 @@ class CPTensor(FactorizedTensor):
             self.factors = value
         else:
             raise IndexError(
-                "You tried to set the value at index {} of a CP tensor.\n"
+                f"You tried to set the value at index {index} of a CP tensor.\n"
                 "You can only set index 0 and 1 of a CP tensor"
-                "(corresponding respectively to the weights and factors)".format(index)
+                "(corresponding respectively to the weights and factors)"
             )
 
     def __iter__(self):
@@ -63,8 +63,8 @@ class CPTensor(FactorizedTensor):
         return 2
 
     def __repr__(self):
-        message = "(weights, factors) : rank-{} CPTensor of shape {} ".format(
-            self.rank, self.shape
+        message = (
+            f"(weights, factors) : rank-{self.rank} CPTensor of shape {self.shape}"
         )
         return message
 
@@ -203,17 +203,13 @@ def _validate_cp_tensor(cp_tensor):
         if current_rank != rank:
             raise ValueError(
                 "All the factors of a CP tensor should have the same number of column."
-                "However, factors[0].shape[1]={} but factors[{}].shape[1]={}.".format(
-                    rank, i, T.shape(factor)[1]
-                )
+                f"However, factors[0].shape[1]={rank} but factors[{i}].shape[1]={T.shape(factor)[1]}."
             )
         shape.append(current_mode_size)
 
     if weights is not None and T.shape(weights) != (rank,):
         raise ValueError(
-            "Given factors for a rank-{} CP tensor but len(weights)={}.".format(
-                rank, T.shape(weights)
-            )
+            f"Given factors for a rank-{rank} CP tensor but len(weights)={T.shape(weights)}."
         )
 
     return tuple(shape), rank
@@ -582,25 +578,15 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
         # Test for the validity of the operation
         if matrix_or_vector.shape[1] != shape[mode]:
             raise ValueError(
-                "shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)".format(
-                    shape,
-                    matrix_or_vector.shape,
-                    mode,
-                    shape[mode],
-                    matrix_or_vector.shape[1],
-                )
+                f"shapes {shape} and {matrix_or_vector.shape} not aligned in mode-{mode} multiplication: "
+                f"{shape[mode]} (mode {mode}) != {matrix_or_vector.shape[1]} (dim 1 of matrix)"
             )
 
     elif T.ndim(matrix_or_vector) == 1:  # Tensor times vector
         if matrix_or_vector.shape[0] != shape[mode]:
             raise ValueError(
-                "shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)".format(
-                    shape,
-                    matrix_or_vector.shape,
-                    mode,
-                    shape[mode],
-                    matrix_or_vector.shape[0],
-                )
+                f"shapes {shape} and {matrix_or_vector.shape} not aligned for mode-{mode} multiplication: "
+                f"{shape[mode]} (mode {mode}) != {matrix_or_vector.shape[0]} (vector size)"
             )
         if not keep_dim:
             contract = True  # Contract over that mode
@@ -626,84 +612,6 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
         return cp_tensor
 
 
-def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
-    """mode-n unfolding times khatri-rao product of factors
-
-    Parameters
-    ----------
-    tensor : tl.tensor
-        tensor to unfold
-    factors : tl.tensor list
-        list of matrices of which to the khatri-rao product
-    mode : int
-        mode on which to unfold `tensor`
-
-    Returns
-    -------
-    mttkrp
-        dot(unfold(tensor, mode), khatri-rao(factors))
-
-    Notes
-    -----
-    This is a variant of::
-
-        unfolded = unfold(tensor, mode)
-        kr_factors = khatri_rao(factors, skip_matrix=mode)
-        mttkrp2 = tl.dot(unfolded, kr_factors)
-
-    Multiplying with the Khatri-Rao product is equivalent to multiplying,
-    for each rank, with the kronecker product of each factor.
-    In code::
-
-        mttkrp_parts = []
-        for r in range(rank):
-            component = tl.tenalg.multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode)
-            mttkrp_parts.append(component)
-        mttkrp = tl.stack(mttkrp_parts, axis=1)
-        return mttkrp
-
-    This can be done by taking n-mode-product with the full factors
-    (faster but more memory consuming)::
-
-        projected = multi_mode_dot(tensor, factors, skip=mode, transpose=True)
-        ndims = T.ndim(tensor)
-        res = []
-        for i in range(factors[0].shape[1]):
-            index = tuple([slice(None) if k == mode  else i for k in range(ndims)])
-            res.append(projected[index])
-        return T.stack(res, axis=-1)
-
-
-    The same idea could be expressed using einsum::
-
-        ndims = tl.ndim(tensor)
-        tensor_idx = ''.join(chr(ord('a') + i) for i in range(ndims))
-        rank = chr(ord('a') + ndims + 1)
-        op = tensor_idx
-        for i in range(ndims):
-            if i != mode:
-                op += ',' + ''.join([tensor_idx[i], rank])
-            else:
-                result = ''.join([tensor_idx[i], rank])
-        op += '->' + result
-        factors = [f for (i, f) in enumerate(factors) if i != mode]
-        return tl_einsum(op, tensor, *factors)
-    """
-    mttkrp_parts = []
-    _, rank = _validate_cp_tensor(cp_tensor)
-    weights, factors = cp_tensor
-    for r in range(rank):
-        component = multi_mode_dot(
-            tensor, [T.conj(f[:, r]) for f in factors], skip=mode
-        )
-        mttkrp_parts.append(component)
-
-    if weights is None:
-        return T.stack(mttkrp_parts, axis=1)
-    else:
-        return T.stack(mttkrp_parts, axis=1) * T.reshape(weights, (1, -1))
-
-
 def cp_norm(cp_tensor):
     """Returns the l2 norm of a CP tensor
 
@@ -725,7 +633,7 @@ def cp_norm(cp_tensor):
     _ = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
 
-    norm = T.ones((factors[0].shape[1], factors[0].shape[1]))
+    norm = T.ones((factors[0].shape[1], factors[0].shape[1]), **T.context(factors[0]))
     for f in factors:
         norm = norm * T.dot(T.transpose(f), T.conj(f))
 
@@ -743,12 +651,14 @@ def cp_permute_factors(ref_cp_tensor, tensors_to_permute):
     Compares factors of a reference cp tensor with factors of other another tensor (or list of tensor) in order to match component order.
     Permutation occurs on the columns of factors, minimizing the cosine distance to reference cp tensor with scipy
     Linear Sum Assignment method. The permuted tensor (or list of tensors) and list of permutation for each permuted tensors are returned.
+
     Parameters
     ----------
     ref_cp_tensor : cp tensor
         The tensor that serves as a reference for permutation.
     tensors_to_permute : cp tensor or list of cp tensors
         The tensors to permute so that the order of components match the reference tensor. Number of components must match.
+
     Returns
     -------
     permuted_tensors : permuted cp tensor or list of cp tensors

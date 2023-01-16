@@ -6,8 +6,6 @@ operations such as khatri-rao or kronecker product, n-mode product, etc.
 import sys
 import importlib
 import threading
-import os
-import warnings
 
 from ..backend import BackendManager, dynamically_dispatched_class_attribute
 from .base_tenalg import TenalgBackend
@@ -25,6 +23,7 @@ class TenalgBackendManager(BackendManager):
         "batched_outer",
         "higher_order_moment",
         "_tt_matrix_to_tensor",
+        "unfolding_dot_khatri_rao",
         "tensordot",
     ]
     _attributes = []

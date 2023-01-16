@@ -16,7 +16,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8
+        python-version: 3.9
   
     - name: Install dependencies and backend ${{matrix.BACKEND}}
       run: |
@@ -36,6 +36,9 @@ jobs:
         elif [[ "${{matrix.BACKEND}}" == "mxnet" ]]; then
           echo "Installing MXNet";
           sudo apt install gfortran;
+          echo "Reverting to older version of numpy 1.23.1 until MXNet fixed bool issue" 
+          python -m pip uninstall numpy -y;
+          python -m pip install numpy==1.23.1;
           pip install mxnet;
         elif [[ "${{matrix.BACKEND}}" == "jax" ]]; then
           echo "Installing JAX";

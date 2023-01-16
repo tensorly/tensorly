@@ -156,9 +156,7 @@ def partial_tucker(
         warnings.warn(message, Warning)
         rank = [tl.shape(tensor)[mode] for mode in modes]
     elif isinstance(rank, int):
-        message = "Given only one int for 'rank' instead of a list of {} modes. Using this rank for all modes.".format(
-            len(modes)
-        )
+        message = f"Given only one int for 'rank' instead of a list of {len(modes)} modes. Using this rank for all modes."
         warnings.warn(message, Warning)
         rank = tuple(rank for _ in modes)
     else:
@@ -205,14 +203,12 @@ def partial_tucker(
         if iteration > 1:
             if verbose:
                 print(
-                    "reconstruction error={}, variation={}.".format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]
-                    )
+                    f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
                 )
 
             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
-                    print("converged in {} iterations.".format(iteration))
+                    print(f"converged in {iteration} iterations.")
                 break
 
     return (core, factors), rec_errors
@@ -435,14 +431,12 @@ def non_negative_tucker(
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
             print(
-                "reconstruction error={}, variation={}.".format(
-                    rec_errors[-1], rec_errors[-2] - rec_errors[-1]
-                )
+                f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
             )
 
         if iteration > 1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:
             if verbose:
-                print("converged in {} iterations.".format(iteration))
+                print(f"converged in {iteration} iterations.")
             break
         if normalize_factors:
             nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
@@ -578,6 +572,13 @@ def non_negative_tucker_hals(
     if fixed_modes is None:
         fixed_modes = []
 
+    if tl.ndim(tensor) - 1 in fixed_modes:
+        warnings.warn(
+            "You asked for fixing the last mode, which is not supported. The last mode will not be fixed."
+            " Consider using tl.moveaxis() to permute it to another position and keep it fixed there."
+        )
+        fixed_modes.remove(tl.ndim(tensor) - 1)
+
     # Avoiding errors
     for fixed_value in fixed_modes:
         sparsity_coefficients[fixed_value] = None
@@ -671,14 +672,12 @@ def non_negative_tucker_hals(
         if iteration > 1:
             if verbose:
                 print(
-                    "reconstruction error={}, variation={}.".format(
-                        rec_errors[-1], rec_errors[-2] - rec_errors[-1]
-                    )
+                    f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
                 )
 
             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
-                    print("converged in {} iterations.".format(iteration))
+                    print(f"converged in {iteration} iterations.")
                 break
         if normalize_factors:
             nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))

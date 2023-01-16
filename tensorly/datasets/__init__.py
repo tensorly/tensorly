@@ -7,6 +7,6 @@ from .synthetic import gen_image
 from .data_imports import (
     load_IL2data,
     load_covid19_serology,
-    fetch_indian_pines,
+    load_indian_pines,
     fetch_kinetic,
 )

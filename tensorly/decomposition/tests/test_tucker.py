@@ -48,15 +48,12 @@ def test_partial_tucker():
         assert_equal(
             factors[i].shape,
             (tensor.shape[i + 1], ranks[i]),
-            err_msg="factors[{}].shape={}, expected {}".format(
-                i, factors[i].shape, (tensor.shape[i + 1], ranks[i])
-            ),
+            err_msg=f"factors[i].shape = {factors[i].shape}, expected {(tensor.shape[i + 1], ranks[i])}",
         )
     assert_equal(
         core.shape,
         [tensor.shape[0]] + ranks,
-        err_msg="Core.shape={}, "
-        "expected {}".format(core.shape, [tensor.shape[0]] + ranks),
+        err_msg=f"core.shape = {core.shape}, expected {[tensor.shape[0]] + ranks}",
     )
 
     # Test random_state fixes the core and the factor matrices
@@ -94,14 +91,12 @@ def test_tucker(monkeypatch):
         assert_equal(
             factors[i].shape,
             (tensor.shape[i], ranks[i]),
-            err_msg="factors[{}].shape={}, expected {}".format(
-                i, factors[i].shape, (tensor.shape[i], ranks[i])
-            ),
+            err_msg=f"factors[i].shape = {factors[i].shape}, expected {(tensor.shape[i], ranks[i])}",
         )
         assert_equal(
             tl.shape(core)[i],
             rank,
-            err_msg="Core.shape[{}]={}, " "expected {}".format(i, core.shape[i], rank),
+            err_msg=f"core.shape[i] = {core.shape[i]}, expected {rank}",
         )
 
     # try fixing the core
@@ -211,17 +206,13 @@ def test_non_negative_tucker(init, hals, monkeypatch):
     core, factors = nn_method(tensor, rank=rank, n_iter_max=2)
     assert_(
         tl.shape(core) == target_shape,
-        "core has the wrong shape, got {}, but expected {}.".format(
-            tl.shape(core), target_shape
-        ),
+        f"core has the wrong shape, got {tl.shape(core)}, but expected {target_shape}.",
     )
     for i, f in enumerate(factors):
         expected_shape = (tl.shape(tensor)[i], rank)
         assert_(
             tl.shape(f) == expected_shape,
-            "{}-th factor has the wrong shape, got {}, but expected {}.".format(
-                i, tl.shape(f), expected_shape
-            ),
+            f"{i}-th factor has the wrong shape, got {tl.shape(f)}, but expected {expected_shape}.",
         )
 
     if hals:

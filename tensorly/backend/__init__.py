@@ -11,6 +11,14 @@ import sys
 
 
 class dynamically_dispatched_class_attribute(object):
+    """Enable dynamically dispatched attributes such as dtype
+
+    Parameters
+    ----------
+    object : name
+        name of the attribute, will become backend.name
+    """
+
     __slots__ = ["name"]
 
     def __init__(self, name):
@@ -73,6 +81,8 @@ class BackendManager(types.ModuleType):
         "svd",
         "qr",
         "randn",
+        "gamma",
+        "digamma",
         "check_random_state",
         "sort",
         "eigh",
@@ -103,6 +113,7 @@ class BackendManager(types.ModuleType):
         "asinh",
         "acosh",
         "atanh",
+        "partial_svd",
     ]
     _attributes = [
         "int64",
@@ -127,6 +138,7 @@ class BackendManager(types.ModuleType):
 
     @classmethod
     def use_dynamic_dispatch(cls):
+        """Dispatch all backend functions dynamically to enable changing backend during runtime"""
         # Define class methods and attributes that dynamically dispatch to the backend
         for name in cls._functions:
             if hasattr(cls, name):
@@ -147,6 +159,11 @@ class BackendManager(types.ModuleType):
 
     @classmethod
     def use_static_dispatch(cls):
+        """Switch to static dispatching: backend functions no longer will be dynamically dispatched.
+
+        This means that if you import a function after calling this function
+        and change the backend, those imported functions will still point to the old backend
+        """
         # Define class methods and attributes that dynamically dispatch to the backend
         for name in cls._functions:
             setattr(cls, name, staticmethod(getattr(cls.current_backend(), name)))
@@ -183,6 +200,9 @@ class BackendManager(types.ModuleType):
         """Create a dispatched function from a generic backend method."""
 
         def wrapped_backend_method(*args, **kwargs):
+            """A dynamically dispatched method
+
+            Returns the queried method from the currently set backend"""
             return getattr(
                 cls._THREAD_LOCAL_DATA.__dict__.get("backend", cls._backend), name
             )(*args, **kwargs)
@@ -290,7 +310,7 @@ class BackendManager(types.ModuleType):
             msg = f"Unknown backend name {backend_name!r}, known backends are {cls.available_backend_names}"
             raise ValueError(msg)
         if backend_name not in Backend._available_backends:
-            importlib.import_module("tensorly.backend.{0}_backend".format(backend_name))
+            importlib.import_module(f"tensorly.backend.{backend_name}_backend")
         if backend_name in Backend._available_backends:
             backend = Backend._available_backends[backend_name]()
             # backend = getattr(module, )()

@@ -19,6 +19,7 @@ def robust_pca(
     mu_max=10e9,
     learning_rate=1.1,
     n_iter_max=100,
+    return_errors=False,
     verbose=1,
 ):
     """Robust Tensor PCA via ALM with support for missing values
@@ -47,18 +48,22 @@ def robust_pca(
         percentage increase of mu at each iteration
     n_iter_max : int, optional, default is 100
         maximum number of iteration
+    return_errors : bool, default is False
+        if True, additionally returns the reconstruction errors
     verbose : int, default is 1
         level of verbosity
 
     Returns
     -------
-    (D, E)
+    (D, E) or (D, E, rec_errors)
         Robust decomposition of `X`
 
     D : `X`-like array
         low-rank part
     E : `X`-like array
         sparse error part
+    rec_errors : list of errors
+         only returned if `return_errors` is True
 
     Notes
     -----
@@ -133,7 +138,10 @@ def robust_pca(
         if iteration > 1:
             if rec_X[-1] <= tol and rec_D[-1] <= tol:
                 if verbose:
-                    print("\nConverged in {} iterations".format(iteration))
+                    print(f"\nConverged in {iteration} iterations")
                 break
 
-    return D, E
+    if return_errors:
+        return D, E, rec_X
+    else:
+        return D, E

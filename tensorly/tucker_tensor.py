@@ -22,15 +22,13 @@ def _validate_tucker_tensor(tucker_tensor):
     if len(factors) < 2:
         raise ValueError(
             "A Tucker tensor should be composed of at least two factors and a core."
-            "However, {} factor was given.".format(len(factors))
+            f"However, {len(factors)} factor was given."
         )
 
     if len(factors) != tl.ndim(core):
         raise ValueError(
             "Tucker decompositions should have one factor per more of the core tensor."
-            "However, core has {} modes but {} factors have been provided".format(
-                tl.ndim(core), len(factors)
-            )
+            f"However, core has {tl.ndim(core)} modes but {len(factors)} factors have been provided"
         )
 
     shape = []
@@ -41,9 +39,7 @@ def _validate_tucker_tensor(tucker_tensor):
             raise ValueError(
                 "Factor `n` of Tucker decomposition should verify:\n"
                 "factors[n].shape[1] = core.shape[n]."
-                "However, factors[{0}].shape[1]={1} but core.shape[{0}]={2}.".format(
-                    i, tl.shape(factor)[1], tl.shape(core)[i]
-                )
+                f"However, factors[{i}].shape[1]={tl.shape(factor)[1]} but core.shape[{i}]={tl.shape(core)[i]}."
             )
         shape.append(current_shape)
         rank.append(current_rank)
@@ -193,25 +189,15 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
         # Test for the validity of the operation
         if matrix_or_vector.shape[1] != shape[mode]:
             raise ValueError(
-                "shapes {0} and {1} not aligned in mode-{2} multiplication: {3} (mode {2}) != {4} (dim 1 of matrix)".format(
-                    shape,
-                    matrix_or_vector.shape,
-                    mode,
-                    shape[mode],
-                    matrix_or_vector.shape[1],
-                )
+                f"shapes {shape} and {matrix_or_vector.shape} not aligned in mode-{mode} multiplication: "
+                f"{shape[mode]} ({mode = }) != {matrix_or_vector.shape[1]} (dim 1 of matrix)"
             )
 
     elif tl.ndim(matrix_or_vector) == 1:  # Tensor times vector
         if matrix_or_vector.shape[0] != shape[mode]:
             raise ValueError(
-                "shapes {0} and {1} not aligned for mode-{2} multiplication: {3} (mode {2}) != {4} (vector size)".format(
-                    shape,
-                    matrix_or_vector.shape,
-                    mode,
-                    shape[mode],
-                    matrix_or_vector.shape[0],
-                )
+                f"shapes {shape} and {matrix_or_vector.shape} not aligned for mode-{mode} multiplication: "
+                f"{shape[mode]} ({mode = }) != {matrix_or_vector.shape[0]} (vector size)"
             )
         if not keep_dim:
             contract = True  # Contract over that mode
@@ -250,9 +236,9 @@ class TuckerTensor(FactorizedTensor):
             return self.factors
         else:
             raise IndexError(
-                "You tried to access index {} of a Tucker tensor.\n"
+                f"You tried to access index {index} of a Tucker tensor.\n"
                 "You can only access index 0 and 1 of a Tucker tensor"
-                "(corresponding respectively to core and factors)".format(index)
+                "(corresponding respectively to core and factors)"
             )
 
     def __setitem__(self, index, value):
@@ -262,9 +248,9 @@ class TuckerTensor(FactorizedTensor):
             self.factors = value
         else:
             raise IndexError(
-                "You tried to set index {} of a Tucker tensor.\n"
+                f"You tried to set index {index} of a Tucker tensor.\n"
                 "You can only set index 0 and 1 of a Tucker tensor"
-                "(corresponding respectively to core and factors)".format(index)
+                "(corresponding respectively to core and factors)"
             )
 
     def __iter__(self):
@@ -275,9 +261,7 @@ class TuckerTensor(FactorizedTensor):
         return 2
 
     def __repr__(self):
-        message = "Decomposed rank-{} TuckerTensor of shape {} ".format(
-            self.rank, self.shape
-        )
+        message = f"Decomposed rank-{self.rank} TuckerTensor of shape {self.shape} "
         return message
 
     def to_tensor(self):
@@ -425,7 +409,7 @@ def validate_tucker_rank(tensor_shape, rank="same", rounding="round", fixed_mode
         fun = (
             lambda x: n_param_tensor * x**n_modes_compressed
             + squared_dims * x
-            + n_fixed_params
+            + n_fixed_params * x
             - rank * n_param_tensor
         )
         fraction_param = brentq(fun, 0.0, max(rank, 1.0))
@@ -437,9 +421,7 @@ def validate_tucker_rank(tensor_shape, rank="same", rounding="round", fixed_mode
 
     elif isinstance(rank, int):
         n_modes = len(tensor_shape)
-        message = "Given only one int for 'rank' for decomposition a tensor of order {}. Using this rank for all modes.".format(
-            n_modes
-        )
+        message = f"Given only one int for 'rank' for decomposition a tensor of order {n_modes}. Using this rank for all modes."
         warnings.warn(message, RuntimeWarning)
         if fixed_modes is None:
             rank = [rank] * n_modes

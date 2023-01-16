@@ -11,18 +11,20 @@ TensorLy is organized in several submodule:
 ================================= ================================
 Module                             Description
 ================================= ================================
-:mod:`tensorly`                   Core operations,  includes regular array manipulation and tensor specific ones. 
+:mod:`tensorly`                   Core operations and dynamically dispatched functions
 :mod:`tensorly.tucker_tensor`     Manipulate tensors in decomposed Tucker form
 :mod:`tensorly.cp_tensor`         Manipulate tensors decomposed in CP (or Parafac) form
 :mod:`tensorly.tt_tensor`         Manipulate tensors in decomposed Tensor-Train format
 :mod:`tensorly.tt_matrix`         Manipulate tensors decomposed in the TT-Matrix format
 :mod:`tensorly.parafac2_tensor`   Manipulate tensors in decomposed PARAFAC-2 form
+:mod:`tensorly.tenalg`            Tensor algebraic operations
 :mod:`tensorly.decomposition`     Perform tensor decomposition
 :mod:`tensorly.regression`        Perform (low-rank) tensor regression
 :mod:`tensorly.random`            Sample random tensors
 :mod:`tensorly.metrics`           Error measures
 :mod:`tensorly.contrib`           Experimental features, including sparse tensor decomposition and cross decomposition
 :mod:`tensorly.datasets`          Loading data
+:mod:`tensorly.plugins`           Plug-and-play add-ons for TensorLy
 ================================= ================================
 
 

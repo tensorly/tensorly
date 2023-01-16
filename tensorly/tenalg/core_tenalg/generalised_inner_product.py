@@ -31,9 +31,7 @@ def inner(tensor1, tensor2, n_modes=None):
                 "Taking a generalised product between two tensors without specifying common modes"
                 " is equivalent to taking inner product."
                 "This requires tensor1.shape == tensor2.shape."
-                "However, got tensor1.shape={} and tensor2.shape={}".format(
-                    tensor1.shape, tensor2.shape
-                )
+                f"However, got {tensor1.shape=} and {tensor2.shape=}"
             )
         return T.sum(tensor1 * tensor2)
 
@@ -46,8 +44,8 @@ def inner(tensor1, tensor2, n_modes=None):
 
     if common_modes != shape_t2[:n_modes]:
         raise ValueError(
-            "Incorrect shapes for inner product along {} common modes."
-            "tensor_1.shape={}, tensor_2.shape={}".format(n_modes, shape_t1, shape_t2)
+            f"Incorrect shapes for inner product along {n_modes} common modes."
+            f"{tensor_1.shape=}, {tensor_2.shape=}"
         )
     inner_product = T.dot(
         T.reshape(tensor1, (-1, common_size)), T.reshape(tensor2, (common_size, -1))

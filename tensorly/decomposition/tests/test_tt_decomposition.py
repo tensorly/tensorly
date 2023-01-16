@@ -1,6 +1,6 @@
 import pytest
 import tensorly as tl
-from .._tt import tensor_train, tensor_train_matrix, TensorTrain
+from .._tt import tensor_train, tensor_train_matrix, TensorTrain, TensorTrainMatrix
 from ...tt_matrix import tt_matrix_to_tensor
 from ...random import random_tt
 from ...testing import (
@@ -89,10 +89,14 @@ def test_tensor_train(monkeypatch):
 
 # TODO: Remove once MXNet supports transpose for > 6th order tensors
 @skip_mxnet
-def test_tensor_train_matrix():
+def test_tensor_train_matrix(monkeypatch):
     """Test for tensor_train_matrix decomposition"""
     tensor = random_tt((2, 2, 2, 3, 3, 3), rank=2, full=True)
     tt = tensor_train_matrix(tensor, 10)
 
     tt_rec = tt_matrix_to_tensor(tt)
     assert_array_almost_equal(tensor, tt_rec, decimal=4)
+
+    assert_class_wrapper_correctly_passes_arguments(
+        monkeypatch, tensor_train_matrix, TensorTrainMatrix, ignore_args={}, rank=3
+    )
