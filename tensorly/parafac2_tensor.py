@@ -221,7 +221,7 @@ def parafac2_normalise(parafac2_tensor):
 
 
 def apply_parafac2_projections(parafac2_tensor):
-    """Apply the projection matrices to the evolving factor.
+    r"""Apply the projection matrices to the evolving factor.
 
     Parameters
     ----------

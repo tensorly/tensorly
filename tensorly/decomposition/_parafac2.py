@@ -97,9 +97,7 @@ def _compute_projections(tensor_slices, factors, svd):
 
         out.append(T.transpose(T.dot(U, Vh)))
 
-        projection.append(T.transpose(T.dot(U, Vh)))
-
-    return projection
+    return out
 
 
 def _project_tensor_slices(tensor_slices, projections):
