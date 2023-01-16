@@ -9,6 +9,7 @@ from .._cp import (
     randomised_parafac,
     CP,
     RandomizedCP,
+    CPTensor,
 )
 from .._nn_cp import (
     non_negative_parafac,

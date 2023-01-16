@@ -125,7 +125,7 @@ def coupled_matrix_tensor_3d_factorization(
         rec_errors.append(error_new)
 
         if iteration == n_iter_max - 1:
-            warnings.warn("Reached maximum iteration number without convergance.")
+            warnings.warn("Reached maximum iteration number without convergence.")
 
     matrix_pred = CPTensor((None, [tensor_cp.factors[0], V]))
 
