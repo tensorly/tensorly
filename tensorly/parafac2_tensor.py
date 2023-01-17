@@ -221,7 +221,7 @@ def parafac2_normalise(parafac2_tensor):
 
 
 def apply_parafac2_projections(parafac2_tensor):
-    """Apply the projection matrices to the evolving factor.
+    r"""Apply the projection matrices to the evolving factor.
 
     Parameters
     ----------
@@ -402,7 +402,7 @@ def parafac2_to_tensor(parafac2_tensor):
 
     .. math::
 
-        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
+        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
 
     with the same constraints hold for :math:`B_i` as above.
 
