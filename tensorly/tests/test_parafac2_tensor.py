@@ -13,7 +13,6 @@ from ..parafac2_tensor import (
     parafac2_normalise,
     apply_parafac2_projections,
 )
-from ..tenalg import kronecker, mode_dot
 from ..testing import (
     assert_array_equal,
     assert_array_almost_equal,
