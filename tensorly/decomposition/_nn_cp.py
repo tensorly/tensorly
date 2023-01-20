@@ -311,20 +311,11 @@ def non_negative_parafac_hals(
             sparsity_coefficients[i]=0
 
     # adding ridge penalty unless done by user on non-sparse/ridge factors to avoid degeneracy
-    # TODO: good idea? makes norm unpredictable and l1 coeffs unreliable
     if any(sparsity_coefficients) or any(ridge_coefficients):
         for i in range(n_modes):
             if abs(sparsity_coefficients[i]) + abs(ridge_coefficients[i])==0:
-                warnings.warn(f"Ridge coefficient set to 1 on mode {i} to avoid degeneracy")
-                ridge_coefficients[i] = 1
-
-    # other solution: normalize modes which have no sparsity
-    # TODO: good idea?
-    #normalize_mode = [None]*n_modes
-    #if any(sparsity_coefficients):
-        #for i in range(n_modes):
-            #if not ridge_coefficients[i]:
-                #normalize_mode[i] = True
+                warnings.warn(f"Ridge coefficient set to max l1coeffs on mode {i} to avoid degeneracy")
+                ridge_coefficients[i] = tl.max(sparsity_coefficients)
 
     if fixed_modes is None:
         fixed_modes = []
@@ -334,23 +325,11 @@ def non_negative_parafac_hals(
     elif nn_modes is None:
         nn_modes = set()
 
-    # Avoiding errors
-    # TODO: remove?
-    for fixed_value in fixed_modes:
-        sparsity_coefficients[fixed_value] = None
-
-    #for mode in range(n_modes):
-    #    if sparsity_coefficients[mode]:
-    #        warnings.warn("Sparsity coefficient is ignored in unconstrained modes.")
     # Generating the mode update sequence
     modes = [mode for mode in range(n_modes) if mode not in fixed_modes]
 
     # initialisation - declare local variables
     rec_errors = []
-
-    # no sparse at first iteration
-    # effective sparsity will be a list of len n_modes of tensors of size dim[mode]
-    effective_sparsity_coefficients = [0]*n_modes
 
     # Iteration
     for iteration in range(n_iter_max):
@@ -372,15 +351,15 @@ def non_negative_parafac_hals(
             )
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
-            if iteration==1: 
-                # Computing maximum sparsity level for each column of V (result of size dim[mode])
-                # only at first iteration to keep coeffs constant
-                sparsity_max = tl.max(mttkrp, axis=1)
-                # TODO: good idea?
-                # sparsity_coefficient is relative in [0,1], scales for each column
-                if sparsity_coefficients[mode]:
-                    effective_sparsity_coefficients[mode] = sparsity_coefficients[mode]*sparsity_max
-                print(effective_sparsity_coefficients)
+            #if iteration==1: 
+                ## Computing maximum sparsity level for each column of V (result of size dim[mode])
+                ## only at first iteration to keep coeffs constant
+                #sparsity_max = tl.max(mttkrp, axis=1)
+                ## TODO: good idea?
+                ## sparsity_coefficient is relative in [0,1], scales for each column
+                #if sparsity_coefficients[mode]:
+                    #effective_sparsity_coefficients[mode] = sparsity_coefficients[mode]*sparsity_max
+                #print(effective_sparsity_coefficients)
 
             if mode in nn_modes:
                 # Call the hals resolution with nnls, optimizing the current mode
@@ -390,7 +369,7 @@ def non_negative_parafac_hals(
                     tl.transpose(factors[mode]),
                     n_iter_max=100,
                     #sparsity_coefficient=sparsity_coefficients[mode],
-                    sparsity_coefficient=effective_sparsity_coefficients[mode],
+                    sparsity_coefficient=sparsity_coefficients[mode],
                     ridge_coefficient=ridge_coefficients[mode],
                     exact=exact,
                     epsilon=epsilon

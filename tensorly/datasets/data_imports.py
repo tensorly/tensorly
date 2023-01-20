@@ -856,7 +856,7 @@ def load_indian_pines():
 def fetch_kinetic():
     """
     Loads kinetic fluorescence dataset from website and returns it as tensorly tensor without storing the data
-    in the hard drive.The data is well suited for Parafac and multi-way partial least squares regression (N-PLS).
+    in the hard drive. The data is well suited for Parafac and multi-way partial least squares regression (N-PLS).
     """
     url = "http://models.life.ku.dk/sites/default/files/Kinetic_Fluor.zip"
     r = urlopen(url)

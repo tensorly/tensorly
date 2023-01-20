@@ -1009,7 +1009,7 @@ def hals_nnls(
         for k in range(rank):
             if UtU[k, k]:
                 newV = tl.clip(
-                    (UtM[k,:] - tl.dot(UtU[k,:], V) - sparsity_coefficient)
+                    (UtM[k,:] - tl.dot(UtU[k,:], V) + UtU[k,k]*V[k,:] - sparsity_coefficient)
                     / (UtU[k,k]+ridge_coefficient), a_min=epsilon
                     )
                 rec_error += tl.norm(V-newV)**2
@@ -1038,6 +1038,7 @@ def hals_nnls(
         denominator = tl.shape(V)[0] * rank + tl.shape(V)[0]
         complexity_ratio = 1 + (numerator / denominator)
         if rec_error < tol * rec_error0 or exact*(iteration > 1 + 0.5 * complexity_ratio):
+            print(iteration)
             break
     return V, rec_error, iteration, complexity_ratio
 
