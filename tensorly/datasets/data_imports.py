@@ -859,8 +859,8 @@ def load_kinetic():
     Data is a courtesy of Rasmus Bro and collaborators, it can be originally downloaded at https://ucphchemometrics.com/. Please cite the original reference if you use this data in any way.
     """
     path_here = dirname(__file__)
-    tensor = np.load(path_here+"/data/Kinetic.npy")
-    nan_positions = np.load(path_here+"/data/Kinetic_missing.npy")
+    tensor = np.load(path_here + "/data/Kinetic.npy")
+    nan_positions = np.load(path_here + "/data/Kinetic_missing.npy")
     reference = "Nikolajsen, R. P., Booksh, K. S., Hansen, Å. M., & Bro, R. (2003). \
                 Quantifying catecholamines using multi-way kinetic modelling. \
                 Analytica Chimica Acta, 475(1-2), 137-150."
@@ -878,20 +878,29 @@ def load_kinetic():
         "Analytica Chimica Acta, Vol 475 Iss 1-2, 2003, pg. 137-150"
     )
     desc = "A four-way data set with the modes: Concentration, excitation wavelength, emission wavelength and time"
-    outlier_measurements_idx = [34,35,44,45,63] # given as python indexes
-    excitation_wavelengths = [362+6*i for i in range(10)]
-    emission_wavelengths = [472+7.5*i for i in range(12)]
-    time_steps = [i+1 for i in range(60)]
-
+    outlier_measurements_idx = [34, 35, 44, 45, 63]  # given as python indexes
+    excitation_wavelengths = [362 + 6 * i for i in range(10)]
+    emission_wavelengths = [472 + 7.5 * i for i in range(12)]
+    time_stamps = [(i + 1) / 3 for i in range(60)]
+    experiments_idx = [i + 1 for i in range(64)]
 
     return Bunch(
         tensor=tl.tensor(tensor),
+        ticks=[
+            experiments_idx,
+            emission_wavelengths,
+            excitation_wavelengths,
+            time_stamps,
+        ],
         missing_values_position=tl.tensor(nan_positions),
         outlier_measurements_idx=outlier_measurements_idx,
-        excitation_wavelengths=excitation_wavelengths,
-        emission_wavelengths=emission_wavelengths,
-        time_steps=time_steps,
-        dims=["Measurements", "Emissions (nm)", "Excitations (nm)", "Time points (minutes)"],
+        dims=["Measurements mode", "Emission mode", "Excitation mode", "Time mode"],
+        ticks_labels=[
+            "Measurements",
+            "Emission wavelength (nm)",
+            "Excitation wavelength (nm)",
+            "Time (minutes)",
+        ],
         reference=reference,
         DESC=desc,
         LICENCE=licence,
