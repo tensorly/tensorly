@@ -853,16 +853,14 @@ def load_indian_pines():
     )
 
 
-def fetch_kinetic():
+def load_kinetic():
     """
-    Loads kinetic fluorescence dataset from website and returns it as tensorly tensor without storing the data
-    in the hard drive.The data is well suited for Parafac and multi-way partial least squares regression (N-PLS).
+    Loads the kinetic fluorescence dataset (X60t) as a tensorly tensor. The data is well suited for Parafac and multi-way partial least squares regression (N-PLS). Missing data are replaced by 0s, and a missing value mask is provided.
+    Data is a courtesy of Rasmus Bro and collaborators, it can be originally downloaded at https://ucphchemometrics.com/. Please cite the original reference if you use this data in any way.
     """
-    url = "http://models.life.ku.dk/sites/default/files/Kinetic_Fluor.zip"
-    r = urlopen(url)
-    zip = ZipFile(BytesIO(r.read()))
-    tensor = scipy.io.loadmat(zip.open("Xlarge.mat"))["Xlarge"]
-    tensor[np.isnan(tensor)] = 0
+    path_here = dirname(__file__)
+    tensor = np.load(path_here+"/data/Kinetic.npy")
+    nan_positions = np.load(path_here+"/data/Kinetic_missing.npy")
     reference = "Nikolajsen, R. P., Booksh, K. S., Hansen, Å. M., & Bro, R. (2003). \
                 Quantifying catecholamines using multi-way kinetic modelling. \
                 Analytica Chimica Acta, 475(1-2), 137-150."
@@ -871,13 +869,29 @@ def fetch_kinetic():
         "appended by specifics mentioned under "
         "the individual headers/chapters - is available for public use. "
         "Please note that while great care has been taken, the software, code and data are provided"
-        "as is and that Q&T, LIFE, KU does not accept any responsibility or liability."
+        "as is and that Q&T, LIFE, KU does not accept any responsibility or liability. "
+        "If you use the data we would appreciate that you report the results to us as"
+        "a courtesy of the work involved in producing and preparing the data. "
+        "Also you may want to refer to the data by referring to"
+        "R.P.H. Nikolajsen, K.S. Booksh, Å.M. Hansen, R. Bro. "
+        "Quantifying catecholamines using multi-way kinetic modeling, "
+        "Analytica Chimica Acta, Vol 475 Iss 1-2, 2003, pg. 137-150"
     )
     desc = "A four-way data set with the modes: Concentration, excitation wavelength, emission wavelength and time"
+    outlier_measurements_idx = [34,35,44,45,63] # given as python indexes
+    excitation_wavelengths = [362+6*i for i in range(10)]
+    emission_wavelengths = [472+7.5*i for i in range(12)]
+    time_steps = [i+1 for i in range(60)]
+
 
     return Bunch(
         tensor=tl.tensor(tensor),
-        dims=["Measurements", "Emissions", "Excitations", "Time points"],
+        missing_values_position=tl.tensor(nan_positions),
+        outlier_measurements_idx=outlier_measurements_idx,
+        excitation_wavelengths=excitation_wavelengths,
+        emission_wavelengths=emission_wavelengths,
+        time_steps=time_steps,
+        dims=["Measurements", "Emissions (nm)", "Excitations (nm)", "Time points (minutes)"],
         reference=reference,
         DESC=desc,
         LICENCE=licence,
