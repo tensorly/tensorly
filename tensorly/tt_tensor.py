@@ -257,7 +257,7 @@ def validate_tt_rank(
         if isinstance(rank, int):
             rank = [1] + [rank] * (n_dim - 1) + [1]
         elif n_dim + 1 != len(rank):
-            message = f"Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but {len(rank) = } while tl.ndim(tensor) + 1  = {n_dim+1}"
+            message = f"Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {len(rank)} while tl.ndim(tensor) + 1  = {n_dim+1}"
             raise (ValueError(message))
 
         # Initialization
