@@ -60,7 +60,7 @@ jobs:
         TENSORLY_BACKEND=${{matrix.BACKEND}} pytest -vv --cov tensorly --cov-report xml tensorly
     
     - name: Check coverage with CodeCov
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         verbose: true
