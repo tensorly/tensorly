@@ -41,6 +41,12 @@ def load_IL2data():
     Dose-responses to 12 concentrations of muteins were collected at four time points for each mutant and cell type.
     Ligands include IL-2 mutants with modified receptor affinities, and in both mono- and bivalent formats.
     Useful for demonstrating execution and interpretation of non-negative CP decomposition.
+
+    References
+    ----------
+    .. [1]  Orcutt-Jahns, B., Emmel, P. C., Snyder, E. M., Posner, C.,
+            Carlson, S. M., & Meyer, A. S. (2021). Multivalency enhances the
+            specificity of Fc-cytokine fusions. BioRxiv.
     """
     path_here = dirname(__file__)
     tensor = np.load(path_here + "/data/IL2_Response_Tensor.npy")
@@ -113,7 +119,16 @@ def load_IL2data():
 def load_covid19_serology():
     """
     Load an example dataset of COVID-19 systems serology.
-    Formatted in a three-mode tensor of samples, antigens, and receptors
+    Formatted in a three-mode tensor of samples, antigens, and receptors.
+
+
+    References
+    ----------
+    .. [1]  Tan, Z. C., Murphy, M. C., Alpay, H. S., Taylor, S. D., & Meyer, A. S. (2021).
+            Tensor‐structured decomposition improves systems serology analysis.
+            Molecular systems biology, 17(9), e10243.
+    .. [2]  Zohar, T., Loos, C., Fischinger, S., Atyeo, C., Wang, C., Slein, M. D., ... & Alter, G. (2020).
+            Compromised humoral functional evolution tracks with SARS-CoV-2 mortality. Cell, 183(6), 1508-1519.
     """
 
     path_here = dirname(__file__)
@@ -622,7 +637,15 @@ def load_indian_pines():
     Loads Indian pines hyperspectral data from tensorly datasets and returns it as a bunch. This dataset could be useful for non-negative constrained decomposition methods and
     classification/segmentation applications with the available ground truth in
     http://www.ehu.eus/ccwintco/uploads/c/c4/Indian_pines_gt.mat.
-    The data itself can be downloaded at "http://www.ehu.eus/ccwintco/uploads/6/67/Indian_pines_corrected.mat"
+    The data itself can be downloaded at "http://www.ehu.eus/ccwintco/uploads/6/67/Indian_pines_corrected.mat".
+
+    References
+    ----------
+    .. [1]  Baumgardner, M. F., Biehl, L. L., Landgrebe, D. A. (2015).
+            220 Band AVIRIS Hyperspectral Image Data Set:
+            June 12, 1992 Indian Pine Test Site 3.
+            Purdue University Research Repository.
+            doi:10.4231/R7RX991C
     """
 
     path_here = dirname(__file__)
@@ -853,16 +876,20 @@ def load_indian_pines():
     )
 
 
-def fetch_kinetic():
+def load_kinetic():
     """
-    Loads kinetic fluorescence dataset from website and returns it as tensorly tensor without storing the data
-    in the hard drive.The data is well suited for Parafac and multi-way partial least squares regression (N-PLS).
+    Loads the kinetic fluorescence dataset (X60t) as a tensorly tensor. The data is well suited for Parafac and multi-way partial least squares regression (N-PLS). Missing data are replaced by 0s, and a missing value mask is provided.
+    Data is a courtesy of Rasmus Bro and collaborators, it can be originally downloaded at https://ucphchemometrics.com/. Please cite the original reference [1] if you use this data in any way.
+
+    References
+    ----------
+    .. [1]  Nikolajsen, R. P., Booksh, K. S., Hansen, Å. M., & Bro, R. (2003).
+            Quantifying catecholamines using multi-way kinetic modelling.
+            Analytica Chimica Acta, 475(1-2), 137-150.
     """
-    url = "http://models.life.ku.dk/sites/default/files/Kinetic_Fluor.zip"
-    r = urlopen(url)
-    zip = ZipFile(BytesIO(r.read()))
-    tensor = scipy.io.loadmat(zip.open("Xlarge.mat"))["Xlarge"]
-    tensor[np.isnan(tensor)] = 0
+    path_here = dirname(__file__)
+    tensor = np.load(path_here + "/data/Kinetic.npy")
+    nan_positions = np.load(path_here + "/data/Kinetic_missing.npy")
     reference = "Nikolajsen, R. P., Booksh, K. S., Hansen, Å. M., & Bro, R. (2003). \
                 Quantifying catecholamines using multi-way kinetic modelling. \
                 Analytica Chimica Acta, 475(1-2), 137-150."
@@ -871,13 +898,38 @@ def fetch_kinetic():
         "appended by specifics mentioned under "
         "the individual headers/chapters - is available for public use. "
         "Please note that while great care has been taken, the software, code and data are provided"
-        "as is and that Q&T, LIFE, KU does not accept any responsibility or liability."
+        "as is and that Q&T, LIFE, KU does not accept any responsibility or liability. "
+        "If you use the data we would appreciate that you report the results to us as"
+        "a courtesy of the work involved in producing and preparing the data. "
+        "Also you may want to refer to the data by referring to"
+        "R.P.H. Nikolajsen, K.S. Booksh, Å.M. Hansen, R. Bro. "
+        "Quantifying catecholamines using multi-way kinetic modeling, "
+        "Analytica Chimica Acta, Vol 475 Iss 1-2, 2003, pg. 137-150"
     )
     desc = "A four-way data set with the modes: Concentration, excitation wavelength, emission wavelength and time"
+    outlier_measurements_idx = [34, 35, 44, 45, 63]  # given as python indexes
+    excitation_wavelengths = [362 + 6 * i for i in range(10)]
+    emission_wavelengths = [472 + 7.5 * i for i in range(12)]
+    time_stamps = [(i + 1) / 3 for i in range(60)]
+    experiments_idx = [i + 1 for i in range(64)]
 
     return Bunch(
         tensor=tl.tensor(tensor),
-        dims=["Measurements", "Emissions", "Excitations", "Time points"],
+        ticks=[
+            experiments_idx,
+            emission_wavelengths,
+            excitation_wavelengths,
+            time_stamps,
+        ],
+        missing_values_position=tl.tensor(nan_positions),
+        outlier_measurements_idx=outlier_measurements_idx,
+        dims=["Measurements mode", "Emission mode", "Excitation mode", "Time mode"],
+        ticks_labels=[
+            "Measurements",
+            "Emission wavelength (nm)",
+            "Excitation wavelength (nm)",
+            "Time (minutes)",
+        ],
         reference=reference,
         DESC=desc,
         LICENCE=licence,
