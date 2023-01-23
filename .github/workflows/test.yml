@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         BACKEND: ['numpy', 'pytorch', 'tensorflow', 'jax', 'mxnet']
-        python-version: '3.11'
+        python-version: ['3.11']
         include:
           - BACKEND: 'numpy'
             python-version: '3.7'
