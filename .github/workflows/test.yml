@@ -10,13 +10,19 @@ jobs:
       fail-fast: false
       matrix:
         BACKEND: ['numpy', 'pytorch', 'tensorflow', 'jax', 'mxnet']
+        python-version: 3.11
+        include:
+          - BACKEND: 'numpy'
+            python-version: 3.7
+          - BACKEND: 'numpy'
+            python-version: 3.9
 
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.9
+        python-version: ${{ matrix.python-version }}
   
     - name: Install dependencies and backend ${{matrix.BACKEND}}
       run: |
@@ -51,10 +57,10 @@ jobs:
 
     - name: Test with backend ${{matrix.BACKEND}} pytest and coverage
       run: |
-        TENSORLY_BACKEND=${{matrix.BACKEND}} pytest -vv --cov tensorly --cov-report xml --durations=10 tensorly
+        TENSORLY_BACKEND=${{matrix.BACKEND}} pytest -vv --cov tensorly --cov-report xml tensorly
     
     - name: Check coverage with CodeCov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v2
       with:
         file: ./coverage.xml
         verbose: true
