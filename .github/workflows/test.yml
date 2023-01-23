@@ -10,12 +10,12 @@ jobs:
       fail-fast: false
       matrix:
         BACKEND: ['numpy', 'pytorch', 'tensorflow', 'jax', 'mxnet']
-        python-version: 3.11
+        python-version: '3.11'
         include:
           - BACKEND: 'numpy'
-            python-version: 3.7
+            python-version: '3.7'
           - BACKEND: 'numpy'
-            python-version: 3.9
+            python-version: '3.9'
 
     steps:
     - uses: actions/checkout@v3
