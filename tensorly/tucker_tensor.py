@@ -181,7 +181,7 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
     --------
     tucker_multi_mode_dot : chaining several mode_dot in one call
     """
-    shape, rank = _validate_tucker_tensor(tucker_tensor)
+    shape, _ = _validate_tucker_tensor(tucker_tensor)
     core, factors = tucker_tensor
     contract = False
 
@@ -190,14 +190,14 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
         if matrix_or_vector.shape[1] != shape[mode]:
             raise ValueError(
                 f"shapes {shape} and {matrix_or_vector.shape} not aligned in mode-{mode} multiplication: "
-                f"{shape[mode]} ({mode = }) != {matrix_or_vector.shape[1]} (dim 1 of matrix)"
+                f"{shape[mode]} (mode = {mode}) != {matrix_or_vector.shape[1]} (dim 1 of matrix)"
             )
 
     elif tl.ndim(matrix_or_vector) == 1:  # Tensor times vector
         if matrix_or_vector.shape[0] != shape[mode]:
             raise ValueError(
                 f"shapes {shape} and {matrix_or_vector.shape} not aligned for mode-{mode} multiplication: "
-                f"{shape[mode]} ({mode = }) != {matrix_or_vector.shape[0]} (vector size)"
+                f"{shape[mode]} (mode = {mode}) != {matrix_or_vector.shape[0]} (vector size)"
             )
         if not keep_dim:
             contract = True  # Contract over that mode
