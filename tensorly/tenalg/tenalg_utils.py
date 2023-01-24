@@ -1,3 +1,7 @@
+from .. import backend as T
+import warnings
+
+
 def _validate_contraction_modes(shape1, shape2, modes, batched_modes=False):
     """Takes in the contraction modes (for a tensordot) and validates them
 
@@ -62,3 +66,55 @@ def _validate_contraction_modes(shape1, shape2, modes, batched_modes=False):
             modes2[i] += ndim2
 
     return modes1, modes2
+
+
+def _validate_khatri_rao(matrices, skip_matrix=None, reverse=False):
+    """Khatri-Rao product of a list of matrices
+
+        This can be seen as a column-wise kronecker product.
+        (see [1]_ for more details).
+
+        If one matrix only is given, that matrix is directly returned.
+
+    Validate arguments. Common to both backends.
+    """
+    if skip_matrix is not None:
+        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+
+    # Khatri-rao of only one matrix: just return that matrix
+    if len(matrices) == 1:
+        return matrices, matrices[0].shape[1]
+
+    if T.ndim(matrices[0]) == 2:
+        n_columns = matrices[0].shape[1]
+    else:
+        n_columns = 1
+        matrices = [T.reshape(m, (-1, 1)) for m in matrices]
+        warnings.warn(
+            "Khatri-rao of a series of vectors instead of matrices. "
+            "Condidering each has a matrix with 1 column."
+        )
+
+    # Optional part, testing whether the matrices have the proper size
+    for i, matrix in enumerate(matrices):
+        if T.ndim(matrix) != 2:
+            raise ValueError(
+                "All the matrices must have exactly 2 dimensions!"
+                f"Matrix {i} has dimension {T.ndim(matrix)} != 2."
+            )
+        if matrix.shape[1] != n_columns:
+            raise ValueError(
+                "All matrices must have same number of columns!"
+                f"Matrix {i} has {matrix.shape[1]} columns != {n_columns}."
+            )
+
+    if reverse:
+        matrices = matrices[::-1]
+        # Note: we do NOT use .reverse() which would reverse matrices even outside this function
+    
+    if len(matrices) < 2:
+        raise ValueError(
+            f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
+        )
+
+    return matrices, n_columns

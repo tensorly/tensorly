@@ -1,4 +1,5 @@
 from ... import backend as T
+from ..tenalg_utils import _validate_khatri_rao
 import warnings
 
 # Author: Jean Kossaifi
@@ -64,38 +65,25 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
-    if skip_matrix is not None:
-        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+    matrices, n_col = _validate_khatri_rao(matrices, skip_matrix=skip_matrix, reverse=reverse)
 
     # Khatri-rao of only one matrix: just return that matrix
     if len(matrices) == 1:
         return matrices[0]
 
-    if T.ndim(matrices[0]) == 2:
-        n_columns = matrices[0].shape[1]
-    else:
-        n_columns = 1
-        matrices = [T.reshape(m, (-1, 1)) for m in matrices]
-        warnings.warn(
-            "Khatri-rao of a series of vectors instead of matrices. "
-            "Condidering each has a matrix with 1 column."
-        )
+    for i, e in enumerate(matrices[1:]):
+        if not i:
+            if weights is None:
+                res = matrices[0]
+            else:
+                res = matrices[0] * T.reshape(weights, (1, -1))
+        s1, s2 = T.shape(res)
+        s3, s4 = T.shape(e)
 
-    # Optional part, testing whether the matrices have the proper size
-    for i, matrix in enumerate(matrices):
-        if T.ndim(matrix) != 2:
-            raise ValueError(
-                "All the matrices must have exactly 2 dimensions!"
-                f"Matrix {i} has dimension {T.ndim(matrix)} != 2."
-            )
-        if matrix.shape[1] != n_columns:
-            raise ValueError(
-                "All matrices must have same number of columns!"
-                f"Matrix {i} has {matrix.shape[1]} columns != {n_columns}."
-            )
+        a = T.reshape(res, (s1, 1, s2))
+        b = T.reshape(e, (1, s3, s4))
+        res = T.reshape(a * b, (-1, n_col))
 
-    if reverse:
-        matrices = matrices[::-1]
-        # Note: we do NOT use .reverse() which would reverse matrices even outside this function
+    m = T.reshape(mask, (-1, 1)) if mask is not None else 1
 
-    return T.kr(matrices, weights=weights, mask=mask)
+    return res * m

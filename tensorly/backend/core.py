@@ -1043,59 +1043,6 @@ class Backend(object):
         b = self.reshape(b, (1, s3, 1, s4))
         return self.reshape(a * b, (s1 * s3, s2 * s4))
 
-    def kr(self, matrices, weights=None, mask=None):
-        """Khatri-Rao product of a list of matrices
-
-        This can be seen as a column-wise kronecker product.
-
-        Parameters
-        ----------
-        matrices : list of tensors
-            List of 2D tensors with the same number of columns, i.e.::
-
-                for i in len(matrices):
-                    matrices[i].shape = (n_i, m)
-
-        Returns
-        -------
-        khatri_rao_product : tensor of shape ``(prod(n_i), m)``
-            Where ``prod(n_i) = prod([m.shape[0] for m in matrices])`` (i.e. the
-            product of the number of rows of all the matrices in the product.)
-
-        Notes
-        -----
-        Mathematically:
-
-        .. math::
-            \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
-            \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\\\
-            text{ is of size } (\\prod_{k=1}^n I_k \\times R)
-        """
-        if len(matrices) < 2:
-            raise ValueError(
-                f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
-            )
-
-        n_col = self.shape(matrices[0])[1]
-        for i, e in enumerate(matrices[1:]):
-            if not i:
-                if weights is None:
-                    res = matrices[0]
-                else:
-                    res = matrices[0] * self.reshape(weights, (1, -1))
-            s1, s2 = self.shape(res)
-            s3, s4 = self.shape(e)
-            if not s2 == s4 == n_col:
-                raise ValueError("All matrices should have the same number of columns.")
-
-            a = self.reshape(res, (s1, 1, s2))
-            b = self.reshape(e, (1, s3, s4))
-            res = self.reshape(a * b, (-1, n_col))
-
-        m = self.reshape(mask, (-1, 1)) if mask is not None else 1
-
-        return res * m
-
     def svd(self, matrix):
         raise NotImplementedError
 
@@ -1267,5 +1214,13 @@ class Backend(object):
             "partial_svd is no longer used. "
             "Please use tensorly.tenalg.svd_interface instead, "
             "it provides a unified interface to all available SVD implementations."
+        )
+        raise NotImplementedError(msg)
+
+    def kr(self, matrices, weights=None, mask=None):
+        msg = (
+            "kr is no longer used. "
+            "Please use tensorly.tenalg.khatri_rao instead, "
+            "it provides a unified interface to Khatri Rao implementations."
         )
         raise NotImplementedError(msg)
