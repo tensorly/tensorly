@@ -1,6 +1,5 @@
 from ... import backend as T
 from ..tenalg_utils import _validate_khatri_rao
-import warnings
 
 # Author: Jean Kossaifi
 
@@ -65,7 +64,9 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
-    matrices, n_columns = _validate_khatri_rao(matrices, skip_matrix=skip_matrix, reverse=reverse)
+    matrices, n_columns = _validate_khatri_rao(
+        matrices, skip_matrix=skip_matrix, reverse=reverse
+    )
 
     # Khatri-rao of only one matrix: just return that matrix
     if len(matrices) == 1:

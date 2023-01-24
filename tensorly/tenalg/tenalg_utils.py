@@ -111,7 +111,7 @@ def _validate_khatri_rao(matrices, skip_matrix=None, reverse=False):
     if reverse:
         matrices = matrices[::-1]
         # Note: we do NOT use .reverse() which would reverse matrices even outside this function
-    
+
     if len(matrices) < 2:
         raise ValueError(
             f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
