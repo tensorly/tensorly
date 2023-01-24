@@ -1,5 +1,5 @@
-from ... import backend as T
 import warnings
+from ... import backend as T
 
 # Author: Jean Kossaifi
 

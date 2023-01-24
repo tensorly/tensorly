@@ -1,39 +1,13 @@
 from ... import backend as tl
-from ...base import unfold, fold
-
-from ... import unfold, fold, vec_to_tensor
+from .caching import einsum_path_cached
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
 # License: BSD 3 clause
 
 
-def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
-    """n-mode product of a tensor and a matrix or vector at the specified mode
-
-    Mathematically: :math:`\\text{tensor} \\times_{\\text{mode}} \\text{matrix or vector}`
-
-
-    Parameters
-    ----------
-    tensor : ndarray
-        tensor of shape ``(i_1, ..., i_k, ..., i_N)``
-    matrix_or_vector : ndarray
-        1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
-        matrix or vectors to which to n-mode multiply the tensor
-    mode : int
-
-    Returns
-    -------
-    ndarray
-        `mode`-mode product of `tensor` by `matrix_or_vector`
-        * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
-        * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
-
-    See also
-    --------
-    multi_mode_dot : chaining several mode_dot in one call
-    """
+@einsum_path_cached
+def mode_dot_path(tensor, matrix_or_vector, mode, transpose=False):
     # the mode along which to fold might decrease if we take product with a vector
     tensor_order = tl.ndim(tensor)
     start = ord("a")
@@ -74,38 +48,61 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
     result_modes = "".join(result_modes)
     matrix_or_vector_modes = "".join(matrix_or_vector_modes)
     equation = f"{tensor_modes},{matrix_or_vector_modes}->{result_modes}"
+
+    return equation
+
+
+def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
+    """n-mode product of a tensor and a matrix or vector at the specified mode
+
+    Mathematically: :math:`\\text{tensor} \\times_{\\text{mode}} \\text{matrix or vector}`
+
+
+    Parameters
+    ----------
+    tensor : ndarray
+        tensor of shape ``(i_1, ..., i_k, ..., i_N)``
+    matrix_or_vector : ndarray
+        1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
+        matrix or vectors to which to n-mode multiply the tensor
+    mode : int
+
+    Returns
+    -------
+    ndarray
+        `mode`-mode product of `tensor` by `matrix_or_vector`
+        * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
+        * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
+
+    See also
+    --------
+    multi_mode_dot : chaining several mode_dot in one call
+    """
+    key = f"{tl.shape(tensor)},{tl.shape(matrix_or_vector)},{mode},{transpose}"
+    equation = mode_dot_path(key, tensor, matrix_or_vector, mode, transpose=transpose)
     return tl.einsum(equation, tensor, matrix_or_vector)
 
 
 def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=False):
     """n-mode product of a tensor and several matrices or vectors over several modes
-
     Parameters
     ----------
     tensor : ndarray
-
     matrix_or_vec_list : list of matrices or vectors of length ``tensor.ndim``
-
     skip : None or int, optional, default is None
         if not None, index of a matrix to skip
         Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
-
     modes : None or int list, optional, default is None
-
     transpose : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
-
     Returns
     -------
     ndarray
         tensor times each matrix or vector in the list at mode `mode`
-
     Notes
     -----
     If no modes are specified, just assumes there is one matrix or vector per mode and returns:
-
     :math:`\\text{tensor  }\\times_0 \\text{ matrix or vec list[0] }\\times_1 \\cdots \\times_n \\text{ matrix or vec list[n] }`
-
     See also
     --------
     mode_dot
@@ -130,9 +127,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
     matrix_or_vec_list = []
     for i, (matrix_or_vec, mode) in enumerate(factors_modes):
-        # print(i, matrix_or_vec.shape, mode)
         if (skip is not None) and (i == skip):
-            # print(f'skipping {skip}')
             continue
 
         if tl.ndim(matrix_or_vec) == 1:
@@ -165,7 +160,5 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     # If fully contracting
     result_modes
     equation = tensor_modes + equation + f"->{''.join(result_modes)}"
-    # matrix_or_vec_list = [m for (i, m) in enumerate(matrix_or_vec_list) if ((skip is None) or (skip != i))]
 
-    # print(equation, tl.shape(tensor), [tl.shape(f) for f in matrix_or_vec_list])
     return tl.einsum(equation, tensor, *matrix_or_vec_list)

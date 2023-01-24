@@ -1,11 +1,12 @@
 from ... import backend as T
-import numpy as np
+from .caching import einsum_path_cached
 
 # Author: Jean Kossaifi
 # License: BSD 3 clause
 
 
-def inner(tensor1, tensor2, n_modes=None):
+@einsum_path_cached
+def inner_path(tensor1, tensor2, n_modes=None):
     """Generalised inner products between tensors
 
         Takes the inner product between the last (respectively first)
@@ -52,5 +53,43 @@ def inner(tensor1, tensor2, n_modes=None):
     output_modes = modes_t1[:offset] + modes_t2[n_modes:]
 
     equation = f"{modes_t1},{modes_t2}->{output_modes}"
+
+    return equation
+
+
+def inner(tensor1, tensor2, n_modes=None):
+    """Generalised inner products between tensors
+
+        Takes the inner product between the last (respectively first)
+        `n_modes` of `tensor1` (respectively `tensor2`)
+
+    Parameters
+    ----------
+    tensor1, tensor2 : tensor
+    n_modes : int, default is None
+        * if None, the traditional inner product is returned (i.e. a float)
+        * otherwise, the product between the `n_modes` last modes of `tensor1`
+            and the `n_modes` first modes of `tensor2` is returned.
+            The resulting tensor's order is `ndim(tensor1) - n_modes`.
+
+    Returns
+    -------
+    inner_product : float if n_modes is None, tensor otherwise
+    """
+    # Traditional inner product
+    if n_modes is None:
+        if tensor1.shape != tensor2.shape:
+            raise ValueError(
+                "Taking a generalised product between two tensors without specifying common modes"
+                " is equivalent to taking inner product."
+                "This requires tensor1.shape == tensor2.shape."
+                "However, got tensor1.shape={} and tensor2.shape={}".format(
+                    tensor1.shape, tensor2.shape
+                )
+            )
+        return T.sum(tensor1 * tensor2)
+
+    key = f"{T.shape(tensor1)},{T.shape(tensor1)},{n_modes}"
+    equation = inner_path(key, tensor1, tensor2, n_modes=n_modes)
 
     return T.einsum(equation, tensor1, tensor2)
