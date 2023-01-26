@@ -31,7 +31,7 @@ def inner(tensor1, tensor2, n_modes=None):
                 "Taking a generalised product between two tensors without specifying common modes"
                 " is equivalent to taking inner product."
                 "This requires tensor1.shape == tensor2.shape."
-                f"However, got {tensor1.shape=} and {tensor2.shape=}"
+                f"However, got shapes {tensor1.shape} and {tensor2.shape}"
             )
         return T.sum(tensor1 * tensor2)
 

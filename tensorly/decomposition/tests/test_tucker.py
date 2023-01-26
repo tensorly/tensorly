@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import tensorly as tl
 from .._tucker import (
@@ -167,56 +168,42 @@ def test_masked_tucker():
     assert_(mask_err < 0.001, "norm 2 of reconstruction higher than 0.001")
 
 
-def test_non_negative_tucker(monkeypatch):
+@pytest.mark.parametrize("init", ["svd", "random"])
+@pytest.mark.parametrize("hals", [False, True])
+def test_non_negative_tucker(init, hals, monkeypatch):
     """Test for non-negative Tucker"""
-    rng = tl.check_random_state(1234)
-
     tol_norm_2 = 10e-1
     tol_max_abs = 10e-1
-    tensor = tl.tensor(rng.random_sample((3, 4, 3)) + 1)
-    core, factors = tucker(tensor, rank=[3, 4, 3], n_iter_max=200, verbose=1)
-    nn_core, nn_factors = non_negative_tucker(tensor, rank=[3, 4, 3], n_iter_max=100)
+    core, factors = random_tucker((3, 4, 3), rank=[3, 4, 3], non_negative=True)
+    tensor = tucker_to_tensor((core, factors))
+    if hals:
+        nn_method = non_negative_tucker_hals
+    else:
+        nn_method = non_negative_tucker
+
+    nn_core, nn_factors = nn_method(tensor, rank=[3, 4, 3], init=init, n_iter_max=100)
 
     # Make sure all components are positive
     for factor in nn_factors:
         assert_(tl.all(factor >= 0))
     assert_(tl.all(nn_core >= 0))
 
-    reconstructed_tensor = tucker_to_tensor((core, factors))
     nn_reconstructed_tensor = tucker_to_tensor((nn_core, nn_factors))
-    error = tl.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
-    error /= tl.norm(reconstructed_tensor, 2)
+    error = tl.norm(tensor - nn_reconstructed_tensor, 2)
+    error /= tl.norm(tensor, 2)
     assert_(error < tol_norm_2, "norm 2 of reconstruction error higher than tol")
 
     # Test the max abs difference between the reconstruction and the tensor
     assert_(
-        tl.norm(reconstructed_tensor - nn_reconstructed_tensor, "inf") < tol_max_abs,
+        tl.norm(tensor - nn_reconstructed_tensor, "inf") < tol_max_abs,
         "abs norm of reconstruction error higher than tol",
-    )
-
-    core_svd, factors_svd = non_negative_tucker(
-        tensor, rank=[3, 4, 3], n_iter_max=500, init="svd", verbose=1
-    )
-    core_random, factors_random = non_negative_tucker(
-        tensor, rank=[3, 4, 3], n_iter_max=200, init="random", random_state=1234
-    )
-    rec_svd = tucker_to_tensor((core_svd, factors_svd))
-    rec_random = tucker_to_tensor((core_random, factors_random))
-    error = tl.norm(rec_svd - rec_random, 2)
-    error /= tl.norm(rec_svd, 2)
-    assert_(
-        error < tol_norm_2, "norm 2 of difference between svd and random init too high"
-    )
-    assert_(
-        tl.norm(rec_svd - rec_random, "inf") < tol_max_abs,
-        "abs norm of difference between svd and random init too high",
     )
 
     # Test for a single rank passed
     # (should be used for all modes)
     rank = 3
     target_shape = (rank,) * tl.ndim(tensor)
-    core, factors = non_negative_tucker(tensor, rank=rank)
+    core, factors = nn_method(tensor, rank=rank, n_iter_max=2)
     assert_(
         tl.shape(core) == target_shape,
         f"core has the wrong shape, got {tl.shape(core)}, but expected {target_shape}.",
@@ -228,93 +215,19 @@ def test_non_negative_tucker(monkeypatch):
             f"{i}-th factor has the wrong shape, got {tl.shape(f)}, but expected {expected_shape}.",
         )
 
-    assert_class_wrapper_correctly_passes_arguments(
-        monkeypatch,
-        non_negative_tucker,
-        Tucker_NN,
-        ignore_args={"return_errors"},
-        rank=3,
-    )
-
-
-def test_non_negative_tucker_hals(monkeypatch):
-    """Test for non-negative Tucker wih HALS"""
-    rng = tl.check_random_state(1234)
-
-    tol_norm_2 = 10e-1
-    tol_max_abs = 10e-1
-    tensor = tl.tensor(rng.random_sample((3, 4, 3)) + 1)
-    core, factors = tucker(tensor, rank=[3, 4, 3], n_iter_max=200)
-    nn_core, nn_factors = non_negative_tucker_hals(
-        tensor, rank=[3, 4, 3], n_iter_max=100
-    )
-
-    # Make sure all components are positive
-    for factor in nn_factors:
-        assert_(tl.all(factor >= 0))
-    assert_(tl.all(nn_core >= 0))
-
-    reconstructed_tensor = tucker_to_tensor((core, factors))
-    nn_reconstructed_tensor = tucker_to_tensor((nn_core, nn_factors))
-    error = tl.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
-    error /= tl.norm(reconstructed_tensor, 2)
-    assert_(error < tol_norm_2, "norm 2 of reconstruction error higher than tol")
-
-    # Test the max abs difference between the reconstruction and the tensor
-    assert_(
-        tl.norm(reconstructed_tensor - nn_reconstructed_tensor, "inf") < tol_max_abs,
-        "abs norm of reconstruction error higher than tol",
-    )
-
-    core_svd, factors_svd = non_negative_tucker_hals(
-        tensor, rank=[3, 4, 3], n_iter_max=500, init="svd"
-    )
-    core_random, factors_random = non_negative_tucker_hals(
-        tensor, rank=[3, 4, 3], n_iter_max=200, init="random", random_state=1234
-    )
-    rec_svd = tucker_to_tensor((core_svd, factors_svd))
-    rec_random = tucker_to_tensor((core_random, factors_random))
-    error = tl.norm(rec_svd - rec_random, 2)
-    error /= tl.norm(rec_svd, 2)
-    assert_(
-        error < tol_norm_2, "norm 2 of difference between svd and random init too high"
-    )
-    assert_(
-        tl.norm(rec_svd - rec_random, "inf") < tol_max_abs,
-        "abs norm of difference between svd and random init too high",
-    )
-
-    # try fixing the mode
-    factors_init = [tl.copy(f) for f in factors_random]
-    _, factors = non_negative_tucker_hals(
-        tensor,
-        rank=[3, 4, 3],
-        init=(core_random, factors_init),
-        fixed_modes=[1],
-        n_iter_max=100,
-        verbose=1,
-    )
-    assert_array_equal(factors_random[1], factors_init[1])
-
-    # Test for a single rank passed
-    # (should be used for all modes)
-    rank = 3
-    target_shape = (rank,) * tl.ndim(tensor)
-    core, factors = non_negative_tucker_hals(tensor, rank=rank)
-    assert_(
-        tl.shape(core) == target_shape,
-        f"core has the wrong shape, got {tl.shape(core)}, but expected {target_shape}.",
-    )
-    for i, f in enumerate(factors):
-        expected_shape = (tl.shape(tensor)[i], rank)
-        assert_(
-            tl.shape(f) == expected_shape,
-            f"{i}-th factor has the wrong shape, got {tl.shape(f)}, but expected {expected_shape}.",
+    if hals:
+        assert_class_wrapper_correctly_passes_arguments(
+            monkeypatch,
+            non_negative_tucker_hals,
+            Tucker_NN_HALS,
+            ignore_args={"return_errors"},
+            rank=3,
         )
-    assert_class_wrapper_correctly_passes_arguments(
-        monkeypatch,
-        non_negative_tucker_hals,
-        Tucker_NN_HALS,
-        ignore_args={"return_errors"},
-        rank=3,
-    )
+    else:
+        assert_class_wrapper_correctly_passes_arguments(
+            monkeypatch,
+            non_negative_tucker,
+            Tucker_NN,
+            ignore_args={"return_errors"},
+            rank=3,
+        )

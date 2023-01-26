@@ -1,8 +1,6 @@
 import numpy as np
-from math import prod
 import tensorly as tl
 from tensorly.tt_tensor import tt_to_tensor, validate_tt_rank
-import warnings
 from tensorly.decomposition._base_decomposition import DecompositionMixin
 
 

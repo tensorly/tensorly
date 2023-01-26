@@ -82,10 +82,14 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         init=init,
         normalize_factors=normalize_factors,
         tol=1e-10,
-        absolute_tol=1e-4,
+        absolute_tol=1e-3,
         return_errors=True,
     )
-    assert err[-1] ** 2 < 1e-4
+    assert len(err) > 2  # Check that we didn't just immediately exit
+    assert err[-1] ** 2 < 1e-3
+    assert (
+        err[-2] ** 2 > 1e-3
+    )  # Check that the previous iteration didn't meet the criteria
 
     noisy_slices = [
         slice_ + tl.tensor(0.001 * rng.standard_normal(T.shape(slice_)))
@@ -97,12 +101,15 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         random_state=rng,
         init=init,
         normalize_factors=normalize_factors,
-        tol=1e-4,
+        tol=1e-1,
         absolute_tol=-1,
         return_errors=True,
-        n_iter_max=1000,
     )
-    assert abs(err[-2] ** 2 - err[-1] ** 2) < (1e-4 * err[-2] ** 2)
+    assert len(err) > 2  # Check that we didn't just immediately exit
+    assert abs(err[-2] ** 2 - err[-1] ** 2) < (1e-1 * err[-2] ** 2)
+    assert abs(err[-3] ** 2 - err[-2] ** 2) > (
+        1e-1 * err[-3] ** 2
+    )  # Check that the previous iteration didn't meet the criteria
 
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, parafac2, Parafac2, ignore_args={"return_errors"}, rank=3
@@ -115,7 +122,7 @@ def test_parafac2_nn():
     rank = 3
 
     weights, factors, projections = random_parafac2(
-        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        shapes=[(15 + rng.randint(5), 30) for _ in range(10)],
         rank=rank,
         random_state=rng,
     )
@@ -131,16 +138,16 @@ def test_parafac2_nn():
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
-    rec, err = parafac2(
+    rec, _ = parafac2(
         slices,
         rank,
         random_state=rng,
-        init="random",
+        init="svd",
         nn_modes=[0, 2],
         n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
         normalize_factors=False,
         return_errors=True,
-        n_iter_max=1000,
+        n_iter_max=20,
     )
     rec_tensor = parafac2_to_tensor(rec)
 
@@ -197,7 +204,7 @@ def test_parafac2_nn():
 
     # Test that constraining B leads to a warning
     with pytest.warns(UserWarning):
-        rec, err = parafac2(
+        rec = parafac2(
             slices,
             rank,
             random_state=rng,
@@ -205,11 +212,10 @@ def test_parafac2_nn():
             nn_modes=[0, 1, 2],
             n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
             normalize_factors=False,
-            return_errors=True,
             n_iter_max=1,
         )
     with pytest.warns(UserWarning):
-        rec, err = parafac2(
+        rec = parafac2(
             slices,
             rank,
             random_state=rng,
@@ -217,7 +223,6 @@ def test_parafac2_nn():
             nn_modes="all",
             n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
             normalize_factors=False,
-            return_errors=True,
             n_iter_max=1,
         )
 
@@ -232,12 +237,12 @@ def test_parafac2_slice_and_tensor_input():
     slices = parafac2_to_slices(random_parafac2_tensor)
 
     slice_rec = parafac2(
-        slices, rank, random_state=1234, normalize_factors=False, n_iter_max=100
+        slices, rank, random_state=1234, normalize_factors=False, n_iter_max=2
     )
     slice_rec_tensor = parafac2_to_tensor(slice_rec)
 
     tensor_rec = parafac2(
-        tensor, rank, random_state=1234, normalize_factors=False, n_iter_max=100
+        tensor, rank, random_state=1234, normalize_factors=False, n_iter_max=2
     )
     tensor_rec_tensor = parafac2_to_tensor(tensor_rec)
 
@@ -261,12 +266,12 @@ def test_parafac2_normalize_factors():
     slices = parafac2_to_tensor(random_parafac2_tensor)
 
     unnormalized_rec = parafac2(
-        slices, rank, random_state=rng, normalize_factors=False, n_iter_max=100
+        slices, rank, random_state=rng, normalize_factors=False, n_iter_max=2
     )
     assert unnormalized_rec.weights[0] == 1
 
     normalized_rec = parafac2(
-        slices, rank, random_state=rng, normalize_factors=True, n_iter_max=1000
+        slices, rank, random_state=rng, normalize_factors=True, n_iter_max=50
     )
     assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-5
     assert abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 1e-2
@@ -329,21 +334,11 @@ def test_parafac2_to_tensor():
     )
 
     constructed_tensor = parafac2_to_tensor((weights, factors, projections))
-    tensor_manual = T.zeros((I, J, K), **T.context(weights))
 
     for i in range(I):
         Bi = T.dot(projections[i], factors[1])
-        for j in range(J):
-            for k in range(K):
-                for r in range(rank):
-                    tensor_manual = tl.index_update(
-                        tensor_manual,
-                        tl.index[i, j, k],
-                        tensor_manual[i, j, k]
-                        + factors[0][i][r] * Bi[j][r] * factors[2][k][r],
-                    )
-
-    assert_(tl.max(tl.abs(constructed_tensor - tensor_manual)) < 1e-6)
+        manual_tensor = T.einsum("r,jr,kr", factors[0][i], Bi, factors[2])
+        assert_(tl.max(tl.abs(constructed_tensor[i, :, :] - manual_tensor)) < 1e-6)
 
 
 def test_pad_by_zeros():

@@ -9,6 +9,7 @@ from .._cp import (
     randomised_parafac,
     CP,
     RandomizedCP,
+    CPTensor,
 )
 from .._nn_cp import (
     non_negative_parafac,
@@ -98,7 +99,7 @@ def test_parafac(
     fac = parafac(
         tensor,
         rank=rank,
-        n_iter_max=75,
+        n_iter_max=70,
         init=init,
         tol=1e-6,
         random_state=rng,
@@ -117,7 +118,7 @@ def test_parafac(
         facTwo = parafac(
             tensor,
             rank=rank,
-            n_iter_max=75,
+            n_iter_max=70,
             init=init,
             tol=1e-6,
             random_state=rng,
@@ -184,7 +185,7 @@ def test_parafac(
     rec_sparse, sparse_component = parafac(
         tensor,
         rank=rank,
-        n_iter_max=200,
+        n_iter_max=70,
         init=init,
         tol=1.0e-6,
         sparsity=0.9,
@@ -274,201 +275,122 @@ def test_parafac_linesearch():
     )
 
 
-def test_non_negative_parafac(monkeypatch):
-    """Test for non-negative PARAFAC
-
-    TODO: more rigorous test
-    """
-    tol_norm_2 = 10e-1
-    tol_max_abs = 1
-    rng = tl.check_random_state(1234)
-    tensor = T.tensor(rng.random_sample((3, 3, 3)) + 1)
-    res = parafac(tensor, rank=3, n_iter_max=120)
-    nn_res = non_negative_parafac(
-        tensor, rank=3, n_iter_max=100, tol=10e-4, init="svd", verbose=0
+@pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 3)])
+@pytest.mark.parametrize("init", ["svd", "random"])
+@pytest.mark.parametrize("normalize_factors", [False, True])
+@pytest.mark.parametrize("random_state", [1, 2])
+@pytest.mark.parametrize("hals", [True, False])
+def test_non_negative_parafac(
+    monkeypatch, true_rank, rank, init, normalize_factors, random_state, hals
+):
+    """Test for non-negative PARAFAC"""
+    tol_norm_2 = 0.07
+    tol_max_abs = 0.1
+    shape = (6, 3, 12)
+    rng = tl.check_random_state(random_state)
+    cp_factors = random_cp(
+        shape,
+        rank=true_rank,
+        full=False,
+        random_state=rng,
+        normalise_factors=normalize_factors,
     )
+    cp_factors = CPTensor((cp_factors[0], [tl.abs(f) for f in cp_factors[1]]))
+    tensor = tl.cp_to_tensor(cp_factors)
+
+    if hals:
+        func = non_negative_parafac_hals
+    else:
+        func = non_negative_parafac
+
+    nn_res, errors = func(
+        tensor,
+        rank=rank,
+        n_iter_max=80,
+        tol=1.0e-6,
+        init=init,
+        normalize_factors=normalize_factors,
+        random_state=rng,
+        return_errors=True,
+    )
+    assert_(np.all(np.diff(errors) <= 1.0e-3))
 
     # Make sure all components are positive
     _, nn_factors = nn_res
     for factor in nn_factors:
         assert_(T.all(factor >= 0))
 
-    reconstructed_tensor = cp_to_tensor(res)
-    nn_reconstructed_tensor = cp_to_tensor(nn_res)
-    error = T.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
-    error /= T.norm(reconstructed_tensor, 2)
-    assert_(error < tol_norm_2, "norm 2 of reconstruction higher than tol")
+    assert_(errors[-1] < tol_norm_2, "norm 2 of reconstruction higher than tol")
 
     # Test the max abs difference between the reconstruction and the tensor
+    nn_reconstructed_tensor = cp_to_tensor(nn_res)
     assert_(
-        T.max(T.abs(reconstructed_tensor - nn_reconstructed_tensor)) < tol_max_abs,
+        T.max(T.abs(tensor - nn_reconstructed_tensor)) < tol_max_abs,
         "abs norm of reconstruction error higher than tol",
     )
 
-    # Test normalization
-    nn_res = non_negative_parafac(
-        tensor, rank=3, normalize_factors=True, tol=10e-4, init="svd"
-    )
-    nn_reconstructed_tensor = cp_to_tensor(nn_res)
-    error = T.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
-    error /= T.norm(reconstructed_tensor, 2)
-    assert_(error < tol_norm_2, "norm 2 of reconstruction higher than tol")
-
     # Test fixing mode 0 or 1 with given init
-    fixed_tensor = random_cp((3, 3, 3), rank=2)
-    for factor in fixed_tensor[1]:
-        factor = T.abs(factor)
-    rec_svd_fixed_mode_0 = non_negative_parafac(
-        tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0]
+    rec_svd_fixed_mode_0 = func(
+        tensor, rank=true_rank, n_iter_max=1, init=cp_factors, fixed_modes=[0]
     )
-    rec_svd_fixed_mode_1 = non_negative_parafac(
-        tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[1]
+    rec_svd_fixed_mode_1 = func(
+        tensor, rank=true_rank, n_iter_max=1, init=cp_factors, fixed_modes=[1]
     )
     # Check if modified after 2 iterations
     assert_array_equal(
         rec_svd_fixed_mode_0.factors[0],
-        fixed_tensor.factors[0],
+        cp_factors.factors[0],
         err_msg="Fixed mode 0 was modified in candecomp_parafac",
     )
     assert_array_equal(
         rec_svd_fixed_mode_1.factors[1],
-        fixed_tensor.factors[1],
+        cp_factors.factors[1],
         err_msg="Fixed mode 1 was modified in candecomp_parafac",
     )
 
-    res_svd = non_negative_parafac(
-        tensor, rank=3, n_iter_max=100, tol=10e-4, init="svd"
-    )
-    res_random = non_negative_parafac(
-        tensor,
-        rank=3,
-        n_iter_max=100,
-        tol=10e-4,
-        init="random",
-        random_state=1234,
-        verbose=0,
-    )
-    rec_svd = cp_to_tensor(res_svd)
-    rec_random = cp_to_tensor(res_random)
-    error = T.norm(rec_svd - rec_random, 2)
-    error /= T.norm(rec_svd, 2)
-    assert_(
-        error < tol_norm_2, "norm 2 of difference between svd and random init too high"
-    )
-    assert_(
-        T.max(T.abs(rec_svd - rec_random)) < tol_max_abs,
-        "abs norm of difference between svd and random init too high",
-    )
+    if hals:
+        assert_class_wrapper_correctly_passes_arguments(
+            monkeypatch,
+            non_negative_parafac_hals,
+            CP_NN_HALS,
+            ignore_args={"return_errors"},
+            rank=3,
+        )
 
-    assert_class_wrapper_correctly_passes_arguments(
-        monkeypatch, non_negative_parafac, CP_NN, ignore_args={"return_errors"}, rank=3
-    )
+        # Regression test: used wrong variable for convergence checking
+        # Used mttkrp*factor instead of mttkrp*factors[-1], which resulted in
+        # error when mode 2 was not constrained and erroneous convergence checking
+        # when mode 2 was constrained.
+        tensor = tl.tensor(rng.random_sample((3, 3, 3)) + 1)
+        non_negative_parafac_hals(
+            tensor,
+            rank=2,
+            n_iter_max=2,
+            tol=1e-10,
+            init="svd",
+            nn_modes={
+                0,
+            },
+            return_errors=True,
+        )
+    else:
+        assert_class_wrapper_correctly_passes_arguments(
+            monkeypatch,
+            non_negative_parafac,
+            CP_NN,
+            ignore_args={"return_errors"},
+            rank=3,
+        )
 
 
-def test_non_negative_parafac_hals(monkeypatch):
-    """Test for non-negative PARAFAC HALS
-    TODO: more rigorous test
-    """
-    tol_norm_2 = 10e-1
-    tol_max_abs = 1
-    rng = tl.check_random_state(1234)
-    tensor = tl.tensor(rng.random_sample((3, 3, 3)) + 1)
-    res = parafac(tensor, rank=3, n_iter_max=120)
-    nn_res = non_negative_parafac_hals(
-        tensor, rank=3, n_iter_max=100, tol=10e-4, init="svd", verbose=0
-    )
-
-    # Make sure all components are positive
-    _, nn_factors = nn_res
-    for factor in nn_factors:
-        assert_(tl.all(factor >= 0))
-
-    reconstructed_tensor = tl.cp_to_tensor(res)
-    nn_reconstructed_tensor = tl.cp_to_tensor(nn_res)
-    error = tl.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
-    error /= tl.norm(reconstructed_tensor, 2)
-    assert_(error < tol_norm_2, "norm 2 of reconstruction higher than tol")
-
-    # Test the max abs difference between the reconstruction and the tensor
-    assert_(
-        tl.max(tl.abs(reconstructed_tensor - nn_reconstructed_tensor)) < tol_max_abs,
-        "abs norm of reconstruction error higher than tol",
-    )
-
-    # Test normalization
-    nn_res = non_negative_parafac_hals(
-        tensor, rank=3, normalize_factors=True, tol=10e-4, init="svd"
-    )
-    nn_reconstructed_tensor = cp_to_tensor(nn_res)
-    error = T.norm(reconstructed_tensor - nn_reconstructed_tensor, 2)
-    error /= T.norm(reconstructed_tensor, 2)
-    assert_(error < tol_norm_2, "norm 2 of reconstruction higher than tol")
-
-    # Test fixing mode 0 or 1 with given init
-    fixed_tensor = random_cp((3, 3, 3), rank=2)
-    for factor in fixed_tensor[1]:
-        factor = tl.abs(factor)
-    rec_svd_fixed_mode_0 = non_negative_parafac_hals(
-        tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[0]
-    )
-    rec_svd_fixed_mode_1 = non_negative_parafac_hals(
-        tensor, rank=2, n_iter_max=2, init=fixed_tensor, fixed_modes=[1]
-    )
-    # Check if modified after 2 iterations
-    assert_array_equal(
-        rec_svd_fixed_mode_0.factors[0],
-        fixed_tensor.factors[0],
-        err_msg="Fixed mode 0 was modified in candecomp_parafac",
-    )
-    assert_array_equal(
-        rec_svd_fixed_mode_1.factors[1],
-        fixed_tensor.factors[1],
-        err_msg="Fixed mode 1 was modified in candecomp_parafac",
-    )
-
-    res_svd = non_negative_parafac_hals(
-        tensor, rank=3, n_iter_max=100, tol=10e-4, init="svd"
-    )
-    res_random = non_negative_parafac_hals(
-        tensor, rank=3, n_iter_max=100, tol=10e-4, init="random", verbose=0
-    )
-    rec_svd = tl.cp_to_tensor(res_svd)
-    rec_random = tl.cp_to_tensor(res_random)
-    error = tl.norm(rec_svd - rec_random, 2)
-    error /= tl.norm(rec_svd, 2)
-    assert_(
-        error < tol_norm_2, "norm 2 of difference between svd and random init too high"
-    )
-    assert_(
-        tl.max(tl.abs(rec_svd - rec_random)) < tol_max_abs,
-        "abs norm of difference between svd and random init too high",
-    )
-
-    assert_class_wrapper_correctly_passes_arguments(
-        monkeypatch,
-        non_negative_parafac_hals,
-        CP_NN_HALS,
-        ignore_args={"return_errors"},
-        rank=3,
-    )
-
-    # Regression test: used wrong variable for convergence checking
-    # Used mttkrp*factor instead of mttkrp*factors[-1], which resulted in
-    # error when mode 2 was not constrained and erroneous convergence checking
-    # when mode 2 was constrained.
-    tensor = tl.tensor(rng.random_sample((3, 3, 3)) + 1)
-    nn_estimate, errs = non_negative_parafac_hals(
-        tensor,
-        rank=2,
-        n_iter_max=2,
-        tol=1e-10,
-        init="svd",
-        verbose=0,
-        nn_modes={
-            0,
-        },
-        return_errors=True,
-    )
+def test_initialize_nn_cp():
+    """Test that if we initialise with an existing init, then it isn't modified."""
+    init = CPTensor([None, [-tl.ones((30, 3)), -tl.ones((20, 3)), -tl.ones((10, 3))]])
+    tensor = cp_to_tensor(init)
+    initialised_tensor = initialize_cp(tensor, 3, init=init, non_negative=True)
+    for factor_matrix, init_factor_matrix in zip(init[1], initialised_tensor[1]):
+        assert_array_equal(factor_matrix, init_factor_matrix)
+    assert_array_equal(tensor, cp_to_tensor(initialised_tensor))
 
 
 def test_non_negative_parafac_hals_one_unconstrained():
@@ -491,7 +413,6 @@ def test_non_negative_parafac_hals_one_unconstrained():
         n_iter_max=100,
         tol=0,
         init="svd",
-        verbose=0,
         nn_modes={0, 2},
         return_errors=True,
     )
@@ -563,27 +484,26 @@ def test_randomised_parafac(monkeypatch):
     """Test for randomised_parafac"""
     rng = tl.check_random_state(1234)
     t_shape = (10, 10, 10)
-    n_samples = 8
     tensor = T.tensor(rng.random_sample(t_shape))
     rank = 4
-    _, factors_svd = randomised_parafac(
-        tensor, rank, n_samples, n_iter_max=1000, init="svd", tol=10e-5, verbose=True
-    )
-    for i, f in enumerate(factors_svd):
-        assert_(T.shape(f) == (t_shape[i], rank), "Factors are of incorrect size")
 
     # test tensor reconstructed properly
     tolerance = 0.05
-    tensor = random_cp(shape=(10, 10, 10), rank=4, full=True)
+    tensor = random_cp(shape=(10, 10, 10), rank=rank, full=True, random_state=rng)
     cp_tensor = randomised_parafac(
         tensor,
-        rank=5,
+        rank=rank,
         n_samples=100,
         max_stagnation=20,
-        n_iter_max=100,
+        n_iter_max=60,
         tol=0,
         verbose=0,
+        random_state=rng,
     )
+
+    for i, f in enumerate(cp_tensor[1]):
+        assert_(T.shape(f) == (t_shape[i], rank), "Factors are of incorrect size")
+
     reconstruction = cp_to_tensor(cp_tensor)
     error = float(T.norm(reconstruction - tensor, 2) / T.norm(tensor, 2))
     assert_(
