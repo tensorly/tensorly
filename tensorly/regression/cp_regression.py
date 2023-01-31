@@ -32,7 +32,15 @@ class CPRegressor:
         level of verbosity
     """
 
-    def __init__(self, weight_rank, tol=10e-7, reg_W=1, n_iter_max=100, random_state=None, verbose=1):
+    def __init__(
+        self,
+        weight_rank,
+        tol=10e-7,
+        reg_W=1,
+        n_iter_max=100,
+        random_state=None,
+        verbose=1,
+    ):
         self.weight_rank = weight_rank
         self.tol = tol
         self.reg_W = reg_W
@@ -41,9 +49,15 @@ class CPRegressor:
         self.verbose = verbose
 
     def get_params(self, **kwargs):
-        """Returns a dictionary of parameters
-        """
-        params = ['weight_rank', 'tol', 'reg_W', 'n_iter_max', 'random_state', 'verbose']
+        """Returns a dictionary of parameters"""
+        params = [
+            "weight_rank",
+            "tol",
+            "reg_W",
+            "n_iter_max",
+            "random_state",
+            "verbose",
+        ]
         return {param_name: getattr(self, param_name) for param_name in params}
 
     def set_params(self, **parameters):
@@ -68,9 +82,12 @@ class CPRegressor:
         """
         rng = T.check_random_state(self.random_state)
 
-        # Initialise randomly the weights
+        # Initialise the weights randomly
         W = []
-        for i in range(1, T.ndim(X)):  # The first dimension is the number of samples
+
+        for i in range(
+            1, T.ndim(X)
+        ):  # The first dimension of X is the number of samples
             W.append(T.tensor(rng.randn(X.shape[i], self.weight_rank), **T.context(X)))
         for i in range(1, T.ndim(y)):
             W.append(T.tensor(rng.randn(y.shape[i], self.weight_rank), **T.context(X)))
@@ -110,7 +127,7 @@ class CPRegressor:
 
                 if weight_evolution <= self.tol:
                     if self.verbose:
-                        print('\nConverged in {} iterations'.format(iteration))
+                        print(f"\nConverged in {iteration} iterations")
                     break
 
         self.weight_tensor_ = weight_tensor_
@@ -138,4 +155,4 @@ class CPRegressor:
         return T.reshape(T.dot(partial_tensor_to_vec(X), T.reshape(self.weight_tensor_, weight_shape)), out_shape)
 
 
-KruskalRegressor = DefineDeprecated('KruskalRegressor', CPRegressor)
+KruskalRegressor = DefineDeprecated("KruskalRegressor", CPRegressor)

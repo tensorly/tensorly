@@ -2,8 +2,9 @@ import numpy as np
 from .. import backend as T
 
 
-def gen_image(region='swiss', image_height=20, image_width=20,
-              n_channels=None, weight_value=1):
+def gen_image(
+    region="swiss", image_height=20, image_width=20, n_channels=None, weight_value=1
+):
     """Generates an image for regression testing
 
     Parameters
@@ -41,9 +42,9 @@ def gen_image(region='swiss', image_height=20, image_width=20,
         radius = image_width // 3
         cy = image_width // 2
         cx = image_height // 2
-        y, x = np.ogrid[-radius: radius, -radius: radius]
+        y, x = np.ogrid[-radius:radius, -radius:radius]
         index = x**2 + y**2 <= radius**2
-        weight[cy - radius:cy + radius, cx - radius:cx + radius][index] = 1
+        weight[cy - radius : cy + radius, cx - radius : cx + radius][index] = 1
 
     if n_channels is not None and weight.ndim == 2:
         weight = np.concatenate([weight[..., None]] * n_channels, axis=-1)

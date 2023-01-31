@@ -54,7 +54,7 @@ Unfolding
 ---------
 Also called **matrization**, **unfolding** a tensor is done by reading the element in a given way as to obtain a matrix instead of a tensor.
 
-For a tensor of size :math:`(I_0, I_1, \cdots, I_N)`, the n-mode unfolding of this tensor will be of size :math:`(I_n, I_0, I_1 \times \cdots \times I_{n-1} \times I_{n+1} \cdots \times I_N)`.
+For a tensor of size :math:`(I_0, I_1, \cdots, I_N)`, the n-mode unfolding of this tensor will be of size :math:`(I_n, I_0 \times I_1 \times \cdots \times I_{n-1} \times I_{n+1} \cdots \times I_N)`.
 
 .. important::
    In tensorly we use an unfolding different from the classical one as defined in [1]_ for better performance.

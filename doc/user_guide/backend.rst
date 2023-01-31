@@ -85,7 +85,7 @@ In practice, this means that function like `min`, `max`, `reshape`, etc, are acc
    min_value = tl.min(tensor)
    
    unfolding = tl.unfold(tensor, mode=0)
-   U, S, V = tl.partial_svd(unfolding, n_eigenvecs=5)
+   U, S, V = tl.truncated_svd(unfolding, n_eigenvecs=5)
 
 This will allow your code to work transparently with any of the backend.
 
@@ -155,3 +155,17 @@ The rest is exactly the same, nothing more to do!
 
    decomp = Tucker(rank='same', init='random')
    cp_tensor = decomp.fit_transform(tensor) # Runs on GPU!
+
+
+Using static dispatching
+------------------------
+
+We optimized the dynammical dispatch so the overhead is negligeable. 
+However, if you only want to use one backend, you can first set it and then switch to static dispatching:
+
+>>> tl.use_static_dispatch()
+
+And you can switch back to dynammical dispatching just as easily:
+
+>>> tl.use_dynamic_dispatch()
+

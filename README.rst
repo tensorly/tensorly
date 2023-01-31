@@ -10,8 +10,9 @@
 .. image:: https://codecov.io/gh/tensorly/tensorly/branch/master/graph/badge.svg?token=mnZ234sGSA
     :target: https://codecov.io/gh/tensorly/tensorly
 
-.. image:: https://badges.gitter.im/tensorly/tensorly.svg
-    :target: https://gitter.im/tensorly/tensorly?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+.. image:: https://img.shields.io/badge/Slack-join-brightgreen
+    :target: https://join.slack.com/t/tensorly/shared_invite/zt-wqnts2sk-wbiRX6ml~Xt6~GDYWRPFfg
+
 
 ========
 TensorLy
@@ -20,7 +21,7 @@ TensorLy
 
 TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, PyTorch, JAX, MXNet, TensorFlow or CuPy, and run methods at scale on CPU or GPU.
 
-- **Website:** http://tensorly.org
+- **Website:** https://tensorly.org
 - **Source-code:**  https://github.com/tensorly/tensorly
 - **Jupyter Notebooks:** https://github.com/JeanKossaifi/tensorly-notebooks
 
@@ -129,12 +130,25 @@ If you see a bug, open an `issue <https://github.com/tensorly/tensorly/issues>`_
   
 --------------------------
 
+Contributing code
+=================
+
+All contributions are welcome! So if you have a cool tensor method you want to add, if you spot a bug or even a typo or mistake in the documentation, please report it, and even better, open a Pull-Request on `GitHub <https://github.com/tensorly/tensorly/>`_.
+
+Before you submit your changes, you should make sure your code adheres to our style-guide. The easiest way to do this is with `black`:  
+
+.. code:: bash
+
+   pip install black
+   black .
+
+
 Running the tests
 =================
 
 Testing and documentation are an essential part of this package and all functions come with uni-tests and documentation.
 
-The tests are ran using the `pytest` package (though you can also use `nose`). 
+The tests are ran using the `pytest` package. 
 First install `pytest`::
 
     pip install pytest

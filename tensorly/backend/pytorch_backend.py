@@ -1,34 +1,44 @@
 import warnings
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 try:
     import torch
 except ImportError as error:
-    message = ('Impossible to import PyTorch.\n'
-               'To use TensorLy with the PyTorch backend, '
-               'you must first install PyTorch!')
+    message = (
+        "Impossible to import PyTorch.\n"
+        "To use TensorLy with the PyTorch backend, "
+        "you must first install PyTorch!"
+    )
     raise ImportError(message) from error
 
 import numpy as np
 
-from .core import Backend
+from .core import (
+    Backend,
+    backend_types,
+    backend_basic_math,
+    backend_array,
+)
+
+linalg_lstsq_avail = Version(torch.__version__) >= Version("1.9.0")
 
 
-class PyTorchBackend(Backend):
-    backend_name = 'pytorch'
-
+class PyTorchBackend(Backend, backend_name="pytorch"):
     @staticmethod
     def context(tensor):
-        return {'dtype': tensor.dtype,
-                'device': tensor.device,
-                'requires_grad': tensor.requires_grad}
+        return {
+            "dtype": tensor.dtype,
+            "device": tensor.device,
+            "requires_grad": tensor.requires_grad,
+        }
 
     @staticmethod
-    def tensor(data, dtype=torch.float32, device='cpu', requires_grad=False):
+    def tensor(data, dtype=torch.float32, device="cpu", requires_grad=False):
         if isinstance(data, np.ndarray):
             data = data.copy()
-        return torch.tensor(data, dtype=dtype, device=device,
-                            requires_grad=requires_grad)
+        return torch.tensor(
+            data, dtype=dtype, device=device, requires_grad=requires_grad
+        )
 
     @staticmethod
     def to_numpy(tensor):
@@ -45,7 +55,7 @@ class PyTorchBackend(Backend):
 
     @staticmethod
     def shape(tensor):
-        return tensor.shape
+        return tuple(tensor.shape)
 
     @staticmethod
     def ndim(tensor):
@@ -54,20 +64,18 @@ class PyTorchBackend(Backend):
     @staticmethod
     def arange(start, stop=None, step=1.0, *args, **kwargs):
         if stop is None:
-            return torch.arange(start=0., end=float(start), step=float(step), *args, **kwargs)
+            return torch.arange(
+                start=0.0, end=float(start), step=float(step), *args, **kwargs
+            )
         else:
             return torch.arange(float(start), float(stop), float(step), *args, **kwargs)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, inplace=False):
-        if a_max is None:
-            a_max = torch.max(tensor)
-        if a_min is None:
-            a_min = torch.min(tensor)
         if inplace:
-            return torch.clamp(tensor, a_min, a_max, out=tensor)
+            return torch.clip(tensor, a_min, a_max, out=tensor)
         else:
-            return torch.clamp(tensor, a_min, a_max)
+            return torch.clip(tensor, a_min, a_max)
 
     @staticmethod
     def all(tensor):
@@ -87,16 +95,28 @@ class PyTorchBackend(Backend):
         # pytorch doesn't seems to support keyword arguments in the first place
         kwds = {}
         if axis is not None:
-            kwds['dim'] = axis
-        if order and order != 'inf':
-            kwds['p'] = order
+            kwds["dim"] = axis
+        if order and order != "inf":
+            kwds["p"] = order
 
-        if order == 'inf':
+        if order == "inf":
             res = torch.max(torch.abs(tensor), **kwds)
             if axis is not None:
                 return res[0]  # ignore indices output
             return res
         return torch.norm(tensor, **kwds)
+
+    @staticmethod
+    def dot(a, b):
+        if a.ndim > 2 and b.ndim > 2:
+            return torch.tensordot(a, b, dims=([-1], [-2]))
+        if not a.ndim or not b.ndim:
+            return a * b
+        return torch.matmul(a, b)
+
+    @staticmethod
+    def tensordot(a, b, axes=2, **kwargs):
+        return torch.tensordot(a, b, dims=axes, **kwargs)
 
     @staticmethod
     def mean(tensor, axis=None):
@@ -106,12 +126,18 @@ class PyTorchBackend(Backend):
             return torch.mean(tensor, dim=axis)
 
     @staticmethod
-    def sum(tensor, axis=None):
+    def sum(tensor, axis=None, keepdims=False):
         if axis is None:
-            return torch.sum(tensor)
+            axis = tuple(range(tensor.ndim))
+        return torch.sum(tensor, dim=axis, keepdim=keepdims)
+
+    @staticmethod
+    def max(tensor, axis=None):
+        if axis is None:
+            return torch.max(tensor)
         else:
-            return torch.sum(tensor, dim=axis)
-    
+            return torch.max(tensor, dim=axis)[0]
+
     @staticmethod
     def flip(tensor, axis=None):
         if isinstance(axis, int):
@@ -128,23 +154,31 @@ class PyTorchBackend(Backend):
 
     @staticmethod
     def argmin(input, axis=None):
-            return torch.argmin(input, dim=axis)
+        return torch.argmin(input, dim=axis)
+
+    @staticmethod
+    def argsort(input, axis=None):
+        return torch.argsort(input, dim=axis)
 
     @staticmethod
     def argmax(input, axis=None):
-            return torch.argmax(input, dim=axis)
+        return torch.argmax(input, dim=axis)
 
     @staticmethod
     def stack(arrays, axis=0):
         return torch.stack(arrays, dim=axis)
-    
+
     @staticmethod
-    def sort(tensor, axis, descending = False):
+    def diag(tensor, k=0):
+        return torch.diag(tensor, diagonal=k)
+
+    @staticmethod
+    def sort(tensor, axis):
         if axis is None:
             tensor = tensor.flatten()
             axis = -1
 
-        return torch.sort(tensor, dim=axis, descending = descending).values
+        return torch.sort(tensor, dim=axis).values
 
     @staticmethod
     def update_index(tensor, index, values):
@@ -176,36 +210,68 @@ class PyTorchBackend(Backend):
         return solution
 
     @staticmethod
+    def lstsq(a, b):
+        if linalg_lstsq_avail:
+            x, residuals, _, _ = torch.linalg.lstsq(a, b, rcond=None, driver="gelsd")
+            return x, residuals
+        else:
+            n = a.shape[1]
+            sol = torch.lstsq(b, a)[0]
+            x = sol[:n]
+            residuals = torch.norm(sol[n:], dim=0) ** 2
+            return x, residuals if torch.matrix_rank(a) == n else torch.tensor(
+                [], device=x.device
+            )
+
+    @staticmethod
     def eigh(tensor):
         """Legacy only, deprecated from PyTorch 1.8.0"""
         return torch.symeig(tensor, eigenvectors=True)
 
     @staticmethod
-    def svd(matrix, full_matrices=False):
-        full_matrices = (not full_matrices)
-        return torch.svd(matrix, some=full_matrices, compute_uv=True)
+    def sign(tensor):
+        """torch.sign does not support complex numbers."""
+        return torch.sgn(tensor)
+
+    @staticmethod
+    def svd(matrix, full_matrices=True):
+        some = not full_matrices
+        u, s, v = torch.svd(matrix, some=some, compute_uv=True)
+        return u, s, v.transpose(-2, -1).conj()
+
 
 # Register the other functions
-for name in ['float64', 'float32', 'int64', 'int32', 'complex128', 'complex64',
-             'is_tensor', 'ones', 'zeros', 'any', 'trace', 'cumsum',
-             'zeros_like', 'reshape', 'eye', 'max', 'min', 'prod', 'abs', 
-             'sqrt', 'sign', 'where', 'conj', 'diag', 'finfo', 'einsum', 'log2', 'sin', 'cos']:
+for name in (
+    backend_types
+    + backend_basic_math
+    + backend_array
+    + [
+        "nan",
+        "is_tensor",
+        "trace",
+        "conj",
+        "finfo",
+        "log2",
+        "digamma",
+    ]
+):
     PyTorchBackend.register_method(name, getattr(torch, name))
 
-PyTorchBackend.register_method('dot', torch.matmul)
 
 # PyTorch 1.8.0 has a much better NumPy interface but somoe haven't updated yet
-if LooseVersion(torch.__version__) < LooseVersion('1.8.0'):
+if Version(torch.__version__) < Version("1.8.0"):
     # Old version, will be removed in the future
-    warnings.warn(f'You are using an old version of PyTorch ({torch.__version__}). '
-                  'We recommend upgrading to a newest one, e.g. >1.8.0.')
-    PyTorchBackend.register_method('moveaxis', getattr(torch, 'movedim'))
-    PyTorchBackend.register_method('qr', getattr(torch, 'qr'))
+    warnings.warn(
+        f"You are using an old version of PyTorch ({torch.__version__}). "
+        "We recommend upgrading to a newest one, e.g. >1.8.0."
+    )
+    PyTorchBackend.register_method("moveaxis", getattr(torch, "movedim"))
+    PyTorchBackend.register_method("qr", getattr(torch, "qr"))
 
 else:
     # New PyTorch NumPy interface
-    for name in ['kron', 'moveaxis']:
+    for name in ["kron", "moveaxis"]:
         PyTorchBackend.register_method(name, getattr(torch, name))
 
-    for name in ['solve', 'qr', 'svd', 'eigh']:
+    for name in ["solve", "qr", "svd", "eigh"]:
         PyTorchBackend.register_method(name, getattr(torch.linalg, name))

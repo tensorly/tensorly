@@ -7,11 +7,57 @@ import types
 import warnings
 
 import numpy as np
-import scipy.linalg
-import scipy.sparse.linalg
+import scipy.special
 
 
-class Index():
+backend_types = [
+    "int32",
+    "int64",
+    "float32",
+    "float64",
+    "complex64",
+    "complex128",
+    "pi",
+    "e",
+    "inf",
+]
+backend_basic_math = [
+    "exp",
+    "log",
+    "tanh",
+    "cosh",
+    "sinh",
+    "sin",
+    "cos",
+    "tan",
+    "arctanh",
+    "arccosh",
+    "arcsinh",
+    "arctan",
+    "arccos",
+    "arcsin",
+]
+backend_array = [
+    "einsum",
+    "matmul",
+    "ones",
+    "zeros",
+    "any",
+    "prod",
+    "all",
+    "where",
+    "reshape",
+    "cumsum",
+    "count_nonzero",
+    "eye",
+    "sqrt",
+    "abs",
+    "min",
+    "zeros_like",
+]
+
+
+class Index:
     """Convenience class used as a an array, to be used with index_update
 
     Parameters
@@ -23,21 +69,40 @@ class Index():
     Usage: index[indices], e.g. ::
 
         index[1:3, 4:5, :None]
-    
+
     See also
     --------
     index_update : updating the values of a tensor for specified indices
     """
+
     __slots__ = ()
 
     def __getitem__(self, indices):
         return indices
+
     @property
     def __name__(self):
-        return 'Index'
+        return "Index"
 
 
 class Backend(object):
+    _available_backends = dict()
+
+    def __init_subclass__(cls, backend_name, **kwargs):
+        """When a subclass is created, register it in _known_backends"""
+        super().__init_subclass__(**kwargs)
+
+        if backend_name != "":
+            cls._available_backends[backend_name.lower()] = cls
+            cls.backend_name = backend_name
+        else:
+            warnings.warn(
+                f"Creating a subclass of BaseBackend ({cls.__name__}) with no name."
+            )
+
+    def __repr__(self):
+        return f"TensorLy {self.backend_name}-backend"
+
     @classmethod
     def register_method(cls, name, func):
         """Register a method with the backend.
@@ -50,6 +115,22 @@ class Backend(object):
             The method
         """
         setattr(cls, name, staticmethod(func))
+
+    @property
+    def e(self):
+        raise NotImplementedError
+
+    @property
+    def pi(self):
+        raise NotImplementedError
+
+    @property
+    def nan(self):
+        raise NotImplementedError
+
+    @property
+    def inf(self):
+        raise NotImplementedError
 
     @property
     def int64(self):
@@ -101,7 +182,7 @@ class Backend(object):
         elif isinstance(seed, np.random.RandomState):
             return seed
 
-        raise ValueError('Seed should be None, int or np.random.RandomState')
+        raise ValueError("Seed should be None, int or np.random.RandomState")
 
     def randn(self, shape, seed=None, **context):
         """Returns a random tensor with samples from the “standard normal” distribution.
@@ -120,6 +201,18 @@ class Backend(object):
         """
         rng = self.check_random_state(seed)
         random_tensor = rng.randn(*shape)
+        random_tensor = self.tensor(random_tensor, **context)
+        return random_tensor
+
+    def gamma(self, shape, scale=1.0, size=None, seed=None, **context):
+        """Draw samples from a Gamma distribution.
+
+        Samples are drawn from a Gamma distribution with specified parameters,
+        shape (sometimes designated “k”) and scale (sometimes designated “theta”),
+        where both parameters are > 0.
+        """
+        rng = self.check_random_state(seed)
+        random_tensor = rng.gamma(shape=shape, scale=scale, size=size)
         random_tensor = self.tensor(random_tensor, **context)
         return random_tensor
 
@@ -332,6 +425,18 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def count_nonzero(tensor):
+        """Returns number of non-zero elements in the tensor.
+        Parameters
+        ----------
+        tensor : tensor
+        Returns
+        -------
+        out : scalar
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def trace(tensor):
         """Returns sum of the elements on the diagonal of the tensor.
 
@@ -395,7 +500,7 @@ class Backend(object):
             otherwise, returns a tensor of bools.
         """
         return tensor.any(axis=axis, keepdims=keepdims, **kwargs)
-          
+
     @staticmethod
     def clip(tensor, a_min=None, a_max=None):
         """Clip the values of a tensor to within an interval.
@@ -448,7 +553,6 @@ class Backend(object):
         scalar
         """
         raise NotImplementedError
-
 
     @staticmethod
     def argmax(tensor):
@@ -600,14 +704,14 @@ class Backend(object):
         if axis == ():
             axis = None
 
-        if order == 'inf':
+        if order == "inf":
             return self.max(self.abs(tensor), axis=axis)
         if order == 1:
             return self.sum(self.abs(tensor), axis=axis)
         elif order == 2:
-            return self.sqrt(self.sum(self.abs(tensor)**2, axis=axis))
+            return self.sqrt(self.sum(self.abs(tensor) ** 2, axis=axis))
         else:
-            return self.sum(self.abs(tensor)**order, axis=axis)**(1 / order)
+            return self.sum(self.abs(tensor) ** order, axis=axis) ** (1 / order)
 
     @staticmethod
     def dot(a, b):
@@ -621,6 +725,58 @@ class Backend(object):
         Returns
         -------
         tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def matmul(a, b):
+        """Matrix multiplication of tensors representing (batches of) matrices
+
+        Parameters
+        ----------
+        a : tl.tensor
+            [description]
+        b : tl.tensor
+            tensors representing the matrices to contract
+
+        Returns
+        -------
+        a @ b
+            matrix product of a and b
+
+        Notes
+        -----
+        The behavior depends on the arguments in the following way.
+
+            * If both arguments are 2-D they are multiplied like conventional matrices.
+
+            * If either argument is N-D, N > 2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
+
+            * If the first argument is 1-D, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
+
+            * If the second argument is 1-D, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+
+        `matmul` differs from dot in two important ways:
+
+           * Multiplication by scalars is not allowed, use * instead.
+
+           * Stacks of matrices are broadcast together as if the matrices were elements, respecting the signature ``(n,k),(k,m)->(n,m)``:
+
+           .. code-block:: python
+
+              >>> a = np.ones([9, 5, 7, 4])
+
+              >>> c = np.ones([9, 5, 4, 3])
+
+              >>> np.dot(a, c).shape
+              (9, 5, 7, 9, 5, 3)
+
+              >>> np.matmul(a, c).shape
+              (9, 5, 7, 3)
+
+              >>> # n is 7, k is 4, m is 3
+
+        The matmul function implements the semantics of the ``@`` operator introduced in Python 3.5 following `PEP 465 <https://www.python.org/dev/peps/pep-0465/>`_.
         """
         raise NotImplementedError
 
@@ -693,6 +849,30 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def lstsq(a, b):
+        """Computes a solution to the least squares problem :math:`||ax-b||_F`
+
+        If the coefficient martix is underdetermined (m<n) and multiple
+        solutions exist, the min norm solution is returned.
+
+        Parameters
+        ----------
+        a : tensor, shape (M, N)
+            The coefficient matrix.
+        b : tensor, shape (M,) or (M, K)
+             The ordinate values.
+
+        Returns
+        -------
+        x : tensor, shape (N,) or (N, K)
+            Solution to the least squares problem :math:`||ax-b||_F`.
+        residuals : tensor, shape (K,)
+            Sums of squared residuals: Squared Euclidean 2-norm for each column in ax-b.
+            If the rank of a is < N or M <= N, this is an empty tensor.
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def qr(a):
         """Compute the qr factorization of a matrix.
 
@@ -724,7 +904,7 @@ class Backend(object):
         ----------
         dtype : tensorly.dtype
             the dtype for which to get the machine epsilon
-        
+
         Returns
         -------
         eps : machine epsilon for `dtype`
@@ -745,13 +925,13 @@ class Backend(object):
     def conj(x, *args, **kwargs):
         """Return the complex conjugate, element-wise.
 
-            The complex conjugate of a complex number is obtained by 
-            changing the sign of its imaginary part.
+        The complex conjugate of a complex number is obtained by
+        changing the sign of its imaginary part.
         """
         raise NotImplementedError
 
     @staticmethod
-    def sort(tensor, axis, descending = False):
+    def sort(tensor, axis):
         """Return a sorted copy of an array
 
         Parameters
@@ -760,13 +940,28 @@ class Backend(object):
             An N-D tensor
         axis : int or None
             Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
-        descending : bool
-            If True, values are sorted in descending order, otherwise in ascending.
 
         Returns
         -------
         sorted_tensor : tensor
             An N-D array, sorted copy of input tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def argsort(tensor, axis):
+        """Returns arguments of a sorted array
+
+        Parameters
+        ----------
+        tensor : tensor
+            An N-D tensor
+        axis : int or None
+            Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
+
+        Returns
+        -------
+        list of scalar values
         """
         raise NotImplementedError
 
@@ -811,20 +1006,25 @@ class Backend(object):
         """
 
         axes = list(range(self.ndim(tensor)))
-        if source < 0: source = axes[source]
-        if destination < 0: destination = axes[destination]
+        if source < 0:
+            source = axes[source]
+        if destination < 0:
+            destination = axes[destination]
         try:
             axes.pop(source)
         except IndexError:
-            raise ValueError('Source should verify 0 <= source < tensor.ndim'
-                             'Got %d' % source)
+            raise ValueError(
+                "Source should verify 0 <= source < tensor.ndim" "Got %d" % source
+            )
         try:
             axes.insert(destination, source)
         except IndexError:
-            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
-                             'Got %d' % destination)
+            raise ValueError(
+                "Destination should verify 0 <= destination < tensor.ndim"
+                "Got %d" % destination
+            )
         return self.transpose(tensor, axes)
-    
+
     def kron(self, a, b):
         """Kronecker product of two tensors.
 
@@ -872,8 +1072,9 @@ class Backend(object):
             text{ is of size } (\\prod_{k=1}^n I_k \\times R)
         """
         if len(matrices) < 2:
-            raise ValueError('kr requires a list of at least 2 matrices, but {} '
-                            'given.'.format(len(matrices)))
+            raise ValueError(
+                f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
+            )
 
         n_col = self.shape(matrices[0])[1]
         for i, e in enumerate(matrices[1:]):
@@ -881,11 +1082,11 @@ class Backend(object):
                 if weights is None:
                     res = matrices[0]
                 else:
-                    res = matrices[0]*self.reshape(weights, (1, -1))
+                    res = matrices[0] * self.reshape(weights, (1, -1))
             s1, s2 = self.shape(res)
             s3, s4 = self.shape(e)
             if not s2 == s4 == n_col:
-                raise ValueError('All matrices should have the same number of columns.')
+                raise ValueError("All matrices should have the same number of columns.")
 
             a = self.reshape(res, (s1, 1, s2))
             b = self.reshape(e, (1, s3, s4))
@@ -893,348 +1094,16 @@ class Backend(object):
 
         m = self.reshape(mask, (-1, 1)) if mask is not None else 1
 
-        return res*m
+        return res * m
 
-    def svd_flip(self, U, V, u_based_decision=True):
-        """Sign correction to ensure deterministic output from SVD.
-        Adjusts the columns of u and the rows of v such that the loadings in the
-        columns in u that are largest in absolute value are always positive.
-        This function is borrowed from scikit-learn/utils/extmath.py
-        Parameters
-        ----------
-        U : ndarray
-            u and v are the output of `partial_svd`
-        V : ndarray
-            u and v are the output of `partial_svd`
-        u_based_decision : boolean, (default=True)
-            If True, use the columns of u as the basis for sign flipping.
-            Otherwise, use the rows of v. The choice of which variable to base the
-            decision on is generally algorithm dependent.
-        Returns
-        -------
-        u_adjusted, v_adjusted : arrays with the same dimensions as the input.
-        """
-        if u_based_decision:
-            # columns of U, rows of V
-            max_abs_cols = self.argmax(self.abs(U), axis=0)
-            signs = self.sign(
-                self.tensor([U[i, j] for (i, j) in zip(max_abs_cols, range(self.shape(U)[1]))], **self.context(U))
-            )
-            U = U * signs
-            if self.shape(V)[0] > self.shape(U)[1]:
-                signs = self.concatenate((signs, self.ones(self.shape(V)[0] - self.shape(U)[1])))
-            V = V * signs[:self.shape(V)[0]][:, None]
-        else:
-            # rows of V, columns of U
-            max_abs_rows = self.argmax(self.abs(V), axis=1)
-            signs = self.sign(
-                self.tensor([V[i, j] for (i, j) in zip(range(self.shape(V)[0]), max_abs_rows)], **self.context(V))
-            )
-            V = V * signs[:, None]
-            if self.shape(U)[1] > self.shape(V)[0]:
-                signs = self.concatenate((signs, self.ones(self.shape(U)[1] - self.shape(V)[0])))
-            U = U * signs[:self.shape(U)[1]]
+    def svd(self, matrix):
+        raise NotImplementedError
 
-        return U, V
-
-    def partial_svd(self, matrix, n_eigenvecs=None, flip=False, random_state=None, **kwargs):
-        """Computes a fast partial SVD on `matrix`
-
-        If `n_eigenvecs` is specified, sparse eigendecomposition is used on
-        either matrix.dot(matrix.T) or matrix.T.dot(matrix).
-
-        Parameters
-        ----------
-        matrix : tensor
-            A 2D tensor.
-        n_eigenvecs : int, optional, default is None
-            If specified, number of eigen[vectors-values] to return.
-        flip : bool, default is False
-            If True, the SVD sign ambiguity is resolved by making the largest component
-            in the columns of U, positive.
-        random_state: {None, int, np.random.RandomState}
-            If specified, use it for sampling starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2-D tensor, shape (matrix.shape[0], n_eigenvecs)
-            Contains the right singular vectors
-        S : 1-D tensor, shape (n_eigenvecs, )
-            Contains the singular values of `matrix`
-        V : 2-D tensor, shape (n_eigenvecs, matrix.shape[1])
-            Contains the left singular vectors
-        """
-        # Check that matrix is... a matrix!
-        if self.ndim(matrix) != 2:
-            raise ValueError('matrix be a matrix. matrix.ndim is %d != 2'
-                             % self.ndim(matrix))
-
-        ctx = self.context(matrix)
-        is_numpy = isinstance(matrix, np.ndarray)
-        if not is_numpy:
-            warnings.warn('In partial_svd: converting to NumPy.'
-                          ' Check SVD_FUNS for available alternatives if you want to avoid this.')
-
-        # Choose what to do depending on the params
-        dim_1, dim_2 = self.shape(matrix)
-        min_dim, max_dim = (dim_1, dim_2) if dim_1 < dim_2 else (dim_2, dim_1)
-        matrix = self.to_numpy(matrix)
-
-        if (n_eigenvecs is None) or (n_eigenvecs >= min_dim):
-            # Just perform trucated SVD
-            full_matrices = (n_eigenvecs is None) or (n_eigenvecs > min_dim)
-            # If n_eigenvecs == min_dim, we don't want full_matrices=True, it's super slow
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        else:
-            # We can perform a partial SVD
-            rng = self.check_random_state(random_state)
-            # initilize with [-1, 1] as in ARPACK
-            v0 = rng.uniform(-1, 1, min_dim)
-
-            # First choose whether to use X * X.T or X.T *X
-            if dim_1 < dim_2:
-                S, U = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
-                )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-                V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
-            else:
-                S, V = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
-                )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-                U = np.dot(matrix, V) * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
-
-            # WARNING: here, V is still the transpose of what it should be
-            U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-            V = V.T.conj()
-
-        if flip:
-            U, V = self.svd_flip(U, V)
-
-        if not is_numpy:
-            U = self.tensor(U, **ctx)
-            S = self.tensor(S, **ctx)
-            V = self.tensor(V, **ctx)
-
-        return U, S, V
-
-    def truncated_svd(self, matrix, n_eigenvecs=None, **kwargs):
-        """Computes a truncated SVD on `matrix` using the backends's standard SVD
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        # Check that matrix is... a matrix!
-        if self.ndim(matrix) != 2:
-            raise ValueError('matrix be a matrix. matrix.ndim is %d != 2'
-                             % self.ndim(matrix))
-
-        dim_1, dim_2 = self.shape(matrix)
-        min_dim, max_dim = min(dim_1, dim_2), max(dim_1, dim_2)
-
-        if n_eigenvecs is None:
-            n_eigenvecs = max_dim
-
-        if n_eigenvecs > max_dim:
-            warnings.warn('Trying to compute SVD with n_eigenvecs={0}, which '
-                          'is larger than max(matrix.shape)={1}. Setting '
-                          'n_eigenvecs to {1}'.format(n_eigenvecs, max_dim))
-            n_eigenvecs = max_dim
-
-        full_matrices = n_eigenvecs > min_dim
-
-        U, S, V = self.svd(matrix, full_matrices=full_matrices)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        return U, S, V
-
-    def symeig_svd(self, matrix, n_eigenvecs=None, **kwargs):
-        """Computes a truncated SVD on `matrix` using symeig
-
-            Uses symeig on matrix.T.dot(matrix) or its transpose
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        # Check that matrix is... a matrix!
-        if self.ndim(matrix) != 2:
-            raise ValueError('matrix be a matrix. matrix.ndim is %d != 2'
-                             % self.ndim(matrix))
-
-        dim_1, dim_2 = self.shape(matrix)
-        min_dim, max_dim = min(dim_1, dim_2), max(dim_1, dim_2)
-
-        if n_eigenvecs is None:
-            n_eigenvecs = max_dim
-
-        if n_eigenvecs > max_dim:
-            warnings.warn('Trying to compute SVD with n_eigenvecs={0}, which '
-                          'is larger than max(matrix.shape)={1}. Setting '
-                          'n_eigenvecs to {1}'.format(n_eigenvecs, max_dim))
-            n_eigenvecs = max_dim
-
-        if dim_1 > dim_2:
-            S, U = self.eigh(self.dot(matrix, self.transpose(matrix)))
-            S = self.sqrt(self.clip(S, self.eps(S.dtype)))
-            V = self.dot(self.transpose(matrix), U / self.reshape(S, (1, -1)))
-        else:
-            S, V = self.eigh(self.dot(self.transpose(matrix), matrix))
-            S = self.sqrt(self.clip(S, self.eps(S.dtype)))
-            U = self.dot(matrix, V) / self.reshape(S, (1, -1))
-
-        U, S, V = self.flip(U, axis=1), self.flip(S), self.flip(self.transpose(V), axis=0)
-        return U[:, :min(dim_1, n_eigenvecs)], S[:min(dim_1, dim_2, n_eigenvecs)], V[:min(dim_2, n_eigenvecs), :]
-
-    def randomized_svd(self, matrix, n_eigenvecs=None, n_oversamples=5, n_iter=2, random_state=None, **kwargs):
-        """Computes a truncated randomized SVD.
-
-        If `n_eigenvecs` is specified, sparse eigendecomposition is used on
-        either matrix.dot(matrix.T) or matrix.T.dot(matrix).
-
-        Parameters
-        ----------
-        matrix : tensor
-            A 2D tensor.
-        n_eigenvecs : int, optional, default is None
-            If specified, number of eigen[vectors-values] to return.
-        n_oversamples: int, optional, default = 5
-            rank overestimation value for finiding subspace with better allignment
-        n_iter: int, optional, default = 2
-            number of power iterations for the `randomized_range_finder` subroutine
-        random_state: {None, int, np.random.RandomState}
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2-D tensor, shape (matrix.shape[0], n_eigenvecs)
-            Contains the right singular vectors
-        S : 1-D tensor, shape (n_eigenvecs, )
-            Contains the singular values of `matrix`
-        V : 2-D tensor, shape (n_eigenvecs, matrix.shape[1])
-            Contains the left singular vectors
-
-        Notes
-        -----
-        This function is implemented based on Algorith 5.1 in `Finding structure with randomness:
-        Probabilistic algorithms for constructing approximate matrix decompositions`
-        - Halko et al (2009)
-        """
-        # Check that matrix is... a matrix!
-        if self.ndim(matrix) != 2:
-            raise ValueError('matrix be a matrix. matrix.ndim is %d != 2'
-                             % self.ndim(matrix))
-
-        dim_1, dim_2 = self.shape(matrix)
-        min_dim, max_dim = min(dim_1, dim_2), max(dim_1, dim_2)
-
-        if n_eigenvecs is None:
-            n_eigenvecs = max_dim
-
-        if n_eigenvecs > max_dim:
-            warnings.warn('Trying to compute SVD with n_eigenvecs={0}, which '
-                          'is larger than max(matrix.shape)={1}. Setting '
-                          'n_eigenvecs to {1}'.format(n_eigenvecs, max_dim))
-            n_eigenvecs = max_dim
-
-        n_dims = min(n_eigenvecs + n_oversamples, max_dim)
-
-        if dim_1 > dim_2 and n_eigenvecs > min(min_dim, n_dims) or \
-           dim_1 < dim_2 and n_eigenvecs < min(min_dim, n_dims):
-            # transpose matrix to keep the reduced matrix shape minimal
-            matrix_T = self.transpose(matrix)
-            Q = self.randomized_range_finder(matrix_T, n_dims=n_dims, n_iter=n_iter, random_state=random_state)
-            Q_H = self.conj(self.transpose(Q))
-            matrix_reduced = self.transpose(self.dot(Q_H, matrix_T))
-            U, S, V = self.truncated_svd(matrix_reduced, n_eigenvecs=n_eigenvecs)
-            V = self.dot(V, self.transpose(Q))
-        else:
-            Q = self.randomized_range_finder(matrix, n_dims=n_dims, n_iter=n_iter, random_state=random_state)
-            Q_H = self.conj(self.transpose(Q))
-            matrix_reduced = self.dot(Q_H, matrix)
-            U, S, V = self.truncated_svd(matrix_reduced, n_eigenvecs=n_eigenvecs)
-            U = self.dot(Q, U)
-
-        return U, S, V
-
-    def randomized_range_finder(self, A, n_dims, n_iter=2, random_state=None):
-        """Computes an orthonormal matrix (Q) whose range approximates the range of A,  i.e., Q Q^H A ≈ A
-
-        Parameters
-        ----------
-        A : 2D-array
-        n_dims : int, dimension of the returned subspace
-        n_iter : int, number of power iterations to conduct (default = 2)
-        random_state: {None, int, np.random.RandomState}
-
-        Returns
-        -------
-        Q : 2D-array
-            of shape (A.shape[0], min(n_dims, A.shape[0], A.shape[1]))
-
-        Notes
-        -----
-        This function is implemented based on Algorith 4.4 in `Finding structure with randomness:
-        Probabilistic algorithms for constructing approximate matrix decompositions`
-        - Halko et al (2009)
-        """
-        rng = self.check_random_state(random_state)
-        dim_1, dim_2 = self.shape(A)
-        Q = self.tensor(rng.normal(size=(dim_2, n_dims)), **self.context(A))
-        Q, _ = self.qr(self.dot(A, Q))
-
-        # Perform power iterations when spectrum decays slowly
-        A_H = self.conj(self.transpose(A))
-        for i in range(n_iter):
-            Q, _ = self.qr(self.dot(A_H, Q))
-            Q, _ = self.qr(self.dot(A, Q))
-
-        return Q
+    def eigh(self, matrix):
+        raise NotImplementedError
 
     index = Index()
 
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.truncated_svd,
-                'symeig_svd': self.symeig_svd,
-                'randomized_svd': self.randomized_svd}
-    
     @staticmethod
     def index_update(tensor, indices, values):
         """Updates the value of tensors in the specified indices
@@ -1243,7 +1112,7 @@ class Backend(object):
                 index_update(tensor, tensorly.index[:, 3:5], values)
 
             Equivalent of::
-            
+
                 tensor[:, 3:5] = values
 
         Parameters
@@ -1254,7 +1123,7 @@ class Backend(object):
             indices to update
         values : tensorly.tensor
             values to use to fill tensor[indices]
-        
+
         Returns
         -------
         tensor
@@ -1262,7 +1131,7 @@ class Backend(object):
 
         Example
         -------
-        
+
         >>> import tensorly as tl
         >>> import numpy as np
         >>> tensor = tl.tensor([[1, 2, 3], [4, 5, 6]])
@@ -1284,18 +1153,119 @@ class Backend(object):
 
     @staticmethod
     def log2(x):
-        """Return the base 2 logarithm of x.
+        """Return the base 2 logarithm of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def log(x):
+        """Calculate the natural logarithm of all elements in the input array."""
+        raise
+
+    @staticmethod
+    def exp(x):
+        """Calculate the exponential of all elements in the input array."""
+        raise NotImplementedError
+
+    def digamma(self, x):
+        """The digamma function.
+
+        The logarithmic derivative of the gamma function evaluated at z.
         """
+        return self.tensor(scipy.special.digamma(x), **self.context(x))
+
+    @staticmethod
+    def flip(tensor, axis=None):
+        """Reverse the order of elements in an array along the given axis."""
         raise NotImplementedError
 
     @staticmethod
     def sin(x):
-        """Return the sin of x.
-        """
+        """Return the sin of x."""
         raise NotImplementedError
 
     @staticmethod
     def cos(x):
-        """Return the cos of x.
-        """
+        """Return the cos of x."""
         raise NotImplementedError
+
+    @staticmethod
+    def tan(x):
+        """Return the tan of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arcsin(x):
+        """Return the arcsin of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arccos(x):
+        """Return the arccos of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arctan(x):
+        """Return the arctan of x."""
+        raise NotImplementedError
+
+    def asin(self, x):
+        """Return the arcsin of x."""
+        return self.arcsin(x)
+
+    def acos(self, x):
+        """Return the arccos of x."""
+        return self.arccos(x)
+
+    def atan(self, x):
+        """Return the arctan of x."""
+        return self.arctan(x)
+
+    @staticmethod
+    def sinh(x):
+        """Return the sinh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def cosh(x):
+        """Return the cosh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def tanh(x):
+        """Return the tanh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arcsinh(x):
+        """Return the arcsinh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arccosh(x):
+        """Return the arccosh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arctanh(x):
+        """Return the arctanh of x."""
+        raise NotImplementedError
+
+    def asinh(self, x):
+        """Return the arcsinh of x."""
+        return self.arcsinh(x)
+
+    def acosh(self, x):
+        """Return the arccosh of x."""
+        return self.arccosh(x)
+
+    def atanh(self, x):
+        """Return the arctanh of x."""
+        return self.arctanh(x)
+
+    def partial_svd(self, *args, **kwargs):
+        msg = (
+            "partial_svd is no longer used. "
+            "Please use tensorly.tenalg.svd_interface instead, "
+            "it provides a unified interface to all available SVD implementations."
+        )
+        raise NotImplementedError(msg)
