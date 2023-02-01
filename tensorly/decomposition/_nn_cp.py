@@ -11,6 +11,8 @@ from ..cp_tensor import (
     validate_cp_rank,
 )
 from ..tenalg.svd import svd_interface
+from copy import copy
+import math
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -200,6 +202,8 @@ def non_negative_parafac_hals(
     return_errors=False,
     cvg_criterion="abs_rec_error",
     epsilon=0,
+    rescale=True,
+    pop_l2=False
 ):
     """
     Non-negative CP decomposition via HALS
@@ -229,14 +233,16 @@ def non_negative_parafac_hals(
     random_state : {None, int, np.random.RandomState}
     sparsity_coefficients: array of float (of length the number of modes)
         The sparsity penalization coefficients on each factor.
+        If a float is provided, a l1 penalty will be enforced on all factors using that float as hyperparameter.
         If set to None, the algorithm is computed without sparsity.
         Default: None,
     ridge_coefficients: array of float (of length the number of modes)
         The ridge (l2) penalization coefficients on each factor.
+        If a float is provided, a squared l2 penalty will be enforced on all factors using that float as hyperparameter.
         If set to None, the algorithm is computed without ridge.
         By default, if sparsity_coefficients are not None, all factors which have 
-        sparsity coefficient value 0 are imposed ridge penalization with coefficient 1.0
-        to avoid degeneracy induced by the scale invariance of nonnegative parafac.
+        sparsity coefficient value 0 are imposed ridge penalization with coefficient max(sparsity_coefficients) 
+        to avoid degeneracy induced by the scale invariance of Parafac.
         Default: None,
     fixed_modes: array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
@@ -310,12 +316,26 @@ def non_negative_parafac_hals(
         if sparsity_coefficients[i]==None:
             sparsity_coefficients[i]=0
 
+    # Add constant to check if rescale strategy is used
+    if (any(sparsity_coefficients) or any(ridge_coefficients)) and rescale:
+            reg_is_used = True
+    else:
+        reg_is_used = False
     # adding ridge penalty unless done by user on non-sparse/ridge factors to avoid degeneracy
-    if any(sparsity_coefficients) or any(ridge_coefficients):
+    if not pop_l2 and any(sparsity_coefficients):
         for i in range(n_modes):
             if abs(sparsity_coefficients[i]) + abs(ridge_coefficients[i])==0:
-                warnings.warn(f"Ridge coefficient set to max l1coeffs on mode {i} to avoid degeneracy")
+                warnings.warn(f"Ridge coefficient set to max l1coeffs {tl.max(sparsity_coefficients)} on mode {i} to avoid degeneracy")
                 ridge_coefficients[i] = tl.max(sparsity_coefficients)
+
+    # Avoid issues by printing warning when both l1 and l2 are imposed on the same mode
+    disable_rescale = True
+    if reg_is_used:
+        disable_rescale = False
+        for i in range(n_modes):
+            if abs(sparsity_coefficients[i]) and abs(ridge_coefficients[i]):
+                warnings.warn(f"Optimal rescaling strategy not designed for l1 and l2 simultaneously applied on the same mode. Removing rescaling from algorithm.")
+                disable_rescale = True
 
     if fixed_modes is None:
         fixed_modes = []
@@ -351,51 +371,95 @@ def non_negative_parafac_hals(
             )
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
-            #if iteration==1: 
-                ## Computing maximum sparsity level for each column of V (result of size dim[mode])
-                ## only at first iteration to keep coeffs constant
-                #sparsity_max = tl.max(mttkrp, axis=1)
-                ## TODO: good idea?
-                ## sparsity_coefficient is relative in [0,1], scales for each column
-                #if sparsity_coefficients[mode]:
-                    #effective_sparsity_coefficients[mode] = sparsity_coefficients[mode]*sparsity_max
-                #print(effective_sparsity_coefficients)
-
             if mode in nn_modes:
                 # Call the hals resolution with nnls, optimizing the current mode
                 nn_factor, _, _, _ = hals_nnls(
-                    tl.transpose(mttkrp),
-                    pseudo_inverse,
+                    tl.transpose(mttkrp)/norm_tensor,
+                    pseudo_inverse/norm_tensor,
                     tl.transpose(factors[mode]),
                     n_iter_max=100,
                     #sparsity_coefficient=sparsity_coefficients[mode],
-                    sparsity_coefficient=sparsity_coefficients[mode],
-                    ridge_coefficient=ridge_coefficients[mode],
+                    sparsity_coefficient=sparsity_coefficients[mode]/math.prod(factors[mode].shape),
+                    ridge_coefficient=ridge_coefficients[mode]/math.prod(factors[mode].shape),
                     exact=exact,
                     epsilon=epsilon
                     #normalize=normalize_mode[mode]
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
-                factor = tl.solve(tl.transpose(pseudo_inverse)+ridge_coefficients[mode]*tl.eye(rank),
+                factor = tl.solve(tl.transpose(pseudo_inverse)+ridge_coefficients[mode]/math.prod(factors[mode].shape)*tl.eye(rank),
                 tl.transpose(mttkrp))
                 factors[mode] = tl.transpose(factor)
+            # for faster error computation
+            if mode == modes[-1]:
+                iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
+
+            # -------------------------------------- 
+            # Solve scale ambiguity for sparsity/ridge penalty optimality
+            #if iteration==0:
+            l1_regs = tl.tensor([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i]))/math.prod(factors[i].shape) for i in range(n_modes)])
+            l2_regs = tl.tensor([1/2*ridge_coefficients[i]*(tl.norm(factors[i])**2)/math.prod(factors[i].shape) for i in range(n_modes)])
+            regs = l1_regs+l2_regs
+            #print(f"before scaling {sum(regs)}, {regs}")
+            if not disable_rescale:
+                #print(f"Fro loss before scale {tl.norm(tensor-CPTensor((None,factors)).to_tensor())**2}")
+                #l1_regs = tl.tensor([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i]))/math.prod(factors[i].shape) for i in range(n_modes)])
+                #l2_regs = tl.tensor([1/2*ridge_coefficients[i]*(tl.norm(factors[i])**2)/math.prod(factors[i].shape) for i in range(n_modes)])
+                #regs = l1_regs+l2_regs
+                #print(f"before scaling {sum(regs)}")
+                regs_scaled = l1_regs+tl.sqrt(l2_regs)
+                exp_val_inv = (l1_regs>0) + 1/2*(l2_regs>0)
+                exp_sqrt2 = tl.sum(l2_regs>0)
+                # only l1 or l2 is nonzero, this computes the constant product of regs
+                prod_reg = math.prod(regs_scaled)#/(2**((sum(1/exp_val_inv)-n_modes)/2)) 
+                avg_pen = (prod_reg*(2**(exp_sqrt2/2)))**(1/sum(exp_val_inv))
+                # we rescale each factor, the penalty terms are now balanced
+                if not all(regs) and not pop_l2:
+                    # degenerate case: all factors should be 0
+                    # exception: pop_l2, to test what happens when l1 has no l2 rebalance pen (research only)
+                    #print('Degenerate case')
+                    avg_pen = 0
+                    regs = [1 for reg in regs]
+                for i,factor in enumerate(factors):
+                    if sparsity_coefficients[i]:
+                        factors[i] = factor/regs[i]*avg_pen
+                    else:
+                        factors[i] = factor*tl.sqrt(avg_pen/(2*regs[i]))
+
+                # TODO REMOVE
+                #print(f"Fro loss after scale {tl.norm(tensor-CPTensor((None,factors)).to_tensor())**2}")
+                l1_regs = tl.tensor([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i]))/math.prod(factors[i].shape) for i in range(n_modes)])
+                l2_regs = tl.tensor([1/2*ridge_coefficients[i]*(tl.norm(factors[i])**2)/math.prod(factors[i].shape) for i in range(n_modes)])
+                regs = l1_regs+l2_regs
+                #print(f"after scaling {sum(regs)}, {regs}")
+            # ------------------------------------------
+
             if normalize_factors and mode != modes[-1]:
+                if reg_is_used:
+                    warnings.warn(f"It is not advised to normalize factors if l1 or l2 penalty are used.")
                 weights, factors = cp_normalize((weights, factors))
         if tol or return_errors:
+            # TODO: use another output
+            l1_regs = tl.tensor([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i]))/math.prod(factors[i].shape) for i in range(n_modes)])
+            l2_regs = tl.tensor([1/2*ridge_coefficients[i]*(tl.norm(factors[i])**2)/math.prod(factors[i].shape) for i in range(n_modes)])
+            regs = l1_regs+l2_regs
+            #print(f"reg in loss: {sum(regs)}")
+
             factors_norm = cp_norm((weights, factors))
-            iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
+            #iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
             rec_error = (
                 tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
                 / norm_tensor
             )
-            rec_errors.append(rec_error)
+            rec_errors.append((rec_error/2)+sum(regs)) # loss !
+
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
                 if verbose:
                     print(
-                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
+                        #f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
+                        f"iteration {iteration}, loss: {rec_errors[-1]}, reconstrution error: {rec_error}, decrease = {rec_error_decrease}"
                     )
 
                 if cvg_criterion == "abs_rec_error":
@@ -411,7 +475,8 @@ def non_negative_parafac_hals(
                     break
             else:
                 if verbose:
-                    print(f"reconstruction error={rec_errors[-1]}")
+                    #print(f"reconstruction error={rec_errors[-1]}")
+                    print(f"loss={rec_errors[-1]}")
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))

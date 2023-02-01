@@ -873,7 +873,7 @@ def hals_nnls(
     UtU,
     V=None,
     n_iter_max=500,
-    tol=10e-8,
+    tol=1e-8,
     sparsity_coefficient=None,
     ridge_coefficient=None,
     normalize=False,
@@ -970,6 +970,8 @@ def hals_nnls(
             V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j) - sparsity_coefficient)/UtU[k,k]
         \\end{equation}
 
+    TODO: add ridge coefficient
+
     References
     ----------
     .. [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
@@ -1038,7 +1040,7 @@ def hals_nnls(
         denominator = tl.shape(V)[0] * rank + tl.shape(V)[0]
         complexity_ratio = 1 + (numerator / denominator)
         if rec_error < tol * rec_error0 or exact*(iteration > 1 + 0.5 * complexity_ratio):
-            print(iteration)
+            #print(iteration)
             break
     return V, rec_error, iteration, complexity_ratio
 
