@@ -22,6 +22,10 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     """
     weights, factors = cp_tensor
     ndims = tl.ndim(tensor)
+
+    if weights is None:
+        weights = tl.ones(factors[0].shape[1], **tl.context(tensor))
+
     tensor_idx = "".join(chr(ord("a") + i) for i in range(ndims))
     rank = chr(ord("a") + ndims + 1)
     op = tensor_idx + "," + rank
@@ -31,5 +35,5 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
         else:
             result = "".join([tensor_idx[i], rank])
     op += "->" + result
-    factors = [f for (i, f) in enumerate(factors) if i != mode]
+    factors = [tl.conj(f) for (i, f) in enumerate(factors) if i != mode]
     return tl.einsum(op, tensor, weights, *factors)
