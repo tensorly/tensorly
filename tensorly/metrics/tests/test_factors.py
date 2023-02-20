@@ -62,12 +62,13 @@ def test_congruence_coefficient(I, R, absolute_value):
     # Adding test from @maximeguillaud issue #487
     shape = (3, 4, 5)
     rank = 4
-    cp_tensor_1 = random_cp(shape, rank, random_state = 0)
+    cp_tensor_1 = random_cp(shape, rank, random_state=0)
     cp_tensor_2 = cp_tensor_1.cp_copy()
     col_order_2 = [3, 1, 2, 0]
     for f in range(3):
-        cp_tensor_2.factors[f] = cp_tensor_1.factors[f][:, col_order_2]*(-1)**(f+1)
+        cp_tensor_2.factors[f] = cp_tensor_1.factors[f][:, col_order_2] * (-1) ** (
+            f + 1
+        )
     _, permutation = cp_permute_factors(cp_tensor_1, cp_tensor_2)
 
     assert permutation[0].tolist() == col_order_2
-
