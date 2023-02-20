@@ -34,16 +34,16 @@ def congruence_coefficient(matrix1, matrix2, absolute_value=True):
     permutation : list
     """
     # Check if matrix1 and matrix2 are lists of the same length
-    if isinstance(matrix1,list):
-        if not isinstance(matrix2, list) or len(matrix1)!=len(matrix2):
+    if isinstance(matrix1, list):
+        if not isinstance(matrix2, list) or len(matrix1) != len(matrix2):
             raise ValueError("Input lists of matrices must have the same length")
     else:
-        matrix1=[matrix1]
-        matrix2=[matrix2]
-    all_congruences_list=[]
+        matrix1 = [matrix1]
+        matrix2 = [matrix2]
+    all_congruences_list = []
     # Store an arbitrary column dimension, they should all be the same
     num_col_mat1 = T.shape(matrix1[0])[1]
-    for mat1, mat2 in zip(matrix1,matrix2):
+    for mat1, mat2 in zip(matrix1, matrix2):
         num_cols = T.shape(mat1)[1]
         if T.shape(mat1) != T.shape(mat2):
             raise ValueError("Matrices must have same shape")
@@ -55,7 +55,7 @@ def congruence_coefficient(matrix1, matrix2, absolute_value=True):
         mat2 = mat2 / T.norm(mat2, axis=0)
         all_congruences_list.append(T.dot(T.transpose(mat1), mat2))
         if absolute_value:
-            all_congruences_list[-1]=T.abs(all_congruences_list[-1])
+            all_congruences_list[-1] = T.abs(all_congruences_list[-1])
         all_congruences_list[-1] = T.to_numpy(all_congruences_list[-1])
     all_congruences = 1
     for congruence in all_congruences_list:
