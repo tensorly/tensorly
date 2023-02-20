@@ -677,12 +677,13 @@ def cp_permute_factors(ref_cp_tensor, tensors_to_permute):
     n_tensors = len(tensors_to_permute)
     n_factors = len(ref_cp_tensor.factors)
     permutation = []
-    ref_factors = T.concatenate(ref_cp_tensor.factors)
+    #ref_factors = T.concatenate(ref_cp_tensor.factors) # using list input now
     for i in range(n_tensors):
         _, col = congruence_coefficient(
-            ref_factors, T.concatenate(tensors_to_permute[i].factors)
+            ref_cp_tensor.factors, tensors_to_permute[i].factors
         )
         col = T.tensor(col, dtype=T.int64)
+
         for f in range(n_factors):
             permuted_tensors[i].factors[f] = permuted_tensors[i].factors[f][:, col]
         permuted_tensors[i].weights = permuted_tensors[i].weights[col]
