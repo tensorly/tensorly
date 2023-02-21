@@ -7,6 +7,11 @@ from ..factors import congruence_coefficient
 from tensorly.random import random_cp
 from tensorly.cp_tensor import cp_permute_factors
 
+skip_tensorflow = pytest.mark.skipif(
+    (tl.get_backend() == "tensorflow"),
+    reason=f"Indexing with list not supported in TensorFlow",
+)
+
 
 def _tucker_congruence(A, B):
     As = A / tl.norm(A, axis=0)
@@ -36,6 +41,7 @@ def _congruence_coefficient_slow(A, B, absolute_value):
     return best_corr, best_permutation
 
 
+@skip_tensorflow
 @pytest.mark.parametrize(
     ("I", "R", "absolute_value"),
     itertools.product(

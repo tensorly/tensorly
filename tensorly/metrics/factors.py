@@ -1,5 +1,6 @@
 from scipy.optimize import linear_sum_assignment
 from .. import backend as T
+import numpy as np
 
 
 def congruence_coefficient(matrix1, matrix2, absolute_value=True):
@@ -33,24 +34,24 @@ def congruence_coefficient(matrix1, matrix2, absolute_value=True):
     congruence : float
     permutation : list
     """
-    # Check if matrix1 and matrix2 are lists of the same length
-    if isinstance(matrix1, list):
-        if not isinstance(matrix2, list) or len(matrix1) != len(matrix2):
-            raise ValueError("Input lists of matrices must have the same length")
-    else:
+    if T.is_tensor(matrix1):
         matrix1 = [matrix1]
+    if T.is_tensor(matrix2):
         matrix2 = [matrix2]
+    # Check if matrix1 and matrix2 are lists of the same length
+    if len(matrix1) != len(matrix2):
+        raise ValueError("Input lists of matrices must have the same length")
     all_congruences_list = []
-    # Store an arbitrary column dimension, they should all be the same
-    num_col_mat1 = T.shape(matrix1[0])[1]
+    # Check if all matrices have the same number of columns
+    columns = [T.shape(m)[1] for m in matrix1] + [T.shape(m)[1] for m in matrix2]
+    if len(np.unique(columns)) > 1:
+        raise ValueError("All matrices must have the same number of columns")
     for mat1, mat2 in zip(matrix1, matrix2):
-        num_cols = T.shape(mat1)[1]
-        if T.shape(mat1) != T.shape(mat2):
-            raise ValueError("Matrices must have same shape")
-        if T.shape(mat1)[1] != num_col_mat1 or T.shape(mat2)[1] != num_col_mat1:
-            # check that all matrices have the same number of columns
-            raise ValueError("Matrices must have the same number of columns")
-
+        if T.shape(mat1)[0] != T.shape(mat2)[0]:
+            raise ValueError("Pairs of matrices must have the same number of rows")
+        # Check if any norm is exactly zero to avoid singularity
+        if T.prod(T.norm(mat1, axis=0)) * T.prod(T.norm(mat2, axis=0)) == 0:
+            raise ValueError("Columns of all matrices should have nonzero l2 norm")
         mat1 = mat1 / T.norm(mat1, axis=0)
         mat2 = mat2 / T.norm(mat2, axis=0)
         all_congruences_list.append(T.dot(T.transpose(mat1), mat2))
@@ -64,5 +65,5 @@ def congruence_coefficient(matrix1, matrix2, absolute_value=True):
         -all_congruences
     )  # Use -corr because scipy didn't doesn't support maximising prior to v1.4
     indices = dict(zip(row_ind, col_ind))
-    permutation = [indices[i] for i in range(num_cols)]
+    permutation = [indices[i] for i in range(T.shape(matrix1[0])[1])]
     return all_congruences[row_ind, col_ind].mean(), permutation
