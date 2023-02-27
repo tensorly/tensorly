@@ -92,7 +92,10 @@ class MxnetBackend(Backend, backend_name="mxnet"):
     @staticmethod
     def logsumexp(x, axis=0):
         max_x = np.max(x, axis=axis, keepdims=True)
-        return np.squeeze(max_x + np.log(np.sum(np.exp(x - max_x), axis=axis, keepdims=True)), axis=axis)
+        return np.squeeze(
+            max_x + np.log(np.sum(np.exp(x - max_x), axis=axis, keepdims=True)),
+            axis=axis,
+        )
 
 
 for name in (

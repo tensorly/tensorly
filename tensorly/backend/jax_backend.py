@@ -81,6 +81,7 @@ class JaxBackend(Backend, backend_name="jax"):
     def logsumexp(tensor, axis=0):
         return jax.scipy.special.logsumexp(tensor, axis=axis)
 
+
 for name in (
     backend_types
     + backend_basic_math

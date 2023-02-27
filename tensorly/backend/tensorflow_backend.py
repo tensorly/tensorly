@@ -106,6 +106,7 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
     def logsumexp(tensor, axis=0):
         return tfm.reduce_logsumexp(tensor, axis=axis)
 
+
 # Register numpy functions
 for name in ["nan"]:
     TensorflowBackend.register_method(name, getattr(np, name))

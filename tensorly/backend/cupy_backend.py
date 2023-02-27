@@ -55,7 +55,12 @@ class CupyBackend(Backend, backend_name="cupy"):
     @staticmethod
     def logsumexp(tensor, axis=0):
         max_tensor = cp.max(tensor, axis=axis, keepdims=True)
-        return cp.squeeze(cp.log(cp.sum(cp.exp(tensor - max_tensor), axis=axis, keepdims=True)) + max_tensor, axis=axis)
+        return cp.squeeze(
+            cp.log(cp.sum(cp.exp(tensor - max_tensor), axis=axis, keepdims=True))
+            + max_tensor,
+            axis=axis,
+        )
+
 
 for name in (
     backend_types
