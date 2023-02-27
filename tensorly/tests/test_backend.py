@@ -4,10 +4,12 @@ import pytest
 from time import time
 import numpy as np
 from scipy.linalg import svd
+from scipy import special
 
 import tensorly as tl
 from .. import backend as T
 from ..testing import (
+    assert_allclose,
     assert_array_equal,
     assert_equal,
     assert_,
@@ -533,3 +535,20 @@ def test_sum_keepdims():
     assert tl.shape(summed_tensor8) == (10, 20)
     summed_tensor9 = tl.sum(random_tensor, axis=2, keepdims=True)
     assert tl.shape(summed_tensor9) == (10, 20, 1)
+
+
+def test_logsumexp():
+    """Test the logsumexp implementation against the scipy baseline result."""
+
+    # Example data
+    x = np.arange(24).reshape((3, 4, 2)).astype(np.float32)
+
+    # Tensorly tensor
+    tensor = tl.tensor(x)
+
+    # Compare against scipy baseline result
+    for axis in [0, 1, 2]:
+        # Run tensorly logsumexp
+        tensorly_result = tl.logsumexp(tensor, axis=axis)
+        scipy_result = special.logsumexp(x, axis=axis)
+        assert_allclose(tensorly_result, scipy_result)
