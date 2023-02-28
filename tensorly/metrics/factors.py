@@ -50,7 +50,7 @@ def congruence_coefficient(matrix1, matrix2, absolute_value=True):
         if T.shape(mat1)[0] != T.shape(mat2)[0]:
             raise ValueError("Pairs of matrices must have the same number of rows")
         # Check if any norm is exactly zero to avoid singularity
-        if T.prod(T.norm(mat1, axis=0)) * T.prod(T.norm(mat2, axis=0)) == 0:
+        if T.prod(T.norm(mat1, axis=0)) == 0 or T.prod(T.norm(mat2, axis=0)) == 0:
             raise ValueError("Columns of all matrices should have nonzero l2 norm")
         mat1 = mat1 / T.norm(mat1, axis=0)
         mat2 = mat2 / T.norm(mat2, axis=0)
