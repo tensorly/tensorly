@@ -86,6 +86,8 @@ class CP_PLSR:
         # Mean center the data, record info the object
         self.X_shape_ = T.shape(X)
         self.Y_shape_ = T.shape(Y)
+        self.original_X_ = T.copy(X)
+        self.original_Y_ = T.copy(Y)
         self.X_mean_ = T.mean(X, axis=0)
         self.Y_mean_ = T.mean(Y, axis=0)
         X -= self.X_mean_
@@ -97,6 +99,7 @@ class CP_PLSR:
         self.Y_factors = [
             T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(Y)
         ]
+        self.coef_ = T.zeros((self.n_components, self.n_components), **T.context(X))
 
         ## FITTING EACH COMPONENT
         for component in range(self.n_components):
@@ -151,6 +154,13 @@ class CP_PLSR:
                 self.Y_factors[1], T.index[:, component], comp_Y_factors_1
             )
 
+            B = T.lstsq(self.X_factors[0], T.reshape(comp_Y_factors_0, (-1, 1)))[0]
+            self.coef_ = T.index_update(
+                self.coef_,
+                T.index[:, component],
+                T.reshape(B, (-1,)),
+            )
+
             # Deflation
             X -= CPTensor(
                 (None, [T.reshape(ff, (-1, 1)) for ff in comp_X_factors])
@@ -158,10 +168,10 @@ class CP_PLSR:
             Y -= T.dot(
                 T.dot(
                     self.X_factors[0],
-                    T.lstsq(self.X_factors[0], T.reshape(comp_Y_factors_0, (-1, 1)))[0],
+                    T.reshape(B, (-1, 1)),
                 ),
                 T.reshape(comp_Y_factors_1, (1, -1)),
-            )  # Y -= T pinv(T) u q'
+            )  # Y -= T b q' = T pinv(T) u q'
 
         return self
 
@@ -178,16 +188,31 @@ class CP_PLSR:
                 f"Training X has shape {self.X_shape_}, while the new X has shape {T.shape(X)}"
             )
         X -= self.X_mean_
-        factors_kr = khatri_rao(self.X_factors, skip_matrix=0)
-        unfolded = unfold(X, 0)
-        scores = T.lstsq(factors_kr, T.transpose(unfolded))[0]  # = Tnew
-        estimators = T.lstsq(self.X_factors[0], self.Y_factors[0])[0]
-        return (
-            T.dot(
-                T.dot(T.transpose(scores), estimators), T.transpose(self.Y_factors[1])
+        X_projection = T.zeros((T.shape(X)[0], self.n_components), **T.context(X))
+        for component in range(self.n_components):
+            X_projection = T.index_update(
+                X_projection,
+                T.index[:, component],
+                multi_mode_dot(
+                    X,
+                    [factor[:, component] for factor in self.X_factors[1:]],
+                    range(1, T.ndim(X))
+                )
             )
-            + self.Y_mean_
-        )
+            X -= CPTensor(
+                (
+                    None,
+                    [T.reshape(X_projection[:, component], (-1, 1))] +
+                    [T.reshape(factor[:, component], (-1, 1)) for factor in self.X_factors[1:]]
+                )
+            ).to_tensor()
+        return T.dot(
+            T.dot(
+                X_projection,
+                self.coef_
+            ),
+            T.transpose(self.Y_factors[1])
+        ) + self.Y_mean_
 
     def transform(self, X, Y=None):
         """Apply the dimension reduction from fitting to a new tensor.
@@ -256,11 +281,11 @@ class CP_PLSR:
 
                 Y -= T.dot(
                     T.dot(
-                        T.lstsq(T.transpose(X_scores), T.transpose(X_scores))[0],
-                        Y_scores[:, [component]],
+                        X_scores,
+                        T.reshape(self.coef_[:, component], (-1, 1)),
                     ),
-                    T.transpose(self.Y_factors[1][:, [component]]),
-                )  # Y -= T pinv(T) u q'
+                    T.transpose(T.reshape(self.Y_factors[1][:, component], (-1, 1)))
+                )
             return X_scores, Y_scores
 
         return X_scores
@@ -283,3 +308,37 @@ class CP_PLSR:
             Return `x_scores` if `Y` is not given, `(x_scores, y_scores)` otherwise.
         """
         return self.fit(X, Y).transform(X, Y)
+
+    def X_r2_score(self):
+        """R^2 (Variance explained) of X by the model
+
+        Returns
+        -------
+        X_R^2: float
+            the amount of variance in X explained by the model
+
+        """
+        X_original = self.original_X_ - self.X_mean_
+        X_reconstructed = CPTensor(
+            [
+                None,
+                self.X_factors
+            ]
+        ).to_tensor()
+        return 1 - T.norm(X_reconstructed - X_original) ** 2.0 / T.norm(X_original) ** 2.0
+
+
+    def Y_r2_score(self):
+        """R^2 (Variance explained) of Y by the model
+
+        Returns
+        -------
+        Y_R^2: float
+            the amount of variance in Y explained by the model
+
+        """
+        Y_original = self.original_Y_ - self.Y_mean_
+        Y_reconstructed = self.predict(
+            self.original_X_
+        ) - self.Y_mean_
+        return 1 - T.norm(Y_reconstructed - Y_original) ** 2.0 / T.norm(Y_original) ** 2.0
