@@ -1,7 +1,7 @@
-from ..tenalg import khatri_rao, multi_mode_dot
+from ..tenalg import multi_mode_dot
 from ..cp_tensor import CPTensor
 from .. import backend as T
-from .. import unfold, tensor_to_vec
+from .. import tensor_to_vec
 from ..decomposition._cp import parafac
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
@@ -34,7 +34,7 @@ class CP_PLSR:
     """
 
     def __init__(
-        self, n_components, tol=1.0e-9, n_iter_max=100, random_state=None, verbose=False
+        self, n_components, tol=1.0e-8, n_iter_max=100, random_state=None, verbose=False
     ):
         self.n_components = n_components
         self.tol = tol
@@ -208,23 +208,23 @@ class CP_PLSR:
                 multi_mode_dot(
                     X,
                     [factor[:, component] for factor in self.X_factors[1:]],
-                    range(1, T.ndim(X))
-                )
+                    range(1, T.ndim(X)),
+                ),
             )
             X -= CPTensor(
                 (
                     None,
-                    [T.reshape(X_projection[:, component], (-1, 1))] +
-                    [T.reshape(factor[:, component], (-1, 1)) for factor in self.X_factors[1:]]
+                    [T.reshape(X_projection[:, component], (-1, 1))]
+                    + [
+                        T.reshape(factor[:, component], (-1, 1))
+                        for factor in self.X_factors[1:]
+                    ],
                 )
             ).to_tensor()
-        return T.dot(
-            T.dot(
-                X_projection,
-                self.coef_
-            ),
-            T.transpose(self.Y_factors[1])
-        ) + self.Y_mean_
+        return (
+            T.dot(T.dot(X_projection, self.coef_), T.transpose(self.Y_factors[1]))
+            + self.Y_mean_
+        )
 
     def transform(self, X, Y=None):
         """Apply the dimension reduction from fitting to a new tensor.
@@ -296,7 +296,7 @@ class CP_PLSR:
                         X_scores,
                         T.reshape(self.coef_[:, component], (-1, 1)),
                     ),
-                    T.transpose(T.reshape(self.Y_factors[1][:, component], (-1, 1)))
+                    T.transpose(T.reshape(self.Y_factors[1][:, component], (-1, 1))),
                 )
             return X_scores, Y_scores
 
@@ -331,14 +331,10 @@ class CP_PLSR:
 
         """
         X_original = self.original_X_ - self.X_mean_
-        X_reconstructed = CPTensor(
-            [
-                None,
-                self.X_factors
-            ]
-        ).to_tensor()
-        return 1 - T.norm(X_reconstructed - X_original) ** 2.0 / T.norm(X_original) ** 2.0
-
+        X_reconstructed = CPTensor([None, self.X_factors]).to_tensor()
+        return (
+            1 - T.norm(X_reconstructed - X_original) ** 2.0 / T.norm(X_original) ** 2.0
+        )
 
     def Y_r2_score(self):
         """R^2 (Variance explained) of Y by the model
@@ -350,7 +346,7 @@ class CP_PLSR:
 
         """
         Y_original = self.original_Y_ - self.Y_mean_
-        Y_reconstructed = self.predict(
-            self.original_X_
-        ) - self.Y_mean_
-        return 1 - T.norm(Y_reconstructed - Y_original) ** 2.0 / T.norm(Y_original) ** 2.0
+        Y_reconstructed = self.predict(self.original_X_) - self.Y_mean_
+        return (
+            1 - T.norm(Y_reconstructed - Y_original) ** 2.0 / T.norm(Y_original) ** 2.0
+        )
