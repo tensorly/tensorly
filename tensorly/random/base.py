@@ -160,7 +160,7 @@ def random_tucker(
                 )
 
     factors = []
-    for (s, r) in zip(shape, rank):
+    for s, r in zip(shape, rank):
         if orthogonal:
             factor = T.tensor(rns.random_sample((s, s)), **context)
             Q, _ = T.qr(factor)
@@ -327,7 +327,4 @@ def random_tr(shape, rank, full=False, random_state=None, **context):
         return TRTensor(factors)
 
 
-random_kruskal = DefineDeprecated(
-    deprecated_name="random_kruskal", use_instead=random_cp
-)
 random_mps = DefineDeprecated(deprecated_name="random_mps", use_instead=random_tt)

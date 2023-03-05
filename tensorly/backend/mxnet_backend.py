@@ -17,6 +17,14 @@ mx.npx.set_np()
 
 
 class MxnetBackend(Backend, backend_name="mxnet"):
+    def __init__():
+        message = (
+            "The MXNet backend has been deprecated.\n"
+            "Please consider transitioning to an alternative."
+        )
+        warnings.warn(message)
+        super().__init__()
+
     @staticmethod
     def context(tensor):
         return {"dtype": tensor.dtype}

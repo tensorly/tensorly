@@ -107,7 +107,6 @@ def robust_pca(
     mu = mu_init
 
     for iteration in range(n_iter_max):
-
         for i in range(T.ndim(X)):
             J[i] = fold(
                 svd_thresholding(unfold(D, i) + unfold(L[i], i) / mu, reg_J / mu),

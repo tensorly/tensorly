@@ -9,4 +9,4 @@ from .base import (
 )
 
 # Deprecated
-from .base import random_kruskal, random_mps
+from .base import random_mps

@@ -602,7 +602,6 @@ def non_negative_tucker_hals(
     for iteration in range(n_iter_max):
         # One pass of least squares on each updated mode
         for mode in modes:
-
             # Computing Hadamard of cross-products
             pseudo_inverse = nn_factors.copy()
             for i, factor in enumerate(nn_factors):
