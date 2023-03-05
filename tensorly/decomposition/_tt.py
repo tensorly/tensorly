@@ -42,7 +42,6 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
 
     # Getting the TT factors up to n_dim - 1
     for k in range(n_dim - 1):
-
         # Reshape the unfolding matrix of the remaining factors
         n_row = int(rank[k] * tensor_size[k])
         unfolding = tl.reshape(unfolding, (n_row, -1))

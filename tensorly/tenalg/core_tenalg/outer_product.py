@@ -1,5 +1,6 @@
 import tensorly as tl
 
+
 # TODO : add batched_modes as in batched_tensor_dot?
 def batched_outer(tensors):
     """Returns a generalized outer product of the two tensors
@@ -18,7 +19,6 @@ def batched_outer(tensors):
     """
     for i, tensor in enumerate(tensors):
         if i:
-
             shape = tl.shape(tensor)
             size = len(shape) - 1
 
