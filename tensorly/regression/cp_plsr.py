@@ -1,5 +1,5 @@
 from ..tenalg import multi_mode_dot
-from ..cp_tensor import CPTensor
+from ..cp_tensor import CPTensor, cp_normalize
 from .. import backend as T
 from .. import tensor_to_vec
 from ..decomposition._cp import parafac
@@ -34,7 +34,7 @@ class CP_PLSR:
     """
 
     def __init__(
-        self, n_components, tol=1.0e-8, n_iter_max=100, random_state=None, verbose=False
+        self, n_components, tol=1.0e-9, n_iter_max=100, random_state=None, verbose=False
     ):
         self.n_components = n_components
         self.tol = tol
@@ -111,6 +111,8 @@ class CP_PLSR:
         self.Y_factors = [
             T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(Y)
         ]
+
+        # Coefficients of the linear model
         self.coef_ = T.zeros((self.n_components, self.n_components), **T.context(X))
 
         ## FITTING EACH COMPONENT
@@ -119,18 +121,24 @@ class CP_PLSR:
             comp_Y_factors_0 = Y[:, 0]
             old_comp_Y_factors_0 = T.ones(T.shape(comp_Y_factors_0)) * T.inf
 
+            # Store the CP result so that we are not starting from scratch
+            Z_comp_CP = "svd"
+
             for iter in range(self.n_iter_max):
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
 
                 if T.ndim(Z) >= 2:
-                    Z_comp = parafac(
+                    Z_comp_CP = parafac(
                         Z,
                         1,
-                        tol=self.tol,
-                        init="svd",
-                        svd="randomized_svd",
-                        normalize_factors=True,
-                    )[1]
+                        init=Z_comp_CP,
+                        tol=None,
+                        normalize_factors=False,
+                        n_iter_max=10,
+                    )
+
+                    # Normalize separately—this was profiling very slow in parafac
+                    Z_comp = cp_normalize(Z_comp_CP)[1]
                 else:
                     Z_comp = [Z / T.norm(Z)]
 
