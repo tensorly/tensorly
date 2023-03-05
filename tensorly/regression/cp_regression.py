@@ -92,7 +92,6 @@ class CPRegressor:
         weights = T.ones(self.weight_rank, **T.context(X))
 
         for iteration in range(self.n_iter_max):
-
             # Optimise each factor of W
             for i in range(len(W)):
                 phi = T.reshape(
