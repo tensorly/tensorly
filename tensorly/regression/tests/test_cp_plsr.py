@@ -208,9 +208,10 @@ def test_optimized_covariance(n_latent):
 
     assert_allclose(max_cov, pls_cov)
 
+
 @pytest.mark.parametrize("n_response", [5, 7, 9])
 def test_increasing_variance_random(n_response):
-    """ Tests that for random X and Y, the R^2s are increasing  """
+    """Tests that for random X and Y, the R^2s are increasing"""
     X = tl.tensor(np.random.rand(20, 8, 6, 4))
     Y = tl.tensor(np.random.rand(20, 7))
     R2Xs, R2Ys = [], []
@@ -224,8 +225,9 @@ def test_increasing_variance_random(n_response):
     assert np.all(np.array(R2Xds) >= 0.0)
     assert np.all(np.array(R2Yds) >= 0.0)
 
+
 def test_increasing_variance_synthetic():
-    """ Tests that for synthetic X and Y, the R^2s are increasing  """
+    """Tests that for synthetic X and Y, the R^2s are increasing"""
     X, Y, _, _ = _get_pls_dataset((20, 18, 16, 14, 13), 12, 17)
     R2Xs, R2Ys = [], []
     for r in range(1, 20):
@@ -238,8 +240,9 @@ def test_increasing_variance_synthetic():
     assert np.all(np.array(R2Xds) >= 0.0)
     assert np.all(np.array(R2Yds) >= 0.0)
 
+
 def test_transform():
-    """ Tests transform the original X and Y will give the first factors """
+    """Tests transform the original X and Y will give the first factors"""
     X = tl.tensor(np.random.rand(20, 9, 7, 6))
     Y = tl.tensor(np.random.rand(20, 5))
     tpls = CP_PLSR(8)
