@@ -9,7 +9,6 @@ except ImportError as error:
     )
     raise ImportError(message) from error
 
-import warnings
 import numpy
 from .core import Backend, backend_basic_math, backend_array
 
@@ -17,12 +16,12 @@ mx.npx.set_np()
 
 
 class MxnetBackend(Backend, backend_name="mxnet"):
-    def __init__():
+    def __init__(name):
         message = (
             "The MXNet backend has been deprecated.\n"
             "Please consider transitioning to an alternative."
         )
-        warnings.warn(message)
+        DeprecationWarning(message)
         super().__init__()
 
     @staticmethod
