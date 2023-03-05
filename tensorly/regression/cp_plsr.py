@@ -1,7 +1,7 @@
-from ..tenalg import khatri_rao, multi_mode_dot
+from ..tenalg import multi_mode_dot
 from ..cp_tensor import CPTensor
 from .. import backend as T
-from .. import unfold, tensor_to_vec
+from .. import tensor_to_vec
 from ..decomposition._cp import parafac
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
@@ -34,7 +34,7 @@ class CP_PLSR:
     """
 
     def __init__(
-        self, n_components, tol=1.0e-9, n_iter_max=100, random_state=None, verbose=False
+        self, n_components, tol=1.0e-8, n_iter_max=100, random_state=None, verbose=False
     ):
         self.n_components = n_components
         self.tol = tol

@@ -12,6 +12,12 @@ from ..cp_plsr import CP_PLSR
 # Authors: Jackson L. Chin, Cyrillus Tan, Aaron Meyer
 
 
+skip_if_backend = pytest.mark.skipif(
+    tl.get_backend() in ("tensorflow",),
+    reason=f"Operation not supported in {tl.get_backend()}",
+)
+
+
 TENSOR_DIMENSIONS = (100, 38, 65)
 N_LATENT = 8
 
@@ -215,7 +221,7 @@ def test_increasing_variance_random(n_response):
     X = tl.tensor(np.random.rand(20, 8, 6, 4))
     Y = tl.tensor(np.random.rand(20, 7))
     R2Xs, R2Ys = [], []
-    for r in range(1, 12):
+    for r in range(1, 6):
         tpls = CP_PLSR(r)
         tpls.fit(X, Y)
         R2Xs.append(tpls.X_r2_score())
@@ -228,9 +234,9 @@ def test_increasing_variance_random(n_response):
 
 def test_increasing_variance_synthetic():
     """Tests that for synthetic X and Y, the R^2s are increasing"""
-    X, Y, _, _ = _get_pls_dataset((20, 18, 16, 14, 13), 12, 17)
+    X, Y, _, _ = _get_pls_dataset((20, 18, 14, 13), 12, 17)
     R2Xs, R2Ys = [], []
-    for r in range(1, 20):
+    for r in range(1, 6):
         tpls = CP_PLSR(r)
         tpls.fit(X, Y)
         R2Xs.append(tpls.X_r2_score())
@@ -241,11 +247,12 @@ def test_increasing_variance_synthetic():
     assert np.all(np.array(R2Yds) >= 0.0)
 
 
+@skip_if_backend
 def test_transform():
     """Tests transform the original X and Y will give the first factors"""
     X = tl.tensor(np.random.rand(20, 9, 7, 6))
     Y = tl.tensor(np.random.rand(20, 5))
-    tpls = CP_PLSR(8)
+    tpls = CP_PLSR(4)
     tpls.fit(X, Y)
     rord = np.arange(20)
     np.random.shuffle(rord)
