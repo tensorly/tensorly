@@ -212,7 +212,7 @@ def test_optimized_covariance(n_latent):
 def test_increasing_variance_random(n_response):
     """ Tests that for random X and Y, the R^2s are increasing  """
     X = tl.tensor(np.random.rand(20, 8, 6, 4))
-    Y = tl.tensor(np.random.rand(20, 7))
+    Y = tl.tensor(np.random.rand(20, n_response))
     R2Xs, R2Ys = [], []
     for r in range(1, 12):
         tpls = CP_PLSR(r)

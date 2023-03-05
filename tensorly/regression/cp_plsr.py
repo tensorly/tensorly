@@ -63,6 +63,18 @@ class CP_PLSR:
         Y : 2D-array of shape (n_samples, n_predictions)
             labels associated with each sample
 
+        Attributes
+        ----------
+        X_factors : list of ndarray of shape (X.shape[i], n_components)
+            The factors of X tensor to approximate X. The first component, X_factors[0],
+            directs to the maximal covariance with Y_factors[0]
+        Y_factors : list of ndarray of shape (Y.shape[i], n_components)
+            The factors of Y matrix to approximate Y. The first component, Y_factors[0],
+            directs to the maximal covariance with X_factors[0]
+        coef_ : ndarray of shape (n_component, n_component)
+            The coefficients of the linear model such that `Y_factors[0]` is approximated as
+            `Y_factors[0] = X_factors[0] @ coef_`.
+
         Returns
         -------
         self
