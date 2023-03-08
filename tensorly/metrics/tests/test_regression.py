@@ -23,7 +23,7 @@ def test_RMSE():
 
 def test_R2_score():
     """Test for RMSE"""
-    X_original = np.random.rand(5, 4, 3)
+    X_original = tl.randn(5, 4, 3)
     assert R2_score(X_original, X_original) == 1.0
     assert R2_score(X_original, X_original * 2) == 0.0
     assert R2_score(X_original, np.zeros_like(X_original)) == 0.0
