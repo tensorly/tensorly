@@ -1,5 +1,5 @@
 from ..tenalg import multi_mode_dot
-from ..cp_tensor import CPTensor, cp_normalize
+from ..cp_tensor import cp_to_tensor, cp_normalize
 from .. import backend as T
 from .. import tensor_to_vec
 from ..decomposition._cp import parafac
@@ -189,9 +189,7 @@ class CP_PLSR:
             )
 
             # Deflation
-            X -= CPTensor(
-                (None, [T.reshape(ff, (-1, 1)) for ff in comp_X_factors])
-            ).to_tensor()
+            X -= cp_to_tensor((None, [T.reshape(ff, (-1, 1)) for ff in comp_X_factors]))
             Y -= T.dot(
                 T.dot(
                     self.X_factors[0],
@@ -206,7 +204,7 @@ class CP_PLSR:
                 T.index[component],
                 R2_score(
                     original_X_ - self.X_mean_,
-                    CPTensor([None, self.X_factors]).to_tensor()
+                    cp_to_tensor((None, self.X_factors))
                 ),
             )
             self.Y_r2 = T.index_update(
@@ -217,7 +215,6 @@ class CP_PLSR:
                     self.predict(original_X_) - self.Y_mean_,
                 ),
             )
-
 
         return self
 
@@ -246,16 +243,15 @@ class CP_PLSR:
                     range(1, T.ndim(X)),
                 ),
             )
-            X -= CPTensor(
-                (
+            X -= cp_to_tensor((
                     None,
                     [T.reshape(X_projection[:, component], (-1, 1))]
                     + [
                         T.reshape(factor[:, component], (-1, 1))
                         for factor in self.X_factors[1:]
                     ],
-                )
-            ).to_tensor()
+                ))
+
         return (
             T.dot(T.dot(X_projection, self.coef_), T.transpose(self.Y_factors[1]))
             + self.Y_mean_
@@ -294,7 +290,7 @@ class CP_PLSR:
                     range(1, T.ndim(X)),
                 ),
             )
-            X -= CPTensor(
+            X -= cp_to_tensor(
                 (
                     None,
                     [T.reshape(X_scores[:, component], (-1, 1))]
@@ -303,7 +299,7 @@ class CP_PLSR:
                         for ff in self.X_factors[1:]
                     ],
                 )
-            ).to_tensor()
+            )
 
         if Y is not None:
             Y = T.copy(Y)
@@ -331,7 +327,7 @@ class CP_PLSR:
                         X_scores,
                         T.reshape(self.coef_[:, component], (-1, 1)),
                     ),
-                    T.transpose(T.reshape(self.Y_factors[1][:, component], (-1, 1))),
+                    T.reshape(self.Y_factors[1][:, component], (1, -1)),
                 )
             return X_scores, Y_scores
 

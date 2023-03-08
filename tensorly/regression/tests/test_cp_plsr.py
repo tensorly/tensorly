@@ -219,7 +219,7 @@ def test_increasing_variance_random():
     """Tests that for random X and Y, the R^2s are increasing"""
     X = tl.tensor(np.random.rand(20, 8, 6, 4))
     Y = tl.tensor(np.random.rand(20, 7))
-    tpls = CP_PLSR(5)
+    tpls = CP_PLSR(12)
     tpls.fit(X, Y)
 
     assert np.all(np.diff(tpls.X_r2) >= 0.0)
@@ -229,7 +229,7 @@ def test_increasing_variance_random():
 def test_increasing_variance_synthetic():
     """Tests that for synthetic X and Y, the R^2s are increasing"""
     X, Y, _, _ = _get_pls_dataset((20, 18, 14, 13), 8, 17)
-    tpls = CP_PLSR(5)
+    tpls = CP_PLSR(12)
     tpls.fit(X, Y)
 
     assert np.all(np.diff(tpls.X_r2) >= 0.0)
