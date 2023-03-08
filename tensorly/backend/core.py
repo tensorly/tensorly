@@ -1162,6 +1162,25 @@ class Backend(object):
         raise
 
     @staticmethod
+    def logsumexp(x, axis=None):
+        """
+        Calculate the log of the sum of exponentials of input elements in a numerically stable way.
+
+        Parameters
+        ----------
+        x: tensorly.tensor
+            Input tensor.
+        axis: int
+            Axis along which logsumexp should be applied.
+
+        Returns
+        -------
+        tensor
+            Output of ``log(sum(exp(x)))``.
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def exp(x):
         """Calculate the exponential of all elements in the input array."""
         raise NotImplementedError

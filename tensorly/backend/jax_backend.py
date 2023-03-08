@@ -77,6 +77,10 @@ class JaxBackend(Backend, backend_name="jax"):
         m = mask.reshape((-1, 1)) if mask is not None else 1
         return np.einsum(operation, *matrices).reshape((-1, n_columns)) * m
 
+    @staticmethod
+    def logsumexp(tensor, axis=0):
+        return jax.scipy.special.logsumexp(tensor, axis=axis)
+
 
 for name in (
     backend_types
