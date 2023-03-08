@@ -3,6 +3,7 @@ from ..cp_tensor import CPTensor, cp_normalize
 from .. import backend as T
 from .. import tensor_to_vec
 from ..decomposition._cp import parafac
+from ..metrics.regression import R2_score
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
 
@@ -74,6 +75,10 @@ class CP_PLSR:
         coef_ : ndarray of shape (n_component, n_component)
             The coefficients of the linear model such that `Y_factors[0]` is approximated as
             `Y_factors[0] = X_factors[0] @ coef_`.
+        X_r2 : ndarray of shape (n_component)
+            R^2 (Variance explained) of X by the model up to each component
+        Y_r2 : ndarray of shape (n_component)
+            R^2 (Variance explained) of Y by the model up to each component
 
         Returns
         -------
@@ -98,8 +103,8 @@ class CP_PLSR:
         # Mean center the data, record info the object
         self.X_shape_ = T.shape(X)
         self.Y_shape_ = T.shape(Y)
-        self.original_X_ = T.copy(X)
-        self.original_Y_ = T.copy(Y)
+        original_X_ = T.copy(X)
+        original_Y_ = T.copy(Y)
         self.X_mean_ = T.mean(X, axis=0)
         self.Y_mean_ = T.mean(Y, axis=0)
         X -= self.X_mean_
@@ -111,6 +116,8 @@ class CP_PLSR:
         self.Y_factors = [
             T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(Y)
         ]
+        self.X_r2 = T.zeros((self.n_components,), **T.context(X))
+        self.Y_r2 = T.zeros((self.n_components,), **T.context(Y))
 
         # Coefficients of the linear model
         self.coef_ = T.zeros((self.n_components, self.n_components), **T.context(X))
@@ -193,6 +200,25 @@ class CP_PLSR:
                 T.reshape(comp_Y_factors_1, (1, -1)),
             )  # Y -= T b q' = T pinv(T) u q'
 
+            # Calculate R^2
+            self.X_r2 = T.index_update(
+                self.X_r2,
+                T.index[component],
+                R2_score(
+                    original_X_ - self.X_mean_,
+                    CPTensor([None, self.X_factors]).to_tensor()
+                ),
+            )
+            self.Y_r2 = T.index_update(
+                self.Y_r2,
+                T.index[component],
+                R2_score(
+                    original_Y_ - self.Y_mean_,
+                    self.predict(original_X_) - self.Y_mean_,
+                ),
+            )
+
+
         return self
 
     def predict(self, X):
@@ -207,6 +233,7 @@ class CP_PLSR:
             raise ValueError(
                 f"Training X has shape {self.X_shape_}, while the new X has shape {T.shape(X)}"
             )
+        X = T.copy(X)
         X -= self.X_mean_
         X_projection = T.zeros((T.shape(X)[0], self.n_components), **T.context(X))
         for component in range(self.n_components):
@@ -328,33 +355,3 @@ class CP_PLSR:
             Return `x_scores` if `Y` is not given, `(x_scores, y_scores)` otherwise.
         """
         return self.fit(X, Y).transform(X, Y)
-
-    def X_r2_score(self):
-        """R^2 (Variance explained) of X by the model
-
-        Returns
-        -------
-        X_R^2: float
-            the amount of variance in X explained by the model
-
-        """
-        X_original = self.original_X_ - self.X_mean_
-        X_reconstructed = CPTensor([None, self.X_factors]).to_tensor()
-        return (
-            1 - T.norm(X_reconstructed - X_original) ** 2.0 / T.norm(X_original) ** 2.0
-        )
-
-    def Y_r2_score(self):
-        """R^2 (Variance explained) of Y by the model
-
-        Returns
-        -------
-        Y_R^2: float
-            the amount of variance in Y explained by the model
-
-        """
-        Y_original = self.original_Y_ - self.Y_mean_
-        Y_reconstructed = self.predict(self.original_X_) - self.Y_mean_
-        return (
-            1 - T.norm(Y_reconstructed - Y_original) ** 2.0 / T.norm(Y_original) ** 2.0
-        )
