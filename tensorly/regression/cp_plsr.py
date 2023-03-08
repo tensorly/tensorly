@@ -1,4 +1,4 @@
-from ..tenalg import multi_mode_dot
+from ..tenalg import multi_mode_dot, outer
 from ..cp_tensor import cp_to_tensor, cp_normalize
 from .. import backend as T
 from .. import tensor_to_vec
@@ -189,7 +189,7 @@ class CP_PLSR:
             )
 
             # Deflation
-            X -= cp_to_tensor((None, [T.reshape(ff, (-1, 1)) for ff in comp_X_factors]))
+            X -= outer(comp_X_factors)
             Y -= T.dot(
                 T.dot(
                     self.X_factors[0],
