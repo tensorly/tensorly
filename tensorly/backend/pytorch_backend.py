@@ -206,6 +206,10 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         u, s, v = torch.svd(matrix, some=some, compute_uv=True)
         return u, s, v.transpose(-2, -1).conj()
 
+    @staticmethod
+    def logsumexp(tensor, axis=0):
+        return torch.logsumexp(tensor, dim=axis)
+
 
 # Register the other functions
 for name in (
