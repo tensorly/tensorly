@@ -205,7 +205,7 @@ class CP_PLSR:
                 T.index[component],
                 R2_score(
                     original_X_,
-                    cp_to_tensor((None, self.X_factors)) - self.X_mean_
+                    cp_to_tensor((None, self.X_factors))
                 ),
             )
             self.Y_r2 = T.index_update(
@@ -213,7 +213,7 @@ class CP_PLSR:
                 T.index[component],
                 R2_score(
                     original_Y_,
-                    self.predict(original_X_ + self.X_mean_),
+                    self.predict(original_X_ + self.X_mean_) - self.Y_mean_,
                 ),
             )
 

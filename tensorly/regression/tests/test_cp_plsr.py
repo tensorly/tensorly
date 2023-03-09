@@ -222,6 +222,8 @@ def test_increasing_variance_random():
     tpls = CP_PLSR(12)
     tpls.fit(X, Y)
 
+    assert np.all(tpls.X_r2 >= 0.0)
+    assert np.all(tpls.Y_r2 >= 0.0)
     assert np.all(np.diff(tpls.X_r2) >= 0.0)
     assert np.all(np.diff(tpls.Y_r2) >= 0.0)
 
@@ -232,6 +234,8 @@ def test_increasing_variance_synthetic():
     tpls = CP_PLSR(12)
     tpls.fit(X, Y)
 
+    assert np.all(tpls.X_r2 >= 0.0)
+    assert np.all(tpls.Y_r2 >= 0.0)
     assert np.all(np.diff(tpls.X_r2) >= 0.0)
     assert np.all(np.diff(tpls.Y_r2) >= 0.0)
 
