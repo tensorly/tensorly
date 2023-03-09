@@ -219,25 +219,27 @@ def test_increasing_variance_random():
     """Tests that for random X and Y, the R^2s are increasing"""
     X = tl.tensor(np.random.rand(20, 8, 6, 4))
     Y = tl.tensor(np.random.rand(20, 7))
-    tpls = CP_PLSR(12)
-    tpls.fit(X, Y)
+    R2s = []
+    for r in range(1, 12):
+        tpls = CP_PLSR(r)
+        tpls.fit(X, Y)
+        R2s.append(tpls.score(X, Y))
 
-    assert np.all(tpls.X_r2 >= 0.0)
-    assert np.all(tpls.Y_r2 >= 0.0)
-    assert np.all(np.diff(tpls.X_r2) >= 0.0)
-    assert np.all(np.diff(tpls.Y_r2) >= 0.0)
+    assert np.all(np.array(R2s) >= 0.0)
+    assert np.all(np.diff(R2s) >= 0.0)
 
 
 def test_increasing_variance_synthetic():
     """Tests that for synthetic X and Y, the R^2s are increasing"""
     X, Y, _, _ = _get_pls_dataset((20, 18, 14, 13), 8, 17)
-    tpls = CP_PLSR(12)
-    tpls.fit(X, Y)
+    R2s = []
+    for r in range(1, 12):
+        tpls = CP_PLSR(r)
+        tpls.fit(X, Y)
+        R2s.append(tpls.score(X, Y))
 
-    assert np.all(tpls.X_r2 >= 0.0)
-    assert np.all(tpls.Y_r2 >= 0.0)
-    assert np.all(np.diff(tpls.X_r2) >= 0.0)
-    assert np.all(np.diff(tpls.Y_r2) >= 0.0)
+    assert np.all(np.array(R2s) >= 0.0)
+    assert np.all(np.diff(R2s) >= 0.0)
 
 
 @skip_if_backend

@@ -1,9 +1,8 @@
 from ..tenalg import multi_mode_dot, outer
-from ..cp_tensor import cp_to_tensor, cp_normalize
+from ..cp_tensor import cp_normalize
 from .. import backend as T
 from .. import tensor_to_vec
 from ..decomposition._cp import parafac
-from ..metrics.regression import R2_score
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
 
@@ -75,10 +74,6 @@ class CP_PLSR:
         coef_ : ndarray of shape (n_component, n_component)
             The coefficients of the linear model such that `Y_factors[0]` is approximated as
             `Y_factors[0] = X_factors[0] @ coef_`.
-        X_r2 : ndarray of shape (n_component)
-            R^2 (Variance explained) of X by the model up to each component
-        Y_r2 : ndarray of shape (n_component)
-            R^2 (Variance explained) of Y by the model up to each component
 
         Returns
         -------
@@ -108,8 +103,6 @@ class CP_PLSR:
         self.Y_mean_ = T.mean(Y, axis=0)
         X -= self.X_mean_
         Y -= self.Y_mean_
-        original_X_ = T.copy(X)
-        original_Y_ = T.copy(Y)
 
         self.X_factors = [
             T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(X)
@@ -199,23 +192,6 @@ class CP_PLSR:
                 T.reshape(comp_Y_factors_1, (1, -1)),
             )  # Y -= T b q' = T pinv(T) u q'
 
-            # Calculate R^2
-            self.X_r2 = T.index_update(
-                self.X_r2,
-                T.index[component],
-                R2_score(
-                    original_X_,
-                    cp_to_tensor((None, self.X_factors))
-                ),
-            )
-            self.Y_r2 = T.index_update(
-                self.Y_r2,
-                T.index[component],
-                R2_score(
-                    original_Y_,
-                    self.predict(original_X_ + self.X_mean_) - self.Y_mean_,
-                ),
-            )
 
         return self
 
@@ -342,3 +318,18 @@ class CP_PLSR:
             Return `x_scores` if `Y` is not given, `(x_scores, y_scores)` otherwise.
         """
         return self.fit(X, Y).transform(X, Y)
+
+    def score(self, X, Y):
+        """ Calculate the R^2 of prediction on X compared to the ground truth Y provided.
+
+        Parameters
+        ----------
+        X : ndarray
+            tensor data of shape (n_samples, N1, ..., NS), same dimension as the X
+            in self.fit() all except the first dimension
+        Y : 2D-array of shape (n_samples, n_predictions)
+            the ground truth labels associated with each sample
+        """
+        from ..metrics.regression import R2_score
+        return R2_score(Y - self.Y_mean_, self.predict(X) - self.Y_mean_)
+
