@@ -16,14 +16,6 @@ from .core import Backend, backend_types, backend_basic_math, backend_array
 
 
 class TensorflowBackend(Backend, backend_name="tensorflow"):
-    def __init__(name):
-        message = (
-            "The TensorFlow backend has been deprecated.\n"
-            "Please consider transitioning to an alternative."
-        )
-        DeprecationWarning(message)
-        super().__init__()
-
     @staticmethod
     def context(tensor):
         return {"dtype": tensor.dtype}
