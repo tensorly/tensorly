@@ -389,7 +389,6 @@ def constrained_parafac(
                 factors[mode] - tl.transpose(factors_aux[mode])
             ) / tl.norm(factors[mode])
         if tol_outer:
-
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 

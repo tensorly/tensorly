@@ -160,7 +160,7 @@ def random_tucker(
                 )
 
     factors = []
-    for (s, r) in zip(shape, rank):
+    for s, r in zip(shape, rank):
         if orthogonal:
             factor = T.tensor(rns.random_sample((s, s)), **context)
             Q, _ = T.qr(factor)

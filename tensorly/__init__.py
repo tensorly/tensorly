@@ -1,4 +1,4 @@
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 import sys
 
@@ -132,6 +132,7 @@ from . import regression
 from . import tenalg
 from . import random
 from . import datasets
+
 
 # Add Backend functions, dynamically dispatched
 def __dir__():

@@ -89,6 +89,14 @@ class MxnetBackend(Backend, backend_name="mxnet"):
         x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None)
         return x, residuals
 
+    @staticmethod
+    def logsumexp(x, axis=0):
+        max_x = np.max(x, axis=axis, keepdims=True)
+        return np.squeeze(
+            max_x + np.log(np.sum(np.exp(x - max_x), axis=axis, keepdims=True)),
+            axis=axis,
+        )
+
 
 for name in (
     backend_basic_math

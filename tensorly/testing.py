@@ -19,7 +19,8 @@ def assert_allclose(
 ):
     """Check if two arrays are equal up to a given relevant and absolute tolerance.
 
-    See the `NumPy documentation <https://numpy.org/doc/stable/reference/generated/numpy.testing.assert_array_equal.html>`_ for more details."""
+    See the `NumPy documentation <https://numpy.org/doc/stable/reference/generated/numpy.testing.assert_array_equal.html>`_ for more details.
+    """
     np.testing.assert_allclose(
         T.to_numpy(actual),
         T.to_numpy(desired),

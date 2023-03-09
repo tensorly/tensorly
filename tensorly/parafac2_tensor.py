@@ -14,7 +14,6 @@ class Parafac2Tensor(FactorizedTensor):
     """A wrapper class for the PARAFAC2 decomposition."""
 
     def __init__(self, parafac2_tensor):
-
         super().__init__()
 
         shape, rank = _validate_parafac2_tensor(parafac2_tensor)

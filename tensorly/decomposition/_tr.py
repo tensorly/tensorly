@@ -73,7 +73,6 @@ def tensor_ring(input_tensor, rank, mode=0, svd="truncated_svd", verbose=False):
 
     # Getting the TR factors up to n_dim - 1
     for k in range(1, n_dim - 1):
-
         # Reshape the unfolding matrix of the remaining factors
         n_row = int(rank[k] * tensor_size[k])
         unfolding = tl.reshape(unfolding, (n_row, -1))
