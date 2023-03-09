@@ -103,12 +103,13 @@ class CP_PLSR:
         # Mean center the data, record info the object
         self.X_shape_ = T.shape(X)
         self.Y_shape_ = T.shape(Y)
-        original_X_ = T.copy(X)
-        original_Y_ = T.copy(Y)
+
         self.X_mean_ = T.mean(X, axis=0)
         self.Y_mean_ = T.mean(Y, axis=0)
         X -= self.X_mean_
         Y -= self.Y_mean_
+        original_X_ = T.copy(X)
+        original_Y_ = T.copy(Y)
 
         self.X_factors = [
             T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(X)
@@ -203,16 +204,16 @@ class CP_PLSR:
                 self.X_r2,
                 T.index[component],
                 R2_score(
-                    original_X_ - self.X_mean_,
-                    cp_to_tensor((None, self.X_factors))
+                    original_X_,
+                    cp_to_tensor((None, self.X_factors)) - self.X_mean_
                 ),
             )
             self.Y_r2 = T.index_update(
                 self.Y_r2,
                 T.index[component],
                 R2_score(
-                    original_Y_ - self.Y_mean_,
-                    self.predict(original_X_) - self.Y_mean_,
+                    original_Y_,
+                    self.predict(original_X_ + self.X_mean_),
                 ),
             )
 
@@ -243,14 +244,10 @@ class CP_PLSR:
                     range(1, T.ndim(X)),
                 ),
             )
-            X -= cp_to_tensor((
-                    None,
-                    [T.reshape(X_projection[:, component], (-1, 1))]
-                    + [
-                        T.reshape(factor[:, component], (-1, 1))
-                        for factor in self.X_factors[1:]
-                    ],
-                ))
+            X -= outer(
+                    [X_projection[:, component]]
+                    + [factor[:, component] for factor in self.X_factors[1:]],
+                )
 
         return (
             T.dot(T.dot(X_projection, self.coef_), T.transpose(self.Y_factors[1]))
@@ -290,15 +287,9 @@ class CP_PLSR:
                     range(1, T.ndim(X)),
                 ),
             )
-            X -= cp_to_tensor(
-                (
-                    None,
-                    [T.reshape(X_scores[:, component], (-1, 1))]
-                    + [
-                        T.reshape(ff[:, component], (-1, 1))
-                        for ff in self.X_factors[1:]
-                    ],
-                )
+            X -= outer(
+                    [X_scores[:, component]]
+                    + [ff[:, component] for ff in self.X_factors[1:]],
             )
 
         if Y is not None:
