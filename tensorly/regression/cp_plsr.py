@@ -192,7 +192,6 @@ class CP_PLSR:
                 T.reshape(comp_Y_factors_1, (1, -1)),
             )  # Y -= T b q' = T pinv(T) u q'
 
-
         return self
 
     def predict(self, X):
@@ -221,9 +220,9 @@ class CP_PLSR:
                 ),
             )
             X -= outer(
-                    [X_projection[:, component]]
-                    + [factor[:, component] for factor in self.X_factors[1:]],
-                )
+                [X_projection[:, component]]
+                + [factor[:, component] for factor in self.X_factors[1:]],
+            )
 
         return (
             T.dot(T.dot(X_projection, self.coef_), T.transpose(self.Y_factors[1]))
@@ -264,8 +263,8 @@ class CP_PLSR:
                 ),
             )
             X -= outer(
-                    [X_scores[:, component]]
-                    + [ff[:, component] for ff in self.X_factors[1:]],
+                [X_scores[:, component]]
+                + [ff[:, component] for ff in self.X_factors[1:]],
             )
 
         if Y is not None:
@@ -320,7 +319,7 @@ class CP_PLSR:
         return self.fit(X, Y).transform(X, Y)
 
     def score(self, X, Y):
-        """ Calculate the R^2 of prediction on X compared to the ground truth Y provided.
+        """Calculate the R^2 of prediction on X compared to the ground truth Y provided.
 
         Parameters
         ----------
@@ -331,5 +330,5 @@ class CP_PLSR:
             the ground truth labels associated with each sample
         """
         from ..metrics.regression import R2_score
-        return R2_score(Y - self.Y_mean_, self.predict(X) - self.Y_mean_)
 
+        return R2_score(Y - self.Y_mean_, self.predict(X) - self.Y_mean_)
