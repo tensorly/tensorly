@@ -74,8 +74,3 @@ tucker_to_vec = wrap(tucker_tensor.tucker_to_vec)
 tt_to_tensor = wrap(tt_tensor.tt_to_tensor)
 tt_to_unfolded = wrap(tt_tensor.tt_to_unfolded)
 tt_to_vec = wrap(tt_tensor.tt_to_vec)
-
-# Deprecated
-kruskal_to_tensor = wrap(cp_tensor.kruskal_to_tensor)
-kruskal_to_unfolded = wrap(cp_tensor.kruskal_to_unfolded)
-kruskal_to_vec = wrap(cp_tensor.kruskal_to_vec)

@@ -6,7 +6,6 @@ from ..tt_matrix import tt_matrix_to_tensor, TTMatrix, validate_tt_matrix_rank
 from ..tr_tensor import TRTensor, tr_to_tensor, validate_tr_rank
 from ..parafac2_tensor import parafac2_to_tensor, Parafac2Tensor, parafac2_normalise
 from .. import backend as T
-from ..utils import DefineDeprecated
 import warnings
 
 
@@ -325,9 +324,3 @@ def random_tr(shape, rank, full=False, random_state=None, **context):
         return tr_to_tensor(factors)
     else:
         return TRTensor(factors)
-
-
-random_kruskal = DefineDeprecated(
-    deprecated_name="random_kruskal", use_instead=random_cp
-)
-random_mps = DefineDeprecated(deprecated_name="random_mps", use_instead=random_tt)

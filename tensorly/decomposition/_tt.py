@@ -2,7 +2,6 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..tt_tensor import validate_tt_rank, TTTensor
 from ..tt_matrix import validate_tt_matrix_rank, TTMatrix
-from ..utils import DefineDeprecated
 from ..tenalg.svd import svd_interface
 
 
@@ -206,6 +205,3 @@ class TensorTrainMatrix(DecompositionMixin):
             tensor, rank=self.rank, svd=self.svd, verbose=self.verbose
         )
         return self.decomposition_
-
-
-matrix_product_state = DefineDeprecated("matrix_product_state", tensor_train)

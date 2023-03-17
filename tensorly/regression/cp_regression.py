@@ -3,7 +3,6 @@ from ..base import partial_tensor_to_vec, partial_unfold
 from ..tenalg import khatri_rao
 from ..cp_tensor import cp_to_tensor, cp_to_vec
 from .. import backend as T
-from ..utils import DefineDeprecated
 
 # Author: Jean Kossaifi
 
@@ -138,6 +137,3 @@ class CPRegressor:
             tensor data of shape (n_samples, N1, ..., NS)
         """
         return T.dot(partial_tensor_to_vec(X), self.vec_W_)
-
-
-KruskalRegressor = DefineDeprecated("KruskalRegressor", CPRegressor)

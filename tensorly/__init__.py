@@ -121,9 +121,6 @@ from .backend import (
     nan,
 )
 
-# Deprecated
-from .cp_tensor import kruskal_to_tensor, kruskal_to_unfolded, kruskal_to_vec
-
 from . import backend
 from . import decomposition
 from . import plugins

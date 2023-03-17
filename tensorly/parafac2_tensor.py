@@ -7,7 +7,6 @@
 from . import backend as T
 from .base import unfold, tensor_to_vec
 from ._factorized_tensor import FactorizedTensor
-import warnings
 
 
 class Parafac2Tensor(FactorizedTensor):
@@ -105,7 +104,7 @@ def _validate_parafac2_tensor(parafac2_tensor):
     Returns
     -------
     (shape, rank) : (int tuple, int)
-        size of the full tensor and rank of the Kruskal tensor
+        size of the full tensor and rank of the CP tensor
     """
     if isinstance(parafac2_tensor, Parafac2Tensor):
         # it's already been validated at creation

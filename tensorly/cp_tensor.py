@@ -6,7 +6,6 @@ from . import backend as T
 from .base import fold, tensor_to_vec
 from ._factorized_tensor import FactorizedTensor
 from .tenalg import khatri_rao, unfolding_dot_khatri_rao
-from .utils import DefineDeprecated
 from .metrics.factors import congruence_coefficient
 import numpy as np
 
@@ -106,7 +105,7 @@ class CPTensor(FactorizedTensor):
 
         See also
         --------
-        kruskal_multi_mode_dot : chaining several mode_dot in one call
+        cp_mode_dot : chaining several mode_dot in one call
         """
         return cp_mode_dot(self, matrix_or_vector, mode, keep_dim=keep_dim, copy=copy)
 
@@ -568,7 +567,7 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
 
     See also
     --------
-    kruskal_multi_mode_dot : chaining several mode_dot in one call
+    cp_multi_mode_dot : chaining several mode_dot in one call
     """
     shape, _ = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
@@ -689,20 +688,3 @@ def cp_permute_factors(ref_cp_tensor, tensors_to_permute):
     if len(permuted_tensors) == 1:
         permuted_tensors = permuted_tensors[0]
     return permuted_tensors, permutation
-
-
-# Deprecated classes and functions
-KruskalTensor = DefineDeprecated(deprecated_name="KruskalTensor", use_instead=CPTensor)
-kruskal_norm = DefineDeprecated(deprecated_name="kruskal_norm", use_instead=cp_norm)
-kruskal_mode_dot = DefineDeprecated(
-    deprecated_name="kruskal_mode_dot", use_instead=cp_mode_dot
-)
-kruskal_to_tensor = DefineDeprecated(
-    deprecated_name="kruskal_to_tensor", use_instead=cp_to_tensor
-)
-kruskal_to_unfolded = DefineDeprecated(
-    deprecated_name="kruskal_to_unfolded", use_instead=cp_to_unfolded
-)
-kruskal_to_vec = DefineDeprecated(
-    deprecated_name="kruskal_to_vec", use_instead=cp_to_vec
-)
