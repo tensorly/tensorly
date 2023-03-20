@@ -38,6 +38,10 @@ class NumpyBackend(Backend, backend_name="numpy"):
         x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None)
         return x, residuals
 
+    @staticmethod
+    def logsumexp(tensor, axis=0):
+        return scipy.special.logsumexp(tensor, axis=axis)
+
 
 for name in (
     backend_types

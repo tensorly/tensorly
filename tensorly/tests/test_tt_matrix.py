@@ -8,6 +8,7 @@ skip_mxnet = pytest.mark.skipif(
     reason="MXNet currently does not support transpose for tensors of order > 6.",
 )
 
+
 # TODO: Remove once MXNet supports transpose for > 6th order tensors
 @skip_mxnet
 def test_tt_matrix_manipulation():

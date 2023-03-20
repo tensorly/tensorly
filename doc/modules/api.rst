@@ -450,8 +450,8 @@ Datasets (:mod:`tensorly.datasets`)
     synthetic.gen_image
     load_IL2data
     load_covid19_serology
-    fetch_indian_pines
-    fetch_kinetic
+    load_indian_pines
+    load_kinetic
 
 Plugin functionalities (:mod:`tensorly.plugins`)
 ================================================

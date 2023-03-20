@@ -8,5 +8,5 @@ from .data_imports import (
     load_IL2data,
     load_covid19_serology,
     load_indian_pines,
-    fetch_kinetic,
+    load_kinetic,
 )

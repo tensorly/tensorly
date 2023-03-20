@@ -114,6 +114,7 @@ class BackendManager(types.ModuleType):
         "acosh",
         "atanh",
         "partial_svd",
+        "logsumexp",
     ]
     _attributes = [
         "int64",

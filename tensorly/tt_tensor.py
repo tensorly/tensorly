@@ -4,9 +4,7 @@ Core operations on tensors in Tensor-Train (TT) format, also known as Matrix-Pro
 
 import tensorly as tl
 from ._factorized_tensor import FactorizedTensor
-from .utils import DefineDeprecated
 import numpy as np
-from scipy.optimize import brentq
 import warnings
 
 
@@ -257,7 +255,7 @@ def validate_tt_rank(
         if isinstance(rank, int):
             rank = [1] + [rank] * (n_dim - 1) + [1]
         elif n_dim + 1 != len(rank):
-            message = f"Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but {len(rank) = } while tl.ndim(tensor) + 1  = {n_dim+1}"
+            message = f"Provided incorrect number of ranks. Should verify len(rank) == tl.ndim(tensor)+1, but len(rank) = {len(rank)} while tl.ndim(tensor) + 1  = {n_dim+1}"
             raise (ValueError(message))
 
         # Initialization
@@ -358,15 +356,3 @@ def pad_tt_rank(factor_list, n_padding=1, pad_boundaries=False):
         new_factors.append(tl.index_update(new_factor, tl.index[:r1, ..., :r2], factor))
 
     return new_factors
-
-
-mps_to_tensor = DefineDeprecated(
-    deprecated_name="mps_to_tensor", use_instead=tt_to_tensor
-)
-mps_to_unfolded = DefineDeprecated(
-    deprecated_name="mps_to_unfolded", use_instead=tt_to_unfolded
-)
-mps_to_vec = DefineDeprecated(deprecated_name="mps_to_vec", use_instead=tt_to_vec)
-_validate_mps_tensor = DefineDeprecated(
-    deprecated_name="_validate_mps_tensor", use_instead=_validate_tt_tensor
-)

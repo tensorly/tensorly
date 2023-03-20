@@ -137,7 +137,7 @@ The advantage of the TT/tensor-train decomposition is that both of its number of
 Implementations
 +++++++++++++++
 
-Two versions tensor train decompositions are available in TensorLy: and SVD-based decomposition method (:func:`tensorly.decomposition.mps_decomposition` and a cross approximation-based method :func:`tensorly.contrib.mps_decomposition_cross`).
+Two versions tensor train decompositions are available in TensorLy: and SVD-based decomposition method (:func:`tensorly.decomposition.tensor_train` and a cross approximation-based method :func:`tensorly.contrib.tensor_train_cross`).
 
 Using the same tensor as previously, we will perform a rank [1,2,1]-decomposition of the shape (12,12) `tensor` meaning the first core has shape (1,12,2) and the second has (2,12,1).:
 

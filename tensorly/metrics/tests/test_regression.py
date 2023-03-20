@@ -1,7 +1,7 @@
 import numpy as np
 
 import tensorly as tl
-from ..regression import MSE, RMSE, correlation
+from ..regression import MSE, RMSE, R2_score, correlation
 from ...testing import assert_array_almost_equal
 
 
@@ -19,6 +19,14 @@ def test_RMSE():
     y_pred = tl.tensor([0, -1, 1, -1])
     true_mse = 1
     assert_array_almost_equal(RMSE(y_true, y_pred), true_mse)
+
+
+def test_R2_score():
+    """Test for RMSE"""
+    X_original = tl.randn((5, 4, 3))
+    assert R2_score(X_original, X_original) == 1.0
+    assert R2_score(X_original, X_original * 2) == 0.0
+    assert R2_score(X_original, tl.zeros_like(X_original)) == 0.0
 
 
 def test_correlation():

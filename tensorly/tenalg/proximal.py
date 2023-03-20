@@ -879,7 +879,6 @@ def hals_nnls(
     nonzero_rows=False,
     exact=False,
 ):
-
     """
     Non Negative Least Squares (NNLS)
 
@@ -987,12 +986,10 @@ def hals_nnls(
     for iteration in range(n_iter_max):
         rec_error = 0
         for k in range(rank):
-
             if UtU[k, k]:
                 if (
                     sparsity_coefficient is not None
                 ):  # Modifying the function for sparsification
-
                     deltaV = tl.where(
                         (UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient)
                         / UtU[k, k]
@@ -1004,7 +1001,6 @@ def hals_nnls(
                     V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
 
                 else:  # without sparsity
-
                     deltaV = tl.where(
                         (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k] > -V[k, :],
                         (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
@@ -1192,7 +1188,6 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
 
     for iteration in range(n_iter_max):
-
         if iteration > 0 or tl.all(x_vec == 0):
             indice = tl.argmax(x_gradient)
             passive_set = tl.index_update(passive_set, tl.index[indice], True)
