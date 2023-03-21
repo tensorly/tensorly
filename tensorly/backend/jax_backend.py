@@ -58,6 +58,10 @@ class JaxBackend(Backend, backend_name="jax"):
         x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None, numpy_resid=True)
         return x, residuals
 
+    @staticmethod
+    def logsumexp(tensor, axis=0):
+        return jax.scipy.special.logsumexp(tensor, axis=axis)
+
 
 for name in (
     backend_types
