@@ -10,7 +10,7 @@ Refer to [1]_ for more information on tensor decomposition.
 CP form of a tensor
 ------------------------
 
-The idea is to express the tensor as a sum of rank one tensors. That is, a sum of outer product of vectors.
+The idea is to express the tensor as a sum of rank one tensors. That is, a sum of outer products of vectors.
 Such representation can be obtained by applying Canonical Polyadic Decomposition (also known as CANDECOMP-PARAFAC, CP, or PARAFAC decomposition). 
 
 CANDECOMP-PARAFAC decomposition
@@ -126,7 +126,7 @@ Note that some coefficients are almost zero (10e-16) but not exactly due to nume
 Matrix-Product-State / Tensor-Train Decomposition
 --------------------------------------------------
 
-The tensor-train decomposition, also known as matrix product state in physics community, is a way of decompositing high order tensors into third order ones. For a order d tensor A[i1,...,id], it splits each dimension into a order 3 sub-tensor, which we called factors or cores. One of the dimension of the sub-tensor is the real physical dimension, while the other two are edges connecting the cores before and after it.
+The tensor-train decomposition, also known as matrix product state in physics community, is a way of decompositing high order tensors into third order ones. For an order d tensor A[i1,...,id], it splits each dimension into an order 3 sub-tensor, which we called factors or cores. One of the dimension of the sub-tensor is the real physical dimension, while the other two are edges connecting the cores before and after it.
 
 .. math::
 
