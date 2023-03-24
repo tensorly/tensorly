@@ -47,7 +47,7 @@ def initialize_decomposition(
     elif init == "svd":
         A = T.ones((len(tensor_slices), rank), **context)
 
-        unfolded_mode_2 = tl.transpose(tl.concatenate(tensor_slices, axis=0))
+        unfolded_mode_2 = tl.transpose(tl.concatenate(list(tensor_slices), axis=0))
         if T.shape(unfolded_mode_2)[0] < rank:
             raise ValueError(
                 f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({T.shape(unfolded_mode_2)[0]})"
