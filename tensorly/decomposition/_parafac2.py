@@ -45,15 +45,15 @@ def initialize_decomposition(
             shapes, rank, full=False, random_state=random_state, **context
         )
     elif init == "svd":
-        padded_tensor = _pad_by_zeros(tensor_slices)
-        A = T.ones((padded_tensor.shape[0], rank), **context)
+        A = T.ones((len(tensor_slices), rank), **context)
 
-        unfolded_mode_2 = unfold(padded_tensor, 2)
+        unfolded_mode_2 = tl.transpose(tl.concatenate(tensor_slices, axis=0))
         if T.shape(unfolded_mode_2)[0] < rank:
             raise ValueError(
                 f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({T.shape(unfolded_mode_2)[0]})"
             )
         C = svd_interface(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
+
         B = T.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd)
         return Parafac2Tensor((None, [A, B, C], projections))
@@ -70,20 +70,6 @@ def initialize_decomposition(
             raise ValueError("Cannot init with a decomposition of different rank")
         return decomposition
     raise ValueError(f'Initialization method "{init}" not recognized')
-
-
-def _pad_by_zeros(tensor_slices):
-    """Return zero-padded full tensor."""
-    I = len(tensor_slices)
-    J = max(tensor_slice.shape[0] for tensor_slice in tensor_slices)
-    K = tensor_slices[0].shape[1]
-    padded = T.zeros((I, J, K), **T.context(tensor_slices[0]))
-    for i, tensor_slice in enumerate(tensor_slices):
-        J_i = len(tensor_slice)
-
-        padded = tl.index_update(padded, tl.index[i, :J_i], tensor_slice)
-
-    return padded
 
 
 def _compute_projections(tensor_slices, factors, svd):
