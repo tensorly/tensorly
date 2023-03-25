@@ -1,6 +1,3 @@
-from .. import backend as T
-
-
 def _validate_contraction_modes(shape1, shape2, modes, batched_modes=False):
     """Takes in the contraction modes (for a tensordot) and validates them
 
