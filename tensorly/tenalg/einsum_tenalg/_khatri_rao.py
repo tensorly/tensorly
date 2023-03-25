@@ -91,11 +91,6 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, mask=None):
                 f"Matrix {i} has {matrix.shape[1]} columns != {n_columns}."
             )
 
-    if len(matrices) < 2:
-        raise ValueError(
-            f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
-        )
-
     shared_dim = "a"
     start = ord("b")
     individual_dims = [chr(start + i) for i in range(len(matrices))]
