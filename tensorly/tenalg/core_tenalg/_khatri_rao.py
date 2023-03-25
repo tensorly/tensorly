@@ -1,12 +1,12 @@
+import warnings
 from ... import backend as T
-from ..tenalg_utils import _validate_khatri_rao
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
 
 
-def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=None):
+def khatri_rao(matrices, weights=None, skip_matrix=None, mask=None):
     """Khatri-Rao product of a list of matrices
 
         This can be seen as a column-wise kronecker product.
@@ -28,9 +28,6 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
 
     skip_matrix : None or int, optional, default is None
         if not None, index of a matrix to skip
-
-    reverse : bool, optional
-        if True, the order of the matrices is reversed
 
     Returns
     -------
@@ -64,13 +61,40 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
     .. [1] T.G.Kolda and B.W.Bader, "Tensor Decompositions and Applications",
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
-    matrices, n_col = _validate_khatri_rao(
-        matrices, skip_matrix=skip_matrix, reverse=reverse
-    )
+    if skip_matrix is not None:
+        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
 
     # Khatri-rao of only one matrix: just return that matrix
     if len(matrices) == 1:
         return matrices[0]
+
+    if T.ndim(matrices[0]) == 2:
+        n_columns = matrices[0].shape[1]
+    else:
+        n_columns = 1
+        matrices = [T.reshape(m, (-1, 1)) for m in matrices]
+        warnings.warn(
+            "Khatri-rao of a series of vectors instead of matrices. "
+            "Condidering each has a matrix with 1 column."
+        )
+
+    # Optional part, testing whether the matrices have the proper size
+    for i, matrix in enumerate(matrices):
+        if T.ndim(matrix) != 2:
+            raise ValueError(
+                "All the matrices must have exactly 2 dimensions!"
+                f"Matrix {i} has dimension {T.ndim(matrix)} != 2."
+            )
+        if matrix.shape[1] != n_columns:
+            raise ValueError(
+                "All matrices must have same number of columns!"
+                f"Matrix {i} has {matrix.shape[1]} columns != {n_columns}."
+            )
+
+    if len(matrices) < 2:
+        raise ValueError(
+            f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
+        )
 
     for i, e in enumerate(matrices[1:]):
         if not i:
@@ -83,7 +107,7 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
 
         a = T.reshape(res, (s1, 1, s2))
         b = T.reshape(e, (1, s3, s4))
-        res = T.reshape(a * b, (-1, n_col))
+        res = T.reshape(a * b, (-1, n_columns))
 
     m = T.reshape(mask, (-1, 1)) if mask is not None else 1
 

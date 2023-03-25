@@ -47,23 +47,8 @@ def test_khatri_rao():
             [21.0, 48.0, 81.0],
         ]
     )
-    reversed_true_res = T.tensor(
-        [
-            [1.0, 8.0, 21.0],
-            [4.0, 20.0, 42.0],
-            [7.0, 32.0, 63.0],
-            [2.0, 10.0, 24.0],
-            [8.0, 25.0, 48.0],
-            [14.0, 40.0, 72.0],
-            [3.0, 12.0, 27.0],
-            [12.0, 30.0, 54.0],
-            [21.0, 48.0, 81.0],
-        ]
-    )
     res = khatri_rao([t1, t2])
     assert_array_equal(res, true_res)
-    reversed_res = khatri_rao([t1, t2], reverse=True)
-    assert_array_equal(reversed_res, reversed_true_res)
 
     # A = np.hstack((np.eye(3), np.arange(3)[:, None]))
     A = T.tensor([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 2.0]])
