@@ -75,7 +75,7 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, mask=None):
         matrices = [T.reshape(m, (-1, 1)) for m in matrices]
         warnings.warn(
             "Khatri-rao of a series of vectors instead of matrices. "
-            "Considering each has a matrix with 1 column."
+            "Considering each as a matrix with 1 column."
         )
 
     # Testing whether the matrices have the proper size
