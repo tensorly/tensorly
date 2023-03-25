@@ -75,10 +75,10 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, mask=None):
         matrices = [T.reshape(m, (-1, 1)) for m in matrices]
         warnings.warn(
             "Khatri-rao of a series of vectors instead of matrices. "
-            "Condidering each has a matrix with 1 column."
+            "Considering each has a matrix with 1 column."
         )
 
-    # Optional part, testing whether the matrices have the proper size
+    # Testing whether the matrices have the proper size
     for i, matrix in enumerate(matrices):
         if T.ndim(matrix) != 2:
             raise ValueError(
@@ -90,11 +90,6 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, mask=None):
                 "All matrices must have same number of columns!"
                 f"Matrix {i} has {matrix.shape[1]} columns != {n_columns}."
             )
-
-    if len(matrices) < 2:
-        raise ValueError(
-            f"kr requires a list of at least 2 matrices, but {len(matrices)} given."
-        )
 
     for i, e in enumerate(matrices[1:]):
         if not i:
