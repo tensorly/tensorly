@@ -19,11 +19,52 @@ import math
 #          Sam Schneider <samjohnschneider@gmail.com>
 #          Aaron Meurer <asmeurer@gmail.com>
 #          Aaron Meyer <tensorly@ameyer.me>
-#          Jeremy Cohen <jeremy.cohen@irisa.fr>
+#          Jeremy Cohen <jeremy.cohen@cnrs.fr>
 #          Axel Marmoret <axel.marmoret@inria.fr>
 #          Caglayan TUna <caglayantun@gmail.com>
 
 # License: BSD 3 clause
+
+
+def opt_balance(regs, hom_deg):
+    '''
+    Computes the multiplicative constants to scale factors columnwise such that regularizations are balanced.
+    The problem solved is 
+        min_{a_i} \sum a_i s.t.  \prod a_i^{p_i}=q
+    where a_i = regs[i] and p_i = hom_deg[i]
+
+    Parameters
+    ----------
+    regs: 1d np array
+        the input regularization values
+    hom_deg: 1d numpy array
+        homogeneity degrees of each regularization term
+
+    Returns
+    -------
+    scales: list of floats
+        the scale to balance the factors. Its product should be one (scale invariance).
+    '''
+    # 0. If reg is zero, do not scale
+    if tl.prod(regs)==0:
+        # TODO warning
+        print(f"No rebalance because regularization is null")
+        return [1 for i in range(len(regs))]
+
+
+    # 1. compute q
+    prod_q = tl.prod(regs**(1/hom_deg))
+
+    # 2. compute beta
+    beta = (prod_q*tl.prod(hom_deg**(1/hom_deg)))**(1/tl.sum(1/hom_deg))
+
+    # 3. compute scales
+    scales = [(beta/regs[i]/hom_deg[i])**(1/hom_deg[i]) for i in range(len(regs))]
+
+    # TODO: Handle case where one factor is fully under epsilon
+    # In that case, pull all factors to epsilon
+
+    return scales
 
 
 def non_negative_parafac(
@@ -235,6 +276,7 @@ def non_negative_parafac_hals(
         The sparsity penalization coefficients on each factor.
         If a float is provided, a l1 penalty will be enforced on all factors using that float as hyperparameter.
         If set to None, the algorithm is computed without sparsity.
+        Advice: normalize with the dimensions of the factors.
         Default: None,
     ridge_coefficients: array of float (of length the number of modes)
         The ridge (l2) penalization coefficients on each factor.
@@ -309,6 +351,7 @@ def non_negative_parafac_hals(
     if sparsity_coefficients is None or isinstance(sparsity_coefficients, (int, float)):
         # Populate None or the input float in a list for all modes
         sparsity_coefficients = [sparsity_coefficients] * n_modes 
+    # TODO: check penalisation length
     # Convert None to 0
     for i in range(n_modes):
         if ridge_coefficients[i]==None:
@@ -329,13 +372,13 @@ def non_negative_parafac_hals(
                 ridge_coefficients[i] = tl.max(sparsity_coefficients)
 
     # Avoid issues by printing warning when both l1 and l2 are imposed on the same mode
-    disable_rescale = True
+    disable_rebalance = True
     if reg_is_used:
-        disable_rescale = False
+        disable_rebalance = False
         for i in range(n_modes):
             if abs(sparsity_coefficients[i]) and abs(ridge_coefficients[i]):
-                warnings.warn(f"Optimal rescaling strategy not designed for l1 and l2 simultaneously applied on the same mode. Removing rescaling from algorithm.")
-                disable_rescale = True
+                warnings.warn(f"Optimal rebalancing strategy not designed for l1 and l2 simultaneously applied on the same mode. Removing rebalancing from algorithm.")
+                disable_rebalance = True
 
     if fixed_modes is None:
         fixed_modes = []
@@ -350,12 +393,17 @@ def non_negative_parafac_hals(
 
     # initialisation - declare local variables
     rec_errors = []
+    regs_loss = []
+    
+    # homogeneity degrees of penalties
+    if not disable_rebalance:
+        hom_deg = tl.tensor([1.0*(sparsity_coefficients[i]>0) + 2.0*(ridge_coefficients[i]>0) for i in range(n_modes)]) # +1 for the core
 
     # Iteration
     for iteration in range(n_iter_max):
+        
         # One pass of least squares on each updated mode
         for mode in modes:
-
             # Computing Hadamard of cross-products
             pseudo_inverse = tl.tensor(tl.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
@@ -379,15 +427,15 @@ def non_negative_parafac_hals(
                     tl.transpose(factors[mode]),
                     n_iter_max=100,
                     #sparsity_coefficient=sparsity_coefficients[mode],
-                    sparsity_coefficient=sparsity_coefficients[mode]/math.prod(factors[mode].shape),
-                    ridge_coefficient=ridge_coefficients[mode]/math.prod(factors[mode].shape),
+                    sparsity_coefficient=sparsity_coefficients[mode],
+                    ridge_coefficient=ridge_coefficients[mode],
                     exact=exact,
                     epsilon=epsilon
                     #normalize=normalize_mode[mode]
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
-                factor = tl.solve(tl.transpose(pseudo_inverse)+ridge_coefficients[mode]/math.prod(factors[mode].shape)*tl.eye(rank),
+                factor = tl.solve(tl.transpose(pseudo_inverse)+ridge_coefficients[mode]*tl.eye(rank),
                 tl.transpose(mttkrp))
                 factors[mode] = tl.transpose(factor)
             # for faster error computation
@@ -395,54 +443,64 @@ def non_negative_parafac_hals(
                 iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
 
             # -------------------------------------- 
-            # Solve scale ambiguity for sparsity/ridge penalty optimality
-            #if iteration==0:
-            l1_regs = tl.tensor([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i]))/math.prod(factors[i].shape) for i in range(n_modes)])
-            l2_regs = tl.tensor([1/2*ridge_coefficients[i]*(tl.norm(factors[i])**2)/math.prod(factors[i].shape) for i in range(n_modes)])
-            regs = l1_regs+l2_regs
-            #print(f"before scaling {sum(regs)}, {regs}")
-            if not disable_rescale:
-                #print(f"Fro loss before scale {tl.norm(tensor-CPTensor((None,factors)).to_tensor())**2}")
-                #l1_regs = tl.tensor([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i]))/math.prod(factors[i].shape) for i in range(n_modes)])
-                #l2_regs = tl.tensor([1/2*ridge_coefficients[i]*(tl.norm(factors[i])**2)/math.prod(factors[i].shape) for i in range(n_modes)])
-                #regs = l1_regs+l2_regs
-                #print(f"before scaling {sum(regs)}")
-                regs_scaled = l1_regs+tl.sqrt(l2_regs)
-                exp_val_inv = (l1_regs>0) + 1/2*(l2_regs>0)
-                exp_sqrt2 = tl.sum(l2_regs>0)
-                # only l1 or l2 is nonzero, this computes the constant product of regs
-                prod_reg = math.prod(regs_scaled)#/(2**((sum(1/exp_val_inv)-n_modes)/2)) 
-                avg_pen = (prod_reg*(2**(exp_sqrt2/2)))**(1/sum(exp_val_inv))
-                # we rescale each factor, the penalty terms are now balanced
-                if not all(regs) and not pop_l2:
-                    # degenerate case: all factors should be 0
-                    # exception: pop_l2, to test what happens when l1 has no l2 rebalance pen (research only)
-                    #print('Degenerate case')
-                    avg_pen = 0
-                    regs = [1 for reg in regs]
-                for i,factor in enumerate(factors):
-                    if sparsity_coefficients[i]:
-                        factors[i] = factor/regs[i]*avg_pen
-                    else:
-                        factors[i] = factor*tl.sqrt(avg_pen/(2*regs[i]))
+            # scale here?
+    
+            # Rescale only the init
+            if not disable_rebalance:
+                    for q in range(rank):
+                        # 1. Check if one factor is below threshold
+                        # in that case, scales will be nothing, all factors should be epsilon
+                        thresh = tl.prod([tl.sum(factors[i][:,q]>(1.001*epsilon)) for i in range(n_modes)])
+                        if thresh == 0:
+                            for submode in range(n_modes):
+                                factors[submode][:,q] = epsilon
+                        else: 
+                            # we can safely rescale (not exact but its fine)
+                            regs = [sparsity_coefficients[i]*tl.sum(tl.abs(factors[i][:,q])) + ridge_coefficients[i]*tl.norm(factors[i][:,q])**2 for i in range(n_modes)]
+                            scales = opt_balance(tl.tensor(regs),hom_deg)
+                            if tl.abs(tl.prod(scales)-1)>1e-8:
+                                print("error in balance")
+                                print(scales)
+                            for submode in range(n_modes):
+                                factors[submode][:,q] = factors[submode][:,q]*scales[submode]
+                            # TODO reproject onto epsilon ball?
 
-                # TODO REMOVE
-                #print(f"Fro loss after scale {tl.norm(tensor-CPTensor((None,factors)).to_tensor())**2}")
-                l1_regs = tl.tensor([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i]))/math.prod(factors[i].shape) for i in range(n_modes)])
-                l2_regs = tl.tensor([1/2*ridge_coefficients[i]*(tl.norm(factors[i])**2)/math.prod(factors[i].shape) for i in range(n_modes)])
-                regs = l1_regs+l2_regs
-                #print(f"after scaling {sum(regs)}, {regs}")
-            # ------------------------------------------
+
+            #---------------------------------------
 
             if normalize_factors and mode != modes[-1]:
                 if reg_is_used:
                     warnings.warn(f"It is not advised to normalize factors if l1 or l2 penalty are used.")
                 weights, factors = cp_normalize((weights, factors))
+
+#        # error before scaling
+        #if tol or return_errors:
+            ##print(f"reg in loss: {sum(regs)}")
+
+            #factors_norm = cp_norm((weights, factors))
+            ##iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
+            #rec_error = (
+                #tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+                #/ norm_tensor
+            #)
+            
+            #if not disable_rebalance:
+                #regs= sum([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i])) + 1/2*ridge_coefficients[i]*tl.norm(factors[i])**2 for i in range(n_modes)])
+                #print(f"loss avant rescale {rec_error/2+regs}") # loss !
+
+        # end of factors loop, rescale
+        # Solve scale ambiguity columnwise for sparsity/ridge**2 penalty optimality
+        #if not disable_rebalance and iteration<1:
+            #for q in range(rank):
+                #regs = [sparsity_coefficients[i]*tl.sum(tl.abs(factors[i][:,q])) + 1/2*ridge_coefficients[i]*tl.norm(factors[i][:,q])**2 for i in range(n_modes)]
+                #scales = opt_scaling(tl.tensor(regs),hom_deg)
+                #if tl.abs(tl.prod(scales)-1)>1e-8:
+                    #print("error in scaling")
+                    #print(scales)
+                #for submode in range(n_modes):
+                    #factors[submode][:,q] = factors[submode][:,q]*scales[submode]
+
         if tol or return_errors:
-            # TODO: use another output
-            l1_regs = tl.tensor([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i]))/math.prod(factors[i].shape) for i in range(n_modes)])
-            l2_regs = tl.tensor([1/2*ridge_coefficients[i]*(tl.norm(factors[i])**2)/math.prod(factors[i].shape) for i in range(n_modes)])
-            regs = l1_regs+l2_regs
             #print(f"reg in loss: {sum(regs)}")
 
             factors_norm = cp_norm((weights, factors))
@@ -451,37 +509,39 @@ def non_negative_parafac_hals(
                 tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
                 / norm_tensor
             )
-            rec_errors.append((rec_error/2)+sum(regs)) # loss !
+            
+    
+            regs_loss.append(sum([sparsity_coefficients[i]*tl.sum(tl.abs(factors[i])) + ridge_coefficients[i]*tl.norm(factors[i])**2 for i in range(n_modes)]))
+            rec_errors.append((rec_error/2)+regs_loss[-1]/norm_tensor) # loss !
 
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
-
-                if verbose:
-                    print(
-                        #f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
-                        f"iteration {iteration}, loss: {rec_errors[-1]}, reconstrution error: {rec_error}, decrease = {rec_error_decrease}"
-                    )
-
-                if cvg_criterion == "abs_rec_error":
-                    stop_flag = abs(rec_error_decrease) < tol
-                elif cvg_criterion == "rec_error":
-                    stop_flag = rec_error_decrease < tol
-                else:
-                    raise TypeError("Unknown convergence criterion")
-
-                if stop_flag:
-                    if verbose:
-                        print(f"PARAFAC converged after {iteration} iterations")
-                    break
             else:
+                rec_error_decrease = 1 #TODO: INF
+
+            if verbose:
+                print(
+                    #f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
+                    f"iteration {iteration}, norm. loss: {rec_errors[-1]}, norm. rec error: {rec_error}, norm. regs: {regs_loss[-1]/norm_tensor}, decrease = {rec_error_decrease}"
+                )
+
+            if cvg_criterion == "abs_rec_error":
+                stop_flag = abs(rec_error_decrease) < tol
+            elif cvg_criterion == "rec_error":
+                stop_flag = rec_error_decrease < tol
+            else:
+                raise TypeError("Unknown convergence criterion")
+
+            if stop_flag:
                 if verbose:
-                    #print(f"reconstruction error={rec_errors[-1]}")
-                    print(f"loss={rec_errors[-1]}")
+                    print(f"PARAFAC converged after {iteration} iterations")
+                break
+
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
     if return_errors:
-        return cp_tensor, rec_errors
+        return cp_tensor, rec_errors, regs_loss
     else:
         return cp_tensor
 

@@ -881,7 +881,6 @@ def hals_nnls(
     exact=False,
     epsilon=0
 ):
-
     """
     Non Negative Least Squares (NNLS)
 
@@ -970,7 +969,7 @@ def hals_nnls(
             V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j) - sparsity_coefficient)/UtU[k,k]
         \\end{equation}
 
-    TODO: add ridge coefficient
+    TODO: CAREFUL no 1/2 in Ridge but 1/2 in data fitting...
 
     References
     ----------
@@ -1012,7 +1011,7 @@ def hals_nnls(
             if UtU[k, k]:
                 newV = tl.clip(
                     (UtM[k,:] - tl.dot(UtU[k,:], V) + UtU[k,k]*V[k,:] - sparsity_coefficient)
-                    / (UtU[k,k]+ridge_coefficient), a_min=epsilon
+                    / (UtU[k,k]+2*ridge_coefficient), a_min=epsilon
                     )
                 rec_error += tl.norm(V-newV)**2
                 V = tl.index_update(V, tl.index[k, :], newV)
@@ -1192,7 +1191,6 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
 
     for iteration in range(n_iter_max):
-
         if iteration > 0 or tl.all(x_vec == 0):
             indice = tl.argmax(x_gradient)
             passive_set = tl.index_update(passive_set, tl.index[indice], True)

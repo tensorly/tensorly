@@ -7,6 +7,3 @@ from .base import (
     random_tt_matrix,
     random_parafac2,
 )
-
-# Deprecated
-from .base import random_kruskal, random_mps

@@ -1,7 +1,7 @@
 import tensorly as tl
 from ..entropy import vonneumann_entropy
 from ..entropy import tt_vonneumann_entropy, cp_vonneumann_entropy
-from ...decomposition import parafac, matrix_product_state
+from ...decomposition import parafac, tensor_train
 from tensorly.testing import assert_array_almost_equal
 
 
@@ -23,7 +23,7 @@ def test_tt_vonneumann_entropy_pure_state():
     state = tl.randn((8, 1))
     state = state / tl.norm(state)
     mat_pure = tl.reshape(tl.dot(state, tl.transpose(state)), (2, 2, 2, 2, 2, 2))
-    mat_pure = matrix_product_state(mat_pure, rank=(1, 3, 2, 1, 2, 3, 1))
+    mat_pure = tensor_train(mat_pure, rank=(1, 3, 2, 1, 2, 3, 1))
     tl_vne = tt_vonneumann_entropy(mat_pure)
     assert_array_almost_equal(tl_vne, 0, decimal=3)
 
@@ -126,7 +126,7 @@ def test_tt_vonneumann_entropy_mixed_state():
     )
     actual_vne = 0.5546
     tt_mixed = tl.reshape(mat_mixed, (2, 2, 2, 2, 2, 2))
-    tt_mixed = matrix_product_state(tt_mixed, rank=[1, 2, 4, 8, 4, 2, 1])
+    tt_mixed = tensor_train(tt_mixed, rank=[1, 2, 4, 8, 4, 2, 1])
     tl_vne = tt_vonneumann_entropy(tt_mixed)
     assert_array_almost_equal(tl_vne, actual_vne, decimal=3)
 

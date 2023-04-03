@@ -16,6 +16,9 @@ jobs:
             python-version: '3.7'
           - BACKEND: 'numpy'
             python-version: '3.9'
+          - BACKEND: 'numpy'
+            python-version: '3.9'
+            TENSORLY_TENALG_BACKEND: ['einsum']
 
     steps:
     - uses: actions/checkout@v3

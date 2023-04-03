@@ -10,7 +10,7 @@ from ...testing import (
     assert_,
     assert_class_wrapper_correctly_passes_arguments,
 )
-from .._parafac2 import Parafac2, parafac2, initialize_decomposition, _pad_by_zeros
+from .._parafac2 import Parafac2, parafac2, initialize_decomposition
 from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
 from ...metrics.factors import congruence_coefficient
 
@@ -339,23 +339,3 @@ def test_parafac2_to_tensor():
         Bi = T.dot(projections[i], factors[1])
         manual_tensor = T.einsum("r,jr,kr", factors[0][i], Bi, factors[2])
         assert_(tl.max(tl.abs(constructed_tensor[i, :, :] - manual_tensor)) < 1e-6)
-
-
-def test_pad_by_zeros():
-    """Test that if we pad a tensor by zeros, then it doesn't change.
-
-    This failed for TensorFlow at some point.
-    """
-    rng = tl.check_random_state(1234)
-    rank = 3
-
-    I = 25
-    J = 15
-    K = 30
-
-    weights, factors, projections = random_parafac2(
-        shapes=[(J, K)] * I, rank=rank, random_state=rng
-    )
-    constructed_tensor = parafac2_to_tensor((weights, factors, projections))
-    padded_tensor = _pad_by_zeros(constructed_tensor)
-    assert_(tl.max(tl.abs(constructed_tensor - padded_tensor)) < 1e-10)
