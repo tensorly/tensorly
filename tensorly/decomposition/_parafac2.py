@@ -118,7 +118,7 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition, norm_matrices=N
             tmp = tl.dot(t_slice, C)
             inner_product += tl.trace(tl.dot(tl.transpose(B_i), tmp))
 
-        norm_cmf_sq += tl.sum((B_i.T @ B_i) * CtC)
+        norm_cmf_sq += tl.sum((tl.transpose(B_i) @ B_i) * CtC)
 
     return tl.sqrt(norm_X_sq - 2 * inner_product + norm_cmf_sq)
 
