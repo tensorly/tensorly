@@ -272,9 +272,8 @@ def test_parafac2_normalize_factors():
     )
     assert unnormalized_rec.weights[0] == 1
 
-    normalized_rec = parafac2(
-        slices, rank, random_state=rng, normalize_factors=True
-    )
+    normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
+
     assert_array_almost_equal(T.norm(normalized_rec.factors[0], axis=0), tl.ones(rank))
     assert_array_almost_equal(T.norm(normalized_rec.factors[1], axis=0), tl.ones(rank))
     assert_array_almost_equal(T.norm(normalized_rec.factors[2], axis=0), tl.ones(rank))
