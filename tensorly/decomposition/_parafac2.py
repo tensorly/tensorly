@@ -94,6 +94,33 @@ def _project_tensor_slices(tensor_slices, projections):
 
 
 def _parafac2_reconstruction_error(tensor_slices, decomposition, norm_matrices=None):
+    """Calculates the reconstruction error of the PARAFAC2 decomposition. This implementation
+    uses the inner product with each matrix for efficiency, as this avoids needing to
+    reconstruct the tensor. This is based on the property that:
+
+    .. math::
+
+        ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+
+    Parameters
+    ----------
+    tensor_slices : ndarray or list of ndarrays
+        The data itself. Either a third order tensor or a list of second order tensors that
+        may have different number of rows.
+    decomposition : (weight, factors, projection_matrices)
+        * weights : 1D array of shape (rank, )
+            weights of the (normalized) factors
+        * factors : List of factors of the CP decomposition element `i` is of shape
+            (tensor.shape[i], rank)
+        * projections : List of projection matrices used to create evolving factors.
+    norm_matrices : float, optional
+        The norm of the data. This can be optionally provided to avoid recalculating it.
+
+    Returns
+    -------
+    error : float
+        The norm of the reconstruction error of the PARAFAC2 decomposition.
+    """
     _validate_parafac2_tensor(decomposition)
 
     if norm_matrices is None:
