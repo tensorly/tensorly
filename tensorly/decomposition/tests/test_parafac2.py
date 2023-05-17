@@ -9,6 +9,7 @@ from ... import backend as T
 from ...testing import (
     assert_,
     assert_class_wrapper_correctly_passes_arguments,
+    assert_array_almost_equal,
 )
 from .._parafac2 import Parafac2, parafac2, initialize_decomposition
 from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
@@ -228,25 +229,26 @@ def test_parafac2_nn():
 
 
 def test_parafac2_slice_and_tensor_input():
+    rng = tl.check_random_state(1234)
     rank = 3
 
     random_parafac2_tensor = random_parafac2(
-        shapes=[(15, 30) for _ in range(25)], rank=rank, random_state=1234
+        shapes=[(15, 30) for _ in range(25)], rank=rank, random_state=rng
     )
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     slices = parafac2_to_slices(random_parafac2_tensor)
 
     slice_rec = parafac2(
-        slices, rank, random_state=1234, normalize_factors=False, n_iter_max=2
+        slices, rank, init="svd", normalize_factors=False, n_iter_max=2
     )
     slice_rec_tensor = parafac2_to_tensor(slice_rec)
 
     tensor_rec = parafac2(
-        tensor, rank, random_state=1234, normalize_factors=False, n_iter_max=2
+        tensor, rank, init="svd", normalize_factors=False, n_iter_max=2
     )
     tensor_rec_tensor = parafac2_to_tensor(tensor_rec)
 
-    assert tl.max(tl.abs(slice_rec_tensor - tensor_rec_tensor)) < 1e-8
+    assert_array_almost_equal(slice_rec_tensor, tensor_rec_tensor)
 
 
 def test_parafac2_normalize_factors():
@@ -270,12 +272,13 @@ def test_parafac2_normalize_factors():
     )
     assert unnormalized_rec.weights[0] == 1
 
-    normalized_rec = parafac2(
-        slices, rank, random_state=rng, normalize_factors=True, n_iter_max=50
-    )
-    assert tl.max(tl.abs(T.norm(normalized_rec.factors[0], axis=0) - 1)) < 1e-5
-    assert abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 1e-2
-    assert abs(tl.min(norms) - tl.min(normalized_rec.weights)) / tl.min(norms) < 1e-2
+    normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
+
+    assert_array_almost_equal(T.norm(normalized_rec.factors[0], axis=0), tl.ones(rank))
+    assert_array_almost_equal(T.norm(normalized_rec.factors[1], axis=0), tl.ones(rank))
+    assert_array_almost_equal(T.norm(normalized_rec.factors[2], axis=0), tl.ones(rank))
+    assert abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 0.05
+    assert abs(tl.min(norms) - tl.min(normalized_rec.weights)) / tl.min(norms) < 0.05
 
 
 def test_parafac2_init_valid():

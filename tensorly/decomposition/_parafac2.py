@@ -6,12 +6,10 @@ from tensorly.random import random_parafac2
 from tensorly import backend as T
 from . import parafac, non_negative_parafac_hals
 from ..parafac2_tensor import (
-    parafac2_to_slice,
     Parafac2Tensor,
     _validate_parafac2_tensor,
 )
 from ..cp_tensor import CPTensor
-from ..base import unfold
 from ..tenalg.svd import svd_interface
 
 # Authors: Marie Roald
@@ -95,13 +93,61 @@ def _project_tensor_slices(tensor_slices, projections):
     return tl.stack(slices)
 
 
-def _parafac2_reconstruction_error(tensor_slices, decomposition):
+def _parafac2_reconstruction_error(tensor_slices, decomposition, norm_matrices=None):
+    """Calculates the reconstruction error of the PARAFAC2 decomposition. This implementation
+    uses the inner product with each matrix for efficiency, as this avoids needing to
+    reconstruct the tensor. This is based on the property that:
+
+    .. math::
+
+        ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+
+    Parameters
+    ----------
+    tensor_slices : ndarray or list of ndarrays
+        The data itself. Either a third order tensor or a list of second order tensors that
+        may have different number of rows.
+    decomposition : (weight, factors, projection_matrices)
+        * weights : 1D array of shape (rank, )
+            weights of the (normalized) factors
+        * factors : List of factors of the CP decomposition element `i` is of shape
+            (tensor.shape[i], rank)
+        * projections : List of projection matrices used to create evolving factors.
+    norm_matrices : float, optional
+        The norm of the data. This can be optionally provided to avoid recalculating it.
+
+    Returns
+    -------
+    error : float
+        The norm of the reconstruction error of the PARAFAC2 decomposition.
+    """
     _validate_parafac2_tensor(decomposition)
-    squared_error = 0
-    for idx, tensor_slice in enumerate(tensor_slices):
-        reconstruction = parafac2_to_slice(decomposition, idx, validate=False)
-        squared_error += tl.sum((tensor_slice - reconstruction) ** 2)
-    return tl.sqrt(squared_error)
+
+    if norm_matrices is None:
+        norm_X_sq = sum(tl.norm(t_slice, 2) ** 2 for t_slice in tensor_slices)
+    else:
+        norm_X_sq = norm_matrices**2
+
+    weights, (A, B, C), projections = decomposition
+    if weights is not None:
+        A = A * weights
+
+    norm_cmf_sq = 0
+    inner_product = 0
+    CtC = tl.dot(tl.transpose(C), C)
+
+    for i, t_slice in enumerate(tensor_slices):
+        B_i = (projections[i] @ B) * A[i]
+        if tl.shape(B_i)[0] > tl.shape(C)[0]:
+            tmp = tl.dot(tl.transpose(B_i), t_slice)
+            inner_product += tl.trace(tl.dot(tmp, C))
+        else:
+            tmp = tl.dot(t_slice, C)
+            inner_product += tl.trace(tl.dot(tl.transpose(B_i), tmp))
+
+        norm_cmf_sq += tl.sum((tl.transpose(B_i) @ B_i) * CtC)
+
+    return tl.sqrt(norm_X_sq - 2 * inner_product + norm_cmf_sq)
 
 
 def parafac2(
@@ -148,7 +194,7 @@ def parafac2(
 
     .. math::
 
-        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
+        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
 
     with the same constraints hold for :math:`B_i` as above.
 
@@ -318,7 +364,7 @@ def parafac2(
 
         if tol:
             rec_error = _parafac2_reconstruction_error(
-                tensor_slices, (weights, factors, projections)
+                tensor_slices, (weights, factors, projections), norm_tensor
             )
             rec_error /= norm_tensor
             rec_errors.append(rec_error)
