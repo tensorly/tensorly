@@ -1,5 +1,6 @@
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
+from ..base import matricize
 from ..tr_tensor import validate_tr_rank, TRTensor
 from ..tenalg.svd import svd_interface
 
@@ -197,7 +198,7 @@ def tensor_ring_als(
     for iter in range(n_iter_max):
         for dim in range(n_dim):
             # Compute appropriate transposed unfolding of tensor
-            tensor_unf = tl.reshape(tl.moveaxis(tensor, dim, -1), (-1, shape[dim]))
+            tensor_unf = matricize(tensor, [n for n in range(n_dim) if n != dim], [dim])
 
             # Compute design matrix
             subchain_tensor = tr_decomp[(dim + 1) % n_dim]
