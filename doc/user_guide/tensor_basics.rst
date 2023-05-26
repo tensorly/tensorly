@@ -57,7 +57,7 @@ Also called **matrization**, **unfolding** a tensor is done by reading the eleme
 For a tensor of size :math:`(I_0, I_1, \cdots, I_N)`, the n-mode unfolding of this tensor will be of size :math:`(I_n, I_0 \times I_1 \times \cdots \times I_{n-1} \times I_{n+1} \cdots \times I_N)`.
 
 .. important::
-   In tensorly we use an unfolding different from the classical one as defined in [1]_ for better performance.
+   In TensorLy we use an unfolding different from the classical one as defined in [1]_ for better performance.
 
    Given a tensor :math:`\tilde X \in \mathbb{R}^{I_0, I_1 \times I_2 \times \cdots \times I_N}`, the
    mode-n unfolding of :math:`\tilde X` is a matrix :math:`\mathbf{X}_{[n]} \in \mathbb{R}^{I_n, I_M}`,
@@ -72,7 +72,7 @@ For a tensor of size :math:`(I_0, I_1, \cdots, I_N)`, the n-mode unfolding of th
 
    Traditionally, mode-1 unfolding denotes the unfolding along the first dimension.
    However, to be consistent with the Python indexing that always starts at zero,
-   in tensorly, unfolding also starts at zero!
+   in TensorLy, unfolding also starts at zero!
 
    Therefore ``unfold(tensor, 0)`` will unfold said tensor along its first dimension!
 
@@ -112,7 +112,7 @@ Finally, the 2-mode unfolding is the unfolding along the last axis:
    \end{matrix} \right]
 
 
-In tensorly:
+In TensorLy:
 
 .. code-block:: python
 

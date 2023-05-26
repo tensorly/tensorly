@@ -115,7 +115,7 @@ Now, let's create a random tensor using the :mod:`tensorly.random` module:
    # tensor is a PyTorch Tensor!
 
 We can decompose it easily, here using a Tucker decomposition: 
-First, we reate a decomposition instance, which keeps the number of parameters the same
+First, we create a decomposition instance, which keeps the number of parameters the same
 and with a random initialization. We then fit it to our tensor.
 
 .. code:: python
@@ -160,12 +160,12 @@ The rest is exactly the same, nothing more to do!
 Using static dispatching
 ------------------------
 
-We optimized the dynammical dispatch so the overhead is negligeable. 
+We optimized the dynamical dispatch so the overhead is negligeable. 
 However, if you only want to use one backend, you can first set it and then switch to static dispatching:
 
 >>> tl.use_static_dispatch()
 
-And you can switch back to dynammical dispatching just as easily:
+And you can switch back to dynamical dispatching just as easily:
 
 >>> tl.use_dynamic_dispatch()
 

@@ -123,7 +123,7 @@ much memory.
    <COO: shape=(1000, 1001, 1002), dtype=float64, nnz=5044, fill_value=0.0>
 
 This is how much memory the sparse array takes up, vs. how much it would take
-up if it were represented densly.
+up if it were represented densely.
 
    >>> tensor.nbytes / 1e9 # Actual memory usage in GB
    0.000161408

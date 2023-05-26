@@ -1,12 +1,12 @@
 Quick-Start
 ===========
 
-A short overview of TensorLy to get started quickly and get familiar with the organization of TensorLY. 
+A short overview of TensorLy to get started quickly and get familiar with the organization of TensorLy. 
 
 Organization of TensorLy
 -------------------------
 
-TensorLy is organized in several submodule:
+TensorLy is organized in several submodules:
 
 ================================= ================================
 Module                             Description
@@ -42,12 +42,12 @@ Why is that?
 
 
 This is why you should always manipulate tensors using tensorly backend functions only.
-For instance, `tensorly.max` calls either the MXNet, NumPy or PyTorch version depending on the backend you selected. There are other subtlties that are handled by the backend to allow a common API regardless of the backend use.
+For instance, `tensorly.max` calls either the MXNet, NumPy or PyTorch version depending on the backend you selected. There are other subtleties that are handled by the backend to allow a common API regardless of the backend use.
 
 .. note::
    
    By default, the backend is set to NumPy. You can change the backend using ``tensorly.set_backend``.
-   For instance, to switch to pytorch, simply type ``tensorly.set_backend('pytorch')``.
+   For instance, to switch to PyTorch, simply type ``tensorly.set_backend('pytorch')``.
    For more information on the backend, refer to :doc:`./backend`.
 
 
@@ -127,7 +127,7 @@ Tensor algebra
 --------------
 
 More '*advanced*' tensor algebra functions are located in the aptly named :py:mod:`tensorly.tenalg` module.
-This includes for instance, n-mode product, kronecker product, etc.
+This includes for instance, n-mode product, Kronecker product, etc.
 
 We now provide a backend system for tensor algebra, which allows to either use our "hand-crafter" implementations
 or to dispatch all the operations to einsum. By default, we use the hand-crafted implementations. To switch to einsum, or change the tenalg backend:

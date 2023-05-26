@@ -19,7 +19,7 @@ For a detailed explanation on tensor regression, please refer to [1]_.
 
 TensorLy implements both types of tensor regression as scikit-learn-like estimators.
 
-For instance, Krusal regression is available through the :class:`tensorly.regression.CPRegression` object. This implements a fit method that takes as parameters `X`, the data tensor which first dimension is the number of samples, and `y`, the corresponding vector of labels.
+For instance, Krusal regression is available through the :class:`tensorly.regression.CPRegression` object. This implements a fit method that takes as parameters `X`, the data tensor whose first dimension is the number of samples, and `y`, the corresponding vector of labels.
 
 Given a set of testing samples, you can use the predict method to obtain the corresponding predictions from the model.
 
