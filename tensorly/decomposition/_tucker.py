@@ -8,7 +8,12 @@ from ..tucker_tensor import (
     validate_tucker_rank,
     tucker_normalize,
 )
-from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
+from ..solvers.penalizations import (
+    process_regularization_weights,
+    tucker_implicit_sinkhorn_balancing,
+    tucker_implicit_scalar_balancing,
+)
+from ..solvers.nnls import hals_nnls, fista, active_set_nnls
 from math import sqrt
 import warnings
 from collections.abc import Iterable
@@ -353,6 +358,8 @@ def non_negative_tucker(
 
         Iterative multiplicative update, see [2]_
 
+        TODO: add beta option, update with true Beta-Div rules?
+
     Parameters
     ----------
     tensor : ``ndarray``
@@ -454,15 +461,24 @@ def non_negative_tucker_hals(
     init="svd",
     svd="truncated_svd",
     tol=1e-8,
-    sparsity_coefficients=None,
-    core_sparsity_coefficient=None,
-    fixed_modes=None,
     random_state=None,
+    sparsity_coefficients=None,
+    ridge_coefficients=None,  # todo implement
+    fixed_modes=None,
+    nn_modes="all",  # todo implement
     verbose=False,
     normalize_factors=False,
     return_errors=False,
-    exact=False,
-    algorithm="fista",
+    exact=False,  # todo remove option here?
+    algorithm="fista",  # todo more explicit name? Remove? Try coordinate descent?
+    accelerate=None,  # todo implement
+    inner_iter_max=30,  # or have some option dictionary?
+    tol_fista=1e-1,
+    epsilon=0,  # todo implement
+    rescale=True,
+    pop_l2=False, #TODO doc
+    partial=None,  # todo implement with identity trick? hack: use 1 instead of eye to avoid computations
+    print_it=50,  # TODO put in all?
 ):
     r"""Non-negative Tucker decomposition with HALS
 
@@ -487,9 +503,6 @@ def non_negative_tucker_hals(
     sparsity_coefficients : array of float (as much as the number of modes)
         The sparsity coefficients are used for each factor
         If set to None, the algorithm is computed without sparsity
-        Default: None
-    core_sparsity_coefficient : array of float. This coefficient imposes sparsity on core
-        when it is updated with fista.
         Default: None
     fixed_modes : array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
@@ -566,8 +579,6 @@ def non_negative_tucker_hals(
     """
     rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
     n_modes = tl.ndim(tensor)
-    if sparsity_coefficients is None or not isinstance(sparsity_coefficients, Iterable):
-        sparsity_coefficients = [sparsity_coefficients] * n_modes
 
     if fixed_modes is None:
         fixed_modes = []
@@ -594,14 +605,81 @@ def non_negative_tucker_hals(
         random_state=random_state,
         non_negative=True,
     )
+
+    # TODO copy CP scaling checks for normalization
+    (
+        ridge_coefficients,
+        sparsity_coefficients,
+        reg_is_used,
+        disable_rebalance,
+        hom_deg,
+    ) = process_regularization_weights(
+        ridge_coefficients=ridge_coefficients,
+        sparsity_coefficients=sparsity_coefficients,
+        n_modes=n_modes + 1,
+        rescale=rescale,
+        pop_l2=pop_l2
+    )
+
     # initialisation - declare local variables
     norm_tensor = tl.norm(tensor, 2)
     rec_errors = []
+    learning_rate = 1e-4 #TODO better default?
 
     # Iterate over one step of NTD
     for iteration in range(n_iter_max):
+
+        # balance here?
+        # ----------------------------
+        # Scaling at beginning of inner loop
+        if not disable_rebalance:
+            ## Step 1: put true zeroes in factors and core, retain mask in memory
+            if epsilon:
+                for i in range(n_modes):
+                    # TODO nnmodes
+                    nn_factors[i][nn_factors[i] <= epsilon] = 0
+                nn_core[nn_core <= epsilon] = 0
+
+            # Step 2: compute regs, and rescale
+            # TODO Fix sinkhorn
+            # match rescale:
+            if rescale == "sinkhorn":
+                regs = [
+                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]), axis=0)
+                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2, axis=0)
+                    for i in range(n_modes)
+                ]
+                nn_factors, nn_core = tucker_implicit_sinkhorn_balancing(
+                    nn_factors,
+                    nn_core,
+                    regs,
+                    sparsity_coefficients[-1] + ridge_coefficients[-1],
+                    hom_deg,
+                    itermax=1,
+                )  # TODO check number
+            if rescale == "scalar":
+                regs = [
+                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
+                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
+                    for i in range(n_modes)
+                ]
+                regs += [
+                    sparsity_coefficients[-1] * tl.sum(tl.abs(nn_core))
+                    + ridge_coefficients[-1] * tl.sum(nn_core**2)
+                ]
+                nn_factors, nn_core, scales = tucker_implicit_scalar_balancing(
+                    nn_factors, nn_core, regs, hom_deg
+                )
+            # Step 3: impute epsilon in place of values in [0, epsilon]
+            if epsilon:
+                for i in range(n_modes):
+                    nn_factors[i][nn_factors[i] <= epsilon] = epsilon
+                nn_core[nn_core <= epsilon] = epsilon
+        # -----------------------------
+
         # One pass of least squares on each updated mode
         for mode in modes:
+
             # Computing Hadamard of cross-products
             pseudo_inverse = nn_factors.copy()
             for i, factor in enumerate(nn_factors):
@@ -623,63 +701,88 @@ def non_negative_tucker_hals(
                 UtM,
                 UtU,
                 tl.transpose(nn_factors[mode]),
-                n_iter_max=100,
+                n_iter_max=inner_iter_max,
                 sparsity_coefficient=sparsity_coefficients[mode],
+                ridge_coefficient=ridge_coefficients[mode],
                 exact=exact,
+                epsilon=epsilon,
             )
             nn_factors[mode] = tl.transpose(nn_factor)
-        # updating core
-        if algorithm == "fista":
-            pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
-            core_estimation = multi_mode_dot(tensor, nn_factors, transpose=True)
-            learning_rate = 1
 
-            for MtM in pseudo_inverse:
-                learning_rate *= 1 / (tl.truncated_svd(MtM)[1][0])
-            nn_core = fista(
-                core_estimation,
-                pseudo_inverse,
-                x=nn_core,
-                n_iter_max=n_iter_max,
-                sparsity_coef=core_sparsity_coefficient,
-                lr=learning_rate,
-            )
-        if algorithm == "active_set":
-            pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
-            core_estimation_vec = tl.base.tensor_to_vec(
-                tl.tenalg.mode_dot(
-                    tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]
-                )
-            )
-            pseudo_inverse_kr = tl.tenalg.kronecker(pseudo_inverse)
-            vectorcore = active_set_nnls(
-                core_estimation_vec, pseudo_inverse_kr, x=nn_core, n_iter_max=n_iter_max
-            )
-            nn_core = tl.reshape(vectorcore, tl.shape(nn_core))
+        # updating core with FISTA for flexibility
+        pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
+        core_estimation = multi_mode_dot(tensor, nn_factors, transpose=True)
 
-        # Adding the l1 norm value to the reconstruction error
-        sparsity_error = 0
-        for index, sparse in enumerate(sparsity_coefficients):
-            if sparse:
-                sparsity_error += 2 * (sparse * tl.norm(nn_factors[index], order=1))
-        # error computation
-        rec_error = (
-            tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2) / norm_tensor
+        # TODO Learning Rate schedule?
+        # 20 iters with adaptive step, then update every 10 iters
+        # TODO doc acceleration
+        try:
+            if (not iteration % 10) or (iteration<20):
+                learning_rate = 1
+                for MtM in pseudo_inverse:
+                    learning_rate *= tl.truncated_svd(MtM)[1][0]
+                learning_rate = 1/(learning_rate+2*ridge_coefficients[-1])
+        except:
+            print("error TODO")
+            # learning_rate = learning_rate/2
+            continue
+        nn_core = fista(
+            core_estimation,
+            pseudo_inverse,
+            x=nn_core,
+            n_iter_max=500,
+            sparsity_coef=sparsity_coefficients[-1],
+            ridge_coef=ridge_coefficients[-1],
+            lr=learning_rate,
+            non_negative=True,
+            epsilon=epsilon,
+            tol=tol_fista,
         )
-        rec_errors.append(rec_error)
 
-        if iteration > 1:
+        # balance here?
+        
+        # error computation #TODO optimize? TODO care about normalization or the tensor
+        # TODO split rec error and loss?
+        rec_error = (
+            tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors))) ** 2
+        ) / 2  # / norm_tensor
+        regs = 0
+        if reg_is_used:
+            # Adding the regs value to the reconstruction error
+            regs = [
+                sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
+                + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
+                for i in range(n_modes)
+            ]
+            regs += sparsity_coefficients[-1] * tl.sum(
+                tl.abs(nn_core)
+            ) + ridge_coefficients[-1] * tl.sum(nn_core**2)
+            rec_error += tl.sum(regs)
+        rec_errors.append(rec_error/norm_tensor**2)
+
+        if not (iteration % print_it):
             if verbose:
-                print(
-                    f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
-                )
-
+                if iteration > 0:
+                    # TODO remove scales
+                    print(
+                        f"iter={iteration}, loss={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}, rec err={rec_error}, regs={tl.sum(regs)}."
+                    )
+                else:
+                    print(f"first iteration, initial loss={rec_errors[-1]}.")
             if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
                     print(f"converged in {iteration} iterations.")
                 break
-        if normalize_factors:
+
+        if normalize_factors and disable_rebalance:
+            # TODO no normalize if scaling, or only at the end
             nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
+
+    # final print
+    if verbose:
+        print(
+            f"iter={iteration}, loss={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}, regs={tl.sum(regs)}."
+        )
     tensor = TuckerTensor((nn_core, nn_factors))
     if return_errors:
         return tensor, rec_errors

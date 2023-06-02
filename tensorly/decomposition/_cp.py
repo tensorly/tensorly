@@ -296,6 +296,7 @@ def parafac(
         remove the effect of these missing values on the initialization.
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro [3].
+    callback: TODO
 
     Returns
     -------
