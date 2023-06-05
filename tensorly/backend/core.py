@@ -527,30 +527,36 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
-    def max(tensor):
+    def max(tensor, axis=None):
         """The max value in a tensor.
 
         Parameters
         ----------
         tensor : tensor
+        axis : int or None, default is None
+            optional, indicates an axis along which to check for non-zero values
 
         Returns
         -------
-        scalar
+        scalar or tensor
+            If axis is None, returns a scalar. Otherwise, returns a tensor of scalars.
         """
         raise NotImplementedError
 
     @staticmethod
-    def min(tensor):
+    def min(tensor, axis=None):
         """The min value in a tensor.
 
         Parameters
         ----------
         tensor : tensor
+        axis : int or None, default is None
+            optional, indicates an axis along which to check for non-zero values
 
         Returns
         -------
-        scalar
+        scalar or tensor
+            If axis is None, returns a scalar. Otherwise, returns a tensor of scalars.
         """
         raise NotImplementedError
 

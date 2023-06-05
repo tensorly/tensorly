@@ -133,7 +133,7 @@ class CP_PLSR:
                         Z,
                         1,
                         init=Z_comp_CP,
-                        tol=None,
+                        tol=self.tol,
                         normalize_factors=False,
                         n_iter_max=10,
                     )
