@@ -48,11 +48,6 @@ class CupyBackend(Backend, backend_name="cupy"):
         return cp.clip(tensor, a_min, a_max)
 
     @staticmethod
-    def lstsq(a, b):
-        x, residuals, _, _ = cp.linalg.lstsq(a, b, rcond=None)
-        return x, residuals
-
-    @staticmethod
     def logsumexp(tensor, axis=0):
         max_tensor = cp.max(tensor, axis=axis, keepdims=True)
         return cp.squeeze(
@@ -94,7 +89,7 @@ for name in (
 ):
     CupyBackend.register_method(name, getattr(cp, name))
 
-for name in ["svd", "qr", "eigh", "solve"]:
+for name in ["svd", "qr", "eigh", "solve", "lstsq"]:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
 
 CupyBackend.register_method("gamma", cp.random.gamma)
