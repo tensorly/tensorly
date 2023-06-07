@@ -93,6 +93,7 @@ from .backend import (
     qr,
     kr,
     stack,
+    maximum,
     eps,
     finfo,
     matmul,

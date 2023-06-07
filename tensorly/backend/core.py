@@ -53,6 +53,7 @@ backend_array = [
     "sqrt",
     "abs",
     "min",
+    "maximum",
     "zeros_like",
 ]
 
@@ -500,6 +501,22 @@ class Backend(object):
             otherwise, returns a tensor of bools.
         """
         return tensor.any(axis=axis, keepdims=keepdims, **kwargs)
+    
+    @staticmethod
+    def maximum(x1, x2, *args, **kwargs):
+        """Element-wise maximum of array elements.
+
+        Parameters
+        ----------
+        x1, x2 : tensor
+            The arrays holding the elements to be compared.
+
+        Returns
+        -------
+        tensor
+            The maximum of x1 and x2, element-wise.
+        """
+        raise NotImplementedError
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None):
