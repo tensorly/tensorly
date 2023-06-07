@@ -501,7 +501,7 @@ class Backend(object):
             otherwise, returns a tensor of bools.
         """
         return tensor.any(axis=axis, keepdims=keepdims, **kwargs)
-    
+
     @staticmethod
     def maximum(x1, x2, *args, **kwargs):
         """Element-wise maximum of array elements.
