@@ -126,7 +126,7 @@ class CP_PLSR:
 
                 if iter == 0:
                     Z_comp = initialize_cp(Z, 1, normalize_factors=True).factors
-                    Z_comp = [T.reshape(zz, (-1, )) for zz in Z_comp]
+                    Z_comp = [T.reshape(zz, (-1,)) for zz in Z_comp]
 
                 if T.ndim(Z) >= 2:
                     for mode in range(len(Z_comp)):
