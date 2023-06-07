@@ -54,6 +54,10 @@ class JaxBackend(Backend, backend_name="jax"):
         return tensor.ndim
 
     @staticmethod
+    def lstsq(a, b, rcond=None):
+        return np.linalg.lstsq(a, b, rcond=rcond, numpy_resid=True)
+
+    @staticmethod
     def logsumexp(tensor, axis=0):
         return jax.scipy.special.logsumexp(tensor, axis=axis)
 
@@ -91,7 +95,7 @@ for name in (
 ):
     JaxBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "svd", "eigh", "lstsq"]:
+for name in ["solve", "qr", "svd", "eigh"]:
     JaxBackend.register_method(name, getattr(np.linalg, name))
 
 if Version(jax.__version__) >= Version("0.3.0"):
