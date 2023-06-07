@@ -416,7 +416,7 @@ def non_negative_parafac_hals(
             else:
                 factor = tl.solve(
                     tl.transpose(pseudo_inverse)
-                    + ridge_coefficients[mode] * tl.eye(rank),
+                    + 2*ridge_coefficients[mode] * tl.eye(rank),
                     tl.transpose(mttkrp),
                 )
                 factors[mode] = tl.transpose(factor)
