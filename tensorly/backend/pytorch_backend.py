@@ -190,6 +190,10 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         tensor.index_put_(index, values)
 
     @staticmethod
+    def lstsq(a, b, rcond=None, driver="gelsd"):
+        return torch.linalg.lstsq(a, b, rcond=rcond, driver=driver)
+
+    @staticmethod
     def eigh(tensor):
         """Legacy only, deprecated from PyTorch 1.8.0"""
         return torch.symeig(tensor, eigenvectors=True)
@@ -225,5 +229,5 @@ for name in (
 for name in ["kron", "moveaxis"]:
     PyTorchBackend.register_method(name, getattr(torch, name))
 
-for name in ["solve", "qr", "svd", "eigh", "lstsq"]:
+for name in ["solve", "qr", "svd", "eigh"]:
     PyTorchBackend.register_method(name, getattr(torch.linalg, name))
