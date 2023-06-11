@@ -546,7 +546,7 @@ def unimodality_prox(tensor):
     values = tl.tensor(
         tl.to_numpy((tensor - monotone_decreasing >= 0))
         * tl.to_numpy((tensor - monotone_increasing >= 0)),
-        **tl.context(tensor)
+        **tl.context(tensor),
     )
 
     sum_inc = tl.where(
