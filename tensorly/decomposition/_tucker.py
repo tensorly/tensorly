@@ -479,6 +479,7 @@ def non_negative_tucker_hals(
     pop_l2=False, #TODO doc
     partial=None,  # todo implement with identity trick? hack: use 1 instead of eye to avoid computations
     print_it=50,  # TODO put in all?
+    callback=None,
 ):
     r"""Non-negative Tucker decomposition with HALS
 
@@ -522,7 +523,8 @@ def non_negative_tucker_hals(
     algorithm : {'fista', 'active_set'}
         Non negative least square solution to update the core. 
         Default: 'fista'
-
+    callback : TODO
+        
     Returns
     -------
     factors : ndarray list
@@ -578,6 +580,12 @@ def non_negative_tucker_hals(
        SIAM REVIEW, vol. 51, n. 3, pp. 455-500, 2009.
     """
     rank = validate_tucker_rank(tl.shape(tensor), rank=rank)
+
+    if return_errors:
+        DeprecationWarning(
+            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
+        )
+
     n_modes = tl.ndim(tensor)
 
     if fixed_modes is None:
@@ -625,6 +633,24 @@ def non_negative_tucker_hals(
     norm_tensor = tl.norm(tensor, 2)
     rec_errors = []
     learning_rate = 1e-4 #TODO better default?
+
+    if callback is not None:
+        # Note: not in the returned errors
+        tucker_tensor = TuckerTensor((nn_core, nn_factors))
+        fit_loss = (tl.norm(tensor - tucker_tensor.to_tensor())**2)/2
+        # Adding the regs value to the loss
+        regs_loss = [
+            sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
+            + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
+            for i in range(n_modes)
+        ]
+        regs_loss += sparsity_coefficients[-1] * tl.sum(
+            tl.abs(nn_core)
+        ) + ridge_coefficients[-1] * tl.sum(nn_core**2)
+        regs_loss = tl.sum(regs_loss)
+        callback_error = (fit_loss + regs_loss)/norm_tensor**2  # loss !
+        callback(tucker_tensor, callback_error)
+
 
     # Iterate over one step of NTD
     for iteration in range(n_iter_max):
@@ -743,22 +769,31 @@ def non_negative_tucker_hals(
         
         # error computation #TODO optimize? TODO care about normalization or the tensor
         # TODO split rec error and loss?
-        rec_error = (
-            tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors))) ** 2
-        ) / 2  # / norm_tensor
-        regs = 0
-        if reg_is_used:
-            # Adding the regs value to the reconstruction error
-            regs = [
-                sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
-                + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
-                for i in range(n_modes)
-            ]
-            regs += sparsity_coefficients[-1] * tl.sum(
-                tl.abs(nn_core)
-            ) + ridge_coefficients[-1] * tl.sum(nn_core**2)
-            rec_error += tl.sum(regs)
-        rec_errors.append(rec_error/norm_tensor**2)
+        if (callback is not None) or return_errors:
+            rec_error = (
+                tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors))) ** 2
+            ) / 2  # / norm_tensor
+            regs = 0
+            if reg_is_used:
+                # Adding the regs value to the reconstruction error
+                regs = [
+                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
+                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
+                    for i in range(n_modes)
+                ]
+                regs += sparsity_coefficients[-1] * tl.sum(
+                    tl.abs(nn_core)
+                ) + ridge_coefficients[-1] * tl.sum(nn_core**2)
+                rec_error += tl.sum(regs)
+            rec_errors.append(rec_error/norm_tensor**2)
+
+            tucker_tensor = TuckerTensor((nn_core, nn_factors))
+            retVal = callback(tucker_tensor, rec_errors[-1])
+            if retVal is True:
+                if verbose:
+                    print("Received True from callback function. Exiting.")
+                break
+
 
         if not (iteration % print_it):
             if verbose:

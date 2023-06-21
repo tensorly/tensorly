@@ -210,6 +210,7 @@ def non_negative_parafac_hals(
     print_it=50,  # todo uniform across funs
     accelerate=None,  # todo implement
     inner_iter_max=50,  # todo implement, or have some option dictionary?
+    callback=None,
 ):
     """
     Non-negative CP decomposition via HALS
@@ -280,6 +281,7 @@ def non_negative_parafac_hals(
         Required >0 for convergence and numerical stability.
         Default: 0
     random_state : {None, int, np.random.RandomState}
+    callback: TODO
 
     Returns
     -------
@@ -296,6 +298,11 @@ def non_negative_parafac_hals(
            Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
            Neural Computation 24 (4): 1085-1105, 2012.
     """
+
+    if return_errors:
+        DeprecationWarning(
+            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
+        )
 
     weights, factors = initialize_cp(
         tensor,
@@ -336,6 +343,22 @@ def non_negative_parafac_hals(
 
     # Generating the mode update sequence
     modes = [mode for mode in range(n_modes) if mode not in fixed_modes]
+
+    if callback is not None:
+        # Note: not in the returned errors
+        cp_tensor = CPTensor((weights, factors))
+        fit_loss = tl.norm(tensor - cp_tensor.to_tensor())**2
+        regs_loss = (
+                sum(
+                    [
+                        sparsity_coefficients[i] * tl.sum(tl.abs(factors[i]))
+                        + ridge_coefficients[i] * tl.norm(factors[i]) ** 2
+                        for i in range(n_modes)
+                    ]
+                )
+            )
+        callback_error = (fit_loss + regs_loss)/norm_tensor**2  # loss !
+        callback(cp_tensor, callback_error)
 
     # initialisation - declare local variables
     rec_errors = []
@@ -445,6 +468,14 @@ def non_negative_parafac_hals(
                 )
             )
             rec_errors.append((rec_error + regs_loss[-1])/norm_tensor**2)  # loss !
+
+            if callback is not None:
+                cp_tensor = CPTensor((weights, factors))
+                retVal = callback(cp_tensor, rec_error)
+                if retVal is True:
+                    if verbose:
+                        print("Received True from callback function. Exiting.")
+                    break
 
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
