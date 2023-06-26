@@ -210,6 +210,7 @@ def non_negative_parafac_hals(
     print_it=50,  # todo uniform across funs
     accelerate=None,  # todo implement
     inner_iter_max=50,  # todo implement, or have some option dictionary?
+    inner_tol = 0.1, #todo doc, revise
     callback=None,
 ):
     """
@@ -368,41 +369,7 @@ def non_negative_parafac_hals(
     for iteration in range(n_iter_max):
 
         # --------------------------------------
-        # rescale
-        if not disable_rebalance:
 
-            # TODO factorize code
-            # 1. Put epsilon values to zero for scaling
-            if epsilon:
-                for i in range(n_modes):
-                    factors[i][factors[i] <= epsilon] = 0
-
-            # 2. rebalance column by column
-            for q in range(rank):  # TODO all at once?
-                # Check if one factor is below threshold
-                # in that case, scales will be nothing, all factors should be epsilon
-                thresh = tl.prod(
-                    [tl.sum(tl.abs(factors[i][:, q])) for i in range(n_modes)]
-                )
-                if thresh == 0:
-                    for submode in range(n_modes):
-                        factors[submode][:, q] = 0
-                else:
-                    regs = [
-                        sparsity_coefficients[i] * tl.sum(tl.abs(factors[i][:, q]))
-                        + ridge_coefficients[i] * tl.norm(factors[i][:, q]) ** 2
-                        for i in range(n_modes)
-                    ]
-                    scales = cp_opt_balance(tl.tensor(regs), hom_deg)
-                    for submode in range(n_modes):
-                        factors[submode][:, q] = (
-                            factors[submode][:, q] * scales[submode]
-                        )
-
-            # 3. place epsilon back
-            if epsilon:
-                for i in range(n_modes):
-                    factors[i][factors[i] <= epsilon] = epsilon
         # ---------------------------------------
 
         # One pass of least squares on each updated mode
@@ -432,7 +399,8 @@ def non_negative_parafac_hals(
                     sparsity_coefficient=sparsity_coefficients[mode],
                     ridge_coefficient=ridge_coefficients[mode],
                     exact=exact,
-                    epsilon=epsilon
+                    epsilon=epsilon,
+                    tol=inner_tol # TODO doc, remove?
                     # normalize=normalize_mode[mode]
                 )
                 factors[mode] = tl.transpose(nn_factor)
@@ -446,6 +414,46 @@ def non_negative_parafac_hals(
             # for faster error computation, affected by scaling!!
             if mode == modes[-1]:
                 iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
+
+            # ----------
+            # Scale here
+            # rescale
+            if not disable_rebalance:
+
+                # TODO factorize code
+                # 1. Put epsilon values to zero for scaling
+                if epsilon:
+                    for i in range(n_modes):
+                        factors[i][factors[i] <= epsilon] = 0
+
+                # 2. rebalance column by column
+                for q in range(rank):  # TODO all at once?
+                    # Check if one factor is below threshold
+                    # in that case, scales will be nothing, all factors should be epsilon
+                    thresh = tl.prod(
+                        [tl.sum(tl.abs(factors[i][:, q])) for i in range(n_modes)]
+                    )
+                    if thresh == 0:
+                        for submode in range(n_modes):
+                            factors[submode][:, q] = 0
+                    else:
+                        regs = [
+                            sparsity_coefficients[i] * tl.sum(tl.abs(factors[i][:, q]))
+                            + ridge_coefficients[i] * tl.norm(factors[i][:, q]) ** 2
+                            for i in range(n_modes)
+                        ]
+                        scales = cp_opt_balance(tl.tensor(regs), hom_deg)
+                        for submode in range(n_modes):
+                            factors[submode][:, q] = (
+                                factors[submode][:, q] * scales[submode]
+                            )
+
+                # 3. place epsilon back
+                if epsilon:
+                    for i in range(n_modes):
+                        factors[i][factors[i] <= epsilon] = epsilon
+
+            # ----------
 
             if normalize_factors and mode != modes[-1]:
                 if reg_is_used:
