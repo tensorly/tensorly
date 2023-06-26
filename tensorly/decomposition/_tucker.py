@@ -658,49 +658,6 @@ def non_negative_tucker_hals(
         # balance here?
         # ----------------------------
         # Scaling at beginning of inner loop
-        if not disable_rebalance:
-            ## Step 1: put true zeroes in factors and core, retain mask in memory
-            if epsilon:
-                for i in range(n_modes):
-                    # TODO nnmodes
-                    nn_factors[i][nn_factors[i] <= epsilon] = 0
-                nn_core[nn_core <= epsilon] = 0
-
-            # Step 2: compute regs, and rescale
-            # TODO Fix sinkhorn
-            # match rescale:
-            if rescale == "sinkhorn":
-                regs = [
-                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]), axis=0)
-                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2, axis=0)
-                    for i in range(n_modes)
-                ]
-                nn_factors, nn_core = tucker_implicit_sinkhorn_balancing(
-                    nn_factors,
-                    nn_core,
-                    regs,
-                    sparsity_coefficients[-1] + ridge_coefficients[-1],
-                    hom_deg,
-                    itermax=1,
-                )  # TODO check number
-            if rescale == "scalar":
-                regs = [
-                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
-                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
-                    for i in range(n_modes)
-                ]
-                regs += [
-                    sparsity_coefficients[-1] * tl.sum(tl.abs(nn_core))
-                    + ridge_coefficients[-1] * tl.sum(nn_core**2)
-                ]
-                nn_factors, nn_core, scales = tucker_implicit_scalar_balancing(
-                    nn_factors, nn_core, regs, hom_deg
-                )
-            # Step 3: impute epsilon in place of values in [0, epsilon]
-            if epsilon:
-                for i in range(n_modes):
-                    nn_factors[i][nn_factors[i] <= epsilon] = epsilon
-                nn_core[nn_core <= epsilon] = epsilon
         # -----------------------------
 
         # One pass of least squares on each updated mode
@@ -766,6 +723,49 @@ def non_negative_tucker_hals(
         )
 
         # balance here?
+        if not disable_rebalance:
+            ## Step 1: put true zeroes in factors and core, retain mask in memory
+            if epsilon:
+                for i in range(n_modes):
+                    # TODO nnmodes
+                    nn_factors[i][nn_factors[i] <= epsilon] = 0
+                nn_core[nn_core <= epsilon] = 0
+
+            # Step 2: compute regs, and rescale
+            # TODO Fix sinkhorn
+            # match rescale:
+            if rescale == "sinkhorn":
+                regs = [
+                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]), axis=0)
+                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2, axis=0)
+                    for i in range(n_modes)
+                ]
+                nn_factors, nn_core = tucker_implicit_sinkhorn_balancing(
+                    nn_factors,
+                    nn_core,
+                    regs,
+                    sparsity_coefficients[-1] + ridge_coefficients[-1],
+                    hom_deg,
+                    itermax=1,
+                )  # TODO check number
+            if rescale == "scalar":
+                regs = [
+                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
+                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
+                    for i in range(n_modes)
+                ]
+                regs += [
+                    sparsity_coefficients[-1] * tl.sum(tl.abs(nn_core))
+                    + ridge_coefficients[-1] * tl.sum(nn_core**2)
+                ]
+                nn_factors, nn_core, scales = tucker_implicit_scalar_balancing(
+                    nn_factors, nn_core, regs, hom_deg
+                )
+            # Step 3: impute epsilon in place of values in [0, epsilon]
+            if epsilon:
+                for i in range(n_modes):
+                    nn_factors[i][nn_factors[i] <= epsilon] = epsilon
+                nn_core[nn_core <= epsilon] = epsilon
         
         # error computation #TODO optimize? TODO care about normalization or the tensor
         # TODO split rec error and loss?
