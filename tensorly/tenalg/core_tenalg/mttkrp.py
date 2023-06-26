@@ -67,16 +67,29 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
         factors = [f for (i, f) in enumerate(factors) if i != mode]
         return tl_einsum(op, tensor, *factors)
     """
-    mttkrp_parts = []
-    weights, factors = cp_tensor
-    rank = T.shape(factors[0])[1]
-    for r in range(rank):
-        component = multi_mode_dot(
-            tensor, [T.conj(f[:, r]) for f in factors], skip=mode
-        )
-        mttkrp_parts.append(component)
+    # TODO: switch methods based on sparse or not
+    # or allow a user defined option to change the method.
+    # allowing this function to be computed externally would be a great help for connecting with HPC.
 
-    if weights is None:
-        return T.stack(mttkrp_parts, axis=1)
+    weights, factors = cp_tensor
+    unfolded = T.unfold(tensor, mode)
+    if weights:
+        kr_factors = weights*T.khatri_rao(factors, skip_matrix=mode)
     else:
-        return T.stack(mttkrp_parts, axis=1) * T.reshape(weights, (1, -1))
+        kr_factors = T.khatri_rao(factors, skip_matrix=mode)
+    mttkrp2 = T.dot(unfolded, kr_factors)
+    return mttkrp2
+
+    #mttkrp_parts = []
+    #weights, factors = cp_tensor
+    #rank = T.shape(factors[0])[1]
+    #for r in range(rank):
+        #component = multi_mode_dot(
+            #tensor, [T.conj(f[:, r]) for f in factors], skip=mode
+        #)
+        #mttkrp_parts.append(component)
+
+    #if weights is None:
+        #return T.stack(mttkrp_parts, axis=1)
+    #else:
+        #return T.stack(mttkrp_parts, axis=1) * T.reshape(weights, (1, -1))
