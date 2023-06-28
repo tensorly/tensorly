@@ -391,7 +391,7 @@ def svd_interface(
     mask : tensor, default is None.
         Array of booleans with the same shape as ``matrix``. Should be 0 where
         the values are missing and 1 everywhere else. None if nothing is missing.
-        Impuation is done by iterative low rank approximation, so n_eigenvecs should be provided
+        Imputation is done by iterative low rank approximation, so n_eigenvecs should be provided
         and be lower than the rank of the matrix.
     n_iter_mask_imputation : int, default is 5
         Number of repetitions to apply in missing value imputation.
