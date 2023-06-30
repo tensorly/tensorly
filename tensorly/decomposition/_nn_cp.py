@@ -348,7 +348,7 @@ def non_negative_parafac_hals(
     if callback is not None:
         # Note: not in the returned errors
         cp_tensor = CPTensor((weights, factors))
-        fit_loss = tl.norm(tensor - cp_tensor.to_tensor())**2
+        fit_loss = (1/2)*tl.norm(tensor - cp_tensor.to_tensor())**2
         regs_loss = (
                 sum(
                     [
@@ -372,6 +372,9 @@ def non_negative_parafac_hals(
 
         # ---------------------------------------
 
+        # store inner iters cnt
+        inner_iter = [0 for i in range(len(modes))]
+
         # One pass of least squares on each updated mode
         for mode in modes:
             # Computing Hadamard of cross-products
@@ -391,7 +394,7 @@ def non_negative_parafac_hals(
 
             if mode in nn_modes:
                 # Call the hals resolution with nnls, optimizing the current mode
-                nn_factor, _, _, _ = hals_nnls(
+                nn_factor, _, inner_iter[mode], _ = hals_nnls(
                     tl.transpose(mttkrp),
                     pseudo_inverse,
                     tl.transpose(factors[mode]),
@@ -479,7 +482,7 @@ def non_negative_parafac_hals(
 
             if callback is not None:
                 cp_tensor = CPTensor((weights, factors))
-                retVal = callback(cp_tensor, rec_error)
+                retVal = callback(cp_tensor, rec_errors[-1], inner_iter=inner_iter)
                 if retVal is True:
                     if verbose:
                         print("Received True from callback function. Exiting.")
