@@ -1,5 +1,7 @@
 from .n_mode_product import multi_mode_dot
+from ._khatri_rao import khatri_rao
 from ... import backend as T
+from ...base import unfold
 
 # Author: Jean Kossaifi
 
@@ -72,12 +74,11 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     # allowing this function to be computed externally would be a great help for connecting with HPC.
 
     weights, factors = cp_tensor
-    unfolded = T.unfold(tensor, mode)
-    if weights:
-        kr_factors = weights*T.khatri_rao(factors, skip_matrix=mode)
+    if weights is None:
+        kr_factors = weights*khatri_rao(factors, skip_matrix=mode)
     else:
-        kr_factors = T.khatri_rao(factors, skip_matrix=mode)
-    mttkrp2 = T.dot(unfolded, kr_factors)
+        kr_factors = khatri_rao(factors, skip_matrix=mode)
+    mttkrp2 = T.dot(unfold(tensor, mode), kr_factors)
     return mttkrp2
 
     #mttkrp_parts = []
