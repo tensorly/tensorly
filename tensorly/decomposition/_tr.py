@@ -1,3 +1,5 @@
+import numpy as np
+
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..base import matricize
@@ -268,6 +270,242 @@ def tensor_ring_als(
     return tr_decomp
 
 
+def compute_lev_score_dist(matrix):
+    """Compute leverage score distribution over the rows of `matrix`
+
+    Parameters
+    ----------
+    matrix : tl.tensor
+        As the parameter name implies, `matrix` needs to be a tl.tensor with two modes.
+
+    Returns
+    -------
+    lev_score_dist : tl.tensor
+        The leverage scores in a vector in tl.tensor format. The dtype will be
+        tl.float64, even if the input `matrix` is lower precision.
+    """
+
+    U, S, _ = tl.svd(matrix, full_matrices=False)
+    mat_dtype = tl.context(matrix)["dtype"]
+    rank_cutoff = tl.max(S) * max(matrix.shape) * tl.eps(mat_dtype)
+    num_rank = int(tl.max(tl.where(S > rank_cutoff)[0]))  # int(...) needed for mxnet
+    lev_score_dist = tl.sum(U[:, :num_rank] ** 2, axis=1) / tl.tensor(
+        num_rank, dtype=mat_dtype
+    )
+    if tl.context(lev_score_dist)["dtype"] != tl.float64:
+        # rng.choice in tensor_ring_als_sampled can complain that probability doesn't
+        # sum to 1 if single precision is used for probability vector, so adjusting for
+        # that here.
+        lev_score_dist = tl.tensor(lev_score_dist, dtype=tl.float64)
+        lev_score_dist /= tl.sum(lev_score_dist)
+    return lev_score_dist
+
+
+def tensor_ring_als_sampled(
+    tensor,
+    rank,
+    n_samples,
+    n_iter_max=100,
+    tol=1e-6,
+    randomized_error=False,
+    random_state=None,
+    verbose=False,
+    callback=None,
+):
+    """Tensor ring decomposition via sampled alternating least squares (ALS)
+
+    Computes a rank-`rank` tensor ring decomposition of `tensor` using the
+    TR-ALS-Sampled algorithm proposed in [1]_. The algorithm applies random sampling to
+    reduce the size of the least squares problems that arise in the ALS algorithm,
+    thereby making the decomposition faster at the expense of a potentially less
+    accurate result.
+
+    Parameters
+    ----------
+    tensor : tl.tensor
+    rank : Union[int, List[int]]
+        The rank of the decomposition. If `rank` is an int, then all ranks will be the
+        same and equal to `rank`. If `rank` is a list, then the i-th core will be of
+        size rank[i]-by-shape[i]-by-rank[i+1], where shape[i] is the dimension of the
+        i-th mode of `tensor`.
+    n_samples : Union[int, List[int]]
+        The number of rows to sample for each mode. If `n_samples` is an int, then all
+        modes will use `n_samples` samples. If `n_samples` is a list, then
+        `n_samples[i]` will be used when updating the i-th core.
+    n_iter_max : int, default is 100
+        Maximum number of ALS iterations.
+    tol : float, default 1e-6
+        The algorithm is terminated when the change in the relative reconstruction error
+        is less than `tol`.
+    randomized_error : bool, default False
+        If True, a randomized estimate will be used when computing the residual at the
+        end of each iteration. If False, then an exact computation will be used instead
+        which is slower but more accurate.
+    random_state : {None, int, np.random.RandomState}
+        Used to set the random seed in the algorithm.
+    verbose : bool, default False
+        If True, the algorithm will make some additional print outs.
+    callback : {None, Callable[[tl.tr_tensor.TRTensor, float], {None, bool}]}, default None
+        A callback function which can be used for, e.g., logging the per-iteration
+        error. Such a function takes two inputs: A tensor ring decomposition and a float
+        which indicates the relative reconstruction error between `tensor` and the
+        inputted TRTensor. It can return a bool which can be used to control when the
+        ALS algorithm terminates.
+
+    Returns
+    -------
+    tr_decomp : tl.tr_tensor.TRTensor
+        The tensor ring decomposition computed by the algorithm.
+
+    References
+    ----------
+    .. [1] O. A. Malik, S. Becker, "A Sampling-Based Method for Tensor Ring
+           Decomposition", Proceedings of the 38th International Conference on Machine
+           Learning (ICML), PMLR 139:7400-7411, 2021.
+    """
+
+    shape = tl.shape(tensor)
+    rank = validate_tr_rank(shape, rank=rank)
+    n_dim = len(shape)
+    rng = tl.check_random_state(random_state)
+    if isinstance(n_samples, int):
+        n_samples = [n_samples] * n_dim
+    if tol > 0 or callback:
+        tensor_norm = tl.norm(tensor)
+
+    # Create index orderings for computation of sketched design matrix
+    idx_ordering = [
+        [n for n in range(dim + 1, n_dim)] + [n for n in range(dim)]
+        for dim in range(n_dim)
+    ]
+
+    # Randomly initialize decomposition cores
+    tr_decomp = tl.random.random_tr(shape, rank, random_state=rng, **tl.context(tensor))
+
+    # Compute initial sampling distributions
+    sampling_probs = [None]
+    for dim in range(1, n_dim):
+        lev_score_dist = compute_lev_score_dist(matricize(tr_decomp[dim], [1], [0, 2]))
+        sampling_probs.append(lev_score_dist)
+
+    # Run callback function if provided
+    if callback:
+        rel_error = tl.norm(tl.tr_to_tensor(tr_decomp) - tensor) / tensor_norm
+        callback(tr_decomp, rel_error)
+
+    # Main loop
+    rec_errors = []
+    for iter in range(n_iter_max):
+        for dim in range(n_dim):
+            # Randomly draw row indices
+            samples = [
+                rng.choice(
+                    range(shape[n]),
+                    size=(n_samples[dim]),
+                    p=tl.to_numpy(sampling_probs[n]),
+                )
+                for n in range(n_dim)
+                if n != dim
+            ]
+
+            # Combine repeated samples
+            samples_unq, samples_cnt = np.unique(samples, axis=1, return_counts=True)
+            samples_unq = samples_unq.tolist()
+            samples_unq.insert(dim, slice(None, None, None))
+            samples_unq = tuple(samples_unq)
+            samples_cnt = tl.tensor(samples_cnt, **tl.context(tensor))
+
+            # Compute row rescaling factors (see discussion in Sec 4.1 in paper by
+            # Larsen & Kolda (2022), DOI: 10.1137/21M1441754)
+            rescaling = samples_cnt / n_samples[dim]
+            for n in range(n_dim):
+                if n != dim:
+                    # Converting samples_unq[n] to a tl.tensor is necessary for indexing
+                    # to work with jax, which doesn't allow indexing with lists; see
+                    # https://github.com/google/jax/issues/4564. The dtype needs to be
+                    # explicitly set to an int type, otherwise tl.tensor does the
+                    # conversion to floating type which causes issues with the pytorch
+                    # backend.
+                    rescaling /= sampling_probs[n][
+                        tl.tensor(samples_unq[n], dtype=tl.int64)
+                    ]
+            rescaling = tl.sqrt(rescaling)
+
+            # Sample core tensors
+            sampled_cores = [
+                tr_decomp[i][:, samples_unq[i], :] for i in idx_ordering[dim]
+            ]
+
+            # Construct sketched design matrix
+            sampled_subchain_tensor = sampled_cores[0]
+            for i in range(1, len(sampled_cores)):
+                sampled_subchain_tensor = tl.tenalg.tensordot(
+                    sampled_subchain_tensor,
+                    sampled_cores[i],
+                    modes=(2, 0),
+                    batched_modes=(1, 1),
+                )
+            sampled_design_mat = matricize(sampled_subchain_tensor, [1], [2, 0])
+            sampled_design_mat = tl.einsum("i,ij->ij", rescaling, sampled_design_mat)
+
+            # Construct sampled right-hand side
+            sampled_tensor_unf = tensor[samples_unq]
+            if dim == 0:
+                sampled_tensor_unf = tl.transpose(sampled_tensor_unf)
+            sampled_tensor_unf = tl.einsum("i,ij->ij", rescaling, sampled_tensor_unf)
+
+            # Solve sampled least squares problem directly
+            sol, _ = tl.lstsq(sampled_design_mat, sampled_tensor_unf)
+
+            # Update core
+            tr_decomp[dim] = tl.transpose(
+                tl.reshape(sol, (rank[dim], rank[dim + 1], shape[dim])),
+                [0, 2, 1],
+            )
+
+            # Compute sampling distribution for updated core
+            sampling_probs[dim] = compute_lev_score_dist(tl.transpose(sol))
+
+        # Compute relative error if necessary
+        if tol > 0 or callback:
+            if randomized_error:
+                error = tl.norm(tl.matmul(sampled_design_mat, sol) - sampled_tensor_unf)
+            else:
+                error = tl.norm(tl.tr_to_tensor(tr_decomp) - tensor)
+            rel_error = error / tensor_norm
+            rec_errors.append(rel_error)
+            if iter >= 1:
+                rel_error_decrease = rec_errors[-2] - rec_errors[-1]
+            if verbose:
+                if iter >= 1:
+                    print(
+                        f"Iteration {iter+1} finished. Reconstruction error: {rel_error}, decrease = {rel_error_decrease}, unnormalized = {error}"
+                    )
+                else:
+                    print(
+                        f"Iteration {iter+1} finished. Reconstruction error: {rel_error}, unnormalized = {error}"
+                    )
+        elif verbose:
+            print(f"Iteration {iter+1} finished.")
+
+        # Run callback function if provided
+        if callback:
+            callback_retVal = callback(tr_decomp, rel_error)
+            if callback_retVal:
+                if verbose:
+                    print("Received True from callback function. Exiting.")
+                break
+
+        # Check convergence
+        if tol > 0 and iter >= 1:
+            if rel_error_decrease < tol:
+                if verbose:
+                    print(f"tensor_ring_als converged after {iter} iterations.")
+                break
+
+    return tr_decomp
+
+
 class TensorRing(DecompositionMixin):
     """Tensor Ring decomposition via recursive SVD
 
@@ -416,6 +654,127 @@ class TensorRingALS(DecompositionMixin):
             ls_solve=self.ls_solve,
             n_iter_max=self.n_iter_max,
             tol=self.tol,
+            random_state=self.random_state,
+            verbose=self.verbose,
+            callback=self.callback,
+        )
+        self.decomposition_ = tr_decomp
+        return self.decomposition_
+
+
+class TensorRingALSSampled(DecompositionMixin):
+    """A class wrapper for the tensor_ring_als_sampled function
+
+    Attributes
+    ----------
+    rank : Union[int, List[int]]
+        The rank of the decomposition. If `rank` is an int, then all ranks will be the
+        same and equal to `rank`. If `rank` is a list, then the i-th core will be of
+        size rank[i]-by-shape[i]-by-rank[i+1], where shape[i] is the dimension of the
+        i-th mode of `tensor`.
+    n_samples : Union[int, List[int]]
+        The number of rows to sample for each mode. If `n_samples` is an int, then all
+        modes will use `n_samples` samples. If `n_samples` is a list, then
+        `n_samples[i]` will be used when updating the i-th core.
+    n_iter_max : int
+        Maximum number of ALS iterations.
+    tol : float
+        The algorithm is terminated when the change in the relative reconstruction error
+        is less than `tol`.
+    randomized_error : bool
+        If True, a randomized estimate will be used when computing the residual at the
+        end of each iteration. If False, then an exact computation will be used instead
+        which is slower but more accurate.
+    random_state : {None, int, np.random.RandomState}
+        Used to set the random seed in the algorithm.
+    verbose : bool
+        If True, the algorithm will make some additional print outs.
+    callback : {None, Callable[[tl.tr_tensor.TRTensor, float], {None, bool}]}
+        A callback function which can be used for, e.g., logging the per-iteration
+        error. Such a function takes two inputs: A tensor ring decomposition and a float
+        which indicates the relative reconstruction error between `tensor` and the
+        inputted TRTensor. It can return a bool which can be used to control when the
+        ALS algorithm terminates.
+
+    Methods
+    -------
+    fit_transformation(tensor)
+        Computes the decomposition of `tensor`.
+    """
+
+    def __init__(
+        self,
+        rank,
+        n_samples,
+        n_iter_max=100,
+        tol=1e-6,
+        randomized_error=False,
+        random_state=None,
+        verbose=False,
+        callback=None,
+    ):
+        """
+        Parameters
+        ----------
+        rank : Union[int, List[int]]
+            The rank of the decomposition. If `rank` is an int, then all ranks will be the
+            same and equal to `rank`. If `rank` is a list, then the i-th core will be of
+            size rank[i]-by-shape[i]-by-rank[i+1], where shape[i] is the dimension of the
+            i-th mode of `tensor`.
+        n_samples : Union[int, List[int]]
+            The number of rows to sample for each mode. If `n_samples` is an int, then all
+            modes will use `n_samples` samples. If `n_samples` is a list, then
+            `n_samples[i]` will be used when updating the i-th core.
+        n_iter_max : int, default is 100
+            Maximum number of ALS iterations.
+        tol : float, default 1e-6
+            The algorithm is terminated when the change in the relative reconstruction error
+            is less than `tol`.
+        randomized_error : bool, default False
+            If True, a randomized estimate will be used when computing the residual at the
+            end of each iteration. If False, then an exact computation will be used instead
+            which is slower but more accurate.
+        random_state : {None, int, np.random.RandomState}
+            Used to set the random seed in the algorithm.
+        verbose : bool, default False
+            If True, the algorithm will make some additional print outs.
+        callback : {None, Callable[[tl.tr_tensor.TRTensor, float], {None, bool}]}, default None
+            A callback function which can be used for, e.g., logging the per-iteration
+            error. Such a function takes two inputs: A tensor ring decomposition and a float
+            which indicates the relative reconstruction error between `tensor` and the
+            inputted TRTensor. It can return a bool which can be used to control when the
+            ALS algorithm terminates.
+        """
+
+        self.rank = rank
+        self.n_samples = n_samples
+        self.n_iter_max = n_iter_max
+        self.tol = tol
+        self.randomized_error = randomized_error
+        self.random_state = random_state
+        self.verbose = verbose
+        self.callback = callback
+
+    def fit_transform(self, tensor):
+        """Computes the decomposition of `tensor`
+
+        Parameters
+        ----------
+        tensor : tl.tensor
+
+        Returns
+        -------
+        decomposition_ : tl.tr_tensor.TRTensor
+            The tensor ring decomposition computed by the algorithm.
+        """
+
+        tr_decomp = tensor_ring_als_sampled(
+            tensor=tensor,
+            rank=self.rank,
+            n_samples=self.n_samples,
+            n_iter_max=self.n_iter_max,
+            tol=self.tol,
+            randomized_error=self.randomized_error,
             random_state=self.random_state,
             verbose=self.verbose,
             callback=self.callback,

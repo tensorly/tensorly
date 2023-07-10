@@ -15,7 +15,14 @@ from ._tucker import (
 from .robust_decomposition import robust_pca
 from ._tt import tensor_train, tensor_train_matrix
 from ._tt import TensorTrain, TensorTrainMatrix
-from ._tr import tensor_ring, tensor_ring_als, TensorRing, TensorRingALS
+from ._tr import (
+    tensor_ring,
+    tensor_ring_als,
+    tensor_ring_als_sampled,
+    TensorRing,
+    TensorRingALS,
+    TensorRingALSSampled,
+)
 from ._parafac2 import parafac2, Parafac2
 from ._symmetric_cp import (
     symmetric_parafac_power_iteration,
