@@ -239,9 +239,10 @@ def test_tensor_ring_als_sampled(
         assert_array_almost_equal(tr_decomp1[i], tr_decomp2[i])
 
 
+@pytest.mark.parametrize("uniform_sampling", [False, True])
 @pytest.mark.parametrize("randomized_error", [False, True])
 @pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
-def test_tensor_ring_als_sampled_large_decomp(randomized_error):
+def test_tensor_ring_als_sampled_large_decomp(uniform_sampling, randomized_error):
     # The point of this test is to attempt decomposing a sligthly larger tensor than the
     # test in test_tensor_ring_als_sampled. The tensor in the present function is
     # approaching a size where we can expect sampling to yield an accurate result even
@@ -270,6 +271,7 @@ def test_tensor_ring_als_sampled_large_decomp(randomized_error):
         n_samples=n_samples,
         n_iter_max=n_iter_max,
         tol=0,
+        uniform_sampling=uniform_sampling,
         randomized_error=randomized_error,
         random_state=rng,
         callback=callback,

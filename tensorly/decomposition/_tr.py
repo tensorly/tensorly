@@ -307,6 +307,7 @@ def tensor_ring_als_sampled(
     n_samples,
     n_iter_max=100,
     tol=1e-6,
+    uniform_sampling=False,
     randomized_error=False,
     random_state=None,
     verbose=False,
@@ -337,6 +338,9 @@ def tensor_ring_als_sampled(
     tol : float, default 1e-6
         The algorithm is terminated when the change in the relative reconstruction error
         is less than `tol`.
+    uniform_sampling : bool, default False
+        If True, uniform sampling is used instead of leverage score sampling. Uniform
+        sampling is expected to be less accurate, but a bit faster.
     randomized_error : bool, default False
         If True, a randomized estimate will be used when computing the residual at the
         end of each iteration. If False, then an exact computation will be used instead
@@ -383,10 +387,21 @@ def tensor_ring_als_sampled(
     tr_decomp = tl.random.random_tr(shape, rank, random_state=rng, **tl.context(tensor))
 
     # Compute initial sampling distributions
-    sampling_probs = [None]
-    for dim in range(1, n_dim):
-        lev_score_dist = compute_lev_score_dist(matricize(tr_decomp[dim], [1], [0, 2]))
-        sampling_probs.append(lev_score_dist)
+    if uniform_sampling:
+        sampling_probs = [
+            np.ones(shape=shape[dim]) / shape[dim] for dim in range(n_dim)
+        ]
+        samp_prob_sqrt_inv = [
+            np.prod(np.sqrt([shape[n] for n in range(n_dim) if n != dim]))
+            for dim in range(n_dim)
+        ]
+    else:
+        sampling_probs = [None]
+        for dim in range(1, n_dim):
+            lev_score_dist = compute_lev_score_dist(
+                matricize(tr_decomp[dim], [1], [0, 2])
+            )
+            sampling_probs.append(lev_score_dist)
 
     # Run callback function if provided
     if callback:
@@ -417,19 +432,21 @@ def tensor_ring_als_sampled(
 
             # Compute row rescaling factors (see discussion in Sec 4.1 in paper by
             # Larsen & Kolda (2022), DOI: 10.1137/21M1441754)
-            rescaling = samples_cnt / n_samples[dim]
-            for n in range(n_dim):
-                if n != dim:
-                    # Converting samples_unq[n] to a tl.tensor is necessary for indexing
-                    # to work with jax, which doesn't allow indexing with lists; see
-                    # https://github.com/google/jax/issues/4564. The dtype needs to be
-                    # explicitly set to an int type, otherwise tl.tensor does the
-                    # conversion to floating type which causes issues with the pytorch
-                    # backend.
-                    rescaling /= sampling_probs[n][
-                        tl.tensor(samples_unq[n], dtype=tl.int64)
-                    ]
-            rescaling = tl.sqrt(rescaling)
+            rescaling = tl.sqrt(samples_cnt / n_samples[dim])
+            if uniform_sampling:
+                rescaling *= samp_prob_sqrt_inv[dim]
+            else:
+                for n in range(n_dim):
+                    if n != dim:
+                        # Converting samples_unq[n] to a tl.tensor is necessary for indexing
+                        # to work with jax, which doesn't allow indexing with lists; see
+                        # https://github.com/google/jax/issues/4564. The dtype needs to be
+                        # explicitly set to an int type, otherwise tl.tensor does the
+                        # conversion to floating type which causes issues with the pytorch
+                        # backend.
+                        rescaling /= tl.sqrt(
+                            sampling_probs[n][tl.tensor(samples_unq[n], dtype=tl.int64)]
+                        )
 
             # Sample core tensors
             sampled_cores = [
@@ -464,7 +481,8 @@ def tensor_ring_als_sampled(
             )
 
             # Compute sampling distribution for updated core
-            sampling_probs[dim] = compute_lev_score_dist(tl.transpose(sol))
+            if not uniform_sampling:
+                sampling_probs[dim] = compute_lev_score_dist(tl.transpose(sol))
 
         # Compute relative error if necessary
         if tol > 0 or callback:
@@ -681,6 +699,9 @@ class TensorRingALSSampled(DecompositionMixin):
     tol : float
         The algorithm is terminated when the change in the relative reconstruction error
         is less than `tol`.
+    uniform_sampling : bool
+        If True, uniform sampling is used instead of leverage score sampling. Uniform
+        sampling is expected to be less accurate, but a bit faster.
     randomized_error : bool
         If True, a randomized estimate will be used when computing the residual at the
         end of each iteration. If False, then an exact computation will be used instead
@@ -708,6 +729,7 @@ class TensorRingALSSampled(DecompositionMixin):
         n_samples,
         n_iter_max=100,
         tol=1e-6,
+        uniform_sampling=False,
         randomized_error=False,
         random_state=None,
         verbose=False,
@@ -730,6 +752,9 @@ class TensorRingALSSampled(DecompositionMixin):
         tol : float, default 1e-6
             The algorithm is terminated when the change in the relative reconstruction error
             is less than `tol`.
+        uniform_sampling : bool, default False
+            If True, uniform sampling is used instead of leverage score sampling. Uniform
+            sampling is expected to be less accurate, but a bit faster.
         randomized_error : bool, default False
             If True, a randomized estimate will be used when computing the residual at the
             end of each iteration. If False, then an exact computation will be used instead
@@ -750,6 +775,7 @@ class TensorRingALSSampled(DecompositionMixin):
         self.n_samples = n_samples
         self.n_iter_max = n_iter_max
         self.tol = tol
+        self.uniform_sampling = uniform_sampling
         self.randomized_error = randomized_error
         self.random_state = random_state
         self.verbose = verbose
@@ -774,6 +800,7 @@ class TensorRingALSSampled(DecompositionMixin):
             n_samples=self.n_samples,
             n_iter_max=self.n_iter_max,
             tol=self.tol,
+            uniform_sampling=self.uniform_sampling,
             randomized_error=self.randomized_error,
             random_state=self.random_state,
             verbose=self.verbose,
