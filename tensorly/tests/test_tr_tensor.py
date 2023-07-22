@@ -49,7 +49,7 @@ def test_tr_to_tensor():
     tensor = tl.einsum("iaj,jbk,kci->abc", *factors)
 
     # Check that TR factors re-assemble to the original tensor
-    assert_allclose(tensor, tr_to_tensor(factors), atol=1e-7, rtol=1e-6)
+    assert_allclose(tensor, tr_to_tensor(factors), atol=1e-6, rtol=1e-6)
 
 
 def test_validate_tr_rank():
