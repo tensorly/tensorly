@@ -1,5 +1,5 @@
+from math import prod
 from ..tenalg_utils import _validate_contraction_modes
-from ...utils import prod
 import tensorly as tl
 
 

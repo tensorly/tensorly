@@ -13,17 +13,15 @@ jobs:
         python-version: ['3.11']
         include:
           - BACKEND: 'numpy'
-            python-version: '3.7'
-          - BACKEND: 'numpy'
-            python-version: '3.9'
+            python-version: '3.8'
           - BACKEND: 'numpy'
             python-version: '3.9'
             TENSORLY_TENALG_BACKEND: ['einsum']
           - BACKEND: 'jax'
-            python-version: '3.10'
+            python-version: '3.11'
             TENSORLY_TENALG_BACKEND: ['einsum']
           - BACKEND: 'tensorflow'
-            python-version: '3.10'
+            python-version: '3.11'
             TENSORLY_TENALG_BACKEND: ['einsum']
 
     steps:
