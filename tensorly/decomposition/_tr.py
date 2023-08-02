@@ -216,7 +216,7 @@ def tensor_ring_als(
 
             if ls_solve == "lstsq":
                 # Solve least squares problem directly
-                sol = tl.lstsq(design_mat, tensor_unf)[0]
+                sol, *_ = tl.lstsq(design_mat, tensor_unf)
 
             elif ls_solve == "normal_eq":
                 # Solve least squares problem via normal equations

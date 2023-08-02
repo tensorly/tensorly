@@ -407,21 +407,21 @@ def test_lstsq():
     # test dimensions
     a = T.randn((m, n))
     b = T.randn((m, k))
-    ret = T.lstsq(a, b)
-    assert_equal(ret[0].shape, (n, k))
+    x, res, *_ = T.lstsq(a, b)
+    assert_equal(x.shape, (n, k))
 
     # test residuals
-    assert_array_almost_equal(T.norm(T.dot(a, ret[0]) - b, axis=0) ** 2, ret[1])
+    assert_array_almost_equal(T.norm(T.dot(a, x) - b, axis=0) ** 2, res)
     rank = 2
     a = T.dot(T.randn((m, rank)), T.randn((rank, n)))
-    res = T.lstsq(a, b)[1]
+    _, res, *_ = T.lstsq(a, b)
     assert_array_almost_equal(tl.tensor([]), res)
 
     # test least squares solution
     a = T.randn((m, n))
     x = T.randn((n,))
     b = T.dot(a, x)
-    x_lstsq = T.lstsq(a, b)[0]
+    x_lstsq, *_ = T.lstsq(a, b)
     assert_array_almost_equal(T.dot(a, x_lstsq), b, decimal=5)
 
 
