@@ -119,15 +119,17 @@ def make_svd_non_negative(tensor, U, S, V, nntype=True):
 
     if nntype == "nndsvd":
         W = soft_thresholding(W, eps)
+        H = soft_thresholding(H, eps)
     elif nntype == "nndsvda":
         avg = tl.mean(tensor)
         W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W)) * avg, W)
+        H = tl.where(H < eps, tl.ones(tl.shape(H), **tl.context(H)) * avg, H)
     else:
         raise ValueError(
             f'Invalid nntype parameter: got {nntype} instead of one of ("nndsvd", "nndsvda")'
         )
 
-    return W
+    return W, H
 
 
 def randomized_range_finder(A, n_dims, n_iter=2, random_state=None):
@@ -432,6 +434,6 @@ def svd_interface(
         U, V = svd_flip(U, V, u_based_decision=u_based_flip_sign)
 
     if non_negative is not False and non_negative is not None:
-        U = make_svd_non_negative(matrix, U, S, V, non_negative)
+        U, V = make_svd_non_negative(matrix, U, S, V, non_negative)
 
     return U, S, V
