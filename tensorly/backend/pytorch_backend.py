@@ -190,9 +190,8 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         tensor.index_put_(index, values)
 
     @staticmethod
-    def lstsq(a, b):
-        x, residuals, _, _ = torch.linalg.lstsq(a, b, rcond=None, driver="gelsd")
-        return x, residuals
+    def lstsq(a, b, rcond=None, driver="gelsd"):
+        return torch.linalg.lstsq(a, b, rcond=rcond, driver=driver)
 
     @staticmethod
     def eigh(tensor):

@@ -2,7 +2,7 @@ import numpy as np
 
 import tensorly as tl
 from ..random import random_tr
-from ..testing import assert_array_almost_equal, assert_equal, assert_raises, assert_
+from ..testing import assert_allclose, assert_equal, assert_raises, assert_
 from ..tr_tensor import tr_to_tensor, _validate_tr_tensor, _tr_n_param, validate_tr_rank
 
 
@@ -46,24 +46,10 @@ def test_tr_to_tensor():
     factors = [tl.randn((2, 4, 3)), tl.randn((3, 5, 2)), tl.randn((2, 6, 2))]
 
     # Create tensor
-    tensor = tl.zeros((4, 5, 6))
-
-    for i in range(4):
-        for j in range(5):
-            for k in range(6):
-                product = tl.dot(
-                    tl.dot(factors[0][:, i, :], factors[1][:, j, :]),
-                    factors[2][:, k, :],
-                )
-                # TODO: add trace to backend instead of this
-                tensor = tl.index_update(
-                    tensor,
-                    tl.index[i, j, k],
-                    tl.sum(product * tl.eye(product.shape[0])),
-                )
+    tensor = tl.einsum("iaj,jbk,kci->abc", *factors)
 
     # Check that TR factors re-assemble to the original tensor
-    assert_array_almost_equal(tensor, tr_to_tensor(factors))
+    assert_allclose(tensor, tr_to_tensor(factors), atol=1e-6, rtol=1e-6)
 
 
 def test_validate_tr_rank():

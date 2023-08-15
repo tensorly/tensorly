@@ -243,7 +243,7 @@ def test_increasing_variance_synthetic():
 
 
 @skip_if_backend
-def test_transform():
+def test_transform_same_factors():
     """Tests transform the original X and Y will give the first factors"""
     X, Y, _, _ = _get_pls_dataset((20, 18, 14, 13), 6, 17)
 

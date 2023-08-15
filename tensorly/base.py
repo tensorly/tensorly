@@ -1,5 +1,5 @@
+from math import prod
 from . import backend as tl
-from .utils import prod
 
 
 def tensor_to_vec(tensor):

@@ -53,6 +53,7 @@ backend_array = [
     "sqrt",
     "abs",
     "min",
+    "maximum",
     "zeros_like",
 ]
 
@@ -502,6 +503,22 @@ class Backend(object):
         return tensor.any(axis=axis, keepdims=keepdims, **kwargs)
 
     @staticmethod
+    def maximum(x1, x2, *args, **kwargs):
+        """Element-wise maximum of array elements.
+
+        Parameters
+        ----------
+        x1, x2 : tensor
+            The arrays holding the elements to be compared.
+
+        Returns
+        -------
+        tensor
+            The maximum of x1 and x2, element-wise.
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def clip(tensor, a_min=None, a_max=None):
         """Clip the values of a tensor to within an interval.
 
@@ -527,30 +544,36 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
-    def max(tensor):
+    def max(tensor, axis=None):
         """The max value in a tensor.
 
         Parameters
         ----------
         tensor : tensor
+        axis : int or None, default is None
+            optional, indicates an axis along which to check for non-zero values
 
         Returns
         -------
-        scalar
+        scalar or tensor
+            If axis is None, returns a scalar. Otherwise, returns a tensor of scalars.
         """
         raise NotImplementedError
 
     @staticmethod
-    def min(tensor):
+    def min(tensor, axis=None):
         """The min value in a tensor.
 
         Parameters
         ----------
         tensor : tensor
+        axis : int or None, default is None
+            optional, indicates an axis along which to check for non-zero values
 
         Returns
         -------
-        scalar
+        scalar or tensor
+            If axis is None, returns a scalar. Otherwise, returns a tensor of scalars.
         """
         raise NotImplementedError
 

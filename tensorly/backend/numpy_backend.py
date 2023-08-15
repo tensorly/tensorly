@@ -34,11 +34,6 @@ class NumpyBackend(Backend, backend_name="numpy"):
         return np.clip(tensor, a_min, a_max)
 
     @staticmethod
-    def lstsq(a, b):
-        x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None)
-        return x, residuals
-
-    @staticmethod
     def logsumexp(tensor, axis=0):
         return scipy.special.logsumexp(tensor, axis=axis)
 
@@ -77,7 +72,7 @@ for name in (
 ):
     NumpyBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "svd", "eigh"]:
+for name in ["solve", "qr", "svd", "eigh", "lstsq"]:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
 
 for name in ["digamma"]:

@@ -92,11 +92,6 @@ class MxnetBackend(Backend, backend_name="mxnet"):
         return U, S, V
 
     @staticmethod
-    def lstsq(a, b):
-        x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None)
-        return x, residuals
-
-    @staticmethod
     def logsumexp(x, axis=0):
         max_x = np.max(x, axis=axis, keepdims=True)
         return np.squeeze(
@@ -143,5 +138,5 @@ for name in (
 ):
     MxnetBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "eigh"]:
+for name in ["solve", "qr", "eigh", "lstsq"]:
     MxnetBackend.register_method(name, getattr(np.linalg, name))

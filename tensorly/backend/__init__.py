@@ -1,6 +1,6 @@
 import warnings
 
-from .core import Backend
+from .core import Backend, backend_array
 import importlib
 import os
 import threading
@@ -33,9 +33,7 @@ class dynamically_dispatched_class_attribute(object):
 
 class BackendManager(types.ModuleType):
     _functions = [
-        "reshape",
         "moveaxis",
-        "any",
         "trace",
         "shape",
         "ndim",
@@ -43,29 +41,20 @@ class BackendManager(types.ModuleType):
         "copy",
         "transpose",
         "arange",
-        "ones",
-        "zeros",
-        "zeros_like",
         "eye",
         "kron",
         "concatenate",
         "max",
-        "min",
-        "matmul",
         "all",
         "mean",
         "sum",
-        "cumsum",
         "prod",
         "sign",
-        "abs",
-        "sqrt",
         "argmin",
         "argmax",
         "stack",
         "conj",
         "diag",
-        "einsum",
         "log",
         "log2",
         "dot",
@@ -94,7 +83,6 @@ class BackendManager(types.ModuleType):
         "is_tensor",
         "argsort",
         "flip",
-        "count_nonzero",
         "sin",
         "cos",
         "tan",
@@ -115,7 +103,7 @@ class BackendManager(types.ModuleType):
         "atanh",
         "partial_svd",
         "logsumexp",
-    ]
+    ] + backend_array
     _attributes = [
         "int64",
         "int32",
