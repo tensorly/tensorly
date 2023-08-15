@@ -29,7 +29,6 @@ jobs:
         cache: "pip"
         cache-dependency-path: |
           requirements.txt
-          doc/requirements_doc.txt
 
     - name: Install dependencies and backend ${{matrix.BACKEND}}
       run: |
