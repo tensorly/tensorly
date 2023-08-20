@@ -5,6 +5,7 @@ import sys
 import threading
 import types
 import warnings
+import math
 
 import numpy as np
 import scipy.special
@@ -123,7 +124,7 @@ class Backend(object):
 
     @property
     def pi(self):
-        raise NotImplementedError
+        return math.pi
 
     @property
     def nan(self):
