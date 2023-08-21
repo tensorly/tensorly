@@ -77,7 +77,7 @@ def _compute_projections(tensor_slices, factors, svd):
     for A, tensor_slice in zip(factors[0], tensor_slices):
         lhs = T.dot(factors[1], T.transpose(A * factors[2]))
         rhs = T.transpose(tensor_slice)
-        U, _, Vh = svd_interface(T.dot(lhs, rhs), n_eigenvecs=n_eig, method=svd)
+        U, _, Vh = svd_interface(T.dot(lhs, rhs), n_eigenvecs=n_eig, method=svd, flip_sign=False)
 
         out.append(T.transpose(T.dot(U, Vh)))
 
@@ -312,11 +312,11 @@ def parafac2(
                 orthogonalise=False,
                 verbose=verbose,
                 return_errors=False,
-                normalize_factors=False,
+                normalize_factors=normalize_factors,
                 mask=None,
                 random_state=random_state,
                 tol=1e-100,
-            )[1]
+            )
 
     else:
         if nn_modes == "all" or 1 in nn_modes:
@@ -333,9 +333,10 @@ def parafac2(
                 svd=svd,
                 nn_modes=nn_modes,
                 verbose=verbose,
+                normalize_factors=normalize_factors,
                 return_errors=False,
                 tol=1e-100,
-            )[1]
+            )
 
     for iteration in range(n_iter_max):
         if verbose:
@@ -345,22 +346,7 @@ def parafac2(
 
         projections = _compute_projections(tensor_slices, factors, svd)
         projected_tensor = _project_tensor_slices(tensor_slices, projections)
-        factors = parafac_updates(projected_tensor, weights, factors)
-
-        if normalize_factors:
-            new_factors = []
-            for factor in factors:
-                norms = T.norm(factor, axis=0)
-                norms = tl.where(
-                    tl.abs(norms) <= tl.eps(factor.dtype),
-                    tl.ones(tl.shape(norms), **tl.context(factors[0])),
-                    norms,
-                )
-
-                weights = weights * norms
-                new_factors.append(factor / (tl.reshape(norms, (1, -1))))
-
-            factors = new_factors
+        weights, factors = parafac_updates(projected_tensor, weights, factors)
 
         if tol:
             rec_error = _parafac2_reconstruction_error(
