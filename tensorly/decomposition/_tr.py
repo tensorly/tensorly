@@ -5,6 +5,7 @@ from ._base_decomposition import DecompositionMixin
 from ..base import matricize
 from ..tr_tensor import validate_tr_rank, TRTensor
 from ..tenalg.svd import svd_interface
+from ..metrics import leverage_score_dist
 
 
 def tensor_ring(input_tensor, rank, mode=0, svd="truncated_svd", verbose=False):
@@ -270,37 +271,6 @@ def tensor_ring_als(
     return tr_decomp
 
 
-def compute_lev_score_dist(matrix):
-    """Compute leverage score distribution over the rows of `matrix`
-
-    Parameters
-    ----------
-    matrix : tl.tensor
-        As the parameter name implies, `matrix` needs to be a tl.tensor with two modes.
-
-    Returns
-    -------
-    lev_score_dist : tl.tensor
-        The leverage scores in a vector in tl.tensor format. The dtype will be
-        tl.float64, even if the input `matrix` is lower precision.
-    """
-
-    U, S, _ = tl.svd(matrix, full_matrices=False)
-    mat_dtype = tl.context(matrix)["dtype"]
-    rank_cutoff = tl.max(S) * max(matrix.shape) * tl.eps(mat_dtype)
-    num_rank = int(tl.max(tl.where(S > rank_cutoff)[0]))  # int(...) needed for mxnet
-    lev_score_dist = tl.sum(U[:, :num_rank] ** 2, axis=1) / tl.tensor(
-        num_rank, dtype=mat_dtype
-    )
-    if tl.context(lev_score_dist)["dtype"] != tl.float64:
-        # rng.choice in tensor_ring_als_sampled can complain that probability doesn't
-        # sum to 1 if single precision is used for probability vector, so adjusting for
-        # that here.
-        lev_score_dist = tl.tensor(lev_score_dist, dtype=tl.float64)
-        lev_score_dist /= tl.sum(lev_score_dist)
-    return lev_score_dist
-
-
 def tensor_ring_als_sampled(
     tensor,
     rank,
@@ -398,9 +368,7 @@ def tensor_ring_als_sampled(
     else:
         sampling_probs = [None]
         for dim in range(1, n_dim):
-            lev_score_dist = compute_lev_score_dist(
-                matricize(tr_decomp[dim], [1], [0, 2])
-            )
+            lev_score_dist = leverage_score_dist(matricize(tr_decomp[dim], [1], [0, 2]))
             sampling_probs.append(lev_score_dist)
 
     # Run callback function if provided
@@ -482,7 +450,7 @@ def tensor_ring_als_sampled(
 
             # Compute sampling distribution for updated core
             if not uniform_sampling:
-                sampling_probs[dim] = compute_lev_score_dist(tl.transpose(sol))
+                sampling_probs[dim] = leverage_score_dist(tl.transpose(sol))
 
         # Compute relative error if necessary
         if tol > 0 or callback:
