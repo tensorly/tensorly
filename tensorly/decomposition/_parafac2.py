@@ -93,7 +93,9 @@ def _project_tensor_slices(tensor_slices, projections):
     return tl.stack(slices)
 
 
-def _parafac2_reconstruction_error(tensor_slices, decomposition, norm_matrices=None):
+def _parafac2_reconstruction_error(
+    tensor_slices, decomposition, norm_matrices=None, projected_tensor=None
+):
     """Calculates the reconstruction error of the PARAFAC2 decomposition. This implementation
     uses the inner product with each matrix for efficiency, as this avoids needing to
     reconstruct the tensor. This is based on the property that:
@@ -115,6 +117,9 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition, norm_matrices=N
         * projections : List of projection matrices used to create evolving factors.
     norm_matrices : float, optional
         The norm of the data. This can be optionally provided to avoid recalculating it.
+    projected_tensor : ndarray, optional
+        The projections of X into an aligned tensor for CP decomposition. This can be optionally
+        provided to avoid recalculating it.
 
     Returns
     -------
@@ -138,12 +143,13 @@ def _parafac2_reconstruction_error(tensor_slices, decomposition, norm_matrices=N
 
     for i, t_slice in enumerate(tensor_slices):
         B_i = (projections[i] @ B) * A[i]
-        if tl.shape(B_i)[0] > tl.shape(C)[0]:
+
+        if projected_tensor is None:
             tmp = tl.dot(tl.transpose(B_i), t_slice)
-            inner_product += tl.trace(tl.dot(tmp, C))
         else:
-            tmp = tl.dot(t_slice, C)
-            inner_product += tl.trace(tl.dot(tl.transpose(B_i), tmp))
+            tmp = tl.reshape(A[i], (-1, 1)) * tl.transpose(B) @ projected_tensor[i]
+
+        inner_product += tl.trace(tl.dot(tmp, C))
 
         norm_cmf_sq += tl.sum((tl.transpose(B_i) @ B_i) * CtC)
 
@@ -364,7 +370,10 @@ def parafac2(
 
         if tol:
             rec_error = _parafac2_reconstruction_error(
-                tensor_slices, (weights, factors, projections), norm_tensor
+                tensor_slices,
+                (weights, factors, projections),
+                norm_tensor,
+                projected_tensor,
             )
             rec_error /= norm_tensor
             rec_errors.append(rec_error)
