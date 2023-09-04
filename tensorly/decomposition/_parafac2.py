@@ -387,7 +387,7 @@ def parafac2(
             )
             ls_rec_error /= norm_tensor
 
-            if ls_rec_error < rec_errors[-2]:
+            if ls_rec_error < rec_errors[-1]:
                 factors = factors_ls
                 projections = projections_ls
                 rec_errors.append(ls_rec_error)
