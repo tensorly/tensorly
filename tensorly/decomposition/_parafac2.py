@@ -9,7 +9,7 @@ from ..parafac2_tensor import (
     Parafac2Tensor,
     _validate_parafac2_tensor,
 )
-from ..cp_tensor import CPTensor
+from ..cp_tensor import CPTensor, cp_normalize
 from ..tenalg.svd import svd_interface
 
 # Authors: Marie Roald
@@ -77,7 +77,9 @@ def _compute_projections(tensor_slices, factors, svd):
     for A, tensor_slice in zip(factors[0], tensor_slices):
         lhs = T.dot(factors[1], T.transpose(A * factors[2]))
         rhs = T.transpose(tensor_slice)
-        U, _, Vh = svd_interface(T.dot(lhs, rhs), n_eigenvecs=n_eig, method=svd)
+        U, _, Vh = svd_interface(
+            T.dot(lhs, rhs), n_eigenvecs=n_eig, method=svd, flip_sign=False
+        )
 
         out.append(T.transpose(T.dot(U, Vh)))
 
@@ -164,6 +166,7 @@ def parafac2(
     verbose=False,
     return_errors=False,
     n_iter_parafac=5,
+    linesearch=True,
 ):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
@@ -233,7 +236,7 @@ def parafac2(
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
     absolute_tol : float, optional
-        (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
+        (Default: 1e-13) Absolute reconstruction error tolerance. The algorithm
         is considered to have converged when
         :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
         That is, when the relative sum of squared error is less than the specified tolerance.
@@ -253,6 +256,8 @@ def parafac2(
         Activate return of iteration errors
     n_iter_parafac : int, optional
         Number of PARAFAC iterations to perform for each PARAFAC2 iteration
+    linesearch : bool, default is False
+        Whether to perform line search as proposed by Bro [3].
 
     Returns
     -------
@@ -277,10 +282,9 @@ def parafac2(
     Notes
     -----
     This formulation of the PARAFAC2 decomposition is slightly different from the one in [1]_.
-    The difference lies in that here, the second mode changes over the first mode, whereas in
-    [1]_, the second mode changes over the third mode. We made this change since that means
-    that the function accept both lists of matrices and a single nd-array as input without
-    any reordering of the modes.
+    The difference lies in that, here, the second mode changes over the first mode, whereas in
+    [1]_, the second mode changes over the third mode. This change allows the function to accept
+    both lists of matrices and a single nd-array as input without any mode reordering.
 
     Because of the reformulation above, :math:`B_i = P_i B`, the :math:`B_i` matrices
     cannot be constrained to be non-negative with ALS. If this mode is constrained to be
@@ -298,6 +302,10 @@ def parafac2(
 
     if absolute_tol is None:
         absolute_tol = tl.eps(factors[0].dtype) * 1000
+
+    acc_pow = 2.0  # Extrapolate to the iteration^(1/acc_pow) ahead
+    acc_fail = 0  # How many times acceleration have failed
+    max_fail = 4  # Increase acc_pow with one after max_fail failure
 
     # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
     if nn_modes is None:
@@ -340,6 +348,15 @@ def parafac2(
     for iteration in range(n_iter_max):
         if verbose:
             print("Starting iteration", iteration)
+
+        # Will we be performing a line search iteration?
+        if linesearch and iteration % 2 == 0 and iteration > 5:
+            line_iter = True
+            factors_last = [tl.copy(f) for f in factors]
+            weights_last = tl.copy(weights)
+        else:
+            line_iter = False
+
         factors[1] = factors[1] * T.reshape(weights, (1, -1))
         weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
 
@@ -348,27 +365,59 @@ def parafac2(
         factors = parafac_updates(projected_tensor, weights, factors)
 
         if normalize_factors:
-            new_factors = []
-            for factor in factors:
-                norms = T.norm(factor, axis=0)
-                norms = tl.where(
-                    tl.abs(norms) <= tl.eps(factor.dtype),
-                    tl.ones(tl.shape(norms), **tl.context(factors[0])),
-                    norms,
-                )
+            weights, factors = cp_normalize((weights, factors))
 
-                weights = weights * norms
-                new_factors.append(factor / (tl.reshape(norms, (1, -1))))
+        # Start line search if requested.
+        if line_iter:
+            jump = iteration ** (1.0 / acc_pow)
 
-            factors = new_factors
+            ls_weights = weights_last + (weights - weights_last) * jump
+            ls_factors = [
+                factors_last[ii] + (factors[ii] - factors_last[ii]) * jump
+                for ii in range(3)
+            ]
 
-        if tol:
+            # Clip if the mode should be non-negative
+            if nn_modes:
+                if 0 in nn_modes:
+                    ls_factors[0] = tl.abs(ls_factors[0])
+                if 2 in nn_modes:
+                    ls_factors[2] = tl.abs(ls_factors[2])
+
+            ls_rec_error = _parafac2_reconstruction_error(
+                tensor_slices, (weights, factors, projections), norm_tensor
+            )
+            ls_rec_error /= norm_tensor
+
+            if ls_rec_error < rec_errors[-2]:
+                factors, weights = ls_factors, ls_weights
+                rec_errors.append(ls_rec_error)
+                acc_fail = 0
+
+                if verbose:
+                    print(f"Accepted line search jump of {jump}.")
+            else:
+                acc_fail += 1
+                line_iter = False
+
+                if verbose:
+                    print(f"Line search failed for jump of {jump}.")
+
+                if acc_fail == max_fail:
+                    acc_pow += 1.0
+                    acc_fail = 0
+
+                    if verbose:
+                        print("Reducing acceleration.")
+
+        if tol and not line_iter:
             rec_error = _parafac2_reconstruction_error(
                 tensor_slices, (weights, factors, projections), norm_tensor
             )
             rec_error /= norm_tensor
             rec_errors.append(rec_error)
 
+        if tol:
             if iteration >= 1:
                 if verbose:
                     print(
@@ -424,7 +473,7 @@ class Parafac2(DecompositionMixin):
 
     .. math::
 
-        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
+        X_{ijk} = \sum_{r=1}^R A_{ir} B_{ijr} C_{kr},
 
     with the same constraints hold for :math:`B_i` as above.
 
@@ -501,10 +550,9 @@ class Parafac2(DecompositionMixin):
     Notes
     -----
     This formulation of the PARAFAC2 decomposition is slightly different from the one in [1]_.
-    The difference lies in that here, the second mode changes over the first mode, whereas in
-    [1]_, the second mode changes over the third mode. We made this change since that means
-    that the function accept both lists of matrices and a single nd-array as input without
-    any reordering of the modes.
+    The difference lies in that, here, the second mode changes over the first mode, whereas in
+    [1]_, the second mode changes over the third mode. This change allows the function to accept
+    both lists of matrices and a single nd-array as input without any mode reordering.
     """
 
     def __init__(
@@ -521,6 +569,7 @@ class Parafac2(DecompositionMixin):
         verbose=False,
         return_errors=False,
         n_iter_parafac=5,
+        linesearch=False,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -534,6 +583,7 @@ class Parafac2(DecompositionMixin):
         self.verbose = verbose
         self.return_errors = return_errors
         self.n_iter_parafac = n_iter_parafac
+        self.linesearch = linesearch
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -560,5 +610,6 @@ class Parafac2(DecompositionMixin):
             verbose=self.verbose,
             return_errors=self.return_errors,
             n_iter_parafac=self.n_iter_parafac,
+            linesearch=self.linesearch,
         )
         return self.decomposition_
