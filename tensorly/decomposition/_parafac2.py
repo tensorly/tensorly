@@ -353,7 +353,7 @@ def parafac2(
         if linesearch and iteration % 2 == 0 and iteration > 5:
             line_iter = True
             factors_last = [tl.copy(f) for f in factors]
-            weights_last = tl.copy(weights)
+            factors_last[1] = factors_last[1] * T.reshape(weights, (1, -1))
         else:
             line_iter = False
 
@@ -364,15 +364,11 @@ def parafac2(
         projected_tensor = _project_tensor_slices(tensor_slices, projections)
         factors = parafac_updates(projected_tensor, weights, factors)
 
-        if normalize_factors:
-            weights, factors = cp_normalize((weights, factors))
-
         # Start line search if requested.
         if line_iter:
             jump = iteration ** (1.0 / acc_pow)
 
-            ls_weights = weights_last + (weights - weights_last) * jump
-            ls_factors = [
+            factors_ls = [
                 factors_last[ii] + (factors[ii] - factors_last[ii]) * jump
                 for ii in range(3)
             ]
@@ -380,17 +376,20 @@ def parafac2(
             # Clip if the mode should be non-negative
             if nn_modes:
                 if 0 in nn_modes:
-                    ls_factors[0] = tl.abs(ls_factors[0])
+                    factors_ls[0] = tl.abs(factors_ls[0])
                 if 2 in nn_modes:
-                    ls_factors[2] = tl.abs(ls_factors[2])
+                    factors_ls[2] = tl.abs(factors_ls[2])
+
+            projections_ls = _compute_projections(tensor_slices, factors_ls, svd)
 
             ls_rec_error = _parafac2_reconstruction_error(
-                tensor_slices, (weights, factors, projections), norm_tensor
+                tensor_slices, (weights, factors_ls, projections_ls), norm_tensor
             )
             ls_rec_error /= norm_tensor
 
             if ls_rec_error < rec_errors[-2]:
-                factors, weights = ls_factors, ls_weights
+                factors = factors_ls
+                projections = projections_ls
                 rec_errors.append(ls_rec_error)
                 acc_fail = 0
 
@@ -409,6 +408,9 @@ def parafac2(
 
                     if verbose:
                         print("Reducing acceleration.")
+
+        if normalize_factors:
+            weights, factors = cp_normalize((weights, factors))
 
         if tol and not line_iter:
             rec_error = _parafac2_reconstruction_error(
