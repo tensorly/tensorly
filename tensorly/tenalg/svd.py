@@ -428,7 +428,7 @@ def svd_interface(
     if mask is not None and n_eigenvecs is not None:
         for _ in range(n_iter_mask_imputation):
             # Workaround to avoid needing fill_diagonal
-            St = tl.eye(tl.shape(U)[1], tl.shape(V)[0])
+            St = tl.eye(tl.shape(U)[1], tl.shape(V)[0], **tl.context(matrix))
             for i in range(tl.shape(S)[0]):
                 St = tl.index_update(St, tl.index[i, i], S[i])
 
