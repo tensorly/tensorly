@@ -370,15 +370,15 @@ def parafac2(
 
             factors_ls = [
                 factors_last[ii] + (factors[ii] - factors_last[ii]) * jump
-                for ii in range(3)
+                for ii, _ in enumerate(factors)
             ]
 
             # Clip if the mode should be non-negative
             if nn_modes:
                 if 0 in nn_modes:
-                    factors_ls[0] = tl.abs(factors_ls[0])
+                    factors_ls[0] = tl.clip(factors_ls[0], 0)
                 if 2 in nn_modes:
-                    factors_ls[2] = tl.abs(factors_ls[2])
+                    factors_ls[2] = tl.clip(factors_ls[2], 0)
 
             projections_ls = _compute_projections(tensor_slices, factors_ls, svd)
 
