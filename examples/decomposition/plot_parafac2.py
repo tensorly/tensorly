@@ -19,7 +19,7 @@ from scipy.optimize import linear_sum_assignment
 # Create synthetic tensor
 # -----------------------
 # Here, we create a random tensor that follows the PARAFAC2 constraints found
-# inx `(Kiers et al 1999)`_.
+# in `(Kiers et al 1999)`_.
 # 
 # This particular tensor,
 # :math:`\mathcal{X} \in \mathbb{R}^{I\times J \times K}`, is a shifted
