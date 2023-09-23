@@ -349,16 +349,15 @@ def parafac2(
         if verbose:
             print("Starting iteration", iteration)
 
+        factors[1] = factors[1] * T.reshape(weights, (1, -1))
+        weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
+        
         # Will we be performing a line search iteration?
         if linesearch and iteration % 2 == 0 and iteration > 5:
             line_iter = True
             factors_last = [tl.copy(f) for f in factors]
-            factors_last[1] = factors_last[1] * T.reshape(weights, (1, -1))
         else:
             line_iter = False
-
-        factors[1] = factors[1] * T.reshape(weights, (1, -1))
-        weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
 
         projections = _compute_projections(tensor_slices, factors, svd)
         projected_tensor = _project_tensor_slices(tensor_slices, projections)
