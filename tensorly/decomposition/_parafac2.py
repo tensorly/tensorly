@@ -95,6 +95,70 @@ def _project_tensor_slices(tensor_slices, projections):
     return tl.stack(slices)
 
 
+class _bro_thesis_line_search:
+    def __init__(self, norm_tensor, svd, verbose=False, nn_modes=None):
+        self.norm_tensor = norm_tensor
+        self.svd = svd
+        self.verbose = verbose
+        self.acc_pow = 2.0  # Extrapolate to the iteration^(1/acc_pow) ahead
+        self.acc_fail = 0  # How many times acceleration have failed
+        self.max_fail = 4  # Increase acc_pow with one after max_fail failure
+        self.nn_modes = nn_modes
+
+    def line_step(
+        self,
+        iteration,
+        tensor_slices,
+        factors_last,
+        weights,
+        factors,
+        projections,
+        rec_error,
+    ):
+        jump = iteration ** (1.0 / self.acc_pow)
+
+        factors_ls = [
+            factors_last[ii] + (factors[ii] - factors_last[ii]) * jump
+            for ii, _ in enumerate(factors)
+        ]
+
+        # Clip if the mode should be non-negative
+        if self.nn_modes:
+            if 0 in self.nn_modes:
+                factors_ls[0] = tl.clip(factors_ls[0], 0)
+            if 2 in self.nn_modes:
+                factors_ls[2] = tl.clip(factors_ls[2], 0)
+
+        projections_ls = _compute_projections(tensor_slices, factors_ls, self.svd)
+
+        ls_rec_error = _parafac2_reconstruction_error(
+            tensor_slices, (weights, factors_ls, projections_ls), self.norm_tensor
+        )
+        ls_rec_error /= self.norm_tensor
+
+        if ls_rec_error < rec_error:
+            self.acc_fail = 0
+
+            if self.verbose:
+                print(f"Accepted line search jump of {jump}.")
+
+            return factors_ls, projections_ls, ls_rec_error
+        else:
+            self.acc_fail += 1
+
+            if self.verbose:
+                print(f"Line search failed for jump of {jump}.")
+
+            if self.acc_fail == self.max_fail:
+                self.acc_pow += 1.0
+                self.acc_fail = 0
+
+                if self.verbose:
+                    print("Reducing acceleration.")
+
+            return factors, projections, rec_error
+
+
 def _parafac2_reconstruction_error(tensor_slices, decomposition, norm_matrices=None):
     """Calculates the reconstruction error of the PARAFAC2 decomposition. This implementation
     uses the inner product with each matrix for efficiency, as this avoids needing to
@@ -303,9 +367,10 @@ def parafac2(
     if absolute_tol is None:
         absolute_tol = tl.eps(factors[0].dtype) * 1000
 
-    acc_pow = 2.0  # Extrapolate to the iteration^(1/acc_pow) ahead
-    acc_fail = 0  # How many times acceleration have failed
-    max_fail = 4  # Increase acc_pow with one after max_fail failure
+    if linesearch:
+        line_search = _bro_thesis_line_search(
+            norm_tensor, svd, verbose=verbose, nn_modes=nn_modes
+        )
 
     # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
     if nn_modes is None:
@@ -351,7 +416,7 @@ def parafac2(
 
         factors[1] = factors[1] * T.reshape(weights, (1, -1))
         weights = T.ones(weights.shape, **tl.context(tensor_slices[0]))
-        
+
         # Will we be performing a line search iteration?
         if linesearch and iteration % 2 == 0 and iteration > 5:
             line_iter = True
@@ -365,48 +430,15 @@ def parafac2(
 
         # Start line search if requested.
         if line_iter:
-            jump = iteration ** (1.0 / acc_pow)
-
-            factors_ls = [
-                factors_last[ii] + (factors[ii] - factors_last[ii]) * jump
-                for ii, _ in enumerate(factors)
-            ]
-
-            # Clip if the mode should be non-negative
-            if nn_modes:
-                if 0 in nn_modes:
-                    factors_ls[0] = tl.clip(factors_ls[0], 0)
-                if 2 in nn_modes:
-                    factors_ls[2] = tl.clip(factors_ls[2], 0)
-
-            projections_ls = _compute_projections(tensor_slices, factors_ls, svd)
-
-            ls_rec_error = _parafac2_reconstruction_error(
-                tensor_slices, (weights, factors_ls, projections_ls), norm_tensor
+            factors, projections, rec_errors[-1] = line_search.line_step(
+                iteration,
+                tensor_slices,
+                factors_last,
+                weights,
+                factors,
+                projections,
+                rec_errors[-1],
             )
-            ls_rec_error /= norm_tensor
-
-            if ls_rec_error < rec_errors[-1]:
-                factors = factors_ls
-                projections = projections_ls
-                rec_errors.append(ls_rec_error)
-                acc_fail = 0
-
-                if verbose:
-                    print(f"Accepted line search jump of {jump}.")
-            else:
-                acc_fail += 1
-                line_iter = False
-
-                if verbose:
-                    print(f"Line search failed for jump of {jump}.")
-
-                if acc_fail == max_fail:
-                    acc_pow += 1.0
-                    acc_fail = 0
-
-                    if verbose:
-                        print("Reducing acceleration.")
 
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
