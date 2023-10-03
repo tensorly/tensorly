@@ -95,14 +95,14 @@ def _project_tensor_slices(tensor_slices, projections):
     return tl.stack(slices)
 
 
-class _bro_thesis_line_search:
-    def __init__(self, norm_tensor, svd, verbose=False, nn_modes=None):
+class _BroThesisLineSearch:
+    def __init__(self, norm_tensor, svd, verbose=False, nn_modes=None, acc_pow=2.0, max_fail=4):
         self.norm_tensor = norm_tensor
         self.svd = svd
         self.verbose = verbose
-        self.acc_pow = 2.0  # Extrapolate to the iteration^(1/acc_pow) ahead
-        self.acc_fail = 0  # How many times acceleration have failed
-        self.max_fail = 4  # Increase acc_pow with one after max_fail failure
+        self.acc_pow = acc_pow  # Extrapolate to the iteration^(1/acc_pow) ahead
+        self.max_fail = max_fail  # Increase acc_pow with one after max_fail failure
+        self.acc_fail = 0 # How many times acceleration have failed
         self.nn_modes = nn_modes
 
     def line_step(
@@ -367,10 +367,10 @@ def parafac2(
     if absolute_tol is None:
         absolute_tol = tl.eps(factors[0].dtype) * 1000
 
-    if linesearch:
-        line_search = _bro_thesis_line_search(
-            norm_tensor, svd, verbose=verbose, nn_modes=nn_modes
-        )
+if linesearch and not isinstance(linesearch, _BroThesisLineSearch):
+    linesearch = _BroThesisLineSearch(
+        norm_tensor, svd, verbose=verbose, nn_modes=nn_modes
+    )
 
     # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
     if nn_modes is None:
@@ -430,7 +430,7 @@ def parafac2(
 
         # Start line search if requested.
         if line_iter:
-            factors, projections, rec_errors[-1] = line_search.line_step(
+            factors, projections, rec_errors[-1] = linesearch.line_step(
                 iteration,
                 tensor_slices,
                 factors_last,
