@@ -152,6 +152,35 @@ class _BroThesisLineSearch:
         projections: list,
         rec_error,
     ):
+        r"""Perform one line search step.
+
+        Parameters
+        ----------
+        iteration : int
+            The current iteration number.
+        tensor_slices : ndarray or list of ndarrays
+            The data itself. Either a third order tensor or a list of second order tensors that
+            may have different number of rows.
+        factors_last : list of ndarrays
+            The CP factors from the previous iteration.
+        weights : ndarrays
+            The normalization weights for the current factors.
+        factors : list of ndarrays
+            The CP factors from the current iteration.
+        projections : list of ndarrays
+            The projection matrices from the current iteration.
+        rec_error : float
+            The reconstruction error from the current iteration.
+
+        Returns
+        -------
+        factors : list
+            List of factors for the accepted step.
+        projections : list
+            List of projection matrices from the accepted step.
+        rec_error : float
+            Reconstruction error of the accepted step.
+        """
         jump = iteration ** (1.0 / self.acc_pow)
 
         factors_ls = [
