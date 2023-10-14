@@ -98,8 +98,14 @@ def _project_tensor_slices(tensor_slices, projections):
 
 class _BroThesisLineSearch:
     def __init__(
-        self, norm_tensor, svd: str, verbose: bool=False, nn_modes=None, acc_pow: float=2.0, max_fail: int=4
-        ):
+        self,
+        norm_tensor,
+        svd: str,
+        verbose: bool = False,
+        nn_modes=None,
+        acc_pow: float = 2.0,
+        max_fail: int = 4,
+    ):
         """The line search strategy defined within Rasmus Bro's thesis [1, 2].
 
         Parameters
@@ -127,7 +133,7 @@ class _BroThesisLineSearch:
         .. [2] H. Yu, D. Augustijn, R. Bro, "Accelerating PARAFAC2 algorithms for non-negative
             complex tensor decomposition." Chemometrics and Intelligent Laboratory Systems 214
             (2021): 104312.
-        """    
+        """
         self.norm_tensor = norm_tensor
         self.svd = svd
         self.verbose = verbose
