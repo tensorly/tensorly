@@ -1,4 +1,5 @@
 from warnings import warn
+from typing import Iterable
 
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
@@ -96,23 +97,53 @@ def _project_tensor_slices(tensor_slices, projections):
 
 
 class _BroThesisLineSearch:
-    def __init__(self, norm_tensor, svd, verbose=False, nn_modes=None, acc_pow=2.0, max_fail=4):
+    def __init__(
+        self, norm_tensor, svd: str, verbose: bool=False, nn_modes=None, acc_pow: float=2.0, max_fail: int=4
+        ):
+        """The line search strategy defined within Rasmus Bro's thesis [1, 2].
+
+        Parameters
+        ----------
+        norm_tensor : int
+            Sum of the matrix norms for each slice.
+        svd : str
+            The function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        verbose : bool
+            Optionally provide output about each step.
+        nn_modes: None, 'all' or array of integers
+            (Default: None) Used to specify which modes to impose non-negativity constraints on.
+            We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
+            algorithm, so if this mode is among the constrained modes, then a warning will be shown
+            (see notes for more info).
+        acc_pow : int
+            Line search steps are defined as `iteration ** (1.0 / acc_pow)`.
+        max_fail : int
+            The number of line search failures before increasing `acc_pow`.
+
+        References
+        ----------
+        .. [1] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
+            Applications", PhD., University of Amsterdam, 1998
+        .. [2] H. Yu, D. Augustijn, R. Bro, "Accelerating PARAFAC2 algorithms for non-negative
+            complex tensor decomposition." Chemometrics and Intelligent Laboratory Systems 214
+            (2021): 104312.
+        """    
         self.norm_tensor = norm_tensor
         self.svd = svd
         self.verbose = verbose
         self.acc_pow = acc_pow  # Extrapolate to the iteration^(1/acc_pow) ahead
         self.max_fail = max_fail  # Increase acc_pow with one after max_fail failure
-        self.acc_fail = 0 # How many times acceleration have failed
+        self.acc_fail = 0  # How many times acceleration have failed
         self.nn_modes = nn_modes
 
     def line_step(
         self,
-        iteration,
-        tensor_slices,
-        factors_last,
+        iteration: int,
+        tensor_slices: Iterable,
+        factors_last: list,
         weights,
-        factors,
-        projections,
+        factors: list,
+        projections: list,
         rec_error,
     ):
         jump = iteration ** (1.0 / self.acc_pow)
@@ -373,10 +404,10 @@ def parafac2(
     if absolute_tol is None:
         absolute_tol = tl.eps(factors[0].dtype) * 1000
 
-if linesearch and not isinstance(linesearch, _BroThesisLineSearch):
-    linesearch = _BroThesisLineSearch(
-        norm_tensor, svd, verbose=verbose, nn_modes=nn_modes
-    )
+    if linesearch and not isinstance(linesearch, _BroThesisLineSearch):
+        linesearch = _BroThesisLineSearch(
+            norm_tensor, svd, verbose=verbose, nn_modes=nn_modes
+        )
 
     # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
     if nn_modes is None:
