@@ -9,15 +9,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        BACKEND: ['numpy', 'pytorch', 'tensorflow', 'jax', 'mxnet']
-        python-version: ['3.10']
+        BACKEND: ['numpy', 'pytorch', 'mxnet']
+        python-version: ['3.11']
         include:
           - BACKEND: 'numpy'
-            python-version: '3.7'
+            python-version: '3.8'
           - BACKEND: 'numpy'
             python-version: '3.9'
-          - BACKEND: 'numpy'
-            python-version: '3.9'
+            TENSORLY_TENALG_BACKEND: ['einsum']
+          - BACKEND: 'jax'
+            python-version: '3.11'
+            TENSORLY_TENALG_BACKEND: ['einsum']
+          - BACKEND: 'tensorflow'
+            python-version: '3.11'
             TENSORLY_TENALG_BACKEND: ['einsum']
 
     steps:
@@ -26,7 +30,10 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-  
+        cache: "pip"
+        cache-dependency-path: |
+          requirements.txt
+
     - name: Install dependencies and backend ${{matrix.BACKEND}}
       run: |
         python -m pip install --upgrade pip

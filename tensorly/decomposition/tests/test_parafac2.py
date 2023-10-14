@@ -16,10 +16,8 @@ from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_s
 from ...metrics.factors import congruence_coefficient
 
 
-@pytest.mark.parametrize(
-    ("normalize_factors", "init"),
-    itertools.product([True, False], ["random", "svd"]),
-)
+@pytest.mark.parametrize("normalize_factors", [True, False])
+@pytest.mark.parametrize("init", ["random", "svd"])
 @pytest.mark.parametrize("linesearch", [False, True])
 def test_parafac2(monkeypatch, normalize_factors, init, linesearch):
     rng = tl.check_random_state(1234)

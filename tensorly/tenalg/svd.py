@@ -87,7 +87,7 @@ def make_svd_non_negative(tensor, U, S, V, nntype=True):
     W = tl.index_update(W, tl.index[:, 0], tl.sqrt(S[0]) * tl.abs(U[:, 0]))
     H = tl.index_update(H, tl.index[0, :], tl.sqrt(S[0]) * tl.abs(V[0, :]))
 
-    for j in range(1, tl.shape(U)[1]):
+    for j in range(1, min(tl.shape(U)[1], tl.shape(V)[0])):
         x, y = U[:, j], V[j, :]
 
         # extract positive and negative parts of column vectors
@@ -119,15 +119,17 @@ def make_svd_non_negative(tensor, U, S, V, nntype=True):
 
     if nntype == "nndsvd":
         W = soft_thresholding(W, eps)
+        H = soft_thresholding(H, eps)
     elif nntype == "nndsvda":
         avg = tl.mean(tensor)
         W = tl.where(W < eps, tl.ones(tl.shape(W), **tl.context(W)) * avg, W)
+        H = tl.where(H < eps, tl.ones(tl.shape(H), **tl.context(H)) * avg, H)
     else:
         raise ValueError(
             f'Invalid nntype parameter: got {nntype} instead of one of ("nndsvd", "nndsvda")'
         )
 
-    return W
+    return W, H
 
 
 def randomized_range_finder(A, n_dims, n_iter=2, random_state=None):
@@ -425,13 +427,18 @@ def svd_interface(
 
     if mask is not None and n_eigenvecs is not None:
         for _ in range(n_iter_mask_imputation):
-            matrix = matrix * mask + (U @ tl.diag(S) @ V) * (1 - mask)
+            # Workaround to avoid needing fill_diagonal
+            St = tl.eye(tl.shape(U)[1], tl.shape(V)[0], **tl.context(matrix))
+            for i in range(tl.shape(S)[0]):
+                St = tl.index_update(St, tl.index[i, i], S[i])
+
+            matrix = matrix * mask + (U @ St @ V) * (1 - mask)
             U, S, V = svd_fun(matrix, n_eigenvecs=n_eigenvecs, **kwargs)
 
     if flip_sign:
         U, V = svd_flip(U, V, u_based_decision=u_based_flip_sign)
 
     if non_negative is not False and non_negative is not None:
-        U = make_svd_non_negative(matrix, U, S, V, non_negative)
+        U, V = make_svd_non_negative(matrix, U, S, V, non_negative)
 
     return U, S, V

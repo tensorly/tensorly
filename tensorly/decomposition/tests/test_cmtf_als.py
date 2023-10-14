@@ -10,8 +10,8 @@ from ...testing import assert_
 def test_coupled_matrix_tensor_3d_factorization():
     I = 21
     J = 12
-    K = 8
-    M = 7
+    K = 16
+    M = 14
     R = 3
 
     tensor_cp_true = random_cp((I, J, K), rank=R, normalise_factors=False)

@@ -54,9 +54,8 @@ class JaxBackend(Backend, backend_name="jax"):
         return tensor.ndim
 
     @staticmethod
-    def lstsq(a, b):
-        x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None, numpy_resid=True)
-        return x, residuals
+    def lstsq(a, b, rcond=None):
+        return np.linalg.lstsq(a, b, rcond=rcond, numpy_resid=True)
 
     @staticmethod
     def logsumexp(tensor, axis=0):

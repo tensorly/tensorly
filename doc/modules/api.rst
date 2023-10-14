@@ -376,6 +376,23 @@ Functions
     constrained_parafac
 
 
+Preprocessing (:mod:`tensorly.preprocessing`)
+=============================================
+
+.. automodule:: tensorly.preprocessing
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.preprocessing
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    svd_compress_tensor_slices
+    svd_decompress_parafac2_tensor
+
+
 Tensor Regression (:mod:`tensorly.regression`)
 ==============================================
 
@@ -508,5 +525,3 @@ Currently, the following decomposition methods are supported (for the NumPy back
    sparse.decomposition.parafac
    sparse.decomposition.non_negative_parafac
    sparse.decomposition.symmetric_parafac_power_iteration
-
-
