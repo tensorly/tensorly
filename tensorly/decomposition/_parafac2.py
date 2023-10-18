@@ -393,7 +393,8 @@ def parafac2(
     n_iter_parafac : int, optional
         Number of PARAFAC iterations to perform for each PARAFAC2 iteration
     linesearch : bool, default is False
-        Whether to perform line search as proposed by Bro [3].
+        Whether to perform line search as proposed by Bro in his PhD dissertation [2]_
+        (similar to the PLSToolbox line search described in [3]_).
 
     Returns
     -------
