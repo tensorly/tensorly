@@ -154,6 +154,65 @@ def test_parafac2_linesearch():
     ls_error = err[-1]
     assert ls_error < standard_error
 
+def test_linesearch_accepts_only_improved_fit():
+    rng = tl.check_random_state(123)
+    rank = 4
+
+    weights, factors, projections = random_parafac2(
+        shapes=[(25 + rng.randint(5), 300) for _ in range(15)],
+        rank=rank,
+        random_state=rng,
+    )
+    slices = parafac2_to_slices((weights, factors, projections))
+
+    # Create dummy variable for the previous iteration
+    previous_iteration = random_parafac2(
+        shapes=[(25 + rng.randint(5), 300) for _ in range(15)],
+        rank=rank,
+        random_state=rng,
+    )
+
+    # Test with line search where the reconstruction error would worsen if accepted
+    line_search = _BroThesisLineSearch(norm_tensor=1, svd="truncated_svd")
+    ls_factors, ls_projections, ls_rec_error = line_search.line_step(
+        iteration=10,
+        tensor_slices=slices,
+        factors_last=previous_iteration[1],
+        weights=weights,
+        factors=factors,
+        projections=projections,
+        rec_error=0,
+    )
+
+    # Assert that the factor matrices, projection and reconstruction error all
+    # are unaffected by the line search
+    for fm, ls_fm in zip(factors, ls_factors):
+        assert_array_almost_equal(fm, ls_fm)
+    for proj, ls_proj in zip(projections, ls_projections):
+        assert_array_almost_equal(proj, ls_proj)
+    assert ls_rec_error == 0
+    assert line_search.acc_fail == 1
+
+    # Test with line search where the reconstruction error would improve if accepted
+    line_search = _BroThesisLineSearch(norm_tensor=1, svd="truncated_svd")
+    ls_factors, ls_projections, ls_rec_error = line_search.line_step(
+        iteration=10,
+        tensor_slices=slices,
+        factors_last=previous_iteration[1],
+        weights=weights,
+        factors=factors,
+        projections=projections,
+        rec_error=float('inf'),  # float('inf') to force accepting the line search
+    )
+    # Assert that the factor matrices, projection and reconstruction error all
+    # are changed by the line search
+    for fm, ls_fm in zip(factors, ls_factors):
+        assert_(tl.norm(fm - ls_fm) > 1e-5)
+    for proj, ls_proj in zip(projections, ls_projections):
+        assert_(tl.norm(proj - ls_proj) > 1e-5)
+    assert 0 < ls_rec_error < float('inf')
+    assert line_search.acc_fail == 0
+
 
 @pytest.mark.parametrize("linesearch", [False, True])
 def test_parafac2_nn(linesearch):
