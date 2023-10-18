@@ -11,7 +11,12 @@ from ...testing import (
     assert_class_wrapper_correctly_passes_arguments,
     assert_array_almost_equal,
 )
-from .._parafac2 import Parafac2, parafac2, initialize_decomposition, _BroThesisLineSearch
+from .._parafac2 import (
+    Parafac2,
+    parafac2,
+    initialize_decomposition,
+    _BroThesisLineSearch,
+)
 from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
 from ...metrics.factors import congruence_coefficient
 
