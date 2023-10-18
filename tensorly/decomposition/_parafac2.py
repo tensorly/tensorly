@@ -415,6 +415,11 @@ def parafac2(
     .. [1] Kiers, H.A.L., ten Berge, J.M.F. and Bro, R. (1999),
             PARAFAC2—Part I. A direct fitting algorithm for the PARAFAC2 model.
             J. Chemometrics, 13: 275-294.
+    .. [2] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
+            Applications", PhD., University of Amsterdam, 1998
+    .. [3] H. Yu, D. Augustijn, R. Bro, "Accelerating PARAFAC2 algorithms for non-negative
+            complex tensor decomposition." Chemometrics and Intelligent Laboratory Systems 214
+            (2021): 104312.
 
     Notes
     -----

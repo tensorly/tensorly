@@ -154,6 +154,7 @@ def test_parafac2_linesearch():
     ls_error = err[-1]
     assert ls_error < standard_error
 
+
 def test_linesearch_accepts_only_improved_fit():
     rng = tl.check_random_state(123)
     rank = 4
@@ -202,7 +203,7 @@ def test_linesearch_accepts_only_improved_fit():
         weights=weights,
         factors=factors,
         projections=projections,
-        rec_error=float('inf'),  # float('inf') to force accepting the line search
+        rec_error=float("inf"),  # float('inf') to force accepting the line search
     )
     # Assert that the factor matrices, projection and reconstruction error all
     # are changed by the line search
@@ -210,7 +211,7 @@ def test_linesearch_accepts_only_improved_fit():
         assert_(tl.norm(fm - ls_fm) > 1e-5)
     for proj, ls_proj in zip(projections, ls_projections):
         assert_(tl.norm(proj - ls_proj) > 1e-5)
-    assert 0 < ls_rec_error < float('inf')
+    assert 0 < ls_rec_error < float("inf")
     assert line_search.acc_fail == 0
 
 
