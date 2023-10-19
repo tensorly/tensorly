@@ -640,8 +640,7 @@ def cp_norm(cp_tensor):
         # norm = T.dot(T.dot(weights, norm), weights)
         norm = norm * (T.reshape(weights, (-1, 1)) * T.reshape(weights, (1, -1)))
 
-    # We sum even if weigths is not None
-    # as e.g. MXNet would return a 1D tensor, not a 0D tensor
+    # We sum even if weights is not None
     return T.sqrt(T.sum(norm))
 
 

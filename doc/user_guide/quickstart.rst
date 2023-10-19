@@ -32,17 +32,17 @@ TensorLy Backend
 ----------------
 Earlier, we mentioned that all function for manipulating arrays can be accessed through :mod:`tensorly` or `tensorly.backend`. 
 
-For instance, if you have a tensor ``t``, to take its mean, you should use ``tensorly.mean(t)``, **not**, for instance, ``numpy.mean(t)`` (or torch, mxnet, etc).
+For instance, if you have a tensor ``t``, to take its mean, you should use ``tensorly.mean(t)``, **not**, for instance, ``numpy.mean(t)`` (or torch, JAX, etc).
 Why is that? 
 
 .. important:: 
 
    This is because we support several backends: the code you write in TensorLy can be *transparently* executed with several frameworks, without having to change anything in your code!
-   For instance, you can execute your code normally using NumPy, but you can also have it run on GPU or multiple machines, using PyTorch, TensorFlow, CuPy, MXNet or JAX. Without having to adapt your code!
+   For instance, you can execute your code normally using NumPy, but you can also have it run on GPU or multiple machines, using PyTorch, TensorFlow, CuPy, or JAX. Without having to adapt your code!
 
 
 This is why you should always manipulate tensors using tensorly backend functions only.
-For instance, `tensorly.max` calls either the MXNet, NumPy or PyTorch version depending on the backend you selected. There are other subtleties that are handled by the backend to allow a common API regardless of the backend use.
+For instance, `tensorly.max` calls either the NumPy or PyTorch version depending on the backend you selected. There are other subtleties that are handled by the backend to allow a common API regardless of the backend use.
 
 .. note::
    

@@ -34,7 +34,7 @@ To contribute code to the TensorLy code-base, you must ensure compatibility with
 .. important::
 
    We want algorithms to run transparently with all the TensorLy backends 
-   (NumPy, MXNet, PyTorch, TensorLy, JAX, CuPy) and any other backend added later on!
+   (NumPy, PyTorch, TensorLy, JAX, CuPy) and any other backend added later on!
 
    This means you should only use TensorLy functions, never directly a function from the backend
    e.g. use ``tl.mean``, **not** ``numpy.mean`` or ``torch.mean``.
@@ -68,7 +68,7 @@ Practically, **use the wrapped functions**. For instance:
 
 
 The reason is that you do not want your code to be restricted to any of the backends. 
-You might be using NumPy but another user might be using MXNet and calling a NumPy function on an MXNet NDArray will most likely fail.
+You might be using NumPy but another user might be using JAX and calling a NumPy function on an JAX NDArray will most likely fail.
 
 
 Context of a tensor
@@ -88,7 +88,7 @@ Check-out the page on :doc:`../user_guide/backend` for more on this.
 
 Index assignment ("NumPy style")
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In NumPy, PyTorch and MXNet, you can combined indexing and assignment in a convenient way, 
+In NumPy and PyTorch, you can combined indexing and assignment in a convenient way, 
 e.g. if you have a tensor `t`, you can update its values for given indices using the expression
 ``t[indices] = values``.
 
