@@ -18,8 +18,8 @@ mx.npx.set_np()
 class MxnetBackend(Backend, backend_name="mxnet"):
     def __init__(name):
         message = (
-            "The MXNet backend may be deprecated in future versions.\n"
-            "Please consider transitioning to an alternative."
+            "The MXNet backend is deprecated and will be removed in future versions.\n"
+            "Please transition to another backend."
         )
         DeprecationWarning(message)
         super().__init__()
