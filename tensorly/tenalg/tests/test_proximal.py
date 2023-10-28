@@ -21,8 +21,13 @@ from ..proximal import (
 )
 from ...testing import assert_, assert_array_equal, assert_array_almost_equal
 from tensorly import tensor_to_vec, truncated_svd
+import pytest
 
 # Author: Jean Kossaifi
+skip_tensorflow = pytest.mark.skipif(
+    (T.get_backend() == "tensorflow"),
+    reason=f"Indexing with list not supported in TensorFlow",
+)
 
 
 def test_smoothness():
@@ -230,6 +235,7 @@ def test_admm():
     assert_array_almost_equal(true_res, T.transpose(x_admm), decimal=2)
 
 
+@skip_tensorflow
 def test_active_set_nnls():
     """Test for active_set_nnls operator"""
     a = T.tensor(np.random.rand(20, 10))
