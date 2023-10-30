@@ -308,7 +308,7 @@ def non_negative_parafac_hals(
         # One pass of least squares on each updated mode
         for mode in modes:
             # Computing Hadamard of cross-products
-            pseudo_inverse = tl.tensor(tl.ones((rank, rank)), **tl.context(tensor))
+            pseudo_inverse = tl.ones((rank, rank), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
                     pseudo_inverse = pseudo_inverse * tl.dot(
