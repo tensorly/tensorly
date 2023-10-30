@@ -1193,12 +1193,13 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                 UtU[~active_set, :][:, ~active_set], Utm[~active_set]
             )
 
+        # Update support vector with passive solution
         support_vec = tl.zeros(tl.shape(support_vec), **tl.context(support_vec))
         support_vec = tl.index_update(support_vec, ~active_set, passive_solution)
 
         # update support vector if it is necessary
         if tl.min(support_vec[~active_set]) <= 0:
-            for i in range(len(active_set)):
+            for _ in range(len(active_set)):
                 alpha = tl.min(
                     x_vec[~active_set][support_vec[~active_set] <= 0]
                     / (
@@ -1213,11 +1214,13 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                     UtU[~active_set, :][:, ~active_set], Utm[~active_set]
                 )
 
+                # Update support vector with passive solution
                 support_vec = tl.zeros(tl.shape(support_vec), **tl.context(support_vec))
                 support_vec = tl.index_update(
                     support_vec, ~active_set, passive_solution
                 )
 
+                # Break if finished updating
                 if tl.all(active_set) != True or tl.min(support_vec[~active_set]) > 0:
                     break
         # set x to s
