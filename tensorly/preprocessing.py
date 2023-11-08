@@ -74,7 +74,7 @@ def svd_compress_tensor_slices(
     loading_matrices = [None for _ in tensor_slices]
     score_matrices = [None for _ in tensor_slices]
 
-    _, n_cols = T.shape(tensor_slice[0])
+    _, n_cols = T.shape(tensor_slices[0])
 
     if max_rank is not None:
         rank_limit = min(n_cols, max_rank)
