@@ -34,16 +34,88 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         }
 
     @staticmethod
-    def tensor(data, dtype=torch.float32, device="cpu", requires_grad=False):
-        if isinstance(data, torch.Tensor):
-            with torch.device(device):
-                return data.clone().detach().type(dtype).requires_grad_(requires_grad)
+    def _from_torch(data, dtype, device, requires_grad):
+        if dtype is None:
+            # Infer dtype from data
+            dtype = data.dtype
 
-        if isinstance(data, np.ndarray):
-            data = data.copy()
+        if requires_grad is None:
+            # Infer requires_grad from data
+            requires_grad = data.requires_grad
+
+        if device is None:
+            # Infer device from data
+            device = data.device
+
         return torch.tensor(
-            data, dtype=dtype, device=device, requires_grad=requires_grad
+            data.clone(), dtype=dtype, device=device, requires_grad=requires_grad
         )
+
+    @staticmethod
+    def _from_numpy(data, dtype, device, requires_grad):
+        # Use from_numpy provided by PyTorch
+        t = torch.from_numpy(data)
+
+        # Clone the tensor to avoid memory sharing between torch tensor and numpy array
+        t = t.clone()
+
+        # If specific dtype is given, set the dtype, else keep the dtype of the numpy array
+        if dtype is not None:
+            t = t.type(dtype)
+
+        t.requires_grad_(False if requires_grad is None else requires_grad)
+        return t.to(device=device)
+
+    @staticmethod
+    def _from_python(data, dtype, device, requires_grad):
+        t = torch.tensor(data)
+
+        # Set dtype if given, else keep the inferred dtype from data
+        if dtype is not None:
+            t = t.type(dtype)
+
+        # Set device if given, else keep the default device ("cpu")
+        if device is not None:
+            t = t.to(device=device)
+
+        # Set requires_grad if given, else keep the default requires_grad (False)
+        if requires_grad is not None:
+            t.requires_grad_(requires_grad)
+
+        return t
+
+    @staticmethod
+    def tensor(data, dtype=None, device=None, requires_grad=None):
+        """
+        Tensor constructor for the PyTorch backend.
+
+        Parameters
+        ----------
+        data : array-like
+            Data for the tensor.
+        dtype : torch.dtype, optional
+            Data type of the tensor. If None, the dtype is inferred from the data.
+        device : Union[str, torch.device], optional
+            Device on which the tensor is allocated. If None, the device is inferred from the data.
+        requires_grad : bool, optional.
+            If autograd should record operations on the returned tensor. If None, requires_grad is inferred from the
+            data.
+
+        """
+        if isinstance(data, torch.Tensor):
+            # Input is already a torch tensor
+            return PyTorchBackend._from_torch(
+                data, dtype=dtype, device=device, requires_grad=requires_grad
+            )
+        elif isinstance(data, np.ndarray):
+            # Input is a numpy array
+            return PyTorchBackend._from_numpy(
+                data, dtype=dtype, device=device, requires_grad=requires_grad
+            )
+        else:
+            return PyTorchBackend._from_python(
+                data, dtype=dtype, device=device, requires_grad=requires_grad
+            )
 
     @staticmethod
     def to_numpy(tensor):
