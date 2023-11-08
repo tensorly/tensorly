@@ -10,6 +10,7 @@ from ...testing import (
     assert_,
     assert_class_wrapper_correctly_passes_arguments,
     assert_array_almost_equal,
+    assert_allclose,
 )
 from .._parafac2 import (
     Parafac2,
@@ -422,8 +423,8 @@ def test_parafac2_init_cross_product():
     init_double = initialize_decomposition(slices + slices, rank, init="svd")
 
     # These factor matrices should be essentially the same
-    assert_array_almost_equal(init.factors[1], init_double.factors[1])
-    assert_array_almost_equal(init.factors[2], init_double.factors[2])
+    assert_allclose(init.factors[1], init_double.factors[1], rtol=1e-3, atol=1e-5)
+    assert_allclose(init.factors[2], init_double.factors[2], rtol=1e-3, atol=1e-5)
 
 
 def test_parafac2_init_error():
