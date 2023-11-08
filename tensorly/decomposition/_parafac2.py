@@ -38,22 +38,32 @@ def initialize_decomposition(
     """
     context = tl.context(tensor_slices[0])
     shapes = [m.shape for m in tensor_slices]
+    concat_shape = sum(shape[0] for shape in shapes)
 
     if init == "random":
         return random_parafac2(
             shapes, rank, full=False, random_state=random_state, **context
         )
     elif init == "svd":
-        A = T.ones((len(tensor_slices), rank), **context)
-
-        unfolded_mode_2 = tl.transpose(tl.concatenate(list(tensor_slices), axis=0))
-        if T.shape(unfolded_mode_2)[0] < rank:
+        if shapes[0][1] < rank:
             raise ValueError(
-                f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({T.shape(unfolded_mode_2)[0]})"
+                f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({shapes[0][1]})"
             )
+
+        A = tl.ones((len(tensor_slices), rank), **context)
+
+        if concat_shape > shapes[0][1]:
+            # If the concatenated matrix would be larger than the cross-product, use the latter
+            unfolded_mode_2 = tl.transpose(tensor_slices[0]) @ tensor_slices[0]
+
+            for i in range(1, len(tensor_slices)):
+                unfolded_mode_2 += tl.transpose(tensor_slices[i]) @ tensor_slices[i]
+        else:
+            unfolded_mode_2 = tl.transpose(tl.concatenate(list(tensor_slices), axis=0))
+
         C = svd_interface(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
 
-        B = T.eye(rank, **context)
+        B = tl.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd)
         return Parafac2Tensor((None, [A, B, C], projections))
 
