@@ -436,6 +436,7 @@ def parafac2(
     weights, factors, projections = initialize_decomposition(
         tensor_slices, rank, init=init, svd=svd, random_state=random_state
     )
+    factors = list(factors)
 
     rec_errors = []
     norm_tensor = tl.sqrt(
