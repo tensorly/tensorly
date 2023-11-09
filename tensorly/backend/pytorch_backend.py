@@ -35,21 +35,19 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
 
     @staticmethod
     def _from_torch(data, dtype, device, requires_grad):
-        if dtype is None:
-            # Infer dtype from data
-            dtype = data.dtype
+        # Clone tensor as recommended by PyTorch
+        tensor = data.clone()
 
-        if requires_grad is None:
-            # Infer requires_grad from data
-            requires_grad = data.requires_grad
+        if dtype is not None:
+            tensor = tensor.type(dtype)
 
-        if device is None:
-            # Infer device from data
-            device = data.device
+        if requires_grad is not None:
+            tensor.requires_grad_(requires_grad)
 
-        return torch.tensor(
-            data.clone(), dtype=dtype, device=device, requires_grad=requires_grad
-        )
+        if device is not None:
+            tensor = tensor.to(device=device)
+
+        return tensor
 
     @staticmethod
     def _from_numpy(data, dtype, device, requires_grad):
