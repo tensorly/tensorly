@@ -553,23 +553,13 @@ def test_logsumexp():
         assert_allclose(tensorly_result, scipy_result)
 
 
-only_torch = pytest.mark.skipif(
-    tl.get_backend() in ("tensorflow", "jax", "cupy", "numpy", "mxnet"),
-    reason=f"This test is specific to the PyTorch backend",
-)
-
-
-@only_torch
 def test_dtype_tensor_init():
-    import torch
-
-    dtypes_np = [np.float16, np.float32, np.float64, np.int32, np.int64]
+    dtypes_np = [np.float32, np.float64, np.int32, np.int64]
     dtypes_torch = [
-        torch.float16,
-        torch.float32,
-        torch.float64,
-        torch.int32,
-        torch.int64,
+        tl.float32,
+        tl.float64,
+        tl.int32,
+        tl.int64,
     ]
     for dtype_np, dtype_torch in zip(dtypes_np, dtypes_torch):
         # Numpy array
