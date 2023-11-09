@@ -46,11 +46,14 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
 
         # If device or device_id is specified, place the tensor on the correct device
         if device is not None or device_id is not None:
-            with tf.device(f'{device}:{device_id}' if device_id is not None else device):
-                out = tf.Variable(out.numpy(), dtype=dtype)  # Re-wrap the tensor on the specified device
+            with tf.device(
+                f"{device}:{device_id}" if device_id is not None else device
+            ):
+                out = tf.Variable(
+                    out.numpy(), dtype=dtype
+                )  # Re-wrap the tensor on the specified device
 
         return out
-
 
     @staticmethod
     def is_tensor(tensor):
