@@ -20,13 +20,37 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
     def context(tensor):
         return {"dtype": tensor.dtype}
 
-    @staticmethod
-    def tensor(data, dtype=np.float64, device=None, device_id=None):
-        if isinstance(data, tf.Tensor) or isinstance(data, tf.Variable):
-            return tf.cast(data, dtype=dtype)
+    # @staticmethod
+    # def tensor(data, dtype=np.float64, device=None, device_id=None):
+    #     if isinstance(data, tf.Tensor) or isinstance(data, tf.Variable):
+    #         return tf.cast(data, dtype=dtype)
+    #
+    #     out = tf.Variable(data, dtype=dtype)
+    #     return out.gpu(device_id) if device == "gpu" else out
 
-        out = tf.Variable(data, dtype=dtype)
-        return out.gpu(device_id) if device == "gpu" else out
+    @staticmethod
+    def tensor(data, dtype=None, device=None, device_id=None):
+        # Determine the dtype and device from the input if not provided
+        if dtype is None:
+            if isinstance(data, tf.Tensor) or isinstance(data, tf.Variable):
+                dtype = data.dtype
+            else:  # for numpy arrays and lists
+                dtype = tf.as_dtype(np.array(data).dtype)
+
+        if device is None and device_id is None:
+            if isinstance(data, tf.Tensor) or isinstance(data, tf.Variable):
+                device = data.device
+
+        # Create the tensor and cast to the determined dtype
+        out = tf.cast(tf.Variable(data), dtype=dtype)
+
+        # If device or device_id is specified, place the tensor on the correct device
+        if device is not None or device_id is not None:
+            with tf.device(f'{device}:{device_id}' if device_id is not None else device):
+                out = tf.Variable(out.numpy(), dtype=dtype)  # Re-wrap the tensor on the specified device
+
+        return out
+
 
     @staticmethod
     def is_tensor(tensor):
