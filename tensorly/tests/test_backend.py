@@ -551,3 +551,41 @@ def test_logsumexp():
         tensorly_result = tl.logsumexp(tensor, axis=axis)
         scipy_result = special.logsumexp(x, axis=axis)
         assert_allclose(tensorly_result, scipy_result)
+
+
+only_torch = pytest.mark.skipif(
+    tl.get_backend() in ("tensorflow", "jax", "cupy", "numpy", "mxnet"),
+    reason=f"This test is specific to the PyTorch backend",
+)
+
+
+@only_torch
+def test_dtype_tensor_init():
+    import torch
+
+    dtypes_np = [np.float16, np.float32, np.float64, np.int32, np.int64]
+    dtypes_torch = [
+        torch.float16,
+        torch.float32,
+        torch.float64,
+        torch.int32,
+        torch.int64,
+    ]
+    for dtype_np, dtype_torch in zip(dtypes_np, dtypes_torch):
+        # Numpy array
+        array = np.zeros((1,), dtype=dtype_np)
+
+        # No dtype given -> dtype should be inferred from input array
+        tensor = T.tensor(array)
+        assert tensor.dtype == dtype_torch
+
+        # dtype given -> dtype should be overwritten
+        for dtype in dtypes_torch:
+            # Check init from numpy array
+            tensor = T.tensor(array, dtype=dtype)
+            assert tensor.dtype == dtype
+
+            # Check init from python list
+            array_py = array.tolist()
+            tensor = T.tensor(array_py, dtype=dtype)
+            assert tensor.dtype == dtype
