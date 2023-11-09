@@ -91,7 +91,7 @@ def test_normalized_sparsity():
 
 def test_monotonicity():
     """Test for monotonicity operator"""
-    tensor = T.tensor(np.random.rand(20, 10))
+    tensor = T.tensor(np.random.rand(20, 10), dtype=tl.float32)
     # Monotone increasing
     tensor_monoton = monotonicity_prox(tensor)
     assert_(np.all(np.diff(tensor_monoton, axis=0) >= 0))
@@ -153,7 +153,7 @@ def test_soft_thresholding():
             [[0, 0.9, 1.9], [3.2, -0.1, 1.9]],
             [[0, -3.9, -0.2], [0.1, 2.6, -7.9]],
             [[-0.9, 0, 0], [0, -0, 0]],
-        ]
+        ],
     )
     # account for floating point errors: np array have a precision of around 2e-15
     # check np.finfo(np.float64).eps
@@ -173,7 +173,7 @@ def test_soft_thresholding():
     # Test with missing values
     tensor = T.tensor([[1, 2, 1.5], [4, -6, -0.5], [0.2, 1.02, -3.4]])
     copy_tensor = T.copy(tensor)
-    mask = T.tensor([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+    mask = T.tensor([[0, 1, 1], [1, 0, 1], [1, 1, 0]], dtype=tl.float64)
     threshold = 1.1 * mask
     true_res = T.tensor([[1, 0.9, 0.4], [2.9, -6, 0], [0, 0, -3.4]])
     res = soft_thresholding(tensor, threshold)
