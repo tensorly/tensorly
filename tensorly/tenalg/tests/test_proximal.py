@@ -184,7 +184,7 @@ def test_soft_thresholding():
 def test_svd_thresholding():
     """Test for singular_value_thresholding operator"""
     U = T.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=tl.float32)
-    singular_values = T.tensor([0.4, 2.1, -2])
+    singular_values = T.tensor([0.4, 2.1, -2], dtype=tl.float32)
     tensor = T.dot(U, T.reshape(singular_values, (-1, 1)) * T.transpose(U))
     shrinked_singular_values = T.tensor([0, 1.6, -1.5], dtype=tl.float32)
     true_res = T.dot(U, T.reshape(shrinked_singular_values, (-1, 1)) * T.transpose(U))
