@@ -5,7 +5,7 @@ from .tenalg.svd import svd_interface
 
 
 def svd_compress_tensor_slices(
-    tensor_slices, compression_threshold=0.0, svd="truncated_svd"
+    tensor_slices, compression_threshold=0.0, max_rank=None, svd="truncated_svd"
 ):
     r"""Compress data with the SVD for running PARAFAC2.
 
@@ -40,13 +40,17 @@ def svd_compress_tensor_slices(
     Parameters
     ----------
     tensor_slices : list of matrices
-        The data matrices to compress
+        The data matrices to compress.
     compression_threshold : float (0 <= compression_threshold <= 1)
         Threshold at which the singular values should be truncated. Any singular value less than
         compression_threshold * s[0] is set to zero. Note that if this is nonzero, then the found
         components will likely be affected.
+    max_rank : int
+        The maximum rank to allow in the datasets after compression. This also serves to speed up
+        the SVD calculation with matrices containing many rows and columns when paired with randomized
+        SVD solving.
     svd : str, default is 'truncated_svd'
-        function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
+        Function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
 
     Returns
     -------
@@ -70,13 +74,21 @@ def svd_compress_tensor_slices(
     loading_matrices = [None for _ in tensor_slices]
     score_matrices = [None for _ in tensor_slices]
 
+    _, n_cols = T.shape(tensor_slices[0])
+
+    if max_rank is not None:
+        rank_limit = min(n_cols, max_rank)
+    else:
+        rank_limit = n_cols
+
     for i, tensor_slice in enumerate(tensor_slices):
-        n_rows, n_cols = T.shape(tensor_slice)
-        if n_rows <= n_cols and not compression_threshold:
+        n_rows, _ = T.shape(tensor_slice)
+
+        if n_rows <= rank_limit and not compression_threshold:
             score_matrices[i] = tensor_slice
             continue
 
-        U, s, Vh = svd_interface(tensor_slice, n_eigenvecs=n_cols, method=svd)
+        U, s, Vh = svd_interface(tensor_slice, n_eigenvecs=rank_limit, method=svd)
 
         # Threshold SVD, keeping only singular values that satisfy s_i >= s_0 * epsilon
         # where epsilon is the compression threshold
@@ -85,7 +97,7 @@ def svd_compress_tensor_slices(
 
         # Array broadcasting happens at the last dimension, since Vh is num_svds x n_cols
         # we need to transpose it, multiply in the singular values and then transpose
-        # it again. This is equivalen to writing diag(s) @ Vh. If we skip the
+        # it again. This is equivalent to writing diag(s) @ Vh. If we skip the
         # transposes, we would get Vh @ diag(s), which is wrong.
         score_matrices[i] = T.transpose(s * T.transpose(Vh))
         loading_matrices[i] = U
