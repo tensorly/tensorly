@@ -34,55 +34,6 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         }
 
     @staticmethod
-    def _from_torch(data, dtype, device, requires_grad):
-        # Clone tensor as recommended by PyTorch
-        tensor = data.clone()
-
-        if dtype is not None:
-            tensor = tensor.type(dtype)
-
-        if requires_grad is not None:
-            tensor.requires_grad_(requires_grad)
-
-        if device is not None:
-            tensor = tensor.to(device=device)
-
-        return tensor
-
-    @staticmethod
-    def _from_numpy(data, dtype, device, requires_grad):
-        # Use from_numpy provided by PyTorch
-        t = torch.from_numpy(data)
-
-        # Clone the tensor to avoid memory sharing between torch tensor and numpy array
-        t = t.clone()
-
-        # If specific dtype is given, set the dtype, else keep the dtype of the numpy array
-        if dtype is not None:
-            t = t.type(dtype)
-
-        t.requires_grad_(False if requires_grad is None else requires_grad)
-        return t.to(device=device)
-
-    @staticmethod
-    def _from_python(data, dtype, device, requires_grad):
-        t = torch.tensor(data)
-
-        # Set dtype if given, else keep the inferred dtype from data
-        if dtype is not None:
-            t = t.type(dtype)
-
-        # Set device if given, else keep the default device ("cpu")
-        if device is not None:
-            t = t.to(device=device)
-
-        # Set requires_grad if given, else keep the default requires_grad (False)
-        if requires_grad is not None:
-            t.requires_grad_(requires_grad)
-
-        return t
-
-    @staticmethod
     def tensor(data, dtype=None, device=None, requires_grad=None):
         """
         Tensor constructor for the PyTorch backend.
@@ -94,26 +45,28 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         dtype : torch.dtype, optional
             Data type of the tensor. If None, the dtype is inferred from the data.
         device : Union[str, torch.device], optional
-            Device on which the tensor is allocated. If None, the device is inferred from the data.
+            Device on which the tensor is allocated. If None, the device is inferred from the data in case of a torch
+            Tensor.
         requires_grad : bool, optional.
             If autograd should record operations on the returned tensor. If None, requires_grad is inferred from the
             data.
 
         """
         if isinstance(data, torch.Tensor):
-            # Input is already a torch tensor
-            return PyTorchBackend._from_torch(
-                data, dtype=dtype, device=device, requires_grad=requires_grad
-            )
-        elif isinstance(data, np.ndarray):
-            # Input is a numpy array
-            return PyTorchBackend._from_numpy(
-                data, dtype=dtype, device=device, requires_grad=requires_grad
-            )
+            # If source is a tensor, use clone-detach as suggested by PyTorch
+            tensor = data.clone().detach()
         else:
-            return PyTorchBackend._from_python(
-                data, dtype=dtype, device=device, requires_grad=requires_grad
-            )
+            # Else, use PyTorch's tensor constructor
+            tensor = torch.tensor(data)
+
+        # Set dtype/device/requires_grad if specified
+        if dtype is not None:
+            tensor = tensor.type(dtype)
+        if device is not None:
+            tensor = tensor.to(device=device)
+        if requires_grad is not None:
+            tensor.requires_grad_(requires_grad)
+        return tensor
 
     @staticmethod
     def to_numpy(tensor):
