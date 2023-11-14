@@ -11,15 +11,20 @@ from ...testing import (
     assert_class_wrapper_correctly_passes_arguments,
     assert_array_almost_equal,
 )
-from .._parafac2 import Parafac2, parafac2, initialize_decomposition
+from .._parafac2 import (
+    Parafac2,
+    parafac2,
+    initialize_decomposition,
+    _BroThesisLineSearch,
+)
 from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
 from ...metrics.factors import congruence_coefficient
 
 
-@pytest.mark.parametrize(
-    ("normalize_factors", "init"), itertools.product([True, False], ["random", "svd"])
-)
-def test_parafac2(monkeypatch, normalize_factors, init):
+@pytest.mark.parametrize("normalize_factors", [True, False])
+@pytest.mark.parametrize("init", ["random", "svd"])
+@pytest.mark.parametrize("linesearch", [False, True])
+def test_parafac2(monkeypatch, normalize_factors, init, linesearch):
     rng = tl.check_random_state(1234)
     tol_norm_2 = 10e-2
     rank = 3
@@ -47,6 +52,7 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         normalize_factors=normalize_factors,
         return_errors=True,
         n_iter_max=100,
+        linesearch=linesearch,
     )
     rec_tensor = parafac2_to_tensor(rec)
 
@@ -85,6 +91,7 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         tol=1e-10,
         absolute_tol=1e-3,
         return_errors=True,
+        linesearch=linesearch,
     )
     assert len(err) > 2  # Check that we didn't just immediately exit
     assert err[-1] ** 2 < 1e-3
@@ -105,6 +112,7 @@ def test_parafac2(monkeypatch, normalize_factors, init):
         tol=1e-1,
         absolute_tol=-1,
         return_errors=True,
+        linesearch=linesearch,
     )
     assert len(err) > 2  # Check that we didn't just immediately exit
     assert abs(err[-2] ** 2 - err[-1] ** 2) < (1e-1 * err[-2] ** 2)
@@ -117,7 +125,103 @@ def test_parafac2(monkeypatch, normalize_factors, init):
     )
 
 
-def test_parafac2_nn():
+def test_parafac2_linesearch():
+    """Test that we end up with a better fit at the same number of iterations with linesearch."""
+    rng = tl.check_random_state(1234)
+    rank = 4
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(25 + rng.randint(5), 300) for _ in range(15)],
+        rank=rank,
+        random_state=rng,
+    )
+
+    slices = parafac2_to_slices(random_parafac2_tensor)
+
+    _, err = parafac2(
+        slices,
+        rank,
+        init="svd",
+        return_errors=True,
+        n_iter_max=10,
+        linesearch=False,
+    )
+    standard_error = err[-1]
+
+    _, err = parafac2(
+        slices,
+        rank,
+        init="svd",
+        return_errors=True,
+        n_iter_max=10,
+        linesearch=True,
+    )
+    ls_error = err[-1]
+    assert ls_error < standard_error
+
+
+def test_linesearch_accepts_only_improved_fit():
+    rng = tl.check_random_state(123)
+    rank = 4
+
+    weights, factors, projections = random_parafac2(
+        shapes=[(25 + rng.randint(5), 300) for _ in range(15)],
+        rank=rank,
+        random_state=rng,
+    )
+    slices = parafac2_to_slices((weights, factors, projections))
+
+    # Create dummy variable for the previous iteration
+    previous_iteration = random_parafac2(
+        shapes=[(25 + rng.randint(5), 300) for _ in range(15)],
+        rank=rank,
+        random_state=rng,
+    )
+
+    # Test with line search where the reconstruction error would worsen if accepted
+    line_search = _BroThesisLineSearch(norm_tensor=1, svd="truncated_svd")
+    ls_factors, ls_projections, ls_rec_error = line_search.line_step(
+        iteration=10,
+        tensor_slices=slices,
+        factors_last=previous_iteration[1],
+        weights=weights,
+        factors=factors,
+        projections=projections,
+        rec_error=0,
+    )
+
+    # Assert that the factor matrices, projection and reconstruction error all
+    # are unaffected by the line search
+    for fm, ls_fm in zip(factors, ls_factors):
+        assert_array_almost_equal(fm, ls_fm)
+    for proj, ls_proj in zip(projections, ls_projections):
+        assert_array_almost_equal(proj, ls_proj)
+    assert ls_rec_error == 0
+    assert line_search.acc_fail == 1
+
+    # Test with line search where the reconstruction error would improve if accepted
+    line_search = _BroThesisLineSearch(norm_tensor=1, svd="truncated_svd")
+    ls_factors, ls_projections, ls_rec_error = line_search.line_step(
+        iteration=10,
+        tensor_slices=slices,
+        factors_last=previous_iteration[1],
+        weights=weights,
+        factors=factors,
+        projections=projections,
+        rec_error=float("inf"),  # float('inf') to force accepting the line search
+    )
+    # Assert that the factor matrices, projection and reconstruction error all
+    # are changed by the line search
+    for fm, ls_fm in zip(factors, ls_factors):
+        assert_(tl.norm(fm - ls_fm) > 1e-5)
+    for proj, ls_proj in zip(projections, ls_projections):
+        assert_(tl.norm(proj - ls_proj) > 1e-5)
+    assert 0 < ls_rec_error < float("inf")
+    assert line_search.acc_fail == 0
+
+
+@pytest.mark.parametrize("linesearch", [False, True])
+def test_parafac2_nn(linesearch):
     rng = tl.check_random_state(1234)
     tol_norm_2 = 1e-2
     rank = 3
@@ -149,6 +253,7 @@ def test_parafac2_nn():
         normalize_factors=False,
         return_errors=True,
         n_iter_max=20,
+        linesearch=linesearch,
     )
     rec_tensor = parafac2_to_tensor(rec)
 
@@ -189,7 +294,7 @@ def test_parafac2_nn():
         factors[2] * T.tensor(rng.randint(-1, 2, factors[2].shape)),
     ]
     slices = parafac2_to_slices((weights, factors, projections))
-    rec, err = parafac2(
+    rec, _ = parafac2(
         slices,
         rank,
         random_state=rng,
@@ -199,6 +304,7 @@ def test_parafac2_nn():
         normalize_factors=False,
         return_errors=True,
         n_iter_max=1,
+        linesearch=linesearch,
     )
     assert_(T.all(rec[1][0] > -1e-10))
     assert_(T.all(rec[1][2] > -1e-10))
@@ -214,6 +320,7 @@ def test_parafac2_nn():
             n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
             normalize_factors=False,
             n_iter_max=1,
+            linesearch=linesearch,
         )
     with pytest.warns(UserWarning):
         rec = parafac2(
@@ -225,6 +332,7 @@ def test_parafac2_nn():
             n_iter_parafac=2,  # Otherwise, the SVD init will converge too quickly
             normalize_factors=False,
             n_iter_max=1,
+            linesearch=linesearch,
         )
 
 

@@ -408,7 +408,7 @@ def parafac(
             if verbose > 1:
                 print("Mode", mode, "of", tl.ndim(tensor))
 
-            pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
+            pseudo_inverse = tl.ones((rank, rank), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
                     pseudo_inverse = pseudo_inverse * tl.dot(
@@ -426,8 +426,6 @@ def parafac(
                 tl.solve(tl.conj(tl.transpose(pseudo_inverse)), tl.transpose(mttkrp))
             )
             factors[mode] = factor
-            if normalize_factors and mode != modes_list[-1]:
-                weights, factors = cp_normalize((weights, factors))
 
         # Will we be performing a line search iteration
         if linesearch and iteration % 2 == 0 and iteration > 5:

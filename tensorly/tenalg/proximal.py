@@ -546,7 +546,7 @@ def unimodality_prox(tensor):
     values = tl.tensor(
         tl.to_numpy((tensor - monotone_decreasing >= 0))
         * tl.to_numpy((tensor - monotone_increasing >= 0)),
-        **tl.context(tensor)
+        **tl.context(tensor),
     )
 
     sum_inc = tl.where(
@@ -987,37 +987,23 @@ def hals_nnls(
         rec_error = 0
         for k in range(rank):
             if UtU[k, k]:
-                if (
-                    sparsity_coefficient is not None
-                ):  # Modifying the function for sparsification
-                    deltaV = tl.where(
-                        (UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient)
-                        / UtU[k, k]
-                        > -V[k, :],
-                        (UtM[k, :] - tl.dot(UtU[k, :], V) - sparsity_coefficient)
-                        / UtU[k, k],
-                        -V[k, :],
-                    )
-                    V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
+                term = UtM[k, :] - tl.dot(UtU[k, :], V)
 
-                else:  # without sparsity
-                    deltaV = tl.where(
-                        (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k] > -V[k, :],
-                        (UtM[k, :] - tl.dot(UtU[k, :], V)) / UtU[k, k],
-                        -V[k, :],
-                    )
-                    V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
+                # Modifying the function for sparsification
+                if sparsity_coefficient is not None:
+                    term -= sparsity_coefficient
 
-                rec_error = rec_error + tl.dot(deltaV, tl.transpose(deltaV))
+                deltaV = tl.maximum(term / UtU[k, k], -V[k, :])
+                V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
+
+                rec_error += tl.dot(deltaV, tl.transpose(deltaV))
 
                 # Safety procedure, if columns aren't allow to be zero
                 if nonzero_rows and tl.all(V[k, :] == 0):
                     V[k, :] = tl.eps(V.dtype) * tl.max(V)
 
             elif nonzero_rows:
-                raise ValueError(
-                    "Column " + str(k) + " of U is zero with nonzero condition"
-                )
+                raise ValueError(f"Column {k} of U is zero with nonzero condition")
 
             if normalize:
                 norm = tl.norm(V[k, :])

@@ -2,7 +2,6 @@ import math
 import tensorly as tl
 from .. import backend as T
 from ..tt_tensor import tt_to_tensor
-from ..utils import prod
 
 # Authors: Taylor Lee Patti <taylorpatti@g.harvard.edu>
 #          Jean Kossaifi
@@ -25,7 +24,7 @@ def vonneumann_entropy(tensor):
     where p_i are the probabilities that each state is occupied
     (the eigenvalues of the density matrix).
     """
-    square_dim = int(math.sqrt(prod(tensor.shape)))
+    square_dim = int(math.sqrt(math.prod(tensor.shape)))
     tensor = tl.reshape(tensor, (square_dim, square_dim))
     try:
         eig_vals = T.eigh(tensor)[0]
