@@ -440,7 +440,7 @@ def tensor_ring_als_sampled(
             sampled_tensor_unf = tl.einsum("i,ij->ij", rescaling, sampled_tensor_unf)
 
             # Solve sampled least squares problem directly
-            sol, _ = tl.lstsq(sampled_design_mat, sampled_tensor_unf)
+            sol = tl.lstsq(sampled_design_mat, sampled_tensor_unf)[0]
 
             # Update core
             tr_decomp[dim] = tl.transpose(

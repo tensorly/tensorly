@@ -10,7 +10,6 @@ from ...testing import assert_array_almost_equal, assert_equal
 @pytest.mark.parametrize("rank", [10, 20])
 @pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
 def test_leverage_score_dist(no_row, no_col, rank):
-
     # Create no_row-by-no_col matrix of given rank
     U = tl.randn((no_row, rank), dtype=tl.float64)
     U, _ = tl.qr(U, mode="reduced")
