@@ -482,7 +482,7 @@ def non_negative_parafac_hals(
 
             if callback is not None:
                 cp_tensor = CPTensor((weights, factors))
-                retVal = callback(cp_tensor, rec_errors[-1], inner_iter=inner_iter)
+                retVal = callback(cp_tensor, rec_errors[-1])
                 if retVal is True:
                     if verbose:
                         print("Received True from callback function. Exiting.")
