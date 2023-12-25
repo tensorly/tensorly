@@ -10,6 +10,7 @@ from ...testing import (
     assert_,
     assert_class_wrapper_correctly_passes_arguments,
     assert_array_almost_equal,
+    assert_allclose,
 )
 from .._parafac2 import (
     Parafac2,
@@ -403,6 +404,27 @@ def test_parafac2_init_valid():
     for init_method in ["random", "svd", random_parafac2_tensor, (weights, (A, B, C))]:
         init = initialize_decomposition(tensor, rank, init=init_method)
         assert init.shape == random_parafac2_tensor.shape
+
+
+def test_parafac2_init_cross_product():
+    """Test that SVD initialization using the cross-product or concatenated
+    tensor yields the same result."""
+    rng = tl.check_random_state(1234)
+    rank = 3
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(25, 100)] * 3, rank=rank, random_state=rng
+    )
+    slices = parafac2_to_slices(random_parafac2_tensor)
+
+    init = initialize_decomposition(slices, rank, init="svd")
+
+    # Double the number of matrices so that we switch to the cross-product
+    init_double = initialize_decomposition(slices + slices, rank, init="svd")
+
+    # These factor matrices should be essentially the same
+    assert_allclose(init.factors[1], init_double.factors[1], rtol=1e-3, atol=1e-5)
+    assert_allclose(init.factors[2], init_double.factors[2], rtol=1e-3, atol=1e-5)
 
 
 def test_parafac2_init_error():
