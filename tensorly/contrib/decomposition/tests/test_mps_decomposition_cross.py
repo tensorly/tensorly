@@ -84,10 +84,6 @@ def test_tensor_train_cross_2():
 
 
 @skip_if_backend
-@pytest.mark.skipif(
-    tl.get_backend() in ("mxnet"),
-    reason=f"MXNet bug in advanced indexing (Issue 18919).",
-)
 def test_tensor_train_cross_3():
     """Test for tensor-train"""
     rng = tl.check_random_state(1234)

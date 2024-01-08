@@ -3,9 +3,6 @@ matrix:
     include:
      - os: linux
        python: 3.8
-       env: BACKEND=mxnet
-     - os: linux
-       python: 3.8
        env: BACKEND=jax
      - os: linux
        python: 3.8
@@ -39,7 +36,6 @@ install:
     - source activate test-environment
     - pip install coveralls pytest pytest-cov nose
     # For NumPy: install sparse for contrib.sparse tests
-    # For MXNet, additionnal dependencies are required
     # For PyTorch, install the cpu version and torchvision
     - if [[ "$BACKEND" == "numpy" ]]; then
         pip install sparse;
@@ -47,8 +43,6 @@ install:
         conda install pytorch cpuonly -c pytorch;
       elif [[ "$BACKEND" == "tensorflow" ]]; then
         conda install tensorflow;
-      elif [[ "$BACKEND" == "mxnet" ]]; then
-        pip install mxnet;
       elif [[ "$BACKEND" == "jax" ]]; then
         pip install jax jaxlib;
       fi

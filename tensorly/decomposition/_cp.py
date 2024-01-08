@@ -712,7 +712,6 @@ def randomised_parafac(
             indices_list = [i.tolist() for i in indices_list]
             # Keep all the elements of the currently considered mode
             indices_list.insert(mode, slice(None, None, None))
-            # MXNet will not be happy if this is a list instead of a tuple
             indices_list = tuple(indices_list)
             if mode:
                 sampled_unfolding = tensor[indices_list]

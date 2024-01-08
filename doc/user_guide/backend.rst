@@ -6,21 +6,21 @@ TensorLy's backend system
 .. note::
 
    In short, you can write your code using TensorLy and you can transparently combine it and execute with any of the backends. 
-   Currently we support NumPy PyTorch, MXNet, JAX, TensorFlow and CuPy as backends.
+   Currently we support NumPy PyTorch, JAX, TensorFlow and CuPy as backends.
 
 
 Backend?
 --------
-To represent tensors and for numerical computation, TensorLy supports several backends transparently: the ubiquitous NumPy (the default), MXNet, and PyTorch.
+To represent tensors and for numerical computation, TensorLy supports several backends transparently: the ubiquitous NumPy (the default), JAX, and PyTorch.
 For the end user, the interface is exactly the same, but under the hood, a different library is used to represent multi-dimensional arrays and perform computations on these.
 
-In other words, you write your code using TensorLy and can then decide whether the computation is done using NumPy, PyTorch or MXNet.
+In other words, you write your code using TensorLy and can then decide whether the computation is done using NumPy, PyTorch or JAX.
 
 Why backends?
 -------------
 The goal of TensorLy is to make tensor methods accessible.
-While NumPy needs no introduction, other backends such as MXNet and PyTorch backends are especially useful as they allows to perform transparently computation on CPU or GPU. 
-Last but not least, using MXNet or PyTorch as a backend, we are able to combine tensor methods and deep learning easily!
+While NumPy needs no introduction, other backends such as JAX and PyTorch backends are especially useful as they allows to perform transparently computation on CPU or GPU. 
+Last but not least, using JAX or PyTorch as a backend, we are able to combine tensor methods and deep learning easily!
 
 
 
@@ -32,11 +32,10 @@ Alternatively during the execution, assuming you have imported TensorLy as ``imp
 .. important::
    
    NumPy is installed by default with TensorLy if you haven't already installed it. 
-   However, to keep dependencies as minimal as possible, and to not complexify installation, neither MXNet nor PyTorch are installed.  If you want to use them as backend, you will have to install them first. 
+   However, to keep dependencies as minimal as possible, and to not complexify installation, no backend is installed.  If you want to use them as backend, you will have to install them first. 
    It is easy however, simply refer to their respective installation instructions:
 
    * `PyTorch <http://pytorch.org>`_
-   * `MXNet <https://mxnet.apache.org/install/index.html>`_
    * `JAX <https://jax.readthedocs.io/en/latest/developer.html#building-or-installing-jaxlib>`_ 
    * `CuPy <https://docs.cupy.dev/en/stable/install.html>`_
    * `TensorFlow <https://www.tensorflow.org/install>`_ 
@@ -47,7 +46,7 @@ Once you change the backend, all the computation is done using that backend.
 Context of a tensor
 -------------------
 
-Different backends have different parameters associated with the tensors. For instance, in NumPy we traditionally set the dtype when creating an ndarray, while in mxnet we also have to change the *context* (GPU or CPU), with the `ctx` argument. Similarly, in PyTorch, we might want to create a FloatTensor for CPU and a cuda.FloatTensor for GPU. 
+Different backends have different parameters associated with the tensors. For instance, in NumPy we traditionally set the dtype when creating an ndarray. Similarly, in PyTorch, we might want to create a FloatTensor for CPU and a cuda.FloatTensor for GPU. 
 
 To handle this difference, we implemented a `context` function, that, given a tensor, returns a dictionary of values characterising that tensor. A function getting a tensor as input and creating a new tensor should use that context to create the new tensor.
 
