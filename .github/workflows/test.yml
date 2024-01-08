@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         BACKEND: ['numpy', 'pytorch']
-        python-version: ['3.11']
+        python-version: ['3.12']
         include:
           - BACKEND: 'numpy'
             python-version: '3.8'
@@ -18,10 +18,10 @@ jobs:
             python-version: '3.9'
             TENSORLY_TENALG_BACKEND: ['einsum']
           - BACKEND: 'jax'
-            python-version: '3.11'
+            python-version: '3.12'
             TENSORLY_TENALG_BACKEND: ['einsum']
           - BACKEND: 'tensorflow'
-            python-version: '3.11'
+            python-version: '3.12'
             TENSORLY_TENALG_BACKEND: ['einsum']
 
     steps:
