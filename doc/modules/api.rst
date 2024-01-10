@@ -5,7 +5,7 @@ API reference
 Unified backend interface (:mod:`tensorly`)
 ===========================================
 
-There are several libraries for multi-dimensional array computation, including NumPy, PyTorch, MXNet, TensorFlow, JAX and CuPy.
+There are several libraries for multi-dimensional array computation, including NumPy, PyTorch, TensorFlow, JAX and CuPy.
 They all have strenghs and weaknesses, e.g. some are better on CPU, some better on GPU etc. 
 Therefore, in TensorLy we enable you to use our algorithm (and any code you write using the library), with any of these libraries.
 
@@ -376,6 +376,23 @@ Functions
     constrained_parafac
 
 
+Preprocessing (:mod:`tensorly.preprocessing`)
+=============================================
+
+.. automodule:: tensorly.preprocessing
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.preprocessing
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    svd_compress_tensor_slices
+    svd_decompress_parafac2_tensor
+
+
 Tensor Regression (:mod:`tensorly.regression`)
 ==============================================
 
@@ -508,5 +525,3 @@ Currently, the following decomposition methods are supported (for the NumPy back
    sparse.decomposition.parafac
    sparse.decomposition.non_negative_parafac
    sparse.decomposition.symmetric_parafac_power_iteration
-
-

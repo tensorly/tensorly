@@ -441,7 +441,7 @@ def maxvol(A):
         # Compute the square of norm of each row
         rows_norms = tl.sum(A_new**2, axis=1)
 
-        # If there is only one row of A left, let's just return it. MxNet is not robust about this case.
+        # If there is only one row of A left, let's just return it.
         if tl.shape(rows_norms) == ():
             row_idx[i] = rest_of_rows
             break
@@ -462,7 +462,7 @@ def maxvol(A):
         # projection a to b is computed as: <a,b> / sqrt(|a|*|b|)
         projection = tl.dot(A_new, tl.transpose(max_row))
         normalization = tl.sqrt(rows_norms[max_row_idx] * rows_norms)
-        # make sure normalization vector is of the same shape of projection (causing bugs for MxNet)
+        # make sure normalization vector is of the same shape of projection
         normalization = tl.reshape(normalization, tl.shape(projection))
         projection = projection / normalization
 

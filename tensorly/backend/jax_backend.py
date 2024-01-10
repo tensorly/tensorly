@@ -9,14 +9,13 @@ try:
     import jax.scipy.special
 except ImportError as error:
     message = (
-        "Impossible to import Jax.\n"
-        "To use TensorLy with the Jax backend, "
-        "you must first install Jax!"
+        "Impossible to import JAX.\n"
+        "To use TensorLy with the JAX backend, "
+        "you must first install JAX!"
     )
     raise ImportError(message) from error
 
 import numpy
-import copy
 
 from .core import (
     Backend,
@@ -24,6 +23,10 @@ from .core import (
     backend_basic_math,
     backend_array,
 )
+
+
+if Version(jax.__version__) < Version("0.3.0"):
+    raise RuntimeError("TensorLy only supports JAX v0.3.0 and above.")
 
 
 class JaxBackend(Backend, backend_name="jax"):
@@ -54,13 +57,16 @@ class JaxBackend(Backend, backend_name="jax"):
         return tensor.ndim
 
     @staticmethod
-    def lstsq(a, b):
-        x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None, numpy_resid=True)
-        return x, residuals
+    def lstsq(a, b, rcond=None):
+        return np.linalg.lstsq(a, b, rcond=rcond, numpy_resid=True)
 
     @staticmethod
     def logsumexp(tensor, axis=0):
         return jax.scipy.special.logsumexp(tensor, axis=axis)
+
+    @staticmethod
+    def index_update(tensor, indices, values):
+        return tensor.at[indices].set(values)
 
 
 for name in (
@@ -98,15 +104,6 @@ for name in (
 
 for name in ["solve", "qr", "svd", "eigh"]:
     JaxBackend.register_method(name, getattr(np.linalg, name))
-
-if Version(jax.__version__) >= Version("0.3.0"):
-
-    def index_update(tensor, indices, values):
-        return tensor.at[indices].set(values)
-
-    JaxBackend.register_method("index_update", index_update)
-else:
-    JaxBackend.register_method(name, getattr(jax.ops, name))
 
 for name in ["gamma"]:
     JaxBackend.register_method(name, getattr(jax.random, name))

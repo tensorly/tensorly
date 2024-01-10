@@ -546,7 +546,7 @@ def unimodality_prox(tensor):
     values = tl.tensor(
         tl.to_numpy((tensor - monotone_decreasing >= 0))
         * tl.to_numpy((tensor - monotone_increasing >= 0)),
-        **tl.context(tensor)
+        **tl.context(tensor),
     )
 
     sum_inc = tl.where(
@@ -1003,10 +1003,16 @@ def hals_nnls(
         rec_error = 0
         for k in range(rank):
             if UtU[k, k]:
-                newV = tl.clip(
-                    (UtM[k,:] - tl.dot(UtU[k,:], V) + UtU[k,k]*V[k,:] - sparsity_coefficient)
-                    / (UtU[k,k]+2*ridge_coefficient), a_min=epsilon
-                    )
+                num = UtM[k, :] - tl.dot(UtU[k, :], V) + UtU[k,k] * V[k,:]
+                den = UtU[k,k]
+                
+                # Modifying the function for sparsification
+                if sparsity_coefficient is not None:
+                    num -= sparsity_coefficient
+                if ridge_coefficient is not None:
+                    den += 2 * ridge_coefficient
+                    
+                newV = tl.clip(num / den, a_min=epsilon)
                 rec_error += tl.norm(V-newV)**2
                 V = tl.index_update(V, tl.index[k, :], newV)
                 
@@ -1015,9 +1021,7 @@ def hals_nnls(
                 if nonzero_rows and tl.all(V[k, :] == 0):
                     V[k, :] = tl.eps(V.dtype) * tl.max(V)
             elif nonzero_rows:
-                raise ValueError(
-                    "Column " + str(k) + " of U is zero with nonzero condition"
-                )
+                raise ValueError(f"Column {k} of U is zero with nonzero condition")
 
             if normalize:
                 norm = tl.norm(V[k, :])
@@ -1183,86 +1187,59 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
         x_vec = tl.base.tensor_to_vec(x)
 
     x_gradient = Utm - tl.dot(UtU, x_vec)
-    passive_set = x_vec > 0
     active_set = x_vec <= 0
     support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
 
     for iteration in range(n_iter_max):
         if iteration > 0 or tl.all(x_vec == 0):
             indice = tl.argmax(x_gradient)
-            passive_set = tl.index_update(passive_set, tl.index[indice], True)
             active_set = tl.index_update(active_set, tl.index[indice], False)
         # To avoid singularity error when initial x exists
         try:
             passive_solution = tl.solve(
-                UtU[passive_set, :][:, passive_set], Utm[passive_set]
+                UtU[~active_set, :][:, ~active_set], Utm[~active_set]
             )
-            indice_list = []
-            for i in range(tl.shape(support_vec)[0]):
-                if passive_set[i]:
-                    indice_list.append(i)
-                    support_vec = tl.index_update(
-                        support_vec,
-                        tl.index[int(i)],
-                        passive_solution[len(indice_list) - 1],
-                    )
-                else:
-                    support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
         # Start from zeros if solve is not achieved
         except:
             x_vec = tl.zeros(tl.shape(UtU)[1])
             support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
-            passive_set = x_vec > 0
             active_set = x_vec <= 0
             if tl.any(active_set):
                 indice = tl.argmax(x_gradient)
-                passive_set = tl.index_update(passive_set, tl.index[indice], True)
                 active_set = tl.index_update(active_set, tl.index[indice], False)
             passive_solution = tl.solve(
-                UtU[passive_set, :][:, passive_set], Utm[passive_set]
+                UtU[~active_set, :][:, ~active_set], Utm[~active_set]
             )
-            indice_list = []
-            for i in range(tl.shape(support_vec)[0]):
-                if passive_set[i]:
-                    indice_list.append(i)
-                    support_vec = tl.index_update(
-                        support_vec,
-                        tl.index[int(i)],
-                        passive_solution[len(indice_list) - 1],
-                    )
-                else:
-                    support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
+
+        # Update support vector with passive solution
+        support_vec = tl.zeros(tl.shape(support_vec), **tl.context(support_vec))
+        support_vec = tl.index_update(support_vec, ~active_set, passive_solution)
 
         # update support vector if it is necessary
-        if tl.min(support_vec[passive_set]) <= 0:
-            for i in range(len(passive_set)):
+        if tl.min(support_vec[~active_set]) <= 0:
+            for _ in range(len(active_set)):
                 alpha = tl.min(
-                    x_vec[passive_set][support_vec[passive_set] <= 0]
+                    x_vec[~active_set][support_vec[~active_set] <= 0]
                     / (
-                        x_vec[passive_set][support_vec[passive_set] <= 0]
-                        - support_vec[passive_set][support_vec[passive_set] <= 0]
+                        x_vec[~active_set][support_vec[~active_set] <= 0]
+                        - support_vec[~active_set][support_vec[~active_set] <= 0]
                     )
                 )
                 update = alpha * (support_vec - x_vec)
                 x_vec = x_vec + update
-                passive_set = x_vec > 0
                 active_set = x_vec <= 0
                 passive_solution = tl.solve(
-                    UtU[passive_set, :][:, passive_set], Utm[passive_set]
+                    UtU[~active_set, :][:, ~active_set], Utm[~active_set]
                 )
-                indice_list = []
-                for i in range(tl.shape(support_vec)[0]):
-                    if passive_set[i]:
-                        indice_list.append(i)
-                        support_vec = tl.index_update(
-                            support_vec,
-                            tl.index[int(i)],
-                            passive_solution[len(indice_list) - 1],
-                        )
-                    else:
-                        support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
 
-                if tl.any(passive_set) != True or tl.min(support_vec[passive_set]) > 0:
+                # Update support vector with passive solution
+                support_vec = tl.zeros(tl.shape(support_vec), **tl.context(support_vec))
+                support_vec = tl.index_update(
+                    support_vec, ~active_set, passive_solution
+                )
+
+                # Break if finished updating
+                if tl.all(active_set) != True or tl.min(support_vec[~active_set]) > 0:
                     break
         # set x to s
         x_vec = tl.clip(support_vec, 0, tl.max(support_vec))

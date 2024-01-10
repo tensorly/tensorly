@@ -35,6 +35,10 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
 
     @staticmethod
     def tensor(data, dtype=torch.float32, device="cpu", requires_grad=False):
+        if isinstance(data, torch.Tensor):
+            with torch.device(device):
+                return data.clone().detach().type(dtype).requires_grad_(requires_grad)
+
         if isinstance(data, np.ndarray):
             data = data.copy()
         return torch.tensor(
@@ -186,9 +190,8 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         tensor.index_put_(index, values)
 
     @staticmethod
-    def lstsq(a, b):
-        x, residuals, _, _ = torch.linalg.lstsq(a, b, rcond=None, driver="gelsd")
-        return x, residuals
+    def lstsq(a, b, rcond=None, driver="gelsd"):
+        return torch.linalg.lstsq(a, b, rcond=rcond, driver=driver)
 
     @staticmethod
     def eigh(tensor):
@@ -199,12 +202,6 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
     def sign(tensor):
         """torch.sign does not support complex numbers."""
         return torch.sgn(tensor)
-
-    @staticmethod
-    def svd(matrix, full_matrices=True):
-        some = not full_matrices
-        u, s, v = torch.svd(matrix, some=some, compute_uv=True)
-        return u, s, v.transpose(-2, -1).conj()
 
     @staticmethod
     def logsumexp(tensor, axis=0):

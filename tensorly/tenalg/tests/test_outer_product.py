@@ -20,13 +20,7 @@ def test_outer_product():
 
 
 def test_batched_outer_product():
-    """Test batched_outer_dot
-
-    Notes
-    -----
-    At the time of writing, MXNet doesn't support transpose
-    for tensors of order higher than 6
-    """
+    """Test batched_outer_dot"""
     rng = tl.check_random_state(1234)
     batch_size = 3
 
