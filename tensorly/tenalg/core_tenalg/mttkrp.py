@@ -74,7 +74,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     # allowing this function to be computed externally would be a great help for connecting with HPC.
 
     weights, factors = cp_tensor
-    if weights is None:
+    if weights:
         kr_factors = weights*khatri_rao(factors, skip_matrix=mode)
     else:
         kr_factors = khatri_rao(factors, skip_matrix=mode)
