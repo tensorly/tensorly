@@ -136,14 +136,19 @@ def hals_nnls(
         rec_error = 0
         for k in range(rank):
             if UtU[k, k]:
-                newV = tl.clip(
-                    (UtM[k,:] - tl.dot(UtU[k,:], V) + UtU[k,k]*V[k,:] - sparsity_coefficient)
-                    / (UtU[k,k]+2*ridge_coefficient), a_min=epsilon
-                    )
+                num = UtM[k, :] - tl.dot(UtU[k, :], V) + UtU[k,k] * V[k,:]
+                den = UtU[k,k]
+                
+                # Modifying the function for sparsification
+                if sparsity_coefficient is not None:
+                    num -= sparsity_coefficient
+                if ridge_coefficient is not None:
+                    den += 2 * ridge_coefficient
+                    
+                newV = tl.clip(num / den, a_min=epsilon)
                 rec_error += tl.norm(V-newV)**2
                 V = tl.index_update(V, tl.index[k, :], newV)
                 
-
                 # Safety procedure, if columns aren't allow to be zero
                 if nonzero_rows and tl.all(V[k, :] == 0):
                     V[k, :] = tl.eps(V.dtype) * tl.max(V)
