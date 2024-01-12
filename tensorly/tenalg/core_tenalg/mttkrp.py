@@ -5,8 +5,47 @@ from ...base import unfold
 
 # Author: Jean Kossaifi
 
+def unfolding_dot_khatri_rao_fast(tensor, cp_tensor, mode):
+    """mode-n unfolding times khatri-rao product of factors
+    
+    Parameters
+    ----------
+    tensor : tl.tensor
+        tensor to unfold
+    factors : tl.tensor list
+        list of matrices of which to the khatri-rao product
+    mode : int
+        mode on which to unfold `tensor`
 
-def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
+    Returns
+    -------
+    mttkrp
+        dot(unfold(tensor, mode), khatri-rao(factors))
+
+    Notes
+    -----
+    Implemented as the naive product between an unfolded tensor
+    and a Khatri-Rao product explicitly formed. Due to matrix-matrix
+    products being extremely efficients operations, this is a 
+    simple yet hard-to-beat implementation of MTTKRP.
+    
+    When the CP-rank of the CP-tensor is comparable to, or larger than,
+    the dimensions of the input tensor, this method however requires a lot
+    of memory, which can be harmful when dealing with large tensors. In this
+    case, please use the memory-efficient version of MTTKRP.
+    
+    (default unfolding_dot_khatri_rao implementation).
+    """
+    weights, factors = cp_tensor
+    if weights:
+        kr_factors = weights*khatri_rao(factors, skip_matrix=mode)
+    else:
+        kr_factors = khatri_rao(factors, skip_matrix=mode)
+    mttkrp = T.dot(unfold(tensor, mode), kr_factors)
+    return mttkrp
+
+
+def unfolding_dot_khatri_rao_memory(tensor, cp_tensor, mode):
     """mode-n unfolding times khatri-rao product of factors
 
     Parameters
@@ -25,24 +64,16 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
 
     Notes
     -----
-    This is a variant of::
-
-        unfolded = unfold(tensor, mode)
-        kr_factors = khatri_rao(factors, skip_matrix=mode)
-        mttkrp2 = tl.dot(unfolded, kr_factors)
-
-    Multiplying with the Khatri-Rao product is equivalent to multiplying,
-    for each rank, with the kronecker product of each factor.
-    In code::
-
-        mttkrp_parts = []
-        for r in range(rank):
-            component = tl.tenalg.multi_mode_dot(tensor, [f[:, r] for f in factors], skip=mode)
-            mttkrp_parts.append(component)
-        mttkrp = tl.stack(mttkrp_parts, axis=1)
-        return mttkrp
-
-    This can be done by taking n-mode-product with the full factors
+    Implemented as a sequence of Tensor-times-vectors products between a tensor
+    and a Khatri-Rao product. The Khatri-Rao product is never computed explicitly,
+    rather each column in the Khatri-Rao product is contracted with the tensor. This
+    operation is implemented in Python and without making of use of parallelism, and it 
+    is therefore in general slower than the naive MTTKRP product.
+    When the CP-rank of the CP-tensor is comparable to, or larger than,
+    the dimensions of the input tensor, this method however requires much less
+    memory.
+    
+    This method can also be implemented by taking n-mode-product with the full factors
     (faster but more memory consuming)::
 
         projected = multi_mode_dot(tensor, factors, skip=mode, transpose=True)
@@ -52,45 +83,17 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
             index = tuple([slice(None) if k == mode  else i for k in range(ndims)])
             res.append(projected[index])
         return T.stack(res, axis=-1)
-
-
-    The same idea could be expressed using einsum::
-
-        ndims = tl.ndim(tensor)
-        tensor_idx = ''.join(chr(ord('a') + i) for i in range(ndims))
-        rank = chr(ord('a') + ndims + 1)
-        op = tensor_idx
-        for i in range(ndims):
-            if i != mode:
-                op += ',' + ''.join([tensor_idx[i], rank])
-            else:
-                result = ''.join([tensor_idx[i], rank])
-        op += '->' + result
-        factors = [f for (i, f) in enumerate(factors) if i != mode]
-        return tl_einsum(op, tensor, *factors)
     """
-    # TODO: switch methods based on sparse or not
-    # or allow a user defined option to change the method.
-    # allowing this function to be computed externally would be a great help for connecting with HPC.
-
+    mttkrp_parts = []
     weights, factors = cp_tensor
-    if weights:
-        kr_factors = weights*khatri_rao(factors, skip_matrix=mode)
+    rank = T.shape(factors[0])[1]
+    for r in range(rank):
+        component = multi_mode_dot(
+            tensor, [T.conj(f[:, r]) for f in factors], skip=mode
+        )
+        mttkrp_parts.append(component)
+
+    if weights is None:
+        return T.stack(mttkrp_parts, axis=1)
     else:
-        kr_factors = khatri_rao(factors, skip_matrix=mode)
-    mttkrp2 = T.dot(unfold(tensor, mode), kr_factors)
-    return mttkrp2
-
-    #mttkrp_parts = []
-    #weights, factors = cp_tensor
-    #rank = T.shape(factors[0])[1]
-    #for r in range(rank):
-        #component = multi_mode_dot(
-            #tensor, [T.conj(f[:, r]) for f in factors], skip=mode
-        #)
-        #mttkrp_parts.append(component)
-
-    #if weights is None:
-        #return T.stack(mttkrp_parts, axis=1)
-    #else:
-        #return T.stack(mttkrp_parts, axis=1) * T.reshape(weights, (1, -1))
+        return T.stack(mttkrp_parts, axis=1) * T.reshape(weights, (1, -1))

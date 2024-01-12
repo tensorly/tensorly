@@ -6,7 +6,7 @@ from .outer_product import outer, batched_outer
 from .moments import higher_order_moment
 from ._tt_matrix import tt_matrix_to_tensor
 from ._batched_tensordot import tensordot
-from .mttkrp import unfolding_dot_khatri_rao
+from .mttkrp import unfolding_dot_khatri_rao_fast, unfolding_dot_khatri_rao_memory
 
 from ..base_tenalg import TenalgBackend
 
@@ -26,4 +26,6 @@ CoreTenalgBackend.register_method("batched_outer", batched_outer)
 CoreTenalgBackend.register_method("higher_order_moment", higher_order_moment)
 CoreTenalgBackend.register_method("_tt_matrix_to_tensor", tt_matrix_to_tensor)
 CoreTenalgBackend.register_method("tensordot", tensordot)
-CoreTenalgBackend.register_method("unfolding_dot_khatri_rao", unfolding_dot_khatri_rao)
+CoreTenalgBackend.register_method("unfolding_dot_khatri_rao", unfolding_dot_khatri_rao_fast)
+# to use the memory efficient but slower unfolding_dot_khatri_rao:
+# CoreTenalgBackend.register_method("unfolding_dot_khatri_rao", unfolding_dot_khatri_rao_memory)
