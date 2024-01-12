@@ -5,7 +5,7 @@ from ...base import unfold
 
 # Author: Jean Kossaifi
 
-def unfolding_dot_khatri_rao_fast(tensor, cp_tensor, mode):
+def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     """mode-n unfolding times khatri-rao product of factors
     
     Parameters
@@ -34,7 +34,12 @@ def unfolding_dot_khatri_rao_fast(tensor, cp_tensor, mode):
     of memory, which can be harmful when dealing with large tensors. In this
     case, please use the memory-efficient version of MTTKRP.
     
-    (default unfolding_dot_khatri_rao implementation).
+    (default unfolding_dot_khatri_rao implementation). To use the slower memory efficient version, run
+    ```python
+    from tensorly.tenalg.core_tenalg.mttkrp import unfolding_dot_khatri_rao_memory
+    tl.tenalg.register_backend_method("unfolding_dot_khatri_rao", unfolding_dot_khatri_rao_memory)
+    tl.tenalg.use_dynamic_dispatch()
+    ```
     """
     weights, factors = cp_tensor
     if weights:
