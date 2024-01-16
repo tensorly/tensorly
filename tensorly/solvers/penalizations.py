@@ -46,7 +46,7 @@ def process_regularization_weights(ridge_coefficients, sparsity_coefficients, n_
     if not disable_rebalance:
         hom_deg = tl.tensor([1.0*(sparsity_coefficients[i]>0) + 2.0*(ridge_coefficients[i]>0) for i in range(n_modes)]) # +1 for the core
 
-    return ridge_coefficients, sparsity_coefficients, reg_is_used, disable_rebalance, hom_deg
+    return ridge_coefficients, sparsity_coefficients, disable_rebalance, hom_deg
 
 # CP specific
 def cp_opt_balance(regs, hom_deg):
