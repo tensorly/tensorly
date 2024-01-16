@@ -42,7 +42,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     ```
     """
     weights, factors = cp_tensor
-    if weights:
+    if weights is not None:
         kr_factors = weights*khatri_rao(factors, skip_matrix=mode)
     else:
         kr_factors = khatri_rao(factors, skip_matrix=mode)
