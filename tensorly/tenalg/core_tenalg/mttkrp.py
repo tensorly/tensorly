@@ -42,11 +42,8 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     ```
     """
     weights, factors = cp_tensor
-    if weights is not None:
-        kr_factors = weights*khatri_rao(factors, skip_matrix=mode)
-    else:
-        kr_factors = khatri_rao(factors, skip_matrix=mode)
-    mttkrp = T.dot(unfold(tensor, mode), kr_factors)
+    kr_factors = khatri_rao(factors, weights=weights, skip_matrix=mode)
+    mttkrp = T.dot(unfold(tensor, mode), T.conj(kr_factors))
     return mttkrp
 
 

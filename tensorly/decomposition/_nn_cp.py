@@ -2,7 +2,7 @@ import warnings
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ._cp import initialize_cp
-from ..tenalg.proximal import hals_nnls
+from ..solvers.nnls import hals_nnls
 from ..cp_tensor import (
     CPTensor,
     unfolding_dot_khatri_rao,
@@ -202,15 +202,14 @@ def non_negative_parafac_hals(
     verbose=False,
     normalize_factors=False,
     return_errors=False,
-    exact=False,  # todo remove?
     cvg_criterion="abs_rec_error",
     epsilon=0,
-    rescale=True,  # todo keep in options?
-    pop_l2=False,  # todo remove from PR
-    print_it=50,  # todo uniform across funs
-    accelerate=None,  # todo implement
-    inner_iter_max=50,  # todo implement, or have some option dictionary?
-    inner_tol = 0.1, #todo doc, revise
+    rescale=True,
+    pop_l2=False,
+    print_it=50,
+    accelerate=None,
+    inner_iter_max=50,
+    inner_tol=0.1,
     callback=None,
 ):
     """
@@ -322,7 +321,6 @@ def non_negative_parafac_hals(
     (
         ridge_coefficients,
         sparsity_coefficients,
-        reg_is_used,
         disable_rebalance,
         hom_deg,
     ) = process_regularization_weights(
@@ -372,9 +370,6 @@ def non_negative_parafac_hals(
 
         # ---------------------------------------
 
-        # store inner iters cnt
-        inner_iter = [0 for i in range(len(modes))]
-
         # One pass of least squares on each updated mode
         for mode in modes:
             # Computing Hadamard of cross-products
@@ -394,17 +389,15 @@ def non_negative_parafac_hals(
 
             if mode in nn_modes:
                 # Call the hals resolution with nnls, optimizing the current mode
-                nn_factor, _, inner_iter[mode], _ = hals_nnls(
+                nn_factor, _, _, _ = hals_nnls(
                     tl.transpose(mttkrp),
                     pseudo_inverse,
                     tl.transpose(factors[mode]),
                     n_iter_max=inner_iter_max,
                     sparsity_coefficient=sparsity_coefficients[mode],
                     ridge_coefficient=ridge_coefficients[mode],
-                    exact=exact,
                     epsilon=epsilon,
                     tol=inner_tol # TODO doc, remove?
-                    # normalize=normalize_mode[mode]
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
@@ -459,7 +452,7 @@ def non_negative_parafac_hals(
             # ----------
 
             if normalize_factors and mode != modes[-1]:
-                if reg_is_used:
+                if not disable_rebalance:
                     warnings.warn(
                         f"It is not advised to normalize factors if l1 or l2 penalty are used."
                     )
@@ -510,7 +503,7 @@ def non_negative_parafac_hals(
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
     if return_errors:
-        return cp_tensor, rec_errors, regs_loss
+        return cp_tensor, rec_errors
     else:
         return cp_tensor
 
@@ -695,6 +688,8 @@ class CP_NN_HALS(DecompositionMixin):
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
+    ridge_coefficients : list of float
+        test
 
     Returns
     -------
@@ -718,22 +713,30 @@ class CP_NN_HALS(DecompositionMixin):
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
            Applications", PhD., University of Amsterdam, 1998
     """
-
+ 
     def __init__(
         self,
         rank,
         n_iter_max=100,
         init="svd",
         svd="truncated_svd",
-        tol=10e-8,
+        tol=1e-8,
         sparsity_coefficients=None,
+        ridge_coefficients=None,
         fixed_modes=None,
         nn_modes="all",
-        exact=False,
         verbose=False,
         normalize_factors=False,
         cvg_criterion="abs_rec_error",
         random_state=None,
+        epsilon=0,
+        rescale=True,
+        pop_l2=False,
+        print_it=50,
+        accelerate=None,
+        inner_iter_max=50,
+        inner_tol=0.1,
+        callback=None
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -741,14 +744,22 @@ class CP_NN_HALS(DecompositionMixin):
         self.svd = svd
         self.tol = tol
         self.sparsity_coefficients = sparsity_coefficients
+        self.ridge_coefficients = ridge_coefficients
         self.random_state = random_state
         self.fixed_modes = fixed_modes
         self.nn_modes = nn_modes
-        self.exact = exact
         self.verbose = verbose
         self.normalize_factors = normalize_factors
         self.cvg_criterion = cvg_criterion
         self.random_state = random_state
+        self.epsilon = epsilon
+        self.rescale = rescale
+        self.pop_l2 = pop_l2
+        self.print_it = print_it
+        self.accelerate = accelerate
+        self.inner_iter_max = inner_iter_max
+        self.inner_tol = inner_tol
+        self.callback = callback
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -773,14 +784,22 @@ class CP_NN_HALS(DecompositionMixin):
             tol=self.tol,
             random_state=self.random_state,
             sparsity_coefficients=self.sparsity_coefficients,
+            ridge_coefficients=self.ridge_coefficients,
             fixed_modes=self.fixed_modes,
             nn_modes=self.nn_modes,
-            exact=self.exact,
             verbose=self.verbose,
             normalize_factors=self.normalize_factors,
             return_errors=True,
             cvg_criterion=self.cvg_criterion,
-        )
+            epsilon=self.epsilon,
+            rescale=self.rescale,
+            pop_l2=self.pop_l2,
+            print_it=self.print_it,
+            accelerate=self.accelerate,
+            inner_iter_max=self.inner_iter_max,
+            inner_tol=self.inner_tol,
+            callback=self.callback
+            )
 
         self.decomposition_ = cp_tensor
         self.errors_ = errors

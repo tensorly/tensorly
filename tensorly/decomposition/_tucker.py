@@ -475,13 +475,12 @@ def non_negative_tucker_hals(
     return_errors=False,
     exact=False,  # todo remove option here?
     algorithm="fista",  # todo more explicit name? Remove? Try coordinate descent?
-    accelerate=None,  # todo implement
     inner_iter_max=30,  # or have some option dictionary?
     tol_fista=1e-1,
-    epsilon=0,  # todo implement
+    epsilon=0,
     rescale=True,
     pop_l2=False, #TODO doc
-    partial=None,  # todo implement with identity trick? hack: use 1 instead of eye to avoid computations
+    #partial=None,  # todo implement with identity trick? hack: use 1 instead of eye to avoid computations
     print_it=50,  # TODO put in all?
     callback=None,
 ):
@@ -622,7 +621,6 @@ def non_negative_tucker_hals(
     (
         ridge_coefficients,
         sparsity_coefficients,
-        reg_is_used,
         disable_rebalance,
         hom_deg,
     ) = process_regularization_weights(
@@ -762,7 +760,7 @@ def non_negative_tucker_hals(
                     sparsity_coefficients[-1] * tl.sum(tl.abs(nn_core))
                     + ridge_coefficients[-1] * tl.sum(nn_core**2)
                 ]
-                nn_factors, nn_core, scales = tucker_implicit_scalar_balancing(
+                nn_factors, nn_core, _ = tucker_implicit_scalar_balancing(
                     nn_factors, nn_core, regs, hom_deg
                 )
             # Step 3: impute epsilon in place of values in [0, epsilon]
@@ -773,12 +771,12 @@ def non_negative_tucker_hals(
         
         # error computation #TODO optimize? TODO care about normalization or the tensor
         # TODO split rec error and loss?
-        if (callback is not None) or return_errors:
+        if tol or (callback is not None) or return_errors:
             rec_error = (
                 tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors))) ** 2
             ) / 2  # / norm_tensor
             regs = 0
-            if reg_is_used:
+            if not disable_rebalance:
                 # Adding the regs value to the reconstruction error
                 regs = [
                     sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
@@ -791,27 +789,27 @@ def non_negative_tucker_hals(
                 rec_error += tl.sum(regs)
             rec_errors.append(rec_error/norm_tensor**2)
 
-            tucker_tensor = TuckerTensor((nn_core, nn_factors))
-            retVal = callback(tucker_tensor, rec_errors[-1])
-            if retVal is True:
-                if verbose:
-                    print("Received True from callback function. Exiting.")
-                break
+            if callback is not None:
+                tucker_tensor = TuckerTensor((nn_core, nn_factors))
+                retVal = callback(tucker_tensor, rec_errors[-1])
+                if retVal is True:
+                    if verbose:
+                        print("Received True from callback function. Exiting.")
+                    break
 
-
-        if not (iteration % print_it):
-            if verbose:
-                if iteration > 0:
-                    # TODO remove scales
-                    print(
-                        f"iter={iteration}, loss={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}, rec err={rec_error}, regs={tl.sum(regs)}."
-                    )
-                else:
-                    print(f"first iteration, initial loss={rec_errors[-1]}.")
-            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+            if (not (iteration % print_it)) and iteration>1:
                 if verbose:
-                    print(f"converged in {iteration} iterations.")
-                break
+                    if iteration > 0:
+                        # TODO remove scales
+                        print(
+                            f"iter={iteration}, loss={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}, rec err={rec_error}, regs={tl.sum(regs)}."
+                        )
+                    else:
+                        print(f"first iteration, initial loss={rec_errors[-1]}.")
+                if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                    if verbose:
+                        print(f"converged in {iteration} iterations.")
+                    break
 
         if normalize_factors and disable_rebalance:
             # TODO no normalize if scaling, or only at the end
@@ -1093,14 +1091,22 @@ class Tucker_NN_HALS(DecompositionMixin):
         svd="truncated_svd",
         tol=1e-8,
         sparsity_coefficients=None,
-        core_sparsity_coefficient=None,
+        ridge_coefficients=None,
         fixed_modes=None,
+        nn_modes="all",
         random_state=None,
         verbose=False,
         normalize_factors=False,
         return_errors=False,
         exact=False,
         algorithm="fista",
+        inner_iter_max=30,
+        tol_fista=1e-1,
+        epsilon=0,
+        rescale=True,
+        pop_l2=False,
+        print_it=50,
+        callback=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -1111,11 +1117,19 @@ class Tucker_NN_HALS(DecompositionMixin):
         self.random_state = random_state
         self.verbose = verbose
         self.sparsity_coefficients = sparsity_coefficients
-        self.core_sparsity_coefficient = core_sparsity_coefficient
+        self.ridge_coefficients = ridge_coefficients
         self.fixed_modes = fixed_modes
+        self.nn_modes = nn_modes
         self.return_errors = return_errors
         self.exact = exact
         self.algorithm = algorithm
+        self.inner_iter_max = inner_iter_max
+        self.tol_fista = tol_fista
+        self.epsilon = epsilon
+        self.rescale = rescale
+        self.pop_l2 = pop_l2
+        self.print_it = print_it
+        self.callback = callback
 
     def fit_transform(self, tensor):
         tucker_tensor, errors = non_negative_tucker_hals(
@@ -1129,11 +1143,19 @@ class Tucker_NN_HALS(DecompositionMixin):
             random_state=self.random_state,
             verbose=self.verbose,
             return_errors=True,
-            core_sparsity_coefficient=self.core_sparsity_coefficient,
             sparsity_coefficients=self.sparsity_coefficients,
+            ridge_coefficients=self.ridge_coefficients,
             fixed_modes=self.fixed_modes,
+            nn_modes=self.nn_modes,
             exact=self.exact,
             algorithm=self.algorithm,
+            inner_iter_max=self.inner_iter_max,
+            tol_fista=self.tol_fista,
+            epsilon=self.epsilon,
+            rescale=self.rescale,
+            pop_l2=self.pop_l2,
+            print_it=self.print_it,
+            callback=self.callback,
         )
         self.decomposition_ = tucker_tensor
         self.errors_ = errors

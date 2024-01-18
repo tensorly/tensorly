@@ -9,7 +9,7 @@ def hals_nnls(
     tol=1e-8,
     sparsity_coefficient=None,
     ridge_coefficient=None,
-    normalize=False, #todo remove?
+    normalize=False, #todo remove
     nonzero_rows=False,
     exact=False, #todo remove
     epsilon=0,

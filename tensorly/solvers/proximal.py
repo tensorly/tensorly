@@ -796,7 +796,7 @@ def soft_thresholding(tensor, threshold):
     Basic shrinkage
 
     >>> import tensorly.backend as T
-    >>> from tensorly.tenalg.proximal import soft_thresholding
+    >>> from tensorly.solvers.proximal import soft_thresholding
     >>> tensor = tl.tensor([[1, -2, 1.5], [-4, 3, -0.5]])
     >>> soft_thresholding(tensor, 1.1)
     array([[ 0. , -0.9,  0.4],

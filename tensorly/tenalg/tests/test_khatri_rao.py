@@ -138,3 +138,5 @@ def test_khatri_rao():
 
     # Test with one matrix only: khatri-rao of one matrix = that matrix
     assert_array_equal(khatri_rao([U[0]]), U[0])
+
+    # TODO: add test for khatri rao with weights, seems bugged
