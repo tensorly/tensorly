@@ -1,5 +1,6 @@
 import tensorly as tl
 import numpy as np
+from math import sqrt
 
 def hals_nnls(
     UtM,
@@ -253,7 +254,7 @@ def fista(
         x_new = x_update - lr * x_gradient
         if non_negative:
             x_new[x_new<epsilon] = epsilon
-        momentum = (1 + tl.sqrt(1 + 4 * momentum_old**2)) / 2
+        momentum = (1 + sqrt(1 + 4 * momentum_old**2)) / 2
         x_update = x_new + ((momentum_old - 1) / momentum) * (x_new - x)
         momentum_old = momentum
         #norm = tl.norm(x - x_new) # has precision issues?? square overflow weird
