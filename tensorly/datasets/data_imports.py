@@ -878,8 +878,14 @@ def load_indian_pines():
 
 def load_kinetic():
     """
-    Loads kinetic fluorescence dataset from website and returns it as tensorly tensor without storing the data
-    in the hard drive. The data is well suited for Parafac and multi-way partial least squares regression (N-PLS).
+    Loads the kinetic fluorescence dataset (X60t) as a tensorly tensor. The data is well suited for Parafac and multi-way partial least squares regression (N-PLS). Missing data are replaced by 0s, and a missing value mask is provided.
+    Data is a courtesy of Rasmus Bro and collaborators, it can be originally downloaded at https://ucphchemometrics.com/. Please cite the original reference [1] if you use this data in any way.
+
+    References
+    ----------
+    .. [1]  Nikolajsen, R. P., Booksh, K. S., Hansen, Å. M., & Bro, R. (2003).
+            Quantifying catecholamines using multi-way kinetic modelling.
+            Analytica Chimica Acta, 475(1-2), 137-150.
     """
     path_here = dirname(__file__)
     tensor = np.load(path_here + "/data/Kinetic.npy")
