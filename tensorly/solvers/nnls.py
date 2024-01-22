@@ -1,5 +1,5 @@
-import tensorly as tl
 import numpy as np
+import tensorly as tl
 from math import sqrt
 
 def hals_nnls(
@@ -213,7 +213,7 @@ def fista(
     sparsity_coef : float or None
     ridge_coef : float or None
     tol : float
-        stopping criterion
+        stopping criterion for the l1 error decrease relative to the first iteration error
 
     Returns
     -------
@@ -257,8 +257,7 @@ def fista(
         momentum = (1 + sqrt(1 + 4 * momentum_old**2)) / 2
         x_update = x_new + ((momentum_old - 1) / momentum) * (x_new - x)
         momentum_old = momentum
-        #norm = tl.norm(x - x_new) # has precision issues?? square overflow weird
-        norm = tl.sum(x - x_new) # for tracking loss decrease
+        norm = tl.abs(tl.sum(x - x_new)) # for tracking loss decrease, l2 has square overflow issues
         x = tl.copy(x_new)
         if iteration == 0:
             norm_0 = norm

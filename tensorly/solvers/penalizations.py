@@ -5,6 +5,26 @@ import warnings
 
 # Weights processing
 def process_regularization_weights(ridge_coefficients, sparsity_coefficients, n_modes, rescale=True, pop_l2=False):
+    """_summary_
+
+    Parameters
+    ----------
+    ridge_coefficients : _type_
+        _description_
+    sparsity_coefficients : _type_
+        _description_
+    n_modes : _type_
+        _description_
+    rescale : bool, optional
+        _description_, by default True
+    pop_l2 : bool, optional
+        _description_, by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+    """    
     if ridge_coefficients is None or isinstance(ridge_coefficients, (int, float)):
         # Populate None or the input float in a list for all modes
         ridge_coefficients = [ridge_coefficients] * n_modes
@@ -175,7 +195,7 @@ def tucker_implicit_scalar_balancing(factors, core, regs, hom_deg):
 
     return factors, core, scales
 
-def scale_factors_fro(tensor,data,sparsity_coefficients,ridge_coefficients, format_tensor="cp"):
+def scale_factors_fro(tensor,data,sparsity_coefficients,ridge_coefficients, format_tensor="cp", nonnegative=False):
     '''
     Optimally scale [G;A,B,C] in 
     
@@ -185,6 +205,9 @@ def scale_factors_fro(tensor,data,sparsity_coefficients,ridge_coefficients, form
     The problem is solved by finding the positive roots of a polynomial.
 
     Works with any number of modes and both CP and Tucker, as specified by the `format` input. For "tucker" format, sparsity and ridge have an additional final value for the core reg.
+    
+    note: sparsity works only under nonnegativity constraints
+    note: comment on nonnegative keyword
     '''
     factors = copy.deepcopy(tensor[1])
     if format_tensor=="tucker":
@@ -217,13 +240,14 @@ def scale_factors_fro(tensor,data,sparsity_coefficients,ridge_coefficients, form
     for sol in roots:
         if sol.imag<1e-16:
             sol = sol.real
-            if sol>0:
+            if sol>0 or not nonnegative:
                 val = np.polyval(poly,sol)
                 if val<current_best:
                     current_best = val
                     best_x = sol
     if current_best==np.Inf:
         print("No solution to scaling !!!")
+        # TODO warning
         return tensor, None
 
     # We have the optimal scale
