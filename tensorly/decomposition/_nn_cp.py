@@ -11,8 +11,6 @@ from ..cp_tensor import (
     validate_cp_rank,
 )
 from ..solvers.penalizations import process_regularization_weights, cp_opt_balance
-from ..tenalg.svd import svd_interface
-import math
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -71,8 +69,17 @@ def non_negative_parafac(
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not.
         Default: False
-    cvg_criterion: TODO
-    mask: TODO
+    cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
+       Stopping criterion for ALS, works if `tol` is not None.
+       If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
+       If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
+       Default: 'abs_rec_error'
+    mask : ndarray
+        array of booleans with the same shape as ``tensor`` should be 0 where
+        the values are missing and 1 everywhere else. Masked values are filled with imputation along the iterations.
+        Note: if tensor is sparse, then mask should also be sparse with a fill value of 1 (or
+        True). Allows for missing values [2]_
+        Default: None
 
     Returns
     -------
@@ -556,9 +563,10 @@ class CP_NN(DecompositionMixin):
         Activate return of iteration errors
     mask : ndarray
         array of booleans with the same shape as ``tensor`` should be 0 where
-        the values are missing and 1 everywhere else. Note:  if tensor is
-        sparse, then mask should also be sparse with a fill value of 1 (or
+        the values are missing and 1 everywhere else. Masked values are filled with imputation along the iterations.
+        Note: if tensor is sparse, then mask should also be sparse with a fill value of 1 (or
         True). Allows for missing values [2]_
+        Default: None
     cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
         Stopping criterion for ALS, works if `tol` is not None.
         If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
