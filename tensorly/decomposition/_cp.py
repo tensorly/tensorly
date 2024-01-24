@@ -296,7 +296,15 @@ def parafac(
         remove the effect of these missing values on the initialization.
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro [3].
-    callback: TODO
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        ```
+            callback(cp_tensor: CPTensor, error: float)
+        ```
+        where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
+
 
     Returns
     -------
@@ -811,7 +819,15 @@ class CP(DecompositionMixin):
         remove the effect of these missing values on the initialization.
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro [3].
-
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        ```
+            callback(cp_tensor::CPTensor, error::float)
+        ```
+        where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
+        
     Returns
     -------
     CPTensor : (weight, factors)

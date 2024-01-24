@@ -23,7 +23,7 @@ def test_hals_nnls():
     b = tl.dot(a, true_res)
     atb = tl.dot(tl.transpose(a), b)
     ata = tl.dot(tl.transpose(a), a)
-    x_hals = hals_nnls(atb, ata)[0]
+    x_hals = hals_nnls(atb, ata)
     assert_array_almost_equal(true_res, x_hals, decimal=2)
 
 

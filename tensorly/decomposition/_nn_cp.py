@@ -47,8 +47,6 @@ def non_negative_parafac(
 
     Uses multiplicative updates, see [2]_
 
-    TODO: allow beta-div
-
     Parameters
     ----------
     tensor : ndarray
@@ -70,6 +68,14 @@ def non_negative_parafac(
     fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
+    return_errors: boolean
+        Indicates whether the algorithm should return all reconstruction errors
+        and computation time of each iteration or not.
+        Default: False
+    
+    cvg_criterion: TODO
+    
+    mask: TODO
 
     Returns
     -------
@@ -202,12 +208,10 @@ def non_negative_parafac_hals(
     verbose=False,
     normalize_factors=False,
     return_errors=False,
-    cvg_criterion="abs_rec_error",
     epsilon=0,
     rescale=True,
     pop_l2=False,
     print_it=50,
-    accelerate=None,
     inner_iter_max=50,
     inner_tol=0.1,
     callback=None,
@@ -225,6 +229,14 @@ def non_negative_parafac_hals(
 
     Parameters
     ----------
+    todo:
+    rescale=True,
+    pop_l2=False,
+    print_it=50,
+    inner_iter_max=50,
+    inner_tol=0.1,
+    callback
+    
     tensor : ndarray
     rank   : int
             number of components
@@ -272,16 +284,19 @@ def non_negative_parafac_hals(
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
         Default: False
-    cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
-        Stopping criterion for ALS, works if `tol` is not None.
-        If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
-        If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
-    epsilon: float
+        epsilon: float
         Small constant which lowers bounds all the factors elementwise.
         Required >0 for convergence and numerical stability.
         Default: 0
     random_state : {None, int, np.random.RandomState}
-    callback: TODO
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        ```
+            callback(cp_tensor: CPTensor, error: float)
+        ```
+        where cp_tensor contains the last estimated factors and weights of the nonnegative CP decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
 
     Returns
     -------
@@ -330,7 +345,6 @@ def non_negative_parafac_hals(
         rescale=rescale,
         pop_l2=pop_l2,
     )
-    # TODO simplify call
 
     if fixed_modes is None:
         fixed_modes = []
@@ -389,7 +403,7 @@ def non_negative_parafac_hals(
 
             if mode in nn_modes:
                 # Call the hals resolution with nnls, optimizing the current mode
-                nn_factor, _, _, _ = hals_nnls(
+                nn_factor = hals_nnls(
                     tl.transpose(mttkrp),
                     pseudo_inverse,
                     tl.transpose(factors[mode]),
@@ -397,7 +411,7 @@ def non_negative_parafac_hals(
                     sparsity_coefficient=sparsity_coefficients[mode],
                     ridge_coefficient=ridge_coefficients[mode],
                     epsilon=epsilon,
-                    tol=inner_tol # TODO doc, remove?
+                    tol=inner_tol
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
@@ -690,7 +704,15 @@ class CP_NN_HALS(DecompositionMixin):
         remove the effect of these missing values on the initialization.
     ridge_coefficients : list of float
         test
-
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        ```
+            callback(cp_tensor: CPTensor, error: float)
+        ```
+        where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
+        
     Returns
     -------
     CPTensor : (weight, factors)
@@ -733,7 +755,6 @@ class CP_NN_HALS(DecompositionMixin):
         rescale=True,
         pop_l2=False,
         print_it=50,
-        accelerate=None,
         inner_iter_max=50,
         inner_tol=0.1,
         callback=None
@@ -756,7 +777,6 @@ class CP_NN_HALS(DecompositionMixin):
         self.rescale = rescale
         self.pop_l2 = pop_l2
         self.print_it = print_it
-        self.accelerate = accelerate
         self.inner_iter_max = inner_iter_max
         self.inner_tol = inner_tol
         self.callback = callback
@@ -795,7 +815,6 @@ class CP_NN_HALS(DecompositionMixin):
             rescale=self.rescale,
             pop_l2=self.pop_l2,
             print_it=self.print_it,
-            accelerate=self.accelerate,
             inner_iter_max=self.inner_iter_max,
             inner_tol=self.inner_tol,
             callback=self.callback
