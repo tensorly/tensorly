@@ -12,7 +12,6 @@ from ..cp_tensor import (
 )
 from ..solvers.penalizations import process_regularization_weights, cp_opt_balance
 from ..tenalg.svd import svd_interface
-from copy import copy
 import math
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
@@ -72,9 +71,7 @@ def non_negative_parafac(
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not.
         Default: False
-    
     cvg_criterion: TODO
-    
     mask: TODO
 
     Returns
@@ -230,12 +227,10 @@ def non_negative_parafac_hals(
     Parameters
     ----------
     todo:
-    rescale=True,
-    pop_l2=False,
-    print_it=50,
-    inner_iter_max=50,
-    inner_tol=0.1,
-    callback
+    rescale=True, # remove in first PR
+    pop_l2=False, #remove in PR for sure
+    print_it=50, # remove in PR?
+
     
     tensor : ndarray
     rank   : int
@@ -255,7 +250,7 @@ def non_negative_parafac_hals(
         If a float is provided, a l1 penalty will be enforced on all factors using that float as hyperparameter.
         If set to None, the algorithm is computed without sparsity.
         Advice: normalize with the dimensions of the factors.
-        Default: None,
+        Default: None
     ridge_coefficients: array of float (of length the number of modes)
         The ridge (l2) penalization coefficients on each factor.
         If a float is provided, a squared l2 penalty will be enforced on all factors using that float as hyperparameter.
@@ -263,7 +258,7 @@ def non_negative_parafac_hals(
         By default, if sparsity_coefficients are not None, all factors which have
         sparsity coefficient value 0 are imposed ridge penalization with coefficient max(sparsity_coefficients)
         to avoid degeneracy induced by the scale invariance of Parafac.
-        Default: None,
+        Default: None
     fixed_modes: array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
         Default: None
@@ -274,8 +269,10 @@ def non_negative_parafac_hals(
     exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
         If it is False, the algorithm gives an approximate solution
         Default: False
-    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+    normalize_factors : bool
+        If True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
+        Default: False
     verbose: boolean
         Indicates whether the algorithm prints the successive
         reconstruction errors or not
@@ -289,6 +286,12 @@ def non_negative_parafac_hals(
         Required >0 for convergence and numerical stability.
         Default: 0
     random_state : {None, int, np.random.RandomState}
+    inner_iter_max : int 
+        Controls how many iterations are run at most for the inner nonnegative least squares solver (hals). Reduce this if the algorithm is too slow per iteration, but convergence speed may decrease.
+        Default: 50
+    inner_tol : float
+        Controls the error threshold at which the inner nonnegative least squares solver stops. Increase this up to <1 if the algorithm is too slow per iteration, but convergence speed may decrease.
+        Default: 0.1
     callback: callable, optional
         A callable called after each iteration. The supported signature is
         ```
@@ -511,7 +514,6 @@ def non_negative_parafac_hals(
                 if verbose:
                     print(f"PARAFAC converged after {iteration} iterations.")
                 break
-            # TODO removed cvg criterion from API
 
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
@@ -607,6 +609,7 @@ class CP_NN(DecompositionMixin):
         cvg_criterion="abs_rec_error",
         fixed_modes=None,
     ):
+        self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
         self.svd = svd
@@ -674,8 +677,10 @@ class CP_NN_HALS(DecompositionMixin):
         Type of factor matrix initialization. See `initialize_factors`.
     svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
-    normalize_factors : if True, aggregate the weights of each factor in a 1D-tensor
+    normalize_factors : bool
+        If True, aggregate the weights of each factor in a 1D-tensor
         of shape (rank, ), which will contain the norms of the factors
+        Default: False
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
         algorithm is considered to have found the global minimum when the
@@ -690,20 +695,36 @@ class CP_NN_HALS(DecompositionMixin):
         the values are missing and 1 everywhere else. Note:  if tensor is
         sparse, then mask should also be sparse with a fill value of 1 (or
         True). Allows for missing values [2]_
-    cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
-        Stopping criterion for ALS, works if `tol` is not None.
-        If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
-        If 'abs_rec_error', ALS terminates when ``|previous rec_error - current rec_error| < tol``.
-    sparsity : float or int
-        If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+    sparsity_coefficients: array of float (of length the number of modes)
+        The sparsity penalization coefficients on each factor.
+        If a float is provided, a l1 penalty will be enforced on all factors using that float as hyperparameter.
+        If set to None, the algorithm is computed without sparsity.
+        Advice: normalize with the dimensions of the factors.
+        Default: None
+    ridge_coefficients: array of float (of length the number of modes)
+        The ridge (l2) penalization coefficients on each factor.
+        If a float is provided, a squared l2 penalty will be enforced on all factors using that float as hyperparameter.
+        If set to None, the algorithm is computed without ridge.
+        By default, if sparsity_coefficients are not None, all factors which have
+        sparsity coefficient value 0 are imposed ridge penalization with coefficient max(sparsity_coefficients)
+        to avoid degeneracy induced by the scale invariance of Parafac.
+        Default: None
     fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
+    nn_modes: None, 'all' or array of integers (between 0 and the number of modes)
+        Used to specify which modes to impose non-negativity constraints on.
+        If 'all', then non-negativity is imposed on all modes.
+        Default: 'all'
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
-    ridge_coefficients : list of float
-        test
+    inner_iter_max : int 
+        Controls how many iterations are run at most for the inner nonnegative least squares solver (hals). Reduce this if the algorithm is too slow per iteration, but convergence speed may decrease.
+        Default: 50
+    inner_tol : float
+        Controls the error threshold at which the inner nonnegative least squares solver stops. Increase this up to <1 if the algorithm is too slow per iteration, but convergence speed may decrease.
+        Default: 0.1
     callback: callable, optional
         A callable called after each iteration. The supported signature is
         ```
@@ -749,7 +770,6 @@ class CP_NN_HALS(DecompositionMixin):
         nn_modes="all",
         verbose=False,
         normalize_factors=False,
-        cvg_criterion="abs_rec_error",
         random_state=None,
         epsilon=0,
         rescale=True,
@@ -771,7 +791,6 @@ class CP_NN_HALS(DecompositionMixin):
         self.nn_modes = nn_modes
         self.verbose = verbose
         self.normalize_factors = normalize_factors
-        self.cvg_criterion = cvg_criterion
         self.random_state = random_state
         self.epsilon = epsilon
         self.rescale = rescale
@@ -810,7 +829,6 @@ class CP_NN_HALS(DecompositionMixin):
             verbose=self.verbose,
             normalize_factors=self.normalize_factors,
             return_errors=True,
-            cvg_criterion=self.cvg_criterion,
             epsilon=self.epsilon,
             rescale=self.rescale,
             pop_l2=self.pop_l2,
