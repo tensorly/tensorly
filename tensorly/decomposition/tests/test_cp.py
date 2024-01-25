@@ -300,19 +300,31 @@ def test_non_negative_parafac(
 
     if hals:
         func = non_negative_parafac_hals
+        errors=[]
+        callb_err = lambda _,y: errors.append(y)
+        nn_res = func(
+            tensor,
+            rank=rank,
+            n_iter_max=80,
+            tol=1.0e-6,
+            init=init,
+            normalize_factors=normalize_factors,
+            random_state=rng,
+            callback=callb_err,
+        )
     else:
         func = non_negative_parafac
+        nn_res, errors = func(
+            tensor,
+            rank=rank,
+            n_iter_max=80,
+            tol=1.0e-6,
+            init=init,
+            normalize_factors=normalize_factors,
+            random_state=rng,
+            return_errors=True,
+        )
 
-    nn_res, errors = func(
-        tensor,
-        rank=rank,
-        n_iter_max=80,
-        tol=1.0e-6,
-        init=init,
-        normalize_factors=normalize_factors,
-        random_state=rng,
-        return_errors=True,
-    )
     assert_(np.all(np.diff(errors) <= 1.0e-3))
 
     # Make sure all components are positive
@@ -353,7 +365,7 @@ def test_non_negative_parafac(
             monkeypatch,
             non_negative_parafac_hals,
             CP_NN_HALS,
-            ignore_args={"return_errors"},
+            #ignore_args={"return_errors"},
             rank=3,
         )
 
@@ -370,8 +382,7 @@ def test_non_negative_parafac(
             init="svd",
             nn_modes={
                 0,
-            },
-            return_errors=True,
+            }
         )
     else:
         assert_class_wrapper_correctly_passes_arguments(
@@ -407,14 +418,16 @@ def test_non_negative_parafac_hals_one_unconstrained():
     cp_tensor = (weights, (A, B, C))
     X = cp_to_tensor(cp_tensor)
 
-    nn_estimate, errs = non_negative_parafac_hals(
+    errs = []
+    callb_errs = lambda _,y: errs.append(y)
+    nn_estimate = non_negative_parafac_hals(
         X,
         rank=3,
         n_iter_max=100,
         tol=0,
         init="svd",
         nn_modes={0, 2},
-        return_errors=True,
+        callback=callb_errs,
     )
     X_hat = cp_to_tensor(nn_estimate)
     assert_(

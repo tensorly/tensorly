@@ -211,7 +211,6 @@ def non_negative_parafac_hals(
     nn_modes="all",
     verbose=False,
     normalize_factors=False,
-    return_errors=False,
     epsilon=0,
     rescale=True,
     pop_l2=False,
@@ -284,11 +283,7 @@ def non_negative_parafac_hals(
         Indicates whether the algorithm prints the successive
         reconstruction errors or not
         Default: False
-    return_errors: boolean
-        Indicates whether the algorithm should return all reconstruction errors
-        and computation time of each iteration or not
-        Default: False
-        epsilon: float
+    epsilon: float
         Small constant which lowers bounds all the factors elementwise.
         Required >0 for convergence and numerical stability.
         Default: 0
@@ -323,11 +318,6 @@ def non_negative_parafac_hals(
            Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
            Neural Computation 24 (4): 1085-1105, 2012.
     """
-
-    if return_errors:
-        DeprecationWarning(
-            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
-        )
 
     weights, factors = initialize_cp(
         tensor,
@@ -371,15 +361,10 @@ def non_negative_parafac_hals(
         # Note: not in the returned errors
         cp_tensor = CPTensor((weights, factors))
         fit_loss = (1/2)*tl.norm(tensor - cp_tensor.to_tensor())**2
-        regs_loss = (
-                sum(
-                    [
-                        sparsity_coefficients[i] * tl.sum(tl.abs(factors[i]))
-                        + ridge_coefficients[i] * tl.norm(factors[i]) ** 2
-                        for i in range(n_modes)
-                    ]
-                )
-            )
+        regs_loss = sum(
+                    sparsity_coefficients[i] * tl.sum(tl.abs(factors[i]))
+                    + ridge_coefficients[i] * tl.norm(factors[i]) ** 2
+                    for i in range(n_modes))
         callback_error = (fit_loss + regs_loss)/norm_tensor**2  # loss !
         callback(cp_tensor, callback_error)
 
@@ -425,9 +410,10 @@ def non_negative_parafac_hals(
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
+                if sparsity_coefficients[mode]:
+                    warnings.warn(f"Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on mode {mode}. Either remove sparse regularization on mode {mode} or impose nonnegativity.")
                 factor = tl.solve(
-                    tl.transpose(pseudo_inverse)
-                    + 2*ridge_coefficients[mode] * tl.eye(rank),
+                    pseudo_inverse + 2 * ridge_coefficients[mode] * tl.eye(rank),
                     tl.transpose(mttkrp),
                 )
                 factors[mode] = tl.transpose(factor)
@@ -436,11 +422,10 @@ def non_negative_parafac_hals(
                 iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
 
             # ----------
-            # Scale here
+            # Scale here (TODO: outside loop)
             # rescale
             if not disable_rebalance:
 
-                # TODO factorize code
                 # 1. Put epsilon values to zero for scaling
                 if epsilon:
                     for i in range(n_modes):
@@ -482,9 +467,8 @@ def non_negative_parafac_hals(
                     )
                 weights, factors = cp_normalize((weights, factors))
 
-        if tol or verbose:  # TODO remove verbose for PR
+        if tol or verbose or (callback is not None):
             factors_norm = cp_norm((weights, factors))
-            # TODO check 1/2 in HALS??
             rec_error = (norm_tensor**2 + factors_norm**2 - 2 * iprod) / 2
             regs_loss.append(
                 sum(
@@ -507,28 +491,31 @@ def non_negative_parafac_hals(
 
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
-            else:
-                rec_error_decrease = 1e32  # TODO: INF
 
-            if verbose and not iteration % print_it:
-                if iteration > 0:
+            if verbose and not (iteration % print_it):
+                if iteration >= 1:
                     print(
                         f"iteration {iteration}, norm. loss: {rec_errors[-1]}, rec error: {rec_error}, regs: {regs_loss[-1]}, decrease = {rec_error_decrease}"
                     )
                 else:
                     print(f"first iteration, initial loss={rec_errors[-1]}.")
-            if abs(rec_error_decrease) < tol:
+            if tol and iteration>=1 and abs(rec_error_decrease) < tol:
                 if verbose:
                     print(f"PARAFAC converged after {iteration} iterations.")
                 break
 
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
+            
+    
+    # final print
+    if verbose:
+        print(
+            f"iter={iteration}, loss={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}, regs={tl.sum(regs)}."
+        )
+    
     cp_tensor = CPTensor((weights, factors))
-    if return_errors:
-        return cp_tensor, rec_errors
-    else:
-        return cp_tensor
+    return cp_tensor
 
 
 class CP_NN(DecompositionMixin):
@@ -696,8 +683,6 @@ class CP_NN_HALS(DecompositionMixin):
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         Level of verbosity
-    return_errors : bool, optional
-        Activate return of iteration errors
     mask : ndarray
         array of booleans with the same shape as ``tensor`` should be 0 where
         the values are missing and 1 everywhere else. Note:  if tensor is
@@ -836,7 +821,6 @@ class CP_NN_HALS(DecompositionMixin):
             nn_modes=self.nn_modes,
             verbose=self.verbose,
             normalize_factors=self.normalize_factors,
-            return_errors=True,
             epsilon=self.epsilon,
             rescale=self.rescale,
             pop_l2=self.pop_l2,
