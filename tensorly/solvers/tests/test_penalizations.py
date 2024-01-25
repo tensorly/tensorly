@@ -68,6 +68,7 @@ def test_cp_opt_balance():
     regs = tl.tensor([4.0,0.25,0.5,2.0])
     hom_deg = tl.tensor([1,1,2,1])
     scales = cp_opt_balance(regs=regs,hom_deg=hom_deg)
+    scales = tl.tensor(scales)
     constant_v = regs*hom_deg*(scales**hom_deg)
     assert_array_almost_equal(constant_v, [1.21901365]*4, decimal=5)
     assert_array_almost_equal(tl.prod(scales), [1], decimal=5)
@@ -76,7 +77,7 @@ def test_cp_opt_balance():
     regs = tl.tensor([4.0,0.25,0,2.0])
     hom_deg = tl.tensor([1,1,2,1])
     scales = cp_opt_balance(regs=regs,hom_deg=hom_deg)
-    assert_array_almost_equal(tl.sum(tl.abs(scales)), [0], decimal=5)
+    assert_array_almost_equal(tl.sum(tl.abs(tl.tensor(scales))), [0], decimal=5)
     
 def test_implicit_scalar_balancing():
     factors = [np.random.randn(5,3) for i in range(3)]
@@ -86,6 +87,7 @@ def test_implicit_scalar_balancing():
     regs = tl.tensor([4.0,0.25,0.5,2.0])
     hom_deg = tl.tensor([1,1,2,1])
     _,_,scales = tucker_implicit_scalar_balancing(factors,core,regs,hom_deg)
+    scales = tl.tensor(scales)
     constant_v = regs*hom_deg*(scales**hom_deg)
     assert_array_almost_equal(constant_v, [1.21901365]*4, decimal=5)
     assert_array_almost_equal(tl.prod(scales), [1], decimal=5)
@@ -94,6 +96,7 @@ def test_implicit_scalar_balancing():
     regs = tl.tensor([4.0,0.25,0,2.0])
     hom_deg = tl.tensor([1,1,2,1])
     _,_,scales = tucker_implicit_scalar_balancing(factors,core,regs,hom_deg)
+    scales = tl.tensor(scales)
     assert_array_almost_equal(tl.sum(tl.abs(scales)), [0], decimal=5)
     
 def test_scale_factors_fro():
