@@ -49,8 +49,8 @@ def process_regularization_weights(ridge_coefficients, sparsity_coefficients, n_
     if not pop_l2 and any(sparsity_coefficients):
         for i in range(n_modes):
             if abs(sparsity_coefficients[i]) + abs(ridge_coefficients[i])==0:
-                warnings.warn(f"Ridge coefficient set to max l1coeffs {tl.max(sparsity_coefficients)} on mode {i} to avoid degeneracy")
-                ridge_coefficients[i] = tl.max(sparsity_coefficients)
+                warnings.warn(f"Ridge coefficient set to max l1coeffs {max(sparsity_coefficients)} on mode {i} to avoid degeneracy")
+                ridge_coefficients[i] = max(sparsity_coefficients)
     
     # Avoid issues by printing warning when both l1 and l2 are imposed on the same mode
     disable_rebalance = True
@@ -78,9 +78,9 @@ def cp_opt_balance(regs, hom_deg):
 
     Parameters
     ----------
-    regs: 1d np array
+    regs: 1d tensor
         the input regularization values
-    hom_deg: 1d numpy array
+    hom_deg: 1d tensor
         homogeneity degrees of each regularization term
 
     Returns
@@ -188,7 +188,7 @@ def tucker_implicit_scalar_balancing(factors, core, regs, hom_deg):
         _description_
     """    """
     """
-    scales = cp_opt_balance(np.array(regs),np.array(hom_deg))
+    scales = cp_opt_balance(tl.tensor(regs),tl.tensor(hom_deg))
     for mode in range(tl.ndim(core)):
         factors[mode] *= scales[mode]
     core = core*scales[-1]
