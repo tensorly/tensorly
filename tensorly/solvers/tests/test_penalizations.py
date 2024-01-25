@@ -3,6 +3,7 @@ import tensorly as tl
 
 from tensorly.solvers.penalizations import process_regularization_weights,cp_opt_balance, scale_factors_fro, tucker_implicit_scalar_balancing,tucker_implicit_sinkhorn_balancing
 from tensorly.testing import assert_, assert_array_equal, assert_array_almost_equal
+from tensorly.random import random_tucker
 
 def test_process_regularization_weights():
     # case 1: individual values for l1 l2 regularization parameters
@@ -80,8 +81,7 @@ def test_cp_opt_balance():
     assert_array_almost_equal(tl.sum(tl.abs(tl.tensor(scales))), [0], decimal=5)
     
 def test_implicit_scalar_balancing():
-    factors = [np.random.randn(5,3) for i in range(3)]
-    core = np.random.randn(3,3,3)
+    core, factors = random_tucker((3, 4, 3), rank=[3, 4, 3], non_negative=True)
     # wrapper for cp_opt_balance
     # case 1: nonzero regs
     regs = tl.tensor([4.0,0.25,0.5,2.0])
