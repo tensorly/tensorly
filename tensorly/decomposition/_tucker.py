@@ -790,7 +790,6 @@ def non_negative_tucker_hals(
                     nn_factors[i][nn_factors[i] <= epsilon] = epsilon
                 nn_core[nn_core <= epsilon] = epsilon
         
-        # error computation
         if tol or (callback is not None) or verbose:
             rec_error = (norm_tensor**2 - 2 * iprod + tucker_norm) / 2
             # Adding the regs value to the reconstruction error
