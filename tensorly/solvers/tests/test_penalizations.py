@@ -102,7 +102,7 @@ def test_implicit_scalar_balancing():
 def test_scale_factors_fro():
     # Testing only without regularizations
     factors = [np.ones([2,1]) for i in range(3)]
-    data = -8*np.ones([2,2,2])
+    data = -8*tl.ones([2,2,2])
     cp_tensor = tl.cp_tensor.CPTensor((None,factors))
     _, scale = scale_factors_fro(cp_tensor,data,[0]*3,[0]*3)
     print(scale, data, factors)
