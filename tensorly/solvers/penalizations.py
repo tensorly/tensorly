@@ -7,25 +7,32 @@ import warnings
 def process_regularization_weights(
     ridge_coefficients, sparsity_coefficients, n_modes, rescale=True, pop_l2=False
 ):
-    """_summary_
+    """A utility function to process input sparisty and ridge coefficients, and return them in the correct format for decomposition functions.
 
     Parameters
     ----------
-    ridge_coefficients : _type_
-        _description_
-    sparsity_coefficients : _type_
-        _description_
-    n_modes : _type_
-        _description_
+    ridge_coefficients : {list of floats, float, None}
+        The ridge regularization parameter(s) to process
+    sparsity_coefficients : {list of floats, float, None}
+        The sparsity regularization parameter(s) to process
+    n_modes : int
+        number of modes in the decomposition which the coefficients are processed for.
     rescale : bool, optional
-        _description_, by default True
+        Decides if the algorithm will use a rescaling strategy to minimize the regularization terms.
+        Default True
     pop_l2 : bool, optional
-        _description_, by default False
+        For research purpose only, by default False
 
     Returns
     -------
-    _type_
-        _description_
+    list of floats
+        ridge coefficients, processed
+    list of floats
+        sparsity coefficients, processed
+    bool
+        Is rebalance off or on
+    list of int
+        contains the homogeneity degrees of the regularization terms
     """
     if ridge_coefficients is None or isinstance(ridge_coefficients, (int, float)):
         # Populate None or the input float in a list for all modes
@@ -102,8 +109,9 @@ def cp_opt_balance(regs, hom_deg):
     """
     # 0. If reg is zero, all factors should be zero
     if tl.prod(regs) == 0:
-        # TODO warning
-        # print(f"zero rebalancing because regularization is null")
+        warnings.warn(
+            "Zero rebalancing occured because regularization term is null"
+        )  # this could be annoying... only pop once?
         return [0 for i in range(regs.shape[0])]
 
     # 1. compute q
@@ -182,11 +190,9 @@ def tucker_implicit_sinkhorn_balancing(
                 / core_marginal_mode
                 / hom_g
             ) ** (1 / hom_g)
-        # some cost function
         if verbose:
             loss = sum([sum(marg) for marg in beta]) + lamb_g * tl.sum(reg_g(core))
             print(f"iteration {it} loss {loss}")
-            # print(f"consistency {np.std([sum(mar) for mar in beta])}")
 
     for mode in range(nmodes):
         for q in range(factors[mode].shape[1]):
@@ -197,7 +203,6 @@ def tucker_implicit_sinkhorn_balancing(
             else:
                 factors[mode][:, q] = 0
 
-    # print(f"G scales {scales_g},\nfac scales {scales}\nproduct {[scales_g[i]*scales[i] for i in range(nmodes)]}")
     return factors, core
 
 
@@ -206,15 +211,14 @@ def tucker_implicit_scalar_balancing(factors, core, regs, hom_deg):
 
     Parameters
     ----------
-    factors : _type_
-        _description_
-    core : _type_
-        _description_
-    regs : _type_
-        _description_
-    hom_deg : _type_
-        _description_
-    """ """
+    factors : list of arrays, required
+        factors of the Tucker model
+    core : tl tensor, required
+        core of the Tucker model
+    regs : list of floats, required
+        the list of regularization values for the input factors. May contain zeroes.
+    hom_reg : list of ints, required
+        homogeneity degrees for the factors regularizations, and the core
     """
     scales = cp_opt_balance(tl.tensor(regs), tl.tensor(hom_deg))
     for mode in range(tl.ndim(core)):
@@ -233,9 +237,9 @@ def scale_factors_fro(
     nonnegative=False,
 ):
     """
-    Optimally scale [G;A,B,C] in
+    Optimally scale Tucker tensor [G;A,B,C] in
 
-    min_x \|data - x^{n_modes} [G;A_1,A_2,A_3]\|_F^2 + \sum_i sparsity_coefficients_i \|A_i\|_1 + \sum_j ridge_coefficients_j \|A_j\|_2^2
+    :math: `min_x \|data - x^{n_modes} [G;A_1,A_2,A_3]\|_F^2 + \sum_i sparsity_coefficients_i \|A_i\|_1 + \sum_j ridge_coefficients_j \|A_j\|_2^2`
 
     This avoids a scaling problem when starting the separation algorithm, which may lead to zero-locking.
     The problem is solved by finding the positive roots of a polynomial.
@@ -284,8 +288,7 @@ def scale_factors_fro(
                     current_best = val
                     best_x = sol
     if current_best == np.Inf:
-        print("No solution to scaling !!!")
-        # TODO warning
+        warnings.warn("No solution to optimal scaling")
         return tensor, None
 
     # We have the optimal scale

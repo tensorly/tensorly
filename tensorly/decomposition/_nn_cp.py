@@ -214,7 +214,7 @@ def non_negative_parafac_hals(
     epsilon=0,
     rescale=True,
     pop_l2=False,
-    print_it=50,
+    print_it=1,
     inner_iter_max=50,
     inner_tol=0.1,
     callback=None,
@@ -232,12 +232,6 @@ def non_negative_parafac_hals(
 
     Parameters
     ----------
-    todo:
-    rescale=True, # remove in first PR
-    pop_l2=False, #remove in PR for sure
-    print_it=50, # remove in PR?
-
-
     tensor : ndarray
     rank   : int
             number of components
@@ -272,6 +266,9 @@ def non_negative_parafac_hals(
         Used to specify which modes to impose non-negativity constraints on.
         If 'all', then non-negativity is imposed on all modes.
         Default: 'all'
+    print_it: int
+        Sets the frequency at which information about the run is printed, if verbose is True. Set to 1 for printing every iteration.
+        Default: 1
     exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
         If it is False, the algorithm gives an approximate solution
         Default: False
@@ -302,6 +299,11 @@ def non_negative_parafac_hals(
         where cp_tensor contains the last estimated factors and weights of the nonnegative CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
+    rescale: boolean
+        Default: True
+    pop_l2: boolean
+        Default: False
+
 
     Returns
     -------
@@ -769,7 +771,7 @@ class CP_NN_HALS(DecompositionMixin):
         epsilon=0,
         rescale=True,
         pop_l2=False,
-        print_it=50,
+        print_it=1,
         inner_iter_max=50,
         inner_tol=0.1,
         callback=None,
