@@ -92,7 +92,7 @@ def cp_opt_balance(regs, hom_deg):
     if tl.prod(regs)==0:
         # TODO warning
         #print(f"zero rebalancing because regularization is null")
-        return [0 for i in range(len(regs))]
+        return [0 for i in range(regs.shape[0])]
 
     # 1. compute q
     prod_q = tl.prod(regs**(1/hom_deg))
@@ -101,7 +101,7 @@ def cp_opt_balance(regs, hom_deg):
     beta = (prod_q*tl.prod(hom_deg**(1/hom_deg)))**(1/tl.sum(1/hom_deg))
 
     # 3. compute scales
-    scales = [(beta/regs[i]/hom_deg[i])**(1/hom_deg[i]) for i in range(len(regs))]
+    scales = [(beta/regs[i]/hom_deg[i])**(1/hom_deg[i]) for i in range(regs.shape[0])]
 
     return scales
 
