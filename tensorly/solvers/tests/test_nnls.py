@@ -16,6 +16,7 @@ skip_tensorflow = pytest.mark.skipif(
     reason=f"Indexing with list not supported in TensorFlow",
 )
 
+
 def test_hals_nnls():
     """Test for hals_nnls operator"""
     a = tl.tensor(np.random.rand(20, 10))

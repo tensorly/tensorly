@@ -300,8 +300,8 @@ def test_non_negative_parafac(
 
     if hals:
         func = non_negative_parafac_hals
-        errors=[]
-        callb_err = lambda _,y: errors.append(y)
+        errors = []
+        callb_err = lambda _, y: errors.append(y)
         nn_res = func(
             tensor,
             rank=rank,
@@ -365,7 +365,7 @@ def test_non_negative_parafac(
             monkeypatch,
             non_negative_parafac_hals,
             CP_NN_HALS,
-            #ignore_args={"return_errors"},
+            # ignore_args={"return_errors"},
             rank=3,
         )
 
@@ -382,7 +382,7 @@ def test_non_negative_parafac(
             init="svd",
             nn_modes={
                 0,
-            }
+            },
         )
     else:
         assert_class_wrapper_correctly_passes_arguments(
@@ -419,7 +419,7 @@ def test_non_negative_parafac_hals_one_unconstrained():
     X = cp_to_tensor(cp_tensor)
 
     errs = []
-    callb_errs = lambda _,y: errs.append(y)
+    callb_errs = lambda _, y: errs.append(y)
     nn_estimate = non_negative_parafac_hals(
         X,
         rank=3,

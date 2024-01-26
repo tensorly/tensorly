@@ -237,7 +237,7 @@ def non_negative_parafac_hals(
     pop_l2=False, #remove in PR for sure
     print_it=50, # remove in PR?
 
-    
+
     tensor : ndarray
     rank   : int
             number of components
@@ -288,7 +288,7 @@ def non_negative_parafac_hals(
         Required >0 for convergence and numerical stability.
         Default: 0
     random_state : {None, int, np.random.RandomState}
-    inner_iter_max : int 
+    inner_iter_max : int
         Controls how many iterations are run at most for the inner nonnegative least squares solver (hals). Reduce this if the algorithm is too slow per iteration, but convergence speed may decrease.
         Default: 50
     inner_tol : float
@@ -360,12 +360,13 @@ def non_negative_parafac_hals(
     if callback is not None:
         # Note: not in the returned errors
         cp_tensor = CPTensor((weights, factors))
-        fit_loss = (1/2)*tl.norm(tensor - cp_tensor.to_tensor())**2
+        fit_loss = (1 / 2) * tl.norm(tensor - cp_tensor.to_tensor()) ** 2
         regs_loss = sum(
-                    sparsity_coefficients[i] * tl.sum(tl.abs(factors[i]))
-                    + ridge_coefficients[i] * tl.norm(factors[i]) ** 2
-                    for i in range(n_modes))
-        callback_error = (fit_loss + regs_loss)/norm_tensor**2  # loss !
+            sparsity_coefficients[i] * tl.sum(tl.abs(factors[i]))
+            + ridge_coefficients[i] * tl.norm(factors[i]) ** 2
+            for i in range(n_modes)
+        )
+        callback_error = (fit_loss + regs_loss) / norm_tensor**2  # loss !
         callback(cp_tensor, callback_error)
 
     # initialisation - declare local variables
@@ -406,12 +407,14 @@ def non_negative_parafac_hals(
                     sparsity_coefficient=sparsity_coefficients[mode],
                     ridge_coefficient=ridge_coefficients[mode],
                     epsilon=epsilon,
-                    tol=inner_tol
+                    tol=inner_tol,
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
                 if sparsity_coefficients[mode]:
-                    warnings.warn(f"Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on mode {mode}. Either remove sparse regularization on mode {mode} or impose nonnegativity.")
+                    warnings.warn(
+                        f"Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on mode {mode}. Either remove sparse regularization on mode {mode} or impose nonnegativity."
+                    )
                 factor = tl.solve(
                     pseudo_inverse + 2 * ridge_coefficients[mode] * tl.eye(rank),
                     tl.transpose(mttkrp),
@@ -479,7 +482,7 @@ def non_negative_parafac_hals(
                     ]
                 )
             )
-            rec_errors.append((rec_error + regs_loss[-1])/norm_tensor**2)  # loss !
+            rec_errors.append((rec_error + regs_loss[-1]) / norm_tensor**2)  # loss !
 
             if callback is not None:
                 cp_tensor = CPTensor((weights, factors))
@@ -499,21 +502,20 @@ def non_negative_parafac_hals(
                     )
                 else:
                     print(f"first iteration, initial loss={rec_errors[-1]}.")
-            if tol and iteration>=1 and abs(rec_error_decrease) < tol:
+            if tol and iteration >= 1 and abs(rec_error_decrease) < tol:
                 if verbose:
                     print(f"PARAFAC converged after {iteration} iterations.")
                 break
 
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
-            
-    
+
     # final print
     if verbose:
         print(
             f"iter={iteration}, loss={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}, regs={tl.sum(regs)}."
         )
-    
+
     cp_tensor = CPTensor((weights, factors))
     return cp_tensor
 
@@ -712,7 +714,7 @@ class CP_NN_HALS(DecompositionMixin):
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
-    inner_iter_max : int 
+    inner_iter_max : int
         Controls how many iterations are run at most for the inner nonnegative least squares solver (hals). Reduce this if the algorithm is too slow per iteration, but convergence speed may decrease.
         Default: 50
     inner_tol : float
@@ -726,7 +728,7 @@ class CP_NN_HALS(DecompositionMixin):
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
-        
+
     Returns
     -------
     CPTensor : (weight, factors)
@@ -749,7 +751,7 @@ class CP_NN_HALS(DecompositionMixin):
     .. [3] R. Bro, "Multi-Way Analysis in the Food Industry: Models, Algorithms, and
            Applications", PhD., University of Amsterdam, 1998
     """
- 
+
     def __init__(
         self,
         rank,
@@ -770,7 +772,7 @@ class CP_NN_HALS(DecompositionMixin):
         print_it=50,
         inner_iter_max=50,
         inner_tol=0.1,
-        callback=None
+        callback=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -827,8 +829,8 @@ class CP_NN_HALS(DecompositionMixin):
             print_it=self.print_it,
             inner_iter_max=self.inner_iter_max,
             inner_tol=self.inner_tol,
-            callback=self.callback
-            )
+            callback=self.callback,
+        )
 
         self.decomposition_ = cp_tensor
         self.errors_ = errors

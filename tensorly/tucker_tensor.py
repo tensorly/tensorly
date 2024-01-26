@@ -305,10 +305,9 @@ class TuckerTensor(FactorizedTensor):
         return tucker_mode_dot(
             self, matrix_or_vector, mode, keep_dim=keep_dim, copy=copy
         )
-    
+
     def normalize(self):
-        """TODO doc
-        """
+        """TODO doc"""
         self.core, self.factors = tucker_normalize(self)
 
 

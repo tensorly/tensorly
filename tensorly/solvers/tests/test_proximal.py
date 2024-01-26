@@ -182,7 +182,9 @@ def test_svd_thresholding():
     singular_values = tl.tensor([0.4, 2.1, -2])
     tensor = tl.dot(U, tl.reshape(singular_values, (-1, 1)) * tl.transpose(U))
     shrinked_singular_values = tl.tensor([0, 1.6, -1.5])
-    true_res = tl.dot(U, tl.reshape(shrinked_singular_values, (-1, 1)) * tl.transpose(U))
+    true_res = tl.dot(
+        U, tl.reshape(shrinked_singular_values, (-1, 1)) * tl.transpose(U)
+    )
     res = svd_thresholding(tensor, 0.5)
     assert_array_almost_equal(true_res, res)
 

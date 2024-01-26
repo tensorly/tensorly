@@ -475,7 +475,7 @@ def non_negative_tucker_hals(
     inner_iter_max_fista=100,
     epsilon=0,
     rescale=True,
-    pop_l2=False, #TODO doc
+    pop_l2=False,  # TODO doc
     print_it=1,
     callback=None,
 ):
@@ -617,11 +617,11 @@ def non_negative_tucker_hals(
     # Avoiding errors
     for fixed_value in fixed_modes:
         sparsity_coefficients[fixed_value] = None
-        
+
     if nn_modes == "all":
         nn_modes = set(range(n_modes + 1))
     elif nn_modes is None:
-        nn_modes = set()       
+        nn_modes = set()
 
     # Generating the mode update sequence
     modes = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
@@ -646,7 +646,7 @@ def non_negative_tucker_hals(
         sparsity_coefficients=sparsity_coefficients,
         n_modes=n_modes + 1,
         rescale=rescale,
-        pop_l2=pop_l2
+        pop_l2=pop_l2,
     )
 
     # initialisation - declare local variables
@@ -655,7 +655,7 @@ def non_negative_tucker_hals(
 
     if callback is not None:
         tucker_tensor = TuckerTensor((nn_core, nn_factors))
-        fit_loss = (tl.norm(tensor - tucker_tensor.to_tensor())**2)/2
+        fit_loss = (tl.norm(tensor - tucker_tensor.to_tensor()) ** 2) / 2
         regs_loss = [
             sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
             + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
@@ -665,15 +665,14 @@ def non_negative_tucker_hals(
             tl.abs(nn_core)
         ) + ridge_coefficients[-1] * tl.sum(nn_core**2)
         regs_loss = tl.sum(regs_loss)
-        callback_error = (fit_loss + regs_loss)/norm_tensor**2  # loss !
+        callback_error = (fit_loss + regs_loss) / norm_tensor**2  # loss !
         callback(tucker_tensor, callback_error)
-
 
     # Iterate over one step of NTD
     for iteration in range(n_iter_max):
-        
+
         for mode in modes:
-            
+
             # Computing Hadamard of cross-products
             pseudo_inverse = nn_factors.copy()
             for i, factor in enumerate(nn_factors):
@@ -704,11 +703,12 @@ def non_negative_tucker_hals(
                 nn_factors[mode] = tl.transpose(nn_factor)
             else:
                 if sparsity_coefficients[mode]:
-                    warnings.warn(f"Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on mode {mode}. Either remove sparse regularization on mode {mode} or impose nonnegativity.")
-                nn_factor = tl.solve(
-                    UtU + 2 * ridge_coefficients[mode] * tl.eye(rank[mode]),
-                    UtM
+                    warnings.warn(
+                        f"Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on mode {mode}. Either remove sparse regularization on mode {mode} or impose nonnegativity."
                     )
+                nn_factor = tl.solve(
+                    UtU + 2 * ridge_coefficients[mode] * tl.eye(rank[mode]), UtM
+                )
                 nn_factors[mode] = tl.transpose(nn_factor)
 
         # updating core with FISTA for flexibility
@@ -719,17 +719,22 @@ def non_negative_tucker_hals(
         # 20 iters with adaptive step, then update every 10 iters
         # TODO doc acceleration
         try:
-            if (not iteration % 10) or (iteration<20):
+            if (not iteration % 10) or (iteration < 20):
                 learning_rate = 1
                 for MtM in pseudo_inverse:
                     learning_rate *= tl.truncated_svd(MtM)[1][0]
-                learning_rate = 1/(learning_rate+2*ridge_coefficients[-1])
+                learning_rate = 1 / (learning_rate + 2 * ridge_coefficients[-1])
         except:
-            warnings.warn("The stepsize for fista nnls solver could not be computed, skipping core update for this iteration", Warning)
+            warnings.warn(
+                "The stepsize for fista nnls solver could not be computed, skipping core update for this iteration",
+                Warning,
+            )
             continue
         non_negative_constraint = n_modes in nn_modes
         if (not non_negative_constraint) and sparsity_coefficients[-1]:
-            warnings.warn("Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on the core. Either remove sparse regularization on the core or impose nonnegativity.")
+            warnings.warn(
+                "Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on the core. Either remove sparse regularization on the core or impose nonnegativity."
+            )
             sparsity_coefficients[-1] = 0
         nn_core = fista(
             core_estimation,
@@ -740,13 +745,13 @@ def non_negative_tucker_hals(
             ridge_coef=ridge_coefficients[-1],
             lr=learning_rate,
             non_negative=non_negative_constraint,
-            epsilon=epsilon
+            epsilon=epsilon,
         )
 
         if tol or (callback is not None) or verbose:
             # for faster error computer
-            iprod = inner(core_estimation,nn_core)
-            tucker_norm = inner(multi_mode_dot(nn_core, pseudo_inverse),nn_core)
+            iprod = inner(core_estimation, nn_core)
+            tucker_norm = inner(multi_mode_dot(nn_core, pseudo_inverse), nn_core)
 
         if not disable_rebalance:
             ## Step 1: put true zeroes in factors and core, retain mask in memory
@@ -789,7 +794,7 @@ def non_negative_tucker_hals(
                 for i in range(n_modes):
                     nn_factors[i][nn_factors[i] <= epsilon] = epsilon
                 nn_core[nn_core <= epsilon] = epsilon
-        
+
         if tol or (callback is not None) or verbose:
             rec_error = (norm_tensor**2 - 2 * iprod + tucker_norm) / 2
             # Adding the regs value to the reconstruction error
@@ -812,7 +817,7 @@ def non_negative_tucker_hals(
                         print("Received True from callback function. Exiting.")
                     break
 
-            if (not (iteration % print_it)) and iteration>=1:
+            if (not (iteration % print_it)) and iteration >= 1:
                 if verbose:
                     if iteration >= 1:
                         print(
@@ -820,7 +825,7 @@ def non_negative_tucker_hals(
                         )
                     else:
                         print(f"first iteration, initial loss={rec_errors[-1]}.")
-            if tol and iteration>=1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+            if tol and iteration >= 1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
                     print(f"converged in {iteration} iterations.")
                 break
@@ -831,7 +836,7 @@ def non_negative_tucker_hals(
                     f"It is not advised to normalize factors if l1 or l2 penalty are used."
                 )
             nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
-            
+
     # final print
     if verbose:
         print(

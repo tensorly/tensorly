@@ -5,9 +5,10 @@ from ...base import unfold
 
 # Author: Jean Kossaifi
 
+
 def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     """mode-n unfolding times khatri-rao product of factors
-    
+
     Parameters
     ----------
     tensor : tl.tensor
@@ -26,14 +27,14 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     -----
     Implemented as the naive product between an unfolded tensor
     and a Khatri-Rao product explicitly formed. Due to matrix-matrix
-    products being extremely efficients operations, this is a 
+    products being extremely efficients operations, this is a
     simple yet hard-to-beat implementation of MTTKRP.
-    
+
     When the CP-rank of the CP-tensor is comparable to, or larger than,
     the dimensions of the input tensor, this method however requires a lot
     of memory, which can be harmful when dealing with large tensors. In this
     case, please use the memory-efficient version of MTTKRP.
-    
+
     (default unfolding_dot_khatri_rao implementation). To use the slower memory efficient version, run
     ```python
     from tensorly.tenalg.core_tenalg.mttkrp import unfolding_dot_khatri_rao_memory
@@ -69,12 +70,12 @@ def unfolding_dot_khatri_rao_memory(tensor, cp_tensor, mode):
     Implemented as a sequence of Tensor-times-vectors products between a tensor
     and a Khatri-Rao product. The Khatri-Rao product is never computed explicitly,
     rather each column in the Khatri-Rao product is contracted with the tensor. This
-    operation is implemented in Python and without making of use of parallelism, and it 
+    operation is implemented in Python and without making of use of parallelism, and it
     is therefore in general slower than the naive MTTKRP product.
     When the CP-rank of the CP-tensor is comparable to, or larger than,
     the dimensions of the input tensor, this method however requires much less
     memory.
-    
+
     This method can also be implemented by taking n-mode-product with the full factors
     (faster but more memory consuming)::
 

@@ -12,6 +12,7 @@ skip_tensorflow = pytest.mark.skipif(
     reason=f"Indexing with list not supported in TensorFlow",
 )
 
+
 def test_admm():
     """Test for admm operator"""
     a = tl.tensor(np.random.rand(20, 10))

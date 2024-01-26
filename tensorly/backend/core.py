@@ -45,7 +45,7 @@ backend_array = [
     "zeros",
     "any",
     "prod",
-    "maximum", # tensorflow bug?
+    "maximum",  # tensorflow bug?
     "all",
     "where",
     "reshape",

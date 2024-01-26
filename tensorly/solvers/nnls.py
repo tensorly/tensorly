@@ -1,6 +1,7 @@
 import tensorly as tl
 from math import sqrt
 
+
 def hals_nnls(
     UtM,
     UtU,
@@ -125,23 +126,23 @@ def hals_nnls(
     if exact:
         n_iter_max = 50000
         tol = 1e-16
-    
+
     for iteration in range(n_iter_max):
         rec_error = 0
         for k in range(rank):
             if UtU[k, k]:
-                num = UtM[k, :] - tl.dot(UtU[k, :], V) + UtU[k,k] * V[k,:]
-                den = UtU[k,k]
-                
+                num = UtM[k, :] - tl.dot(UtU[k, :], V) + UtU[k, k] * V[k, :]
+                den = UtU[k, k]
+
                 if sparsity_coefficient is not None:
                     num -= sparsity_coefficient
                 if ridge_coefficient is not None:
                     den += 2 * ridge_coefficient
-                    
+
                 newV = tl.clip(num / den, a_min=epsilon)
-                rec_error += tl.norm(V-newV)**2
+                rec_error += tl.norm(V - newV) ** 2
                 V = tl.index_update(V, tl.index[k, :], newV)
-                
+
                 # Safety procedure, if columns aren't allow to be zero
                 if nonzero_rows and tl.all(V[k, :] == 0):
                     V[k, :] = tl.eps(V.dtype) * tl.max(V)
@@ -149,19 +150,20 @@ def hals_nnls(
                 raise ValueError(
                     "Column " + str(k) + " of U is zero with nonzero condition"
                 )
-        
+
         if callback is not None:
             retVal = callback(V, rec_error)
             if retVal is True:
                 print("Received True from callback function. Exiting.")
                 break
-                
+
         if iteration == 0:
             rec_error0 = rec_error
         if rec_error < tol * rec_error0:
             break
-        
+
     return V
+
 
 def fista(
     UtM,
@@ -173,7 +175,7 @@ def fista(
     ridge_coef=0,
     lr=None,
     tol=1e-8,
-    epsilon=1e-8
+    epsilon=1e-8,
 ):
     """
     Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
@@ -204,7 +206,7 @@ def fista(
         Small constant such that the solution is greater than epsilon instead of zero.
         Required to ensure convergence, avoids division by zero and reset.
         Default: 1e-8
-        
+
     Returns
     -------
     x : approximate solution such that Ux = M
@@ -225,9 +227,9 @@ def fista(
     if x is None:
         x = tl.zeros(tl.shape(UtM), **tl.context(UtM))
     if lr is None:
-        lr = 1 / (tl.truncated_svd(UtU)[1][0]+2*ridge_coef)
+        lr = 1 / (tl.truncated_svd(UtU)[1][0] + 2 * ridge_coef)
     # Parameters
-    momentum_old = 1.0 #tl.tensor(1.0)
+    momentum_old = 1.0  # tl.tensor(1.0)
     norm_0 = 0
     x_update = tl.copy(x)
 
@@ -236,24 +238,30 @@ def fista(
             x_gradient = (
                 -UtM
                 + tl.tenalg.multi_mode_dot(x_update, UtU, transpose=False)
-                + sparsity_coef + 2*ridge_coef*x_update
+                + sparsity_coef
+                + 2 * ridge_coef * x_update
             )
         else:
-            x_gradient = -UtM + tl.dot(UtU, x_update) + sparsity_coef + 2*ridge_coef*x_update
+            x_gradient = (
+                -UtM + tl.dot(UtU, x_update) + sparsity_coef + 2 * ridge_coef * x_update
+            )
 
         x_new = x_update - lr * x_gradient
         if non_negative:
-            x_new = tl.where(x_new<epsilon,epsilon,x_new)
+            x_new = tl.where(x_new < epsilon, epsilon, x_new)
         momentum = (1 + sqrt(1 + 4 * momentum_old**2)) / 2
         x_update = x_new + ((momentum_old - 1) / momentum) * (x_new - x)
         momentum_old = momentum
-        norm = tl.abs(tl.sum(x - x_new)) # for tracking loss decrease, l2 has square overflow issues
+        norm = tl.abs(
+            tl.sum(x - x_new)
+        )  # for tracking loss decrease, l2 has square overflow issues
         x = tl.copy(x_new)
         if iteration == 0:
             norm_0 = norm
         if norm < tol * norm_0:
             break
     return x
+
 
 def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     """
@@ -401,4 +409,3 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
             break
 
     return x_vec
-

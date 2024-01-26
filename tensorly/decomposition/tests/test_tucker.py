@@ -228,7 +228,7 @@ def test_non_negative_tucker(init, hals, monkeypatch):
             monkeypatch,
             non_negative_tucker_hals,
             Tucker_NN_HALS,
-            #ignore_args={"return_errors"},
+            # ignore_args={"return_errors"},
             rank=3,
         )
     else:
@@ -241,12 +241,14 @@ def test_non_negative_tucker(init, hals, monkeypatch):
         )
 
     # testing partial nonnegativity for HALS
-    
+
     rng = tl.check_random_state(1234)
     core, factors = random_tucker((3, 4, 3), rank=[3, 4, 3], non_negative=True)
     core = core * tl.sign(tl.tensor(rng.random_sample((3, 4, 3))))
     tensor = tucker_to_tensor((core, factors))
-    nn_core, nn_factors = non_negative_tucker_hals(tensor, rank=[3, 4, 3], init=init, n_iter_max=100, nn_modes=[0,1,2])
+    nn_core, nn_factors = non_negative_tucker_hals(
+        tensor, rank=[3, 4, 3], init=init, n_iter_max=100, nn_modes=[0, 1, 2]
+    )
     # Make sure all components except the core are positive
     print(nn_factors)
     assert_(tl.all(nn_factors[0] >= 0))

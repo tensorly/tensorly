@@ -827,7 +827,7 @@ class CP(DecompositionMixin):
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
-        
+
     Returns
     -------
     CPTensor : (weight, factors)
