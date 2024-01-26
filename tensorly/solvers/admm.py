@@ -88,37 +88,34 @@ def admm(
 
     Notes
     -----
-    ADMM solves the convex optimization problem :math:`\\min_ f(x) + g(z)` where :math: A(x_split) + Bx = c.
+    ADMM solves the convex optimization problem 
+    
+    .. math:: \\min_ f(x) + g(z),\; A(x_{split}) + Bx = c.
 
-    Following updates are iterated to solve the problem::
+    Following updates are iterated to solve the problem
 
-    .. math::
-        \\begin{equation}
-            x_split = argmin_(x_split) f(x_split) + (rho/2)||A(x_split) + Bx - c||_2^2
-            x = argmin_x g(x) + (rho/2)||A(x_split) + Bx - c||_2^2
-            dual_var = dual_var + (Ax + B(x_split) - c)
-        \\end{equation}
+    .. math:: x_{split} = argmin_{x_{split}}~ f(x_{split}) + (\\rho/2)\\|Ax_{split} + Bx - c\\|_2^2
+    .. math:: x = argmin_x~ g(x) + (\\rho/2)\\|Ax_{split} + Bx - c\\|_2^2 
+    .. math:: dual\_var = dual\_var + (Ax + Bx_{split} - c)
 
     where rho is a constant defined by the user.
 
-    Let us define a least square problem such as :math:`\\||Ux - M||^2 + r(x)`.
+    Let us define a least square problem such as :math:`\\|Ux - M\\|^2 + r(x)`.
 
-    ADMM can be adapted to this least square problem as following::
+    ADMM can be adapted to this least square problem as following
 
-    .. math::
-        \\begin{equation}
-            x_split = (UtU + rho\times I)\times(UtM + rho\times(x + dual_var)^T)
-            x = argmin r(x) + (rho/2)||x - x_split^T + dual_var||_2^2
-            dual_var = dual_var + x - x_split^T
-        \\end{equation}
+    .. math:: x_{split} = (UtU + \\rho\\times I)\\times(UtM + \\rho\\times(x + dual\_var)^T) 
+    .. math:: x = argmin_{x}~ r(x) + (\\rho/2)\\|x - x_{split}^T + dual\_var\\|_2^2 
+    .. math:: dual\_var = dual\_var + x - x_{split}^T
+            
     where r is the regularization operator. Here, x can be updated by using proximity operator
-    of :math:`x_split^T - dual_var`.
+    of :math:`x_{split}^T - dual\_var`.
 
     References
     ----------
     .. [1] Huang, Kejun, Nicholas D. Sidiropoulos, and Athanasios P. Liavas.
-           "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization."
-           IEEE Transactions on Signal Processing 64.19 (2016): 5052-5065.
+       "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization."
+       IEEE Transactions on Signal Processing 64.19 (2016): 5052-5065.
     """
     rho = tl.trace(UtU) / tl.shape(x)[1]
     for iteration in range(n_iter_max):

@@ -539,9 +539,9 @@ def non_negative_tucker_hals(
         Default: 1
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        ```
+        
             callback(tucker_tensor: TuckerTensor, error: float)
-        ```
+        
         where tucker_tensor contains the last estimated factors and weights of the nonnegative Tucker decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
@@ -1081,6 +1081,14 @@ class Tucker_NN_HALS(DecompositionMixin):
         Indicates whether the algorithm should return all reconstruction errors
         and computation time of each iteration or not
         Default: False
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        
+            callback(tucker_tensor: TuckerTensor, error: float)
+        
+        where tucker_tensor contains the last estimated factors and weights of the nonnegative Tucker decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
 
     Returns
     -------

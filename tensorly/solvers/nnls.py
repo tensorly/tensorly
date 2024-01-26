@@ -67,13 +67,13 @@ def hals_nnls(
         Required to ensure convergence, avoids division by zero and reset.
         Default: 0
     callback: callable, optional
-    A callable called after each iteration. The supported signature is
-    ```
-        callback(V: tensor, error: float)
-    ```
-    where V is the last estimated nonnegative least squares solution, and error is the squared Euclidean norm of the difference between V at the current iteration k, and V at iteration k-1 (therefore error is not the loss function which is costly to compute).
-    Moreover, the algorithm will also terminate if the callback callable returns True.
-    Default: None
+        A callable called after each iteration. The supported signature is
+        
+            callback(V: tensor, error: float)
+            
+        where V is the last estimated nonnegative least squares solution, and error is the squared Euclidean norm of the difference between V at the current iteration k, and V at iteration k-1 (therefore error is not the loss function which is costly to compute).
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
 
     Returns
     -------
@@ -82,30 +82,39 @@ def hals_nnls(
 
     Notes
     -----
-    We solve the following problem :math:`\\min_{V >= \epsilon} ||M-UV||_F^2`
+    We solve the following problem 
+    
+    .. math::
+    
+            \\min_{V >= \epsilon} ||M-UV||_F^2
 
-    The matrix V is updated linewise. The update rule for this resolution is::
+    The matrix V is updated linewise. The update rule for this resolution is
 
     .. math::
-        \\begin{equation}
-            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j))/UtU[k,k]
-        \\end{equation}
+    
+            \\begin{equation}
+                V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)})/UtU[k,k]
+            \\end{equation}
 
-    with j the update iteration. V is then thresholded to be larger than epsilon.
+    with j the update iteration index. V is then thresholded to be larger than epsilon.
 
-    This problem can also be defined by adding a sparsity coefficient and a ridge coefficient,
-    enhancing sparsity or smoothness in the solution [2]. In this sparse/ridge version, the update rule becomes::
+    This problem can also be defined by adding respectively a sparsity coefficient and a ridge coefficients
+    
+    .. math:: \lambda_s, \lambda_r
+    
+    enhancing sparsity or smoothness in the solution [2]. In this sparse/ridge version, the update rule becomes
 
     .. math::
-        \\begin{equation}
-            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j) - sparsity_coefficient)/(UtU[k,k]+2*ridge_coefficient)
-        \\end{equation}
+    
+            \\begin{equation}
+                V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)} - \lambda_s)/(UtU[k,k]+2\lambda_r)
+            \\end{equation}
 
     Note that the data fitting is halved but not the ridge penalization.
 
     References
     ----------
-    .. [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+    .. [1] N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
        Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
        Neural Computation 24 (4): 1085-1105, 2012.
 
@@ -213,7 +222,11 @@ def fista(
 
     Notes
     -----
-    We solve the following problem :math: `1/2 ||m - Ux ||_2^2 + \\lambda_1 |x|_1 + \\lambda_2 \|x\|_2^2`
+    We solve the following problem 
+    
+    .. math::
+    
+            1/2 ||m - Ux ||_2^2 + \\lambda_1 |x|_1 + \\lambda_2 \|x\|_2^2
 
     Reference
     ----------
@@ -290,16 +303,20 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     Notes
     -----
     This function solves following problem:
+    
     .. math::
-       \\begin{equation}
-            \\min_{x} ||Ux - m||^2
-       \\end{equation}
+    
+            \\begin{equation}
+                    \\min_{x} ||Ux - m||^2
+            \\end{equation}
 
     According to [1], non-negativity-constrained least square estimation problem becomes:
+    
     .. math::
-       \\begin{equation}
-            x' = (Utm) - (UTU)\\times x
-       \\end{equation}
+    
+            \\begin{equation}
+                    x' = (Utm) - (UTU)\\times x
+            \\end{equation}
 
     Reference
     ----------

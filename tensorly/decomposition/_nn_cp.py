@@ -223,12 +223,15 @@ def non_negative_parafac_hals(
     Non-negative CP decomposition via HALS
 
     The loss function is:
-    :math: `\frac{1}{2} \|tensor - cp_tensor \|_F^2
+    
+    .. math::
+    
+            \frac{1}{2} \|tensor - cp_tensor \|_F^2
             + \sum_i^{rank} sparsity_coefficient_i \|fac_i\|_1
-            + \frac{1}{2} \sum_i^{rank} ridge_coefficient_i \|fac_i\|_2^2`
+            + \frac{1}{2} \sum_i^{rank} ridge_coefficient_i \|fac_i\|_2^2
 
     Uses Hierarchical ALS (Alternating Least Squares)
-    which updates each factor column-wise (one column at a time while keeping all other columns fixed), see [1]_
+    which updates each factor column-wise (one column at a time while keeping all other columns fixed).
 
     Parameters
     ----------
@@ -293,9 +296,9 @@ def non_negative_parafac_hals(
         Default: 0.1
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        ```
+        
             callback(cp_tensor: CPTensor, error: float)
-        ```
+            
         where cp_tensor contains the last estimated factors and weights of the nonnegative CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
@@ -304,21 +307,20 @@ def non_negative_parafac_hals(
     pop_l2: boolean
         Default: False
 
-
     Returns
     -------
     factors : ndarray list
-            list of positive factors of the CP decomposition
-            element `i` is of shape ``(tensor.shape[i], rank)``
+        list of positive factors of the CP decomposition
+        element `i` is of shape ``(tensor.shape[i], rank)``
     errors: list
         A list of reconstruction errors at each iteration of the algorithm.
         Does not include the penalization terms.
 
     References
     ----------
-    .. [1] N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
-           Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
-           Neural Computation 24 (4): 1085-1105, 2012.
+    ..  [1] N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+        Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
+        Neural Computation 24 (4): 1085-1105, 2012.
     """
 
     weights, factors = initialize_cp(
@@ -724,9 +726,9 @@ class CP_NN_HALS(DecompositionMixin):
         Default: 0.1
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        ```
+        
             callback(cp_tensor: CPTensor, error: float)
-        ```
+        
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
