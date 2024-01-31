@@ -168,7 +168,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
     ----------
     tensor : tensor
     norm_tensor : float
-        The l2 norm of tensor.
+        The squared l2 norm of tensor.
     weights : tensor
         The current CP weights
     factors : tensor
@@ -298,9 +298,9 @@ def parafac(
         Whether to perform line search as proposed by Bro [3].
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        ```
+        
             callback(cp_tensor: CPTensor, error: float)
-        ```
+        
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
@@ -356,7 +356,7 @@ def parafac(
     )
 
     rec_errors = []
-    norm_tensor = tl.norm(tensor, 2)
+    norm_tensor = tl.norm(tensor, 2) **2
     if l2_reg:
         Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
     else:
@@ -703,7 +703,7 @@ def randomised_parafac(
     )
     rec_errors = []
     n_dims = tl.ndim(tensor)
-    norm_tensor = tl.norm(tensor, 2)
+    norm_tensor = tl.norm(tensor, 2) ** 2
     min_error = 0
 
     weights = tl.ones(rank, **tl.context(tensor))
@@ -821,9 +821,9 @@ class CP(DecompositionMixin):
         Whether to perform line search as proposed by Bro [3].
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        ```
+        
             callback(cp_tensor::CPTensor, error::float)
-        ```
+        
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
