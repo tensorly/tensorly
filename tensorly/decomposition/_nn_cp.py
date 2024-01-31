@@ -34,13 +34,18 @@ def non_negative_parafac(
     random_state=None,
     verbose=0,
     normalize_factors=False,
-    return_errors=False,
     mask=None,
     cvg_criterion="abs_rec_error",
     fixed_modes=None,
+    callback=None,
 ):
     """
-    Non-negative CP decomposition
+    Non-negative CP decomposition. The loss fuction minimized is 
+    
+   .. math:: 
+            \\|tensor - cp\_tensor \\|_F^2
+        
+    with cp\_tensor a nonnegative CP decomposition.
 
     Uses multiplicative updates, see [2]_
 
@@ -65,10 +70,6 @@ def non_negative_parafac(
     fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
-    return_errors: boolean
-        Indicates whether the algorithm should return all reconstruction errors
-        and computation time of each iteration or not.
-        Default: False
     cvg_criterion : {'abs_rec_error', 'rec_error'}, optional
        Stopping criterion for ALS, works if `tol` is not None.
        If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
@@ -79,6 +80,14 @@ def non_negative_parafac(
         the values are missing and 1 everywhere else. Masked values are filled with imputation along the iterations.
         Note: if tensor is sparse, then mask should also be sparse with a fill value of 1 (or
         True). Allows for missing values [2]_
+        Default: None
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        
+            callback(cp_tensor: CPTensor, error: float)
+            
+        where cp_tensor contains the last estimated factors and weights of the nonnegative CP decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
 
     Returns
@@ -120,6 +129,12 @@ def non_negative_parafac(
         fixed_modes.remove(tl.ndim(tensor) - 1)
     modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
 
+    if callback is not None:
+        cp_tensor = CPTensor((weights, factors))
+        fit_loss = tl.norm(tensor - cp_tensor.to_tensor()) ** 2
+        callback_error = fit_loss / norm_tensor  # loss !
+        callback(cp_tensor, callback_error)
+
     for iteration in range(n_iter_max):
         if verbose > 1:
             print("Starting iteration", iteration + 1)
@@ -150,21 +165,34 @@ def non_negative_parafac(
             factor = factors[mode] * numerator / denominator
 
             factors[mode] = factor
+            
+            if mode == modes_list[-1]:
+                # For faster error computation 
+                # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
+                factors_norm = cp_norm((weights, factors))
+
+                # mttkrp and factor for the last mode. This is equivalent to the
+                # inner product <tensor, factorization>
+                iprod = tl.sum(tl.sum(mttkrp * factor, axis=0))
+            
             if normalize_factors and mode != modes_list[-1]:
                 weights, factors = cp_normalize((weights, factors))
 
-        if tol or return_errors:
-            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-            factors_norm = cp_norm((weights, factors))
-
-            # mttkrp and factor for the last mode. This is equivalent to the
-            # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp * factor, axis=0))
+        if tol or (callback is not None):
             rec_error = (
-                tl.sqrt(tl.abs(norm_tensor + factors_norm**2 - 2 * iprod))
+                (norm_tensor + factors_norm**2 - 2 * iprod)
                 / norm_tensor
             )
             rec_errors.append(rec_error)
+            
+            if callback is not None:
+                cp_tensor = CPTensor((weights, factors))
+                retVal = callback(cp_tensor, rec_errors[-1])
+                if retVal is True:
+                    if verbose:
+                        print("Received True from callback function. Exiting.")
+                    break
+            
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
@@ -191,10 +219,7 @@ def non_negative_parafac(
             weights, factors = cp_normalize((weights, factors))
     cp_tensor = CPTensor((weights, factors))
 
-    if return_errors:
-        return cp_tensor, rec_errors
-    else:
-        return cp_tensor
+    return cp_tensor
 
 
 def non_negative_parafac_hals(
@@ -365,7 +390,7 @@ def non_negative_parafac_hals(
     if callback is not None:
         # Note: not in the returned errors
         cp_tensor = CPTensor((weights, factors))
-        fit_loss = (1 / 2) * tl.norm(tensor - cp_tensor.to_tensor()) ** 2
+        fit_loss = (1 / 2) * (tl.norm(tensor - cp_tensor.to_tensor()) ** 2)
         regs_loss = sum(
             sparsity_coefficients[i] * tl.sum(tl.abs(factors[i]))
             + ridge_coefficients[i] * tl.norm(factors[i]) ** 2
@@ -428,6 +453,7 @@ def non_negative_parafac_hals(
             # for faster error computation, affected by scaling!!
             if mode == modes[-1]:
                 iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
+                factors_norm = cp_norm((weights, factors))
 
             # ----------
             # Scale here (TODO: outside loop)
@@ -476,7 +502,6 @@ def non_negative_parafac_hals(
                 weights, factors = cp_normalize((weights, factors))
 
         if tol or verbose or (callback is not None):
-            factors_norm = cp_norm((weights, factors))
             rec_error = (norm_tensor + factors_norm**2 - 2 * iprod) / 2
             regs_loss.append(
                 sum(
@@ -553,8 +578,6 @@ class CP_NN(DecompositionMixin):
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         Level of verbosity
-    return_errors : bool, optional
-        Activate return of iteration errors
     mask : ndarray
         array of booleans with the same shape as ``tensor`` should be 0 where
         the values are missing and 1 everywhere else. Masked values are filled with imputation along the iterations.
@@ -573,6 +596,14 @@ class CP_NN(DecompositionMixin):
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        
+            callback(cp_tensor: CPTensor, error: float)
+        
+        where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
 
     Returns
     -------
@@ -610,6 +641,7 @@ class CP_NN(DecompositionMixin):
         mask=None,
         cvg_criterion="abs_rec_error",
         fixed_modes=None,
+        callback=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -622,6 +654,7 @@ class CP_NN(DecompositionMixin):
         self.mask = mask
         self.cvg_criterion = cvg_criterion
         self.fixed_modes = fixed_modes
+        self.callback = callback
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -649,7 +682,7 @@ class CP_NN(DecompositionMixin):
             mask=self.mask,
             cvg_criterion=self.cvg_criterion,
             fixed_modes=self.fixed_modes,
-            return_errors=True,
+            callback=self.callback
         )
 
         self.decomposition_ = cp_tensor
