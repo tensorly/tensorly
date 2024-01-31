@@ -161,7 +161,7 @@ def non_negative_parafac(
             # inner product <tensor, factorization>
             iprod = tl.sum(tl.sum(mttkrp * factor, axis=0))
             rec_error = (
-                tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+                tl.sqrt(tl.abs(norm_tensor + factors_norm**2 - 2 * iprod))
                 / norm_tensor
             )
             rec_errors.append(rec_error)
@@ -334,7 +334,7 @@ def non_negative_parafac_hals(
         normalize_factors=normalize_factors,
     )
 
-    norm_tensor = tl.norm(tensor, 2)
+    norm_tensor = tl.norm(tensor, 2) ** 2
 
     n_modes = tl.ndim(tensor)
 
@@ -371,7 +371,7 @@ def non_negative_parafac_hals(
             + ridge_coefficients[i] * tl.norm(factors[i]) ** 2
             for i in range(n_modes)
         )
-        callback_error = (fit_loss + regs_loss) / norm_tensor**2  # loss !
+        callback_error = (fit_loss + regs_loss) / norm_tensor  # loss !
         callback(cp_tensor, callback_error)
 
     # initialisation - declare local variables
@@ -477,7 +477,7 @@ def non_negative_parafac_hals(
 
         if tol or verbose or (callback is not None):
             factors_norm = cp_norm((weights, factors))
-            rec_error = (norm_tensor**2 + factors_norm**2 - 2 * iprod) / 2
+            rec_error = (norm_tensor + factors_norm**2 - 2 * iprod) / 2
             regs_loss.append(
                 sum(
                     [
@@ -487,7 +487,7 @@ def non_negative_parafac_hals(
                     ]
                 )
             )
-            rec_errors.append((rec_error + regs_loss[-1]) / norm_tensor**2)  # loss !
+            rec_errors.append((rec_error + regs_loss[-1]) / norm_tensor)  # loss !
 
             if callback is not None:
                 cp_tensor = CPTensor((weights, factors))

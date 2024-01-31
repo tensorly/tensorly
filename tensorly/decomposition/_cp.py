@@ -197,7 +197,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
         # Update the tensor based on the mask
         if mask is not None:
             tensor = tensor * mask + low_rank_component * (1 - mask)
-            norm_tensor = tl.norm(tensor, 2)
+            norm_tensor = tl.norm(tensor, 2) ** 2
 
         if sparsity:
             sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
@@ -221,7 +221,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
             # inner product <tensor, factorization>
             iprod = tl.sum(tl.sum(mttkrp * tl.conj(factors[-1]), axis=0))
             unnorml_rec_error = tl.sqrt(
-                tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
+                tl.abs(norm_tensor + factors_norm**2 - 2 * iprod)
             )
 
     return unnorml_rec_error, tensor, norm_tensor
@@ -356,7 +356,7 @@ def parafac(
     )
 
     rec_errors = []
-    norm_tensor = tl.norm(tensor, 2) **2
+    norm_tensor = tl.norm(tensor, 2) ** 2
     if l2_reg:
         Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
     else:
