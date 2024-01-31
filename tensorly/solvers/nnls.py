@@ -78,7 +78,7 @@ def hals_nnls(
     Returns
     -------
     V: array
-        a r-by-n nonnegative matrix \approx argmin_{V >= 0} ||M-UV||_F^2
+        a r-by-n nonnegative matrix, see notes.
 
     Notes
     -----
@@ -226,13 +226,13 @@ def fista(
     
     .. math::
     
-            1/2 ||m - Ux ||_2^2 + \\lambda_1 |x|_1 + \\lambda_2 \|x\|_2^2
+            \\frac{1}{2} \\|m - Ux \\|_2^2 + \\lambda_1 \\|x\\|_1 + \\lambda_2 \\|x\\|_2^2
 
-    Reference
+    References
     ----------
-    [1] : Beck, A., & Teboulle, M. (2009). A fast iterative
-          shrinkage-thresholding algorithm for linear inverse problems.
-          SIAM journal on imaging sciences, 2(1), 183-202.
+    ..  [1] Beck, A., & Teboulle, M. (2009). A fast iterative
+        shrinkage-thresholding algorithm for linear inverse problems.
+        SIAM journal on imaging sciences, 2(1), 183-202.
     """
     if sparsity_coef is None:
         sparsity_coef = 0
@@ -307,7 +307,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     .. math::
     
             \\begin{equation}
-                    \\min_{x} ||Ux - m||^2
+                    \\min_{x} \\|Ux - m\\|^2
             \\end{equation}
 
     According to [1], non-negativity-constrained least square estimation problem becomes:
@@ -315,14 +315,14 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     .. math::
     
             \\begin{equation}
-                    x' = (Utm) - (UTU)\\times x
+                    x' = Utm - UtU x
             \\end{equation}
 
-    Reference
+    References
     ----------
-    [1] : Bro, R., & De Jong, S. (1997). A fast non‐negativity‐constrained
-          least squares algorithm. Journal of Chemometrics: A Journal of
-          the Chemometrics Society, 11(5), 393-401.
+    ..  [1] Bro, R., & De Jong, S. (1997). A fast non‐negativity‐constrained
+        least squares algorithm. Journal of Chemometrics: A Journal of
+        the Chemometrics Society, 11(5), 393-401.
     """
     if tl.get_backend() == "tensorflow":
         raise ValueError(

@@ -108,7 +108,7 @@ def non_negative_parafac(
         normalize_factors=normalize_factors,
     )
     rec_errors = []
-    norm_tensor = tl.norm(tensor, 2)
+    norm_tensor = tl.norm(tensor, 2) ** 2
 
     if fixed_modes is None:
         fixed_modes = []
@@ -153,7 +153,7 @@ def non_negative_parafac(
             if normalize_factors and mode != modes_list[-1]:
                 weights, factors = cp_normalize((weights, factors))
 
-        if tol:
+        if tol or return_errors:
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
             factors_norm = cp_norm((weights, factors))
 
@@ -170,7 +170,7 @@ def non_negative_parafac(
 
                 if verbose:
                     print(
-                        f"iteration {iteration}, reconstraction error: {rec_error}, decrease = {rec_error_decrease}"
+                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
                     )
 
                 if cvg_criterion == "abs_rec_error":
@@ -226,9 +226,9 @@ def non_negative_parafac_hals(
     
     .. math::
     
-            \frac{1}{2} \|tensor - cp_tensor \|_F^2
-            + \sum_i^{rank} sparsity_coefficient_i \|fac_i\|_1
-            + \frac{1}{2} \sum_i^{rank} ridge_coefficient_i \|fac_i\|_2^2
+            \\frac{1}{2} \\|tensor - cp\_tensor \\|_F^2
+            + \\sum_i^{rank} sparsity\_coefficient[i] \\|fac[i]]\\|_1
+            + \\sum_i^{rank} ridge\_coefficient[i] \\|fac[i]\\|_2^2
 
     Uses Hierarchical ALS (Alternating Least Squares)
     which updates each factor column-wise (one column at a time while keeping all other columns fixed).
@@ -236,17 +236,18 @@ def non_negative_parafac_hals(
     Parameters
     ----------
     tensor : ndarray
+        Input data tensor
     rank   : int
-            number of components
+        number of components
     n_iter_max : int
-                 maximum number of iteration
+        maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
-          tolerance: the algorithm stops when the variation in
-          the reconstruction error is less than the tolerance
-          Default: 1e-8
+        tolerance: the algorithm stops when the variation in
+        the reconstruction error is less than the tolerance
+        Default: 1e-8
     random_state : {None, int, np.random.RandomState}
     sparsity_coefficients: array of float (of length the number of modes)
         The sparsity penalization coefficients on each factor.
