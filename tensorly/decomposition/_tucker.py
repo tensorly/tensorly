@@ -499,8 +499,6 @@ def non_negative_tucker_hals(
     inner_iter_max=30,
     inner_iter_max_fista=100,
     epsilon=0,
-    rescale=True,
-    pop_l2=False,  # TODO doc
     print_it=1,
     callback=None,
 ):
@@ -667,14 +665,15 @@ def non_negative_tucker_hals(
     (
         ridge_coefficients,
         sparsity_coefficients,
-        disable_rebalance,
-        hom_deg,
+        disable_reg,
+        _,
     ) = process_regularization_weights(
+            rescale=self.rescale,
+            pop_l2=self.pop_l2,
         ridge_coefficients=ridge_coefficients,
         sparsity_coefficients=sparsity_coefficients,
         n_modes=n_modes + 1,
-        rescale=rescale,
-        pop_l2=pop_l2,
+        rescale=False
     )
 
     # initialisation - declare local variables
@@ -743,9 +742,7 @@ def non_negative_tucker_hals(
         pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
         core_estimation = multi_mode_dot(tensor, nn_factors, transpose=True)
 
-        # TODO Learning Rate schedule?
-        # 20 iters with adaptive step, then update every 10 iters
-        # TODO doc acceleration
+        # TODO: improve for PR
         try:
             if (not iteration % 10) or (iteration < 20):
                 learning_rate = 1
@@ -781,49 +778,6 @@ def non_negative_tucker_hals(
             iprod = inner(core_estimation, nn_core)
             tucker_norm = inner(multi_mode_dot(nn_core, pseudo_inverse), nn_core)
 
-        if not disable_rebalance:
-            ## Step 1: put true zeroes in factors and core, retain mask in memory
-            if epsilon:
-                for i in range(n_modes):
-                    # TODO nnmodes
-                    nn_factors[i][nn_factors[i] <= epsilon] = 0
-                nn_core[nn_core <= epsilon] = 0
-
-            # Step 2: compute regs, and rescale
-            if rescale == "sinkhorn":
-                regs = [
-                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]), axis=0)
-                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2, axis=0)
-                    for i in range(n_modes)
-                ]
-                nn_factors, nn_core = tucker_implicit_sinkhorn_balancing(
-                    nn_factors,
-                    nn_core,
-                    regs,
-                    sparsity_coefficients[-1] + ridge_coefficients[-1],
-                    hom_deg,
-                    itermax=1,
-                )
-            if rescale == "scalar":
-                regs = [
-                    sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
-                    + ridge_coefficients[i] * tl.sum(nn_factors[i] ** 2)
-                    for i in range(n_modes)
-                ]
-                regs += [
-                    sparsity_coefficients[-1] * tl.sum(tl.abs(nn_core))
-                    + ridge_coefficients[-1] * tl.sum(nn_core**2)
-                ]
-                nn_factors, nn_core, _ = tucker_implicit_scalar_balancing(
-                    nn_factors, nn_core, regs, hom_deg
-                )
-            # Step 3: impute epsilon in place of values in [0, epsilon]
-            if epsilon:
-                for i in range(n_modes):
-                    nn_factors[i][nn_factors[i] <= epsilon] = epsilon
-                nn_core[nn_core <= epsilon] = epsilon
-
-        if tol or (callback is not None) or verbose:
             rec_error = (norm_tensor - 2 * iprod + tucker_norm) / 2
             # Adding the regs value to the reconstruction error
             regs_loss = sum(
@@ -859,7 +813,7 @@ def non_negative_tucker_hals(
                 break
 
         if normalize_factors:
-            if not disable_rebalance:
+            if not disable_reg:
                 warnings.warn(
                     f"It is not advised to normalize factors if l1 or l2 penalty are used."
                 )
@@ -1158,8 +1112,6 @@ class Tucker_NN_HALS(DecompositionMixin):
         inner_iter_max=30,
         inner_iter_max_fista=100,
         epsilon=0,
-        rescale=True,
-        pop_l2=False,
         print_it=1,
         callback=None,
     ):
@@ -1178,8 +1130,6 @@ class Tucker_NN_HALS(DecompositionMixin):
         self.inner_iter_max = inner_iter_max
         self.inner_iter_max_fista = inner_iter_max_fista
         self.epsilon = epsilon
-        self.rescale = rescale
-        self.pop_l2 = pop_l2
         self.print_it = print_it
         self.callback = callback
 
@@ -1201,8 +1151,6 @@ class Tucker_NN_HALS(DecompositionMixin):
             inner_iter_max=self.inner_iter_max,
             inner_iter_max_fista=self.inner_iter_max_fista,
             epsilon=self.epsilon,
-            rescale=self.rescale,
-            pop_l2=self.pop_l2,
             print_it=self.print_it,
             callback=self.callback,
         )

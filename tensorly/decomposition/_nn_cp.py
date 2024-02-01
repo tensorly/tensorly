@@ -238,8 +238,6 @@ def non_negative_parafac_hals(
     verbose=False,
     normalize_factors=False,
     epsilon=0,
-    rescale=True,
-    pop_l2=False,
     print_it=1,
     inner_iter_max=50,
     inner_tol=0.1,
@@ -331,10 +329,6 @@ def non_negative_parafac_hals(
         where cp_tensor contains the last estimated factors and weights of the nonnegative CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
-    rescale: boolean
-        Default: True
-    pop_l2: boolean
-        Default: False
 
     Returns
     -------
@@ -366,14 +360,13 @@ def non_negative_parafac_hals(
     (
         ridge_coefficients,
         sparsity_coefficients,
-        disable_rebalance,
-        hom_deg,
+        disable_reg,
+        _,
     ) = process_regularization_weights(
         ridge_coefficients=ridge_coefficients,
         sparsity_coefficients=sparsity_coefficients,
         n_modes=n_modes,
-        rescale=rescale,
-        pop_l2=pop_l2,
+        rescale=False,
     )
 
     if fixed_modes is None:
@@ -455,47 +448,8 @@ def non_negative_parafac_hals(
                 iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
                 factors_norm = cp_norm((weights, factors))
 
-            # ----------
-            # Scale here (TODO: outside loop)
-            # rescale
-            if not disable_rebalance:
-
-                # 1. Put epsilon values to zero for scaling
-                if epsilon:
-                    for i in range(n_modes):
-                        factors[i][factors[i] <= epsilon] = 0
-
-                # 2. rebalance column by column
-                for q in range(rank):
-                    # Check if one factor is below threshold TODO: nn_modes
-                    # in that case, scales will be nothing, all factors should be epsilon
-                    thresh = tl.prod(
-                        [tl.sum(tl.abs(factors[i][:, q])) for i in range(n_modes)]
-                    )
-                    if thresh == 0:
-                        for submode in range(n_modes):
-                            factors[submode][:, q] = 0
-                    else:
-                        regs = [
-                            sparsity_coefficients[i] * tl.sum(tl.abs(factors[i][:, q]))
-                            + ridge_coefficients[i] * tl.norm(factors[i][:, q]) ** 2
-                            for i in range(n_modes)
-                        ]
-                        scales = cp_opt_balance(tl.tensor(regs), hom_deg)
-                        for submode in range(n_modes):
-                            factors[submode][:, q] = (
-                                factors[submode][:, q] * scales[submode]
-                            )
-
-                # 3. place epsilon back
-                if epsilon:
-                    for i in range(n_modes):
-                        factors[i][factors[i] <= epsilon] = epsilon
-
-            # ----------
-
             if normalize_factors and mode != modes[-1]:
-                if not disable_rebalance:
+                if not disable_reg:
                     warnings.warn(
                         f"It is not advised to normalize factors if l1 or l2 penalty are used."
                     )
@@ -804,8 +758,6 @@ class CP_NN_HALS(DecompositionMixin):
         normalize_factors=False,
         random_state=None,
         epsilon=0,
-        rescale=True,
-        pop_l2=False,
         print_it=1,
         inner_iter_max=50,
         inner_tol=0.1,
@@ -825,8 +777,6 @@ class CP_NN_HALS(DecompositionMixin):
         self.normalize_factors = normalize_factors
         self.random_state = random_state
         self.epsilon = epsilon
-        self.rescale = rescale
-        self.pop_l2 = pop_l2
         self.print_it = print_it
         self.inner_iter_max = inner_iter_max
         self.inner_tol = inner_tol
@@ -861,8 +811,6 @@ class CP_NN_HALS(DecompositionMixin):
             verbose=self.verbose,
             normalize_factors=self.normalize_factors,
             epsilon=self.epsilon,
-            rescale=self.rescale,
-            pop_l2=self.pop_l2,
             print_it=self.print_it,
             inner_iter_max=self.inner_iter_max,
             inner_tol=self.inner_tol,
