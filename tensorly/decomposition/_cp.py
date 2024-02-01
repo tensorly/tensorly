@@ -298,9 +298,9 @@ def parafac(
         Whether to perform line search as proposed by Bro [3].
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        
+
             callback(cp_tensor: CPTensor, error: float)
-        
+
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
@@ -821,9 +821,9 @@ class CP(DecompositionMixin):
         Whether to perform line search as proposed by Bro [3].
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        
+
             callback(cp_tensor::CPTensor, error::float)
-        
+
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None

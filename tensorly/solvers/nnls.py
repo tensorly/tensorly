@@ -68,9 +68,9 @@ def hals_nnls(
         Default: 0
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        
+
             callback(V: tensor, error: float)
-            
+
         where V is the last estimated nonnegative least squares solution, and error is the squared Euclidean norm of the difference between V at the current iteration k, and V at iteration k-1 (therefore error is not the loss function which is costly to compute).
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
@@ -82,16 +82,16 @@ def hals_nnls(
 
     Notes
     -----
-    We solve the following problem 
-    
+    We solve the following problem
+
     .. math::
-    
+
             \\min_{V >= \epsilon} ||M-UV||_F^2
 
     The matrix V is updated linewise. The update rule for this resolution is
 
     .. math::
-    
+
             \\begin{equation}
                 V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)})/UtU[k,k]
             \\end{equation}
@@ -99,13 +99,13 @@ def hals_nnls(
     with j the update iteration index. V is then thresholded to be larger than epsilon.
 
     This problem can also be defined by adding respectively a sparsity coefficient and a ridge coefficients
-    
+
     .. math:: \lambda_s, \lambda_r
-    
+
     enhancing sparsity or smoothness in the solution [2]. In this sparse/ridge version, the update rule becomes
 
     .. math::
-    
+
             \\begin{equation}
                 V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)} - \lambda_s)/(UtU[k,k]+2\lambda_r)
             \\end{equation}
@@ -222,10 +222,10 @@ def fista(
 
     Notes
     -----
-    We solve the following problem 
-    
+    We solve the following problem
+
     .. math::
-    
+
             \\frac{1}{2} \\|m - Ux \\|_2^2 + \\lambda_1 \\|x\\|_1 + \\lambda_2 \\|x\\|_2^2
 
     References
@@ -303,17 +303,17 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     Notes
     -----
     This function solves following problem:
-    
+
     .. math::
-    
+
             \\begin{equation}
                     \\min_{x} \\|Ux - m\\|^2
             \\end{equation}
 
     According to [1], non-negativity-constrained least square estimation problem becomes:
-    
+
     .. math::
-    
+
             \\begin{equation}
                     x' = Utm - UtU x
             \\end{equation}

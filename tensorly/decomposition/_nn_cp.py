@@ -43,9 +43,9 @@ def non_negative_parafac(
     Non-negative CP decomposition
 
     The loss function is:
-    
+
     .. math::
-    
+
             \\|tensor - cp\_tensor \\|_F^2
 
     Uses Multiplicative Updates, see [2]_
@@ -84,9 +84,9 @@ def non_negative_parafac(
         Default: None
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        
+
             callback(cp_tensor: CPTensor, error: float)
-            
+
         where cp_tensor contains the last estimated factors and weights of the nonnegative CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
@@ -166,26 +166,23 @@ def non_negative_parafac(
             factor = factors[mode] * numerator / denominator
 
             factors[mode] = factor
-            
+
             if mode == modes_list[-1]:
-                # For faster error computation 
+                # For faster error computation
                 # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
                 factors_norm = cp_norm((weights, factors))
 
                 # mttkrp and factor for the last mode. This is equivalent to the
                 # inner product <tensor, factorization>
                 iprod = tl.sum(tl.sum(mttkrp * factor, axis=0))
-            
+
             if normalize_factors and mode != modes_list[-1]:
                 weights, factors = cp_normalize((weights, factors))
 
         if tol or (callback is not None):
-            rec_error = (
-                (norm_tensor + factors_norm**2 - 2 * iprod)
-                / norm_tensor
-            )
+            rec_error = (norm_tensor + factors_norm**2 - 2 * iprod) / norm_tensor
             rec_errors.append(rec_error)
-            
+
             if callback is not None:
                 cp_tensor = CPTensor((weights, factors))
                 retVal = callback(cp_tensor, rec_errors[-1])
@@ -193,7 +190,7 @@ def non_negative_parafac(
                     if verbose:
                         print("Received True from callback function. Exiting.")
                     break
-            
+
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
@@ -247,15 +244,15 @@ def non_negative_parafac_hals(
     Non-negative CP decomposition via HALS
 
     The loss function is:
-    
+
     .. math::
-    
+
             \\frac{1}{2} \\|tensor - cp\_tensor \\|_F^2
             + \\sum_{i=1}^{rank} \\lambda_s[i] \\|factors[i]]\\|_1
             + \\sum_{i=1}^{rank} \\lambda_r[i] \\|factors[i]\\|_F^2
 
     where :math:`\lambda_s` is the list ``sparsity_coefficients``, and :math:`\lambda_r` is the list ``ridge_coefficients``.
-    
+
     Uses Hierarchical ALS (Alternating Least Squares)
     which updates each factor column-wise (one column at a time while keeping all other columns fixed).
 
@@ -323,9 +320,9 @@ def non_negative_parafac_hals(
         Default: 0.1
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        
+
             callback(cp_tensor: CPTensor, error: float)
-            
+
         where cp_tensor contains the last estimated factors and weights of the nonnegative CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
@@ -552,9 +549,9 @@ class CP_NN(DecompositionMixin):
         remove the effect of these missing values on the initialization.
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        
+
             callback(cp_tensor: CPTensor, error: float)
-        
+
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None
@@ -636,7 +633,7 @@ class CP_NN(DecompositionMixin):
             mask=self.mask,
             cvg_criterion=self.cvg_criterion,
             fixed_modes=self.fixed_modes,
-            callback=self.callback
+            callback=self.callback,
         )
 
         self.decomposition_ = cp_tensor
@@ -713,9 +710,9 @@ class CP_NN_HALS(DecompositionMixin):
         Default: 0.1
     callback: callable, optional
         A callable called after each iteration. The supported signature is
-        
+
             callback(cp_tensor: CPTensor, error: float)
-        
+
         where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
         Moreover, the algorithm will also terminate if the callback callable returns True.
         Default: None

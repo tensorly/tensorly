@@ -88,6 +88,7 @@ def test_process_regularization_weights():
     assert disable_rebalance is False
     assert_array_equal(hom_deg, [1, 1, 1, 1])
 
+
 def test_scale_factors_fro():
     # Testing only without regularizations
     factors = [tl.ones([2, 1]) for i in range(3)]

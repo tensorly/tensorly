@@ -298,9 +298,9 @@ def test_non_negative_parafac(
     cp_factors = CPTensor((cp_factors[0], [tl.abs(f) for f in cp_factors[1]]))
     tensor = tl.cp_to_tensor(cp_factors)
 
-    errors = [] 
+    errors = []
     callb_err = lambda _, y: errors.append(y)
-    
+
     if hals:
         func = non_negative_parafac_hals
         nn_res = func(
@@ -390,7 +390,7 @@ def test_non_negative_parafac(
             monkeypatch,
             non_negative_parafac,
             CP_NN,
-            #ignore_args={"return_errors"},
+            # ignore_args={"return_errors"},
             rank=3,
         )
 

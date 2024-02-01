@@ -26,7 +26,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     Notes
     -----
     Default unfolding_dot_khatri_rao implementation.
-    
+
     Implemented as the naive product between an unfolded tensor
     and a Khatri-Rao product explicitly formed. Due to matrix-matrix
     products being extremely efficients operations, this is a
@@ -38,11 +38,11 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     case, please use the memory-efficient version of MTTKRP.
 
     To use the slower memory efficient version, run
-    
+
     >>> from tensorly.tenalg.core_tenalg.mttkrp import unfolding_dot_khatri_rao_memory
     >>> tl.tenalg.register_backend_method("unfolding_dot_khatri_rao", unfolding_dot_khatri_rao_memory)
     >>> tl.tenalg.use_dynamic_dispatch()
-        
+
     """
     weights, factors = cp_tensor
     kr_factors = khatri_rao(factors, weights=weights, skip_matrix=mode)
