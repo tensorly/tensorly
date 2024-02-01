@@ -354,7 +354,7 @@ def non_negative_tucker(
     tol=10e-5,
     random_state=None,
     verbose=False,
-    return_errors=False,
+    callback=None,
     normalize_factors=False,
 ):
     """Non-negative Tucker decomposition
@@ -365,7 +365,9 @@ def non_negative_tucker(
         
         .. math::
 
-                \\min_{tucker_tensor >= 0} \\|tensor - tucker_tensor\\|^2,
+                \\min_{tucker\_tensor \\geq 0} \\|tensor - tucker\_tensor\\|_F^2,
+        
+        where tucker_tensor has a Tucker structure and nonnegative factors and core.
                 
         TODO: add beta option, update with true Beta-Div rules?
 
@@ -381,11 +383,15 @@ def non_negative_tucker(
     random_state : {None, int, np.random.RandomState}
     verbose : int , optional
         level of verbosity
-    return_errors : boolean
-        Indicates whether the algorithm should return all reconstruction errors
-        and computation time of each iteration or not
-        Default: False
     normalize_factors : if True, aggregates the norms of the factors in the core.
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        
+            callback(tucker_tensor: TuckerTensor, error: float)
+        
+        where tucker_tensor contains the last estimated factors and weights of the nonnegative Tucker decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
 
     Returns
     -------
@@ -417,8 +423,13 @@ def non_negative_tucker(
         non_negative=True,
     )
 
-    norm_tensor = tl.norm(tensor, 2) ** 2 
+    norm_tensor = tl.norm(tensor, 2) ** 2
     rec_errors = []
+ 
+    if callback is not None:
+        tucker_tensor = TuckerTensor((nn_core, nn_factors))
+        callback_error = (tl.norm(tensor - tucker_tensor.to_tensor()) ** 2) / norm_tensor
+        callback(tucker_tensor, callback_error)
 
     for iteration in range(n_iter_max):
         for mode in range(tl.ndim(tensor)):
@@ -441,26 +452,34 @@ def non_negative_tucker(
         denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
         nn_core *= numerator / denominator
 
-        rec_error = (
-            tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2)**2 / norm_tensor
-        )
-        rec_errors.append(rec_error)
-        if iteration > 1 and verbose:
-            print(
-                f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
+        if tol or (callback is not None):
+            rec_error = (
+                tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2)**2 / norm_tensor
             )
+            rec_errors.append(rec_error)
+            
+            if callback is not None:
+                tucker_tensor = TuckerTensor((nn_core, nn_factors))
+                retVal = callback(tucker_tensor, rec_errors[-1])
+                if retVal is True:
+                    if verbose:
+                        print("Received True from callback function. Exiting.")
+                    break
+            
+            if iteration > 1 and verbose:
+                print(
+                    f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
+                )
 
-        if iteration > 1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:
-            if verbose:
-                print(f"converged in {iteration} iterations.")
-            break
-        if normalize_factors:
-            nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
+            if iteration > 1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+                if verbose:
+                    print(f"converged in {iteration} iterations.")
+                break
+            if normalize_factors:
+                nn_core, nn_factors = tucker_normalize((nn_core, nn_factors))
+                
     tensor = TuckerTensor((nn_core, nn_factors))
-    if return_errors:
-        return tensor, rec_errors
-    else:
-        return tensor
+    return tensor
 
 
 def non_negative_tucker_hals(
@@ -485,7 +504,7 @@ def non_negative_tucker_hals(
     print_it=1,
     callback=None,
 ):
-    r"""Non-negative Tucker decomposition with HALS
+    """Non-negative Tucker decomposition with HALS
 
     Uses HALS to update each factor columnwise and uses
     fista or active set algorithm to update the core, see [1]_ 
@@ -494,7 +513,13 @@ def non_negative_tucker_hals(
      
     .. math::
 
-            \\min_{tucker_tensor >= 0} \\frac{1}{2}\\|tensor - tucker_tensor\\|^2 + \\sum_{i=1}^{rank}sparsity\_coefficient\|fac[i]\|_1 + ridge\_coefficient\|fac[i]\|_F^2,
+            \\min_{tucker\_tensor >= 0} \\frac{1}{2}\\|tensor - tucker\_tensor\\|_F^2 
+            + \\sum_{i=1}^{rank}\\lambda_s[i]\|factors[i]\|_1 
+            + \\sum_{i=1}^{rank}\\lambda_r[i]\|factors[i]\|_F^2 
+            + \\lambda_s[rank+1]\\|core\\|_1 
+            + \\lambda_r[rank+1]\\|core\\|_F^2,
+    
+    where :math:`\lambda_s` is the list ``sparsity_coefficients``, and :math:`\lambda_r` is the list ``ridge_coefficients``.
     
     Parameters
     ----------
@@ -560,52 +585,43 @@ def non_negative_tucker_hals(
         
     Returns
     -------
+    core : ndarray
+            positive core of the Tucker decomposition
+            has shape `ranks`
     factors : ndarray list
-            list of positive factors of the CP decomposition
+            list of factors of the CP decomposition
             element `i` is of shape ``(tensor.shape[i], rank)``
-    errors: list
-        A list of reconstruction errors at each iteration of the algorithm.
 
     Notes
     -----
-    Tucker decomposes a tensor into a core tensor and list of factors:
+    We shortly detail below the update rules for this algorithm.
+    
+    Nonnegative Tucker decomposes a tensor into a core tensor and list of factors
 
     .. math::
 
             tensor = [| core; factors[0], ... ,factors[-1] |],
 
-    We solve the following problem for each factor:
+    We solve the following problem for each factor (here on mode i)
 
     .. math::
 
-            \min_{tensor >= 0} ||tensor_i - factors[i]\times core_i \times (\prod_{i\neq j}(factors[j]))^T||^2,
+            \\min_{F \\geq 0} \\frac{1}{2} \\|tensor_{[i]} - F core_{[i]} \\prod_{i\\neq j}factors[j]^T\\|^2,
 
-    If we define two variables such as:
-
-    .. math::
-
-            U = core_i \times (\prod_{i \neq j}(factors[j] \times factors[j]^T)), \\
-            M = tensor_i,
-
-    Gradient of the problem becomes:
+    If we define two variables such as
 
     .. math::
 
-            \delta = -U^TM + factors[i] \times U^TU,
+            U = (\\prod_{i \\neq j}factors[j])core_{[i]}^T,\; 
+            M = tensor_{[i]},
 
-    In order to calculate UTU and UTM, we define two variables:
-
-    .. math::
-
-            CoreCross = \prod_{i\neq j}(core_i \times (\prod_{i\neq j}(factors[j]\times factors[j]^T)) \\
-            TensorCross =  \prod_{i\neq j} tensor_i \times factors[i],
-
-    Then UTU and UTM becomes:
+    The gradient with respect to the updated factor is
 
     .. math::
 
-            U^TU = CoreCross_j \times core_j^T, \\
-            U^TM = (TensorCross_j \times core_j^T)^T,
+            -MU + factors[i] U^TU,
+    
+    which terms are computed efficiently with tensor contractions.
 
     References
     ----------
@@ -694,17 +710,17 @@ def non_negative_tucker_hals(
             core_cross = multi_mode_dot(nn_core, pseudo_inverse, skip=mode)
             UtU = tl.dot(unfold(core_cross, mode), tl.transpose(unfold(nn_core, mode)))
 
-            # UtM
+            # MU
             tensor_cross = multi_mode_dot(tensor, nn_factors, skip=mode, transpose=True)
-            MtU = tl.dot(
+            Mu = tl.dot(
                 unfold(tensor_cross, mode), tl.transpose(unfold(nn_core, mode))
             )
-            UtM = tl.transpose(MtU)
+            Mut = tl.transpose(Mu)
 
             if mode in nn_modes:
                 # Call the nnls hals solver
                 nn_factor = hals_nnls(
-                    UtM,
+                    Mut,
                     UtU,
                     tl.transpose(nn_factors[mode]),
                     n_iter_max=inner_iter_max,
@@ -719,7 +735,7 @@ def non_negative_tucker_hals(
                         f"Sparse regularization is not supported currently without nonnegativity. Ignoring the sparse coefficient on mode {mode}. Either remove sparse regularization on mode {mode} or impose nonnegativity."
                     )
                 nn_factor = tl.solve(
-                    UtU + 2 * ridge_coefficients[mode] * tl.eye(rank[mode]), UtM
+                    UtU + 2 * ridge_coefficients[mode] * tl.eye(rank[mode]), Mut
                 )
                 nn_factors[mode] = tl.transpose(nn_factor)
 
@@ -989,6 +1005,14 @@ class Tucker_NN(DecompositionMixin):
     random_state : {None, int, np.random.RandomState}
     verbose : int, optional
         level of verbosity
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+        
+            callback(tucker_tensor: TuckerTensor, error: float)
+        
+        where tucker_tensor contains the last estimated factors and weights of the nonnegative Tucker decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
 
     Returns
     -------
@@ -1014,6 +1038,7 @@ class Tucker_NN(DecompositionMixin):
         random_state=None,
         verbose=False,
         normalize_factors=False,
+        callback=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -1023,9 +1048,10 @@ class Tucker_NN(DecompositionMixin):
         self.tol = tol
         self.random_state = random_state
         self.verbose = verbose
+        self.callback = callback
 
     def fit_transform(self, tensor):
-        tucker_tensor, errors = non_negative_tucker(
+        tucker_tensor = non_negative_tucker(
             tensor,
             rank=self.rank,
             n_iter_max=self.n_iter_max,
@@ -1034,10 +1060,9 @@ class Tucker_NN(DecompositionMixin):
             tol=self.tol,
             random_state=self.random_state,
             verbose=self.verbose,
-            return_errors=True,
+            callback=self.callback
         )
         self.decomposition_ = tucker_tensor
-        self.errors_ = errors
         return tucker_tensor
 
     # def transform(self, tensor):
@@ -1130,7 +1155,6 @@ class Tucker_NN_HALS(DecompositionMixin):
         random_state=None,
         verbose=False,
         normalize_factors=False,
-        return_errors=False,
         inner_iter_max=30,
         inner_iter_max_fista=100,
         epsilon=0,
@@ -1151,7 +1175,6 @@ class Tucker_NN_HALS(DecompositionMixin):
         self.ridge_coefficients = ridge_coefficients
         self.fixed_modes = fixed_modes
         self.nn_modes = nn_modes
-        self.return_errors = return_errors
         self.inner_iter_max = inner_iter_max
         self.inner_iter_max_fista = inner_iter_max_fista
         self.epsilon = epsilon
@@ -1161,7 +1184,7 @@ class Tucker_NN_HALS(DecompositionMixin):
         self.callback = callback
 
     def fit_transform(self, tensor):
-        tucker_tensor, errors = non_negative_tucker_hals(
+        tucker_tensor = non_negative_tucker_hals(
             tensor,
             rank=self.rank,
             n_iter_max=self.n_iter_max,
@@ -1171,7 +1194,6 @@ class Tucker_NN_HALS(DecompositionMixin):
             tol=self.tol,
             random_state=self.random_state,
             verbose=self.verbose,
-            return_errors=True,
             sparsity_coefficients=self.sparsity_coefficients,
             ridge_coefficients=self.ridge_coefficients,
             fixed_modes=self.fixed_modes,
@@ -1185,7 +1207,6 @@ class Tucker_NN_HALS(DecompositionMixin):
             callback=self.callback,
         )
         self.decomposition_ = tucker_tensor
-        self.errors_ = errors
         return tucker_tensor
 
     # def transform(self, tensor):

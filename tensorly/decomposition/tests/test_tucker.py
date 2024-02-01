@@ -228,7 +228,6 @@ def test_non_negative_tucker(init, hals, monkeypatch):
             monkeypatch,
             non_negative_tucker_hals,
             Tucker_NN_HALS,
-            # ignore_args={"return_errors"},
             rank=3,
         )
     else:
@@ -236,7 +235,6 @@ def test_non_negative_tucker(init, hals, monkeypatch):
             monkeypatch,
             non_negative_tucker,
             Tucker_NN,
-            ignore_args={"return_errors"},
             rank=3,
         )
 

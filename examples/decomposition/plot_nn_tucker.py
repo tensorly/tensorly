@@ -66,7 +66,12 @@ tensor = tensor_tucker.to_tensor()
 # Upon calling ``non_negative_tucker``, the MU algorithm is used.
 
 tic = time.time()
-tensor_mu, error_mu = non_negative_tucker(tensor, rank=[5, 5, 5], tol=0, n_iter_max=2500, return_errors=True)
+error_mu = []
+def callback_error_mu(_, error):
+    error_mu.append(error)
+
+ 
+tensor_mu = non_negative_tucker(tensor, rank=[5, 5, 5], tol=0, n_iter_max=2500, callback=callback_error_mu)
 tucker_reconstruction_mu = tl.tucker_to_tensor(tensor_mu)
 time_mu = time.time()-tic
 
@@ -132,7 +137,7 @@ def each_iteration(a,b,title):
     plt.xlabel('Iteration index')
 
 
-each_iteration(error_mu, error_hals[1:], 'Relative error at each iteration')
+each_iteration(error_mu[1:], error_hals[1:], 'Relative error at each iteration')
 
 ##############################################################################
 # In conclusion, on this quick test, it appears that the HALS algorithm gives

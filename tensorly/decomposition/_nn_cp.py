@@ -40,14 +40,15 @@ def non_negative_parafac(
     callback=None,
 ):
     """
-    Non-negative CP decomposition. The loss fuction minimized is 
-    
-   .. math:: 
-            \\|tensor - cp\_tensor \\|_F^2
-        
-    with cp\_tensor a nonnegative CP decomposition.
+    Non-negative CP decomposition
 
-    Uses multiplicative updates, see [2]_
+    The loss function is:
+    
+    .. math::
+    
+            \\|tensor - cp\_tensor \\|_F^2
+
+    Uses Multiplicative Updates, see [2]_
 
     Parameters
     ----------
@@ -252,9 +253,11 @@ def non_negative_parafac_hals(
     .. math::
     
             \\frac{1}{2} \\|tensor - cp\_tensor \\|_F^2
-            + \\sum_i^{rank} sparsity\_coefficient[i] \\|fac[i]]\\|_1
-            + \\sum_i^{rank} ridge\_coefficient[i] \\|fac[i]\\|_2^2
+            + \\sum_{i=1}^{rank} \\lambda_s[i] \\|factors[i]]\\|_1
+            + \\sum_{i=1}^{rank} \\lambda_r[i] \\|factors[i]\\|_F^2
 
+    where :math:`\lambda_s` is the list ``sparsity_coefficients``, and :math:`\lambda_r` is the list ``ridge_coefficients``.
+    
     Uses Hierarchical ALS (Alternating Least Squares)
     which updates each factor column-wise (one column at a time while keeping all other columns fixed).
 
@@ -338,9 +341,6 @@ def non_negative_parafac_hals(
     factors : ndarray list
         list of positive factors of the CP decomposition
         element `i` is of shape ``(tensor.shape[i], rank)``
-    errors: list
-        A list of reconstruction errors at each iteration of the algorithm.
-        Does not include the penalization terms.
 
     References
     ----------
@@ -670,7 +670,7 @@ class CP_NN(DecompositionMixin):
             decomposed tensor
         """
 
-        cp_tensor, errors = non_negative_parafac(
+        cp_tensor = non_negative_parafac(
             tensor,
             n_iter_max=self.n_iter_max,
             init=self.init,
@@ -686,7 +686,6 @@ class CP_NN(DecompositionMixin):
         )
 
         self.decomposition_ = cp_tensor
-        self.errors_ = errors
         return self.decomposition_
 
     def __repr__(self):
@@ -847,7 +846,7 @@ class CP_NN_HALS(DecompositionMixin):
             decomposed tensor
         """
 
-        cp_tensor, errors = non_negative_parafac_hals(
+        cp_tensor = non_negative_parafac_hals(
             tensor,
             rank=self.rank,
             n_iter_max=self.n_iter_max,
@@ -871,7 +870,6 @@ class CP_NN_HALS(DecompositionMixin):
         )
 
         self.decomposition_ = cp_tensor
-        self.errors_ = errors
         return self.decomposition_
 
     def __repr__(self):
