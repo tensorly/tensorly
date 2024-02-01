@@ -187,7 +187,7 @@ def fista(
     epsilon=1e-8,
 ):
     """
-    Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
+    Fast Iterative Shrinkage Thresholding Algorithm (FISTA), see [1]_
 
     Computes an approximate (nonnegative) solution for Ux=M linear system.
 
@@ -230,9 +230,9 @@ def fista(
 
     References
     ----------
-    ..  [1] Beck, A., & Teboulle, M. (2009). A fast iterative
-        shrinkage-thresholding algorithm for linear inverse problems.
-        SIAM journal on imaging sciences, 2(1), 183-202.
+    .. [1] Beck, A., & Teboulle, M. (2009). A fast iterative
+       shrinkage-thresholding algorithm for linear inverse problems.
+       SIAM journal on imaging sciences, 2(1), 183-202.
     """
     if sparsity_coef is None:
         sparsity_coef = 0
@@ -278,7 +278,7 @@ def fista(
 
 def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     """
-    Active set algorithm for non-negative least square solution.
+    Active set algorithm for non-negative least square solution, see [1]_
 
     Computes an approximate non-negative solution for Ux=m linear system.
 
@@ -320,9 +320,9 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
 
     References
     ----------
-    ..  [1] Bro, R., & De Jong, S. (1997). A fast non‐negativity‐constrained
-        least squares algorithm. Journal of Chemometrics: A Journal of
-        the Chemometrics Society, 11(5), 393-401.
+    .. [1] Bro, R., & De Jong, S. (1997). A fast non‐negativity‐constrained
+       least squares algorithm. Journal of Chemometrics: A Journal of
+       the Chemometrics Society, 11(5), 393-401.
     """
     if tl.get_backend() == "tensorflow":
         raise ValueError(
