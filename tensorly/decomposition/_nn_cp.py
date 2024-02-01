@@ -99,9 +99,9 @@ def non_negative_parafac(
     References
     ----------
     .. [2] Amnon Shashua and Tamir Hazan,
-           "Non-negative tensor factorization with applications to statistics and computer vision",
-           In Proceedings of the International Conference on Machine Learning (ICML),
-           pp 792-799, ICML, 2005
+       "Non-negative tensor factorization with applications to statistics and computer vision",
+       In Proceedings of the International Conference on Machine Learning (ICML),
+       pp 792-799, ICML, 2005
     """
     epsilon = tl.eps(tensor.dtype)
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)

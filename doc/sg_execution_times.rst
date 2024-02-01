@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**19:41.767** total execution time for 13 files **from all galleries**:
+**00:06.026** total execution time for 13 files **from all galleries**:
 
 .. container::
 
@@ -32,14 +32,8 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
-   * - :ref:`sphx_glr_auto_examples_decomposition_plot_parafac2_compression.py` (``../examples/decomposition/plot_parafac2_compression.py``)
-     - 19:09.143
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_decomposition_plot_parafac2.py` (``../examples/decomposition/plot_parafac2.py``)
-     - 00:25.021
-     - 0.0
-   * - :ref:`sphx_glr_auto_examples_decomposition_plot_guide_for_constrained_cp.py` (``../examples/decomposition/plot_guide_for_constrained_cp.py``)
-     - 00:07.604
+   * - :ref:`sphx_glr_auto_examples_decomposition_plot_nn_tucker.py` (``../examples/decomposition/plot_nn_tucker.py``)
+     - 00:06.026
      - 0.0
    * - :ref:`sphx_glr_auto_examples_applications_plot_IL2.py` (``../examples/applications/plot_IL2.py``)
      - 00:00.000
@@ -53,10 +47,16 @@ Computation times
    * - :ref:`sphx_glr_auto_examples_decomposition_plot_cp_line_search.py` (``../examples/decomposition/plot_cp_line_search.py``)
      - 00:00.000
      - 0.0
+   * - :ref:`sphx_glr_auto_examples_decomposition_plot_guide_for_constrained_cp.py` (``../examples/decomposition/plot_guide_for_constrained_cp.py``)
+     - 00:00.000
+     - 0.0
    * - :ref:`sphx_glr_auto_examples_decomposition_plot_nn_cp_hals.py` (``../examples/decomposition/plot_nn_cp_hals.py``)
      - 00:00.000
      - 0.0
-   * - :ref:`sphx_glr_auto_examples_decomposition_plot_nn_tucker.py` (``../examples/decomposition/plot_nn_tucker.py``)
+   * - :ref:`sphx_glr_auto_examples_decomposition_plot_parafac2.py` (``../examples/decomposition/plot_parafac2.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_examples_decomposition_plot_parafac2_compression.py` (``../examples/decomposition/plot_parafac2_compression.py``)
      - 00:00.000
      - 0.0
    * - :ref:`sphx_glr_auto_examples_decomposition_plot_permute_factors.py` (``../examples/decomposition/plot_permute_factors.py``)

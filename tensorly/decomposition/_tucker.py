@@ -361,6 +361,12 @@ def non_negative_tucker(
 
         Iterative multiplicative update, see [2]_
 
+        The optimization problem solved is formulated as
+        
+        .. math::
+
+                \\min_{tucker_tensor >= 0} \\|tensor - tucker_tensor\\|^2,
+                
         TODO: add beta option, update with true Beta-Div rules?
 
     Parameters
@@ -411,7 +417,7 @@ def non_negative_tucker(
         non_negative=True,
     )
 
-    norm_tensor = tl.norm(tensor, 2)
+    norm_tensor = tl.norm(tensor, 2) ** 2 
     rec_errors = []
 
     for iteration in range(n_iter_max):
@@ -436,7 +442,7 @@ def non_negative_tucker(
         nn_core *= numerator / denominator
 
         rec_error = (
-            tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2) / norm_tensor
+            tl.norm(tensor - tucker_to_tensor((nn_core, nn_factors)), 2)**2 / norm_tensor
         )
         rec_errors.append(rec_error)
         if iteration > 1 and verbose:
@@ -483,6 +489,12 @@ def non_negative_tucker_hals(
 
     Uses HALS to update each factor columnwise and uses
     fista or active set algorithm to update the core, see [1]_ 
+
+    The optimization problem solved is formulated as
+     
+    .. math::
+
+            \\min_{tucker_tensor >= 0} \\frac{1}{2}\\|tensor - tucker_tensor\\|^2 + \\sum_{i=1}^{rank}sparsity\_coefficient\|fac[i]\|_1 + ridge\_coefficient\|fac[i]\|_F^2,
     
     Parameters
     ----------
@@ -650,7 +662,7 @@ def non_negative_tucker_hals(
     )
 
     # initialisation - declare local variables
-    norm_tensor = tl.norm(tensor, 2)
+    norm_tensor = tl.norm(tensor, 2) ** 2
     rec_errors = []
 
     if callback is not None:
@@ -665,7 +677,7 @@ def non_negative_tucker_hals(
             tl.abs(nn_core)
         ) + ridge_coefficients[-1] * tl.sum(nn_core**2)
         regs_loss = tl.sum(regs_loss)
-        callback_error = (fit_loss + regs_loss) / norm_tensor**2  # loss !
+        callback_error = (fit_loss + regs_loss) / norm_tensor  # loss !
         callback(tucker_tensor, callback_error)
 
     # Iterate over one step of NTD
@@ -796,7 +808,7 @@ def non_negative_tucker_hals(
                 nn_core[nn_core <= epsilon] = epsilon
 
         if tol or (callback is not None) or verbose:
-            rec_error = (norm_tensor**2 - 2 * iprod + tucker_norm) / 2
+            rec_error = (norm_tensor - 2 * iprod + tucker_norm) / 2
             # Adding the regs value to the reconstruction error
             regs_loss = sum(
                 sparsity_coefficients[i] * tl.sum(tl.abs(nn_factors[i]))
@@ -807,7 +819,7 @@ def non_negative_tucker_hals(
                 tl.abs(nn_core)
             ) + ridge_coefficients[-1] * tl.sum(nn_core**2)
             rec_error += regs_loss
-            rec_errors.append(rec_error / norm_tensor**2)
+            rec_errors.append(rec_error / norm_tensor)
 
             if callback is not None:
                 tucker_tensor = TuckerTensor((nn_core, nn_factors))
