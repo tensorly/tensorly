@@ -666,8 +666,6 @@ def non_negative_tucker_hals(
         disable_reg,
         _,
     ) = process_regularization_weights(
-            rescale=self.rescale,
-            pop_l2=self.pop_l2,
         ridge_coefficients=ridge_coefficients,
         sparsity_coefficients=sparsity_coefficients,
         n_modes=n_modes + 1,
