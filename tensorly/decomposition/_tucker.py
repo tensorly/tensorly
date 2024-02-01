@@ -10,8 +10,6 @@ from ..tucker_tensor import (
 )
 from ..solvers.penalizations import (
     process_regularization_weights,
-    tucker_implicit_sinkhorn_balancing,
-    tucker_implicit_scalar_balancing,
 )
 from ..solvers.nnls import hals_nnls, fista
 from math import sqrt

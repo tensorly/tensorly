@@ -10,7 +10,7 @@ from ..cp_tensor import (
     cp_normalize,
     validate_cp_rank,
 )
-from ..solvers.penalizations import process_regularization_weights, cp_opt_balance
+from ..solvers.penalizations import process_regularization_weights
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
