@@ -59,9 +59,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
         if len(new_shape) > 1:
             new_shape.pop(mode)
         else:
-            # Ideally this should be (), i.e. order-0 tensors
-            # MXNet currently doesn't support this though..
-            new_shape = []
+            new_shape = ()
         vec = True
 
     else:

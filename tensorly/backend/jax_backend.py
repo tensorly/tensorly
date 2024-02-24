@@ -9,9 +9,9 @@ try:
     import jax.scipy.special
 except ImportError as error:
     message = (
-        "Impossible to import Jax.\n"
-        "To use TensorLy with the Jax backend, "
-        "you must first install Jax!"
+        "Impossible to import JAX.\n"
+        "To use TensorLy with the JAX backend, "
+        "you must first install JAX!"
     )
     raise ImportError(message) from error
 
@@ -26,7 +26,7 @@ from .core import (
 
 
 if Version(jax.__version__) < Version("0.3.0"):
-    raise RuntimeError("TensorLy only supports Jax v0.3.0 and above.")
+    raise RuntimeError("TensorLy only supports JAX v0.3.0 and above.")
 
 
 class JaxBackend(Backend, backend_name="jax"):

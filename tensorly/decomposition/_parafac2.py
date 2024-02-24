@@ -20,7 +20,23 @@ from ..tenalg.svd import svd_interface
 def initialize_decomposition(
     tensor_slices, rank, init="random", svd="truncated_svd", random_state=None
 ):
-    r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices
+    r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices.
+
+    The SVD-based initialization is based on concatenation of all the tensor slices.
+    This concatenated matrix is used to derive the factor matrix corresponding to the
+    :math:`k` mode for an :math:`X_{ijk}` tensor. However, concatenating these slices
+    requires a new copy of the tensor. For tensors where the sum of the :math:`j` mode
+    along each slice is on average larger than the :math:`k` mode, an alternative
+    strategy is adding together the cross-product matrix of each slice:
+
+    .. math::
+
+        K = X_{1}^T X_{1} + X_{2}^T X_{2} + ...
+
+    The eigenvectors of this symmetric matrix are then equal to the right eigenvectors
+    of the concatenation matrix. This function automatically chooses between
+    concatenating or forming the cross-product, depending on which resulting matrix
+    is smaller.
 
     Parameters
     ----------
@@ -34,26 +50,35 @@ def initialize_decomposition(
     parafac2_tensor : Parafac2Tensor
         List of initialized factors of the CP decomposition where element `i`
         is of shape (tensor.shape[i], rank)
-
     """
     context = tl.context(tensor_slices[0])
     shapes = [m.shape for m in tensor_slices]
+    concat_shape = sum(shape[0] for shape in shapes)
 
     if init == "random":
         return random_parafac2(
             shapes, rank, full=False, random_state=random_state, **context
         )
     elif init == "svd":
-        A = T.ones((len(tensor_slices), rank), **context)
-
-        unfolded_mode_2 = tl.transpose(tl.concatenate(list(tensor_slices), axis=0))
-        if T.shape(unfolded_mode_2)[0] < rank:
+        if shapes[0][1] < rank:
             raise ValueError(
-                f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({T.shape(unfolded_mode_2)[0]})"
+                f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({shapes[0][1]})"
             )
+
+        A = tl.ones((len(tensor_slices), rank), **context)
+
+        if concat_shape > shapes[0][1]:
+            # If the concatenated matrix would be larger than the cross-product, use the latter
+            unfolded_mode_2 = tl.transpose(tensor_slices[0]) @ tensor_slices[0]
+
+            for slice in tensor_slices[1:]:
+                unfolded_mode_2 += tl.matmul(tl.transpose(slice), slice)
+        else:
+            unfolded_mode_2 = tl.transpose(tl.concatenate(list(tensor_slices), axis=0))
+
         C = svd_interface(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
 
-        B = T.eye(rank, **context)
+        B = tl.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd)
         return Parafac2Tensor((None, [A, B, C], projections))
 

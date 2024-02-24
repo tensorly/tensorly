@@ -118,7 +118,7 @@ class BackendManager(types.ModuleType):
         "index",
         "backend_name",
     ]
-    available_backend_names = ["numpy", "mxnet", "pytorch", "tensorflow", "cupy", "jax"]
+    available_backend_names = ["numpy", "pytorch", "tensorflow", "cupy", "jax"]
     _default_backend = "numpy"
     _loaded_backends = dict()
     _backend = None
@@ -236,7 +236,7 @@ class BackendManager(types.ModuleType):
 
         Parameters
         ----------
-        backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
+        backend : {'numpy', 'pytorch', 'tensorflow', 'cupy'}
             The name of the backend to use. Default is 'numpy'.
         local_threadsafe : bool, optional
             If True, the backend will not become the default backend for all threads.
