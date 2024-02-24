@@ -15,11 +15,10 @@ from ._tucker import (
 from .robust_decomposition import robust_pca
 from ._tt import tensor_train, tensor_train_matrix
 from ._tt import TensorTrain, TensorTrainMatrix
-from ._tr import (
-    tensor_ring,
+from ._tr_svd import tensor_ring, TensorRing
+from ._tr_als import (
     tensor_ring_als,
     tensor_ring_als_sampled,
-    TensorRing,
     TensorRingALS,
     TensorRingALSSampled,
 )
