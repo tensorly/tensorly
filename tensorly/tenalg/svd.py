@@ -1,6 +1,6 @@
 import warnings
 import tensorly as tl
-from .proximal import soft_thresholding
+from ..solvers.proximal import soft_thresholding
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Meraj Hashemizadeh <merajhse@mila.quebec>

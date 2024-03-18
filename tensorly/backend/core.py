@@ -45,6 +45,7 @@ backend_array = [
     "zeros",
     "any",
     "prod",
+    "maximum",  # tensorflow bug?
     "all",
     "where",
     "reshape",
@@ -665,6 +666,21 @@ class Backend(object):
         Returns
         -------
         out : scalar or tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def maximum(tensor1, tensor2):
+        """Compute the elementwise maximum of tensor1 and tensor2.
+
+        Parameters
+        ----------
+        tensor1 : tensor
+        tensor2 : tensor of same dimension as tensor1
+
+        Returns
+        -------
+        out : tensor
         """
         raise NotImplementedError
 

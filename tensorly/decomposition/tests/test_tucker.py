@@ -228,7 +228,6 @@ def test_non_negative_tucker(init, hals, monkeypatch):
             monkeypatch,
             non_negative_tucker_hals,
             Tucker_NN_HALS,
-            ignore_args={"return_errors"},
             rank=3,
         )
     else:
@@ -236,6 +235,31 @@ def test_non_negative_tucker(init, hals, monkeypatch):
             monkeypatch,
             non_negative_tucker,
             Tucker_NN,
-            ignore_args={"return_errors"},
             rank=3,
         )
+
+    # testing partial nonnegativity for HALS
+
+    rng = tl.check_random_state(1234)
+    core, factors = random_tucker((3, 4, 3), rank=[3, 4, 3], non_negative=True)
+    core = core * tl.sign(tl.tensor(rng.random_sample((3, 4, 3))))
+    tensor = tucker_to_tensor((core, factors))
+    nn_core, nn_factors = non_negative_tucker_hals(
+        tensor, rank=[3, 4, 3], init=init, n_iter_max=100, nn_modes=[0, 1, 2]
+    )
+    # Make sure all components except the core are positive
+    print(nn_factors)
+    assert_(tl.all(nn_factors[0] >= 0))
+    assert_(tl.all(nn_factors[1] >= 0))
+    assert_(tl.all(nn_factors[2] >= 0))
+
+    nn_reconstructed_tensor = tucker_to_tensor((nn_core, nn_factors))
+    error = tl.norm(tensor - nn_reconstructed_tensor, 2)
+    error /= tl.norm(tensor, 2)
+    assert_(error < tol_norm_2, "norm 2 of reconstruction error higher than tol")
+
+    # Test the max abs difference between the reconstruction and the tensor
+    assert_(
+        tl.norm(tensor - nn_reconstructed_tensor, "inf") < tol_max_abs,
+        "abs norm of reconstruction error higher than tol",
+    )

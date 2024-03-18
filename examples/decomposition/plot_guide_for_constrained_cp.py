@@ -80,7 +80,7 @@ rank = 3
 # Using one constraint for all modes
 # --------------------------------------------
 # Constraints are inputs of the constrained_parafac function, which itself uses the
-# ``tensorly.tenalg.proximal.validate_constraints`` function in order to process the input
+# ``tensorly.solver.proximal.validate_constraints`` function in order to process the input
 # of the user. If a user wants to use the same constraint for all modes, an
 # input (bool or a scalar value or list of scalar values) should be given to this constraint.
 # Assume, one wants to use unimodality constraint for all modes. Since it does not require

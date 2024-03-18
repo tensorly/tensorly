@@ -488,7 +488,6 @@ def parafac2(
                 svd=svd,
                 orthogonalise=False,
                 verbose=verbose,
-                return_errors=False,
                 normalize_factors=False,
                 mask=None,
                 random_state=random_state,
@@ -510,7 +509,6 @@ def parafac2(
                 svd=svd,
                 nn_modes=nn_modes,
                 verbose=verbose,
-                return_errors=False,
                 tol=1e-100,
             )[1]
 

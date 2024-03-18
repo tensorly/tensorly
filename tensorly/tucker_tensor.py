@@ -306,6 +306,10 @@ class TuckerTensor(FactorizedTensor):
             self, matrix_or_vector, mode, keep_dim=keep_dim, copy=copy
         )
 
+    def normalize(self):
+        """TODO doc"""
+        self.core, self.factors = tucker_normalize(self)
+
 
 def _tucker_n_param(tensor_shape, rank):
     """Number of parameters of a Tucker decomposition for a given `rank` and full `tensor_shape`.

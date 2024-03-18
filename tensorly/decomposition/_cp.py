@@ -168,7 +168,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
     ----------
     tensor : tensor
     norm_tensor : float
-        The l2 norm of tensor.
+        The squared l2 norm of tensor.
     weights : tensor
         The current CP weights
     factors : tensor
@@ -197,7 +197,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
         # Update the tensor based on the mask
         if mask is not None:
             tensor = tensor * mask + low_rank_component * (1 - mask)
-            norm_tensor = tl.norm(tensor, 2)
+            norm_tensor = tl.norm(tensor, 2) ** 2
 
         if sparsity:
             sparse_component = sparsify_tensor(tensor - low_rank_component, sparsity)
@@ -221,7 +221,7 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
             # inner product <tensor, factorization>
             iprod = tl.sum(tl.sum(mttkrp * tl.conj(factors[-1]), axis=0))
             unnorml_rec_error = tl.sqrt(
-                tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
+                tl.abs(norm_tensor + factors_norm**2 - 2 * iprod)
             )
 
     return unnorml_rec_error, tensor, norm_tensor
@@ -296,6 +296,15 @@ def parafac(
         remove the effect of these missing values on the initialization.
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro [3].
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+
+            callback(cp_tensor: CPTensor, error: float)
+
+        where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
+
 
     Returns
     -------
@@ -347,7 +356,7 @@ def parafac(
     )
 
     rec_errors = []
-    norm_tensor = tl.norm(tensor, 2)
+    norm_tensor = tl.norm(tensor, 2) ** 2
     if l2_reg:
         Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
     else:
@@ -694,7 +703,7 @@ def randomised_parafac(
     )
     rec_errors = []
     n_dims = tl.ndim(tensor)
-    norm_tensor = tl.norm(tensor, 2)
+    norm_tensor = tl.norm(tensor, 2) ** 2
     min_error = 0
 
     weights = tl.ones(rank, **tl.context(tensor))
@@ -810,6 +819,14 @@ class CP(DecompositionMixin):
         remove the effect of these missing values on the initialization.
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro [3].
+    callback: callable, optional
+        A callable called after each iteration. The supported signature is
+
+            callback(cp_tensor::CPTensor, error::float)
+
+        where cp_tensor contains the last estimated factors and weights of the CP decomposition, and error is the last computed value of the cost function.
+        Moreover, the algorithm will also terminate if the callback callable returns True.
+        Default: None
 
     Returns
     -------
