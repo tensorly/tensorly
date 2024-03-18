@@ -53,7 +53,7 @@ def test_RPCA():
     tensor = tl.tensor(corrupted_clean + corrupted_noise)
     corrupted_noise = tl.tensor(corrupted_noise)
     corrupted_clean = tl.tensor(corrupted_clean)
-    mask = tl.tensor(mask)
+    mask = tl.tensor(mask, dtype=tl.float64)
     # Decompose the tensor
     clean_pred, noise_pred = robust_pca(
         tensor,

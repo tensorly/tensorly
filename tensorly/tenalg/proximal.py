@@ -435,9 +435,15 @@ def smoothness_prox(tensor, regularizer):
 
     """
     diag_matrix = (
-        tl.diag(2 * regularizer * tl.ones(tl.shape(tensor)[0]) + 1)
-        + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=-1)
-        + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=1)
+        tl.diag(
+            2 * regularizer * tl.ones(tl.shape(tensor)[0], **tl.context(tensor)) + 1
+        )
+        + tl.diag(
+            -regularizer * tl.ones(tl.shape(tensor)[0] - 1, **tl.context(tensor)), k=-1
+        )
+        + tl.diag(
+            -regularizer * tl.ones(tl.shape(tensor)[0] - 1, **tl.context(tensor)), k=1
+        )
     )
     return tl.solve(diag_matrix, tensor)
 
@@ -480,7 +486,7 @@ def monotonicity_prox(tensor, decreasing=False):
     row, column = tl.shape(tensor_mon)
     cum_sum = tl.cumsum(tensor_mon, axis=0)
     for j in range(column):
-        assisted_tensor = tl.zeros([row, row])
+        assisted_tensor = tl.zeros([row, row], **tl.context(tensor))
         for i in range(row):
             if i == 0:
                 assisted_tensor = tl.index_update(
@@ -738,11 +744,11 @@ def simplex_prox(tensor, parameter):
     tensor_sort = tl.flip(tl.sort(tensor, axis=0), axis=0)
     # Broadcasting is used to divide rows by 1,2,3...
     cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(
-        tl.ones([row, 1]), axis=0
+        tl.ones([row, 1], **tl.context(tensor)), axis=0
     )
     # Added -1 to correspond to a Python index
     to_change = tl.sum(tl.where(tensor_sort > cumsum_min_param_by_k, 1, 0), axis=0) - 1
-    difference = tl.zeros(col)
+    difference = tl.zeros(col, **tl.context(tensor))
     for i in range(col):
         difference = tl.index_update(
             difference, tl.index[i], cumsum_min_param_by_k[to_change[i], i]
@@ -1183,7 +1189,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
             )
         # Start from zeros if solve is not achieved
         except:
-            x_vec = tl.zeros(tl.shape(UtU)[1])
+            x_vec = tl.zeros(tl.shape(UtU)[1], **tl.context(UtU))
             support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
             active_set = x_vec <= 0
             if tl.any(active_set):

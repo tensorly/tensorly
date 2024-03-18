@@ -290,9 +290,9 @@ def test_parafac2_nn(linesearch):
     # The default random parafac2 tensor has non-negative A and C
     # we therefore multiply them randomly with -1, 0 or 1 to get both positive and negative components
     factors = [
-        factors[0] * T.tensor(rng.randint(-1, 2, factors[0].shape)),
+        factors[0] * T.tensor(rng.randint(-1, 2, factors[0].shape), dtype=tl.float64),
         factors[1],
-        factors[2] * T.tensor(rng.randint(-1, 2, factors[2].shape)),
+        factors[2] * T.tensor(rng.randint(-1, 2, factors[2].shape), dtype=tl.float64),
     ]
     slices = parafac2_to_slices((weights, factors, projections))
     rec, _ = parafac2(

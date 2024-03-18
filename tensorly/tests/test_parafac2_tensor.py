@@ -88,19 +88,20 @@ def test_parafac2_normalise():
 
 
 def test_parafac2_to_tensor():
-    weights = tl.tensor([2, 3])
+    weights = tl.tensor([2, 3], dtype=tl.float32)
     factors = [
-        tl.tensor([[1, 1], [1, 0]]),
-        tl.tensor([[2, 1], [1, 2]]),
-        tl.tensor([[1, 1], [1, 0], [1, 0]]),
+        tl.tensor([[1, 1], [1, 0]], dtype=tl.float32),
+        tl.tensor([[2, 1], [1, 2]], dtype=tl.float32),
+        tl.tensor([[1, 1], [1, 0], [1, 0]], dtype=tl.float32),
     ]
     projections = [
-        tl.tensor([[0, 0], [1, 0], [0, 1]]),
-        tl.tensor([[1, 0], [0, 0], [0, -1]]),
+        tl.tensor([[0, 0], [1, 0], [0, 1]], dtype=tl.float32),
+        tl.tensor([[1, 0], [0, 0], [0, -1]], dtype=tl.float32),
     ]
 
     true_res = tl.tensor(
-        [[[0, 0, 0], [7, 4, 4], [8, 2, 2]], [[4, 4, 4], [0, 0, 0], [-2, -2, -2]]]
+        [[[0, 0, 0], [7, 4, 4], [8, 2, 2]], [[4, 4, 4], [0, 0, 0], [-2, -2, -2]]],
+        dtype=tl.float32,
     )
 
     res = parafac2_to_tensor((weights, factors, projections))
@@ -108,16 +109,19 @@ def test_parafac2_to_tensor():
 
 
 def test_parafac2_to_slices():
-    weights = tl.tensor([2, 3])
+    weights = tl.tensor([2, 3], dtype=tl.float32)
     factors = [
-        tl.tensor([[1, 1], [1, 0]]),
-        tl.tensor([[2, 1], [1, 2]]),
-        tl.tensor([[1, 1], [1, 0], [1, 0]]),
+        tl.tensor([[1, 1], [1, 0]], dtype=tl.float32),
+        tl.tensor([[2, 1], [1, 2]], dtype=tl.float32),
+        tl.tensor([[1, 1], [1, 0], [1, 0]], dtype=tl.float32),
     ]
-    projections = [tl.tensor([[1, 0], [0, 1]]), tl.tensor([[1, 0], [0, 0], [0, -1]])]
+    projections = [
+        tl.tensor([[1, 0], [0, 1]], dtype=tl.float32),
+        tl.tensor([[1, 0], [0, 0], [0, -1]], dtype=tl.float32),
+    ]
     true_res = [
-        tl.tensor([[7, 4, 4], [8, 2, 2]]),
-        tl.tensor([[4, 4, 4], [0, 0, 0], [-2, -2, -2]]),
+        tl.tensor([[7, 4, 4], [8, 2, 2]], dtype=tl.float32),
+        tl.tensor([[4, 4, 4], [0, 0, 0], [-2, -2, -2]], dtype=tl.float32),
     ]
     for i, true_slice in enumerate(true_res):
         assert_array_equal(
@@ -166,14 +170,17 @@ def test_parafac2_to_vec():
 def test_apply_parafac2_projections():
     weights = tl.tensor([2, 3])
     factors = [
-        tl.tensor([[1, 1], [1, 0]]),
-        tl.tensor([[2, 1], [1, 2]]),
-        tl.tensor([[1, 1], [1, 0], [1, 0]]),
+        tl.tensor([[1, 1], [1, 0]], dtype=tl.float32),
+        tl.tensor([[2, 1], [1, 2]], dtype=tl.float32),
+        tl.tensor([[1, 1], [1, 0], [1, 0]], dtype=tl.float32),
     ]
-    projections = [tl.tensor([[1, 0], [0, 1]]), tl.tensor([[1, 0], [0, 0], [0, -1]])]
+    projections = [
+        tl.tensor([[1, 0], [0, 1]], dtype=tl.float32),
+        tl.tensor([[1, 0], [0, 0], [0, -1]], dtype=tl.float32),
+    ]
     true_res = [
-        tl.tensor([[7, 4, 4], [8, 2, 2]]),
-        tl.tensor([[4, 4, 4], [0, 0, 0], [-2, -2, -2]]),
+        tl.tensor([[7, 4, 4], [8, 2, 2]], dtype=tl.float32),
+        tl.tensor([[4, 4, 4], [0, 0, 0], [-2, -2, -2]], dtype=tl.float32),
     ]
 
     new_weights, projected_factors = apply_parafac2_projections(

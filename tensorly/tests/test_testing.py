@@ -10,7 +10,7 @@ from ..testing import (
 
 
 def test_assert_allclose():
-    tensor = tl.tensor([5, 5, 5])
+    tensor = tl.tensor([5, 5, 5], dtype=tl.float32)
 
     assert_allclose(tensor, tensor)
     assert_allclose(tensor, tensor + 1e-10)
@@ -40,7 +40,7 @@ def test_assert_equal():
 
 
 def test_assert_array_almost_equal():
-    tensor = tl.tensor([5, 5, 5])
+    tensor = tl.tensor([5, 5, 5], dtype=tl.float32)
 
     assert_array_almost_equal(tensor, tensor)
     assert_array_almost_equal(tensor, tensor + 1e-10)
@@ -59,7 +59,7 @@ def test_assert_array_almost_equal():
 
 
 def test_assert_array_equal():
-    tensor = tl.tensor([5, 5, 5])
+    tensor = tl.tensor([5, 5, 5], dtype=tl.float32)
 
     assert_equal(tensor, tensor)
     assert_equal(tl.tensor([1, 2]), tl.tensor([1.0, 2.0]))
