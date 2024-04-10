@@ -2,7 +2,7 @@ import warnings
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ._cp import initialize_cp
-from ..tenalg.proximal import hals_nnls
+from ..solvers.nnls import hals_nnls
 from ..cp_tensor import (
     CPTensor,
     unfolding_dot_khatri_rao,

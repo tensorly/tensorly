@@ -1,6 +1,6 @@
 from .. import backend as T
 from ..base import fold, unfold
-from ..tenalg.proximal import soft_thresholding, svd_thresholding
+from ..solvers.proximal import soft_thresholding, svd_thresholding 
 
 
 # Author: Jean Kossaifi

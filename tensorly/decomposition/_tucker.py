@@ -8,7 +8,10 @@ from ..tucker_tensor import (
     validate_tucker_rank,
     tucker_normalize,
 )
-from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
+from ..solvers.penalizations import (
+    process_regularization_weights,
+)
+from ..solvers.nnls import hals_nnls, fista
 from math import sqrt
 import warnings
 from collections.abc import Iterable
