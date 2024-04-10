@@ -379,7 +379,8 @@ def constrained_parafac(
         factors_norm = cp_norm((weights, factors))
         iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0) * weights)
         rec_error = (
-            tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
+            tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+            / norm_tensor
         )
         rec_errors.append(rec_error)
         constraint_error = 0
