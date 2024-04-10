@@ -626,7 +626,7 @@ def non_negative_tucker_hals(
             UtM = tl.transpose(MtU)
 
             # Call the hals resolution with nnls, optimizing the current mode
-            nn_factor, _, _, _ = hals_nnls(
+            nn_factor = hals_nnls(
                 UtM,
                 UtU,
                 tl.transpose(nn_factors[mode]),

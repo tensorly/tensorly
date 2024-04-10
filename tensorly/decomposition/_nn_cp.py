@@ -324,7 +324,7 @@ def non_negative_parafac_hals(
 
             if mode in nn_modes:
                 # Call the hals resolution with nnls, optimizing the current mode
-                nn_factor, _, _, _ = hals_nnls(
+                nn_factor = hals_nnls(
                     tl.transpose(mttkrp),
                     pseudo_inverse,
                     tl.transpose(factors[mode]),
