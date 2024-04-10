@@ -3,6 +3,7 @@ import numpy as np
 import copy
 import warnings
 
+
 # Weights processing
 def process_regularization_weights(
     ridge_coefficients, sparsity_coefficients, n_modes, rescale=True

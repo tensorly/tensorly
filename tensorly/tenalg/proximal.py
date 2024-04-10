@@ -1147,6 +1147,7 @@ def fista(
             break
     return x
 
+
 def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     """
     Active set algorithm for non-negative least square solution.
