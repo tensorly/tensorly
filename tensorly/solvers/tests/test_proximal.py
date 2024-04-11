@@ -46,7 +46,7 @@ def test_hard_thresholding():
     copy_tensor = tl.copy(tensor)
     threshold = 2
     res = hard_thresholding(tensor, threshold)
-    true_res = tl.tensor([[0, 0, 0], [4, -6, 0], [0, 0, 0]])
+    true_res = tl.tensor([[0, 0, 0], [4.0, -6.0, 0], [0, 0, 0]])
     assert_array_almost_equal(true_res, res)
     # Check that we did not change the original tensor
     assert_array_equal(copy_tensor, tensor)
@@ -78,7 +78,7 @@ def test_simplex():
 
 def test_normalized_sparsity():
     """Test for normalized_sparsity operator"""
-    tensor = tl.tensor([2., 3., 4.])
+    tensor = tl.tensor([2.0, 3.0, 4.0])
     res = normalized_sparsity_prox(tensor, 2)
     true_res = tl.tensor([0, 0.6, 0.8])
     assert_array_almost_equal(true_res, res)
@@ -116,17 +116,17 @@ def test_unimodality():
 
 def test_l2_prox():
     """Test for l2 prox operator"""
-    tensor = tl.tensor([2, 4, 4])
+    tensor = tl.tensor([2.0, 4.0, 4.0])
     res = l2_prox(tensor, 3)
-    true_res = tl.tensor([1, 2, 2])
+    true_res = tl.tensor([1.0, 2.0, 2.0])
     assert_array_almost_equal(true_res, res)
 
 
 def test_squared_l2_prox():
     """Test for squared l2 prox operator"""
-    tensor = tl.tensor([3., 6., 9.])
+    tensor = tl.tensor([3.0, 6.0, 9.0])
     res = l2_square_prox(tensor, 0.5)
-    true_res = tl.tensor([1.5, 3., 4.5])
+    true_res = tl.tensor([1.5, 3.0, 4.5])
     assert_array_almost_equal(true_res, res)
 
 
@@ -168,7 +168,7 @@ def test_soft_thresholding():
     # Test with missing values
     tensor = tl.tensor([[1, 2, 1.5], [4, -6, -0.5], [0.2, 1.02, -3.4]])
     copy_tensor = tl.copy(tensor)
-    mask = tl.tensor([[0, 1., 1.], [1., 0, 1.], [1., 1., 0]])
+    mask = tl.tensor([[0, 1.0, 1.0], [1.0, 0, 1.0], [1.0, 1.0, 0]])
     threshold = 1.1 * mask
     true_res = tl.tensor([[1, 0.9, 0.4], [2.9, -6, 0], [0, 0, -3.4]])
     res = soft_thresholding(tensor, threshold)
@@ -178,8 +178,8 @@ def test_soft_thresholding():
 
 def test_svd_thresholding():
     """Test for singular_value_thresholding operator"""
-    U = tl.tensor([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]])
-    singular_values = tl.tensor([0.4, 2.1, -2.])
+    U = tl.tensor([[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])
+    singular_values = tl.tensor([0.4, 2.1, -2.0])
     tensor = tl.dot(U, tl.reshape(singular_values, (-1, 1)) * tl.transpose(U))
     shrinked_singular_values = tl.tensor([0, 1.6, -1.5])
     true_res = tl.dot(
