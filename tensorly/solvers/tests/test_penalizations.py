@@ -46,4 +46,3 @@ def test_process_regularization_weights():
         sparsity_coefficients=sparsity_coeffs, ridge_coefficients=None, n_modes=n_modes
     )
     assert_array_equal(out_sp_coeffs, tl.tensor([1, 1, 1, 1]))
-    
