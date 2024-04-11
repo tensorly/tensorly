@@ -23,8 +23,6 @@ def process_regularization_weights(ridge_coefficients, sparsity_coefficients, n_
         ridge coefficients, processed
     list of floats
         sparsity coefficients, processed
-    list of int
-        contains the homogeneity degrees of the regularization terms
     """
     if ridge_coefficients is None or isinstance(ridge_coefficients, (int, float)):
         # Populate None or the input float in a list for all modes
