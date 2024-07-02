@@ -152,6 +152,10 @@ class _BroThesisLineSearch:
             Line search steps are defined as `iteration ** (1.0 / acc_pow)`.
         max_fail : int
             The number of line search failures before increasing `acc_pow`.
+        mask : ndarray, optional
+            array of booleans with the same shape as tensor should be 0 where the values are
+            missing and 1 everywhere else.
+
 
         References
         ----------
