@@ -328,6 +328,7 @@ def parafac2(
     return_errors=False,
     n_iter_parafac=5,
     linesearch=True,
+    mask=None,
 ):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
@@ -420,6 +421,9 @@ def parafac2(
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro in his PhD dissertation [2]_
         (similar to the PLSToolbox line search described in [3]_).
+    mask : ndarray, optional
+        array of booleans with the same shape as tensor should be 0 where the values are
+        missing and 1 everywhere else.
 
     Returns
     -------
@@ -458,6 +462,27 @@ def parafac2(
     non-negative, then :math:`B` will be non-negative, but not the orthogonal `P_i` matrices.
     Consequently, the `B_i` matrices are unlikely to be non-negative.
     """
+    if mask is not None:
+        # Fill in missing values with the mean of the mode-2 slices of observed
+        indices_missing = []
+        for slice, slice_mask in zip(tensor_slices, mask):
+            slice_mean = tl.mean(
+                [
+                    slice[i, j]
+                    for i in range(slice.shape[0])
+                    for j in range(slice.shape[1])
+                    if slice_mask[i, j] == 1
+                ]
+            )
+            for i in range(slice.shape[0]):
+                for j in range(slice.shape[1]):
+                    if slice_mask[i, j] == 0:
+                        indices_missing.append((i, j))
+                        tl.index_update(slice, tl.index[i, j], slice_mean)
+
+        if verbose:
+            print(f"Input has {100*len(indices_missing)/tl.prod(tensor_slices.shape):.2f}% missing values.")
+
     weights, factors, projections = initialize_decomposition(
         tensor_slices, rank, init=init, svd=svd, random_state=random_state
     )
