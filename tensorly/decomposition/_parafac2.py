@@ -9,6 +9,7 @@ from . import parafac, non_negative_parafac_hals
 from ..parafac2_tensor import (
     Parafac2Tensor,
     _validate_parafac2_tensor,
+    parafac2_to_tensor,
 )
 from ..cp_tensor import CPTensor, cp_normalize
 from ..tenalg.svd import svd_interface
@@ -130,6 +131,7 @@ class _BroThesisLineSearch:
         nn_modes=None,
         acc_pow: float = 2.0,
         max_fail: int = 4,
+        mask=None
     ):
         """The line search strategy defined within Rasmus Bro's thesis [1, 2].
 
@@ -166,6 +168,7 @@ class _BroThesisLineSearch:
         self.max_fail = max_fail  # Increase acc_pow with one after max_fail failure
         self.acc_fail = 0  # How many times acceleration have failed
         self.nn_modes = nn_modes
+        self.mask = mask # mask for missing values
 
     def line_step(
         self,
@@ -223,7 +226,7 @@ class _BroThesisLineSearch:
         projections_ls = _compute_projections(tensor_slices, factors_ls, self.svd)
 
         ls_rec_error = _parafac2_reconstruction_error(
-            tensor_slices, (weights, factors_ls, projections_ls), self.norm_tensor
+            tensor_slices, (weights, factors_ls, projections_ls), self.norm_tensor, self.mask
         )
         ls_rec_error /= self.norm_tensor
 
@@ -251,7 +254,7 @@ class _BroThesisLineSearch:
 
 
 def _parafac2_reconstruction_error(
-    tensor_slices, decomposition, norm_matrices=None, projected_tensor=None
+    tensor_slices, decomposition, norm_matrices=None, projected_tensor=None, mask=None
 ):
     """Calculates the reconstruction error of the PARAFAC2 decomposition. This implementation
     uses the inner product with each matrix for efficiency, as this avoids needing to
@@ -277,6 +280,9 @@ def _parafac2_reconstruction_error(
     projected_tensor : ndarray, optional
         The projections of X into an aligned tensor for CP decomposition. This can be optionally
         provided to avoid recalculating it.
+    mask : ndarray, optional
+        array of booleans with the same shape as tensor should be 0 where the values are
+        missing and 1 everywhere else.
 
     Returns
     -------
@@ -286,7 +292,10 @@ def _parafac2_reconstruction_error(
     _validate_parafac2_tensor(decomposition)
 
     if norm_matrices is None:
-        norm_X_sq = sum(tl.norm(t_slice, 2) ** 2 for t_slice in tensor_slices)
+        if mask is not None:
+            norm_X_sq = sum(tl.norm(tensor_slice*slice_mask, 2) ** 2 for tensor_slice, slice_mask in zip(tensor_slices,mask))
+        else:
+            norm_X_sq = sum(tl.norm(t_slice, 2) ** 2 for t_slice in tensor_slices)
     else:
         norm_X_sq = norm_matrices**2
 
@@ -465,7 +474,7 @@ def parafac2(
     if mask is not None:
         # Fill in missing values with the mean of the mode-2 slices of observed
         indices_missing = []
-        for slice, slice_mask in zip(tensor_slices, mask):
+        for slice_no, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
             slice_mean = tl.mean(
                 [
                     slice[i, j]
@@ -477,7 +486,7 @@ def parafac2(
             for i in range(slice.shape[0]):
                 for j in range(slice.shape[1]):
                     if slice_mask[i, j] == 0:
-                        indices_missing.append((i, j))
+                        indices_missing.append((slice_no ,i, j))
                         tl.index_update(slice, tl.index[i, j], slice_mean)
 
         if verbose:
@@ -489,9 +498,18 @@ def parafac2(
     factors = list(factors)
 
     rec_errors = []
-    norm_tensor = tl.sqrt(
-        sum(tl.norm(tensor_slice, 2) ** 2 for tensor_slice in tensor_slices)
-    )
+    
+    if mask is not None:
+
+        norm_tensor = tl.sqrt(
+            sum(tl.norm(tensor_slice*slice_mask, 2) ** 2 for tensor_slice, slice_mask in zip(tensor_slices,mask))
+        )        
+
+    else:
+
+        norm_tensor = tl.sqrt(
+            sum(tl.norm(tensor_slice, 2) ** 2 for tensor_slice in tensor_slices)
+        )
 
     if absolute_tol is None:
         absolute_tol = tl.eps(factors[0].dtype) * 1000
@@ -569,6 +587,18 @@ def parafac2(
                 rec_errors[-1],
             )
 
+        # Update imputations
+        if mask is not None:
+
+            reconstructed_tensor = parafac2_to_tensor((weights, factors, projections))
+
+            for idx in indices_missing:
+                tl.index_update(
+                    tensor_slices,
+                    tl.index[idx[0],idx[1],idx[2]],
+                    reconstructed_tensor[idx[0],idx[1],idx[2]]
+                )
+
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
 
@@ -578,6 +608,7 @@ def parafac2(
                 (weights, factors, projections),
                 norm_tensor,
                 projected_tensor,
+                mask,
             )
             rec_error /= norm_tensor
             rec_errors.append(rec_error)
