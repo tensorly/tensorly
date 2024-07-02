@@ -131,7 +131,7 @@ class _BroThesisLineSearch:
         nn_modes=None,
         acc_pow: float = 2.0,
         max_fail: int = 4,
-        mask=None
+        mask=None,
     ):
         """The line search strategy defined within Rasmus Bro's thesis [1, 2].
 
@@ -168,7 +168,7 @@ class _BroThesisLineSearch:
         self.max_fail = max_fail  # Increase acc_pow with one after max_fail failure
         self.acc_fail = 0  # How many times acceleration have failed
         self.nn_modes = nn_modes
-        self.mask = mask # mask for missing values
+        self.mask = mask  # mask for missing values
 
     def line_step(
         self,
@@ -226,7 +226,10 @@ class _BroThesisLineSearch:
         projections_ls = _compute_projections(tensor_slices, factors_ls, self.svd)
 
         ls_rec_error = _parafac2_reconstruction_error(
-            tensor_slices, (weights, factors_ls, projections_ls), self.norm_tensor, self.mask
+            tensor_slices,
+            (weights, factors_ls, projections_ls),
+            self.norm_tensor,
+            self.mask,
         )
         ls_rec_error /= self.norm_tensor
 
@@ -293,7 +296,10 @@ def _parafac2_reconstruction_error(
 
     if norm_matrices is None:
         if mask is not None:
-            norm_X_sq = sum(tl.norm(tensor_slice*slice_mask, 2) ** 2 for tensor_slice, slice_mask in zip(tensor_slices,mask))
+            norm_X_sq = sum(
+                tl.norm(tensor_slice * slice_mask, 2) ** 2
+                for tensor_slice, slice_mask in zip(tensor_slices, mask)
+            )
         else:
             norm_X_sq = sum(tl.norm(t_slice, 2) ** 2 for t_slice in tensor_slices)
     else:
@@ -486,11 +492,13 @@ def parafac2(
             for i in range(slice.shape[0]):
                 for j in range(slice.shape[1]):
                     if slice_mask[i, j] == 0:
-                        indices_missing.append((slice_no ,i, j))
+                        indices_missing.append((slice_no, i, j))
                         tl.index_update(slice, tl.index[i, j], slice_mean)
 
         if verbose:
-            print(f"Input has {100*len(indices_missing)/tl.prod(tensor_slices.shape):.2f}% missing values.")
+            print(
+                f"Input has {100*len(indices_missing)/tl.prod(tensor_slices.shape):.2f}% missing values."
+            )
 
     weights, factors, projections = initialize_decomposition(
         tensor_slices, rank, init=init, svd=svd, random_state=random_state
@@ -498,12 +506,15 @@ def parafac2(
     factors = list(factors)
 
     rec_errors = []
-    
+
     if mask is not None:
 
         norm_tensor = tl.sqrt(
-            sum(tl.norm(tensor_slice*slice_mask, 2) ** 2 for tensor_slice, slice_mask in zip(tensor_slices,mask))
-        )        
+            sum(
+                tl.norm(tensor_slice * slice_mask, 2) ** 2
+                for tensor_slice, slice_mask in zip(tensor_slices, mask)
+            )
+        )
 
     else:
 
@@ -595,8 +606,8 @@ def parafac2(
             for idx in indices_missing:
                 tl.index_update(
                     tensor_slices,
-                    tl.index[idx[0],idx[1],idx[2]],
-                    reconstructed_tensor[idx[0],idx[1],idx[2]]
+                    tl.index[idx[0], idx[1], idx[2]],
+                    reconstructed_tensor[idx[0], idx[1], idx[2]],
                 )
 
         if normalize_factors:
