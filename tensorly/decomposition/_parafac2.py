@@ -740,6 +740,9 @@ class Parafac2(DecompositionMixin):
         Activate return of iteration errors
     n_iter_parafac : int, optional
         Number of PARAFAC iterations to perform for each PARAFAC2 iteration
+    mask : ndarray, optional
+        array of booleans with the same shape as tensor should be 0 where the values are
+        missing and 1 everywhere else.
 
     Returns
     -------
@@ -781,6 +784,7 @@ class Parafac2(DecompositionMixin):
         return_errors=False,
         n_iter_parafac=5,
         linesearch=False,
+        mask=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -795,6 +799,7 @@ class Parafac2(DecompositionMixin):
         self.return_errors = return_errors
         self.n_iter_parafac = n_iter_parafac
         self.linesearch = linesearch
+        self.mask = mask
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -822,5 +827,6 @@ class Parafac2(DecompositionMixin):
             return_errors=self.return_errors,
             n_iter_parafac=self.n_iter_parafac,
             linesearch=self.linesearch,
+            mask=self.mask
         )
         return self.decomposition_
