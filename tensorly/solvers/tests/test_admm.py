@@ -14,7 +14,7 @@ skip_tensorflow = pytest.mark.skipif(
 
 
 def test_admm():
-    """Test for admm operator"""
+    """Test for admm operator. A linear system Ax=b with known A, b and known ground truth x is solved with ADMM, which outputs an estimate x_admm. This test checks if x_admm is almost the true x."""
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 10))
     b = tl.dot(a, true_res)
