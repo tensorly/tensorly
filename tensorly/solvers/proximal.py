@@ -66,230 +66,79 @@ def validate_constraints(
     """
     constraints = [None] * n_const
     parameters = [None] * n_const
-    if non_negative:
-        if isinstance(non_negative, dict):
-            modes = list(non_negative)
-            for i in range(len(modes)):
-                constraints[modes[i]] = "non_negative"
-        else:
-            for i in range(len(constraints)):
-                constraints[i] = "non_negative"
-    if l1_reg:
-        if isinstance(l1_reg, dict):
-            modes = list(l1_reg)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
+    
+    constraints_list = [ non_negative,
+                         l1_reg,
+                         l2_reg,
+                         l2_square_reg,
+                         unimodality,
+                         normalize,
+                         simplex,
+                         normalized_sparsity,
+                         soft_sparsity,
+                         smoothness,
+                         monotonicity,
+                         hard_sparsity]
+    
+    constraints_names = [ "non_negative",
+                          "l1_reg",
+                          "l2_reg",
+                          "l2_square_reg",
+                          "unimodality",
+                          "normalize",
+                          "simplex",
+                          "normalized_sparsity",
+                          "soft_sparsity",
+                          "smoothness",
+                          "monotonicity",
+                          "hard_sparsity"]
+    
+    # Checking that no mode is constrained twice
+    modes_constrained = set()
+    for each_constraint in constraints_list:
+        if each_constraint:
+            if isinstance(each_constraint, float):
+                if len(modes_constrained) > 0:
                     raise ValueError(
                         "You selected two constraints for the same mode. Consider to check your input"
                     )
-                constraints[modes[i]] = "l1_reg"
-                parameters[modes[i]] = l1_reg[modes[i]]
+                for i in range(n_const):
+                    modes_constrained.add(i)
+            elif isinstance(each_constraint, dict):
+                for mode in each_constraint:
+                    if mode in modes_constrained:
+                        raise ValueError(
+                            "You selected two constraints for the same mode. Consider to check your input"
+                        )
+                    modes_constrained.add(mode)
+            else:  # each_constraint is a list with regularization values
+                for mode in len(each_constraint):
+                    if each_constraint[mode]:
+                        if mode in modes_constrained:
+                            raise ValueError(
+                                "You selected two constraints for the same mode. Consider to check your input"
+                            )
+                        modes_constrained.add(mode)
+   
+   
+    def registrer_constraint(list_or_dict_or_float, name_constraint):
+        if isinstance(list_or_dict_or_float, dict):
+            modes = list(list_or_dict_or_float)
+            for i in range(len(modes)):
+                constraints[modes[i]] = name_constraint
+                parameters[modes[i]] = list_or_dict_or_float[modes[i]]
         else:
             for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "l1_reg"
-                if isinstance(l1_reg, list):
-                    parameters[i] = l1_reg[i]
+                constraints[i] = name_constraint
+                if isinstance(list_or_dict_or_float, list):
+                    parameters[i] = list_or_dict_or_float[i]
                 else:
-                    parameters[i] = l1_reg
-    if l2_reg:
-        if isinstance(l2_reg, dict):
-            modes = list(l2_reg)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "l2_reg"
-                parameters[modes[i]] = l2_reg[modes[i]]
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "l2_reg"
-                if isinstance(l2_reg, list):
-                    parameters[i] = l2_reg[i]
-                else:
-                    parameters[i] = l2_reg
-    if l2_square_reg:
-        if isinstance(l2_square_reg, dict):
-            modes = list(l2_square_reg)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "l2_square_reg"
-                parameters[modes[i]] = l2_square_reg[modes[i]]
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "l2_square_reg"
-                if isinstance(l2_square_reg, list):
-                    parameters[i] = l2_square_reg[i]
-                else:
-                    parameters[i] = l2_square_reg
-    if normalized_sparsity:
-        if isinstance(normalized_sparsity, dict):
-            modes = list(normalized_sparsity)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "normalized_sparsity"
-                parameters[modes[i]] = normalized_sparsity[modes[i]]
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "normalized_sparsity"
-                if isinstance(normalized_sparsity, list):
-                    parameters[i] = normalized_sparsity[i]
-                else:
-                    parameters[i] = normalized_sparsity
-    if soft_sparsity:
-        if isinstance(soft_sparsity, dict):
-            modes = list(soft_sparsity)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "soft_sparsity"
-                parameters[modes[i]] = soft_sparsity[modes[i]]
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "soft_sparsity"
-                if isinstance(soft_sparsity, list):
-                    parameters[i] = soft_sparsity[i]
-                else:
-                    parameters[i] = soft_sparsity
-    if hard_sparsity:
-        if isinstance(hard_sparsity, dict):
-            modes = list(hard_sparsity)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "hard_sparsity"
-                parameters[modes[i]] = hard_sparsity[modes[i]]
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "hard_sparsity"
-                if isinstance(hard_sparsity, list):
-                    parameters[i] = hard_sparsity[i]
-                else:
-                    parameters[i] = hard_sparsity
-    if simplex:
-        if isinstance(simplex, dict):
-            modes = list(simplex)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "simplex"
-                parameters[modes[i]] = simplex[modes[i]]
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "simplex"
-                if isinstance(simplex, list):
-                    parameters[i] = simplex[i]
-                else:
-                    parameters[i] = simplex
-    if smoothness:
-        if isinstance(smoothness, dict):
-            modes = list(smoothness)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "smoothness"
-                parameters[modes[i]] = smoothness[modes[i]]
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "smoothness"
-                if isinstance(smoothness, list):
-                    parameters[i] = smoothness[i]
-                else:
-                    parameters[i] = smoothness
-    if unimodality:
-        if isinstance(unimodality, dict):
-            modes = list(unimodality)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "unimodality"
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "unimodality"
-    if monotonicity:
-        if isinstance(monotonicity, dict):
-            modes = list(monotonicity)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "monotonicity"
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "monotonicity"
-    if normalize:
-        if isinstance(normalize, dict):
-            modes = list(normalize)
-            for i in range(len(modes)):
-                if constraints[modes[i]] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[modes[i]] = "normalize"
-        else:
-            for i in range(len(constraints)):
-                if constraints[i] is not None:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                constraints[i] = "normalize"
+                    parameters[i] = list_or_dict_or_float
+    
+    for each_constraint, each_name in zip(constraints_list, constraints_names):
+        if each_constraint:
+            registrer_constraint(each_constraint, each_name)
+           
     return constraints[order], parameters[order]
 
 
