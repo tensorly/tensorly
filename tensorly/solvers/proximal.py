@@ -101,28 +101,28 @@ def validate_constraints(
     modes_constrained = set()
     for each_constraint in constraints_list:
         if each_constraint:
-            if isinstance(each_constraint, float):
-                if len(modes_constrained) > 0:
-                    raise ValueError(
-                        "You selected two constraints for the same mode. Consider to check your input"
-                    )
-                for i in range(n_const):
-                    modes_constrained.add(i)
-            elif isinstance(each_constraint, dict):
+            if isinstance(each_constraint, dict):
                 for mode in each_constraint:
                     if mode in modes_constrained:
                         raise ValueError(
                             "You selected two constraints for the same mode. Consider to check your input"
                         )
                     modes_constrained.add(mode)
-            else:  # each_constraint is a list with regularization values
-                for mode in len(each_constraint):
+            elif isinstance(each_constraint, list):
+                for mode in range(len(each_constraint)):
                     if each_constraint[mode]:
                         if mode in modes_constrained:
                             raise ValueError(
                                 "You selected two constraints for the same mode. Consider to check your input"
                             )
                         modes_constrained.add(mode)
+            else:  # each_constraint is a float or int applied to all modes
+                if len(modes_constrained) > 0:
+                    raise ValueError(
+                        "You selected two constraints for the same mode. Consider to check your input"
+                    )
+                for i in range(n_const):
+                    modes_constrained.add(i)
 
     def registrer_constraint(list_or_dict_or_float, name_constraint):
         if isinstance(list_or_dict_or_float, dict):
