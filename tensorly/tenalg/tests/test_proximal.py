@@ -22,8 +22,10 @@ from ..proximal import (
 from ...testing import assert_, assert_array_equal, assert_array_almost_equal
 from tensorly import tensor_to_vec, truncated_svd
 import pytest
+import tensorly as tl
 
 # Author: Jean Kossaifi
+
 skip_tensorflow = pytest.mark.skipif(
     (T.get_backend() == "tensorflow"),
     reason=f"Indexing with list not supported in TensorFlow",
@@ -82,15 +84,15 @@ def test_simplex():
 
 def test_normalized_sparsity():
     """Test for normalized_sparsity operator"""
-    tensor = T.tensor([2, 3, 4])
+    tensor = T.tensor([2, 3, 4], dtype=tl.float32)
     res = normalized_sparsity_prox(tensor, 2)
-    true_res = T.tensor([0, 0.6, 0.8])
+    true_res = T.tensor([0, 0.6, 0.8], dtype=tl.float32)
     assert_array_almost_equal(true_res, res)
 
 
 def test_monotonicity():
     """Test for monotonicity operator"""
-    tensor = T.tensor(np.random.rand(20, 10))
+    tensor = T.tensor(np.random.rand(20, 10), dtype=tl.float32)
     # Monotone increasing
     tensor_monoton = monotonicity_prox(tensor)
     assert_(np.all(np.diff(tensor_monoton, axis=0) >= 0))
@@ -120,15 +122,15 @@ def test_unimodality():
 
 def test_l2_prox():
     """Test for l2 prox operator"""
-    tensor = T.tensor([2, 4, 4])
+    tensor = T.tensor([2, 4, 4], dtype=tl.float32)
     res = l2_prox(tensor, 3)
-    true_res = T.tensor([1, 2, 2])
+    true_res = T.tensor([1, 2, 2], dtype=tl.float32)
     assert_array_almost_equal(true_res, res)
 
 
 def test_squared_l2_prox():
     """Test for squared l2 prox operator"""
-    tensor = T.tensor([3, 6, 9])
+    tensor = T.tensor([3, 6, 9], dtype=tl.float32)
     res = l2_square_prox(tensor, 0.5)
     true_res = T.tensor([1.5, 3, 4.5])
     assert_array_almost_equal(true_res, res)
@@ -152,7 +154,7 @@ def test_soft_thresholding():
             [[0, 0.9, 1.9], [3.2, -0.1, 1.9]],
             [[0, -3.9, -0.2], [0.1, 2.6, -7.9]],
             [[-0.9, 0, 0], [0, -0, 0]],
-        ]
+        ],
     )
     # account for floating point errors: np array have a precision of around 2e-15
     # check np.finfo(np.float64).eps
@@ -172,7 +174,7 @@ def test_soft_thresholding():
     # Test with missing values
     tensor = T.tensor([[1, 2, 1.5], [4, -6, -0.5], [0.2, 1.02, -3.4]])
     copy_tensor = T.copy(tensor)
-    mask = T.tensor([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+    mask = T.tensor([[0, 1, 1], [1, 0, 1], [1, 1, 0]], dtype=tl.float64)
     threshold = 1.1 * mask
     true_res = T.tensor([[1, 0.9, 0.4], [2.9, -6, 0], [0, 0, -3.4]])
     res = soft_thresholding(tensor, threshold)
@@ -182,10 +184,10 @@ def test_soft_thresholding():
 
 def test_svd_thresholding():
     """Test for singular_value_thresholding operator"""
-    U = T.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    singular_values = T.tensor([0.4, 2.1, -2])
+    U = T.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=tl.float32)
+    singular_values = T.tensor([0.4, 2.1, -2], dtype=tl.float32)
     tensor = T.dot(U, T.reshape(singular_values, (-1, 1)) * T.transpose(U))
-    shrinked_singular_values = T.tensor([0, 1.6, -1.5])
+    shrinked_singular_values = T.tensor([0, 1.6, -1.5], dtype=tl.float32)
     true_res = T.dot(U, T.reshape(shrinked_singular_values, (-1, 1)) * T.transpose(U))
     res = svd_thresholding(tensor, 0.5)
     assert_array_almost_equal(true_res, res)

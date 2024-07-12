@@ -1,8 +1,7 @@
-from ..tenalg import khatri_rao, multi_mode_dot
-from ..cp_tensor import CPTensor
+from ..tenalg import multi_mode_dot, outer
 from .. import backend as T
-from .. import unfold, tensor_to_vec
-from ..decomposition._cp import parafac
+from .. import tensor_to_vec
+from ..decomposition._cp import initialize_cp
 
 # Author: Cyrillus Tan, Jackson Chin, Aaron Meyer
 
@@ -63,6 +62,18 @@ class CP_PLSR:
         Y : 2D-array of shape (n_samples, n_predictions)
             labels associated with each sample
 
+        Attributes
+        ----------
+        X_factors : list of ndarray of shape (X.shape[i], n_components)
+            The factors of X tensor to approximate X. The first component, X_factors[0],
+            directs to the maximal covariance with Y_factors[0]
+        Y_factors : list of ndarray of shape (Y.shape[i], n_components)
+            The factors of Y matrix to approximate Y. The first component, Y_factors[0],
+            directs to the maximal covariance with X_factors[0]
+        coef_ : ndarray of shape (n_component, n_component)
+            The coefficients of the linear model such that `Y_factors[0]` is approximated as
+            `Y_factors[0] = X_factors[0] @ coef_`.
+
         Returns
         -------
         self
@@ -86,6 +97,7 @@ class CP_PLSR:
         # Mean center the data, record info the object
         self.X_shape_ = T.shape(X)
         self.Y_shape_ = T.shape(Y)
+
         self.X_mean_ = T.mean(X, axis=0)
         self.Y_mean_ = T.mean(Y, axis=0)
         X -= self.X_mean_
@@ -97,6 +109,11 @@ class CP_PLSR:
         self.Y_factors = [
             T.zeros((l, self.n_components), **T.context(X)) for l in T.shape(Y)
         ]
+        self.X_r2 = T.zeros((self.n_components,), **T.context(X))
+        self.Y_r2 = T.zeros((self.n_components,), **T.context(Y))
+
+        # Coefficients of the linear model
+        self.coef_ = T.zeros((self.n_components, self.n_components), **T.context(X))
 
         ## FITTING EACH COMPONENT
         for component in range(self.n_components):
@@ -107,15 +124,15 @@ class CP_PLSR:
             for iter in range(self.n_iter_max):
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
 
+                if iter == 0:
+                    Z_comp = initialize_cp(Z, 1, normalize_factors=True).factors
+                    Z_comp = [T.reshape(zz, (-1,)) for zz in Z_comp]
+
                 if T.ndim(Z) >= 2:
-                    Z_comp = parafac(
-                        Z,
-                        1,
-                        tol=self.tol,
-                        init="svd",
-                        svd="randomized_svd",
-                        normalize_factors=True,
-                    )[1]
+                    for mode in range(len(Z_comp)):
+                        factor = multi_mode_dot(Z, Z_comp, skip=mode)
+                        factor = factor / T.norm(factor, 2)
+                        Z_comp[mode] = factor
                 else:
                     Z_comp = [Z / T.norm(Z)]
 
@@ -151,17 +168,22 @@ class CP_PLSR:
                 self.Y_factors[1], T.index[:, component], comp_Y_factors_1
             )
 
+            B = T.lstsq(self.X_factors[0], T.reshape(comp_Y_factors_0, (-1, 1)))[0]
+            self.coef_ = T.index_update(
+                self.coef_,
+                T.index[:, component],
+                T.reshape(B, (-1,)),
+            )
+
             # Deflation
-            X -= CPTensor(
-                (None, [T.reshape(ff, (-1, 1)) for ff in comp_X_factors])
-            ).to_tensor()
+            X -= outer(comp_X_factors)
             Y -= T.dot(
                 T.dot(
                     self.X_factors[0],
-                    T.lstsq(self.X_factors[0], T.reshape(comp_Y_factors_0, (-1, 1)))[0],
+                    T.reshape(B, (-1, 1)),
                 ),
                 T.reshape(comp_Y_factors_1, (1, -1)),
-            )  # Y -= T pinv(T) u q'
+            )  # Y -= T b q' = T pinv(T) u q'
 
         return self
 
@@ -177,15 +199,26 @@ class CP_PLSR:
             raise ValueError(
                 f"Training X has shape {self.X_shape_}, while the new X has shape {T.shape(X)}"
             )
+        X = T.copy(X)
         X -= self.X_mean_
-        factors_kr = khatri_rao(self.X_factors, skip_matrix=0)
-        unfolded = unfold(X, 0)
-        scores = T.lstsq(factors_kr, T.transpose(unfolded))[0]  # = Tnew
-        estimators = T.lstsq(self.X_factors[0], self.Y_factors[0])[0]
-        return (
-            T.dot(
-                T.dot(T.transpose(scores), estimators), T.transpose(self.Y_factors[1])
+        X_projection = T.zeros((T.shape(X)[0], self.n_components), **T.context(X))
+        for component in range(self.n_components):
+            X_projection = T.index_update(
+                X_projection,
+                T.index[:, component],
+                multi_mode_dot(
+                    X,
+                    [factor[:, component] for factor in self.X_factors[1:]],
+                    range(1, T.ndim(X)),
+                ),
             )
+            X -= outer(
+                [X_projection[:, component]]
+                + [factor[:, component] for factor in self.X_factors[1:]],
+            )
+
+        return (
+            T.dot(T.dot(X_projection, self.coef_), T.transpose(self.Y_factors[1]))
             + self.Y_mean_
         )
 
@@ -222,16 +255,10 @@ class CP_PLSR:
                     range(1, T.ndim(X)),
                 ),
             )
-            X -= CPTensor(
-                (
-                    None,
-                    [T.reshape(X_scores[:, component], (-1, 1))]
-                    + [
-                        T.reshape(ff[:, component], (-1, 1))
-                        for ff in self.X_factors[1:]
-                    ],
-                )
-            ).to_tensor()
+            X -= outer(
+                [X_scores[:, component]]
+                + [ff[:, component] for ff in self.X_factors[1:]],
+            )
 
         if Y is not None:
             Y = T.copy(Y)
@@ -256,11 +283,11 @@ class CP_PLSR:
 
                 Y -= T.dot(
                     T.dot(
-                        T.lstsq(T.transpose(X_scores), T.transpose(X_scores))[0],
-                        Y_scores[:, [component]],
+                        X_scores,
+                        T.reshape(self.coef_[:, component], (-1, 1)),
                     ),
-                    T.transpose(self.Y_factors[1][:, [component]]),
-                )  # Y -= T pinv(T) u q'
+                    T.reshape(self.Y_factors[1][:, component], (1, -1)),
+                )
             return X_scores, Y_scores
 
         return X_scores
@@ -283,3 +310,18 @@ class CP_PLSR:
             Return `x_scores` if `Y` is not given, `(x_scores, y_scores)` otherwise.
         """
         return self.fit(X, Y).transform(X, Y)
+
+    def score(self, X, Y):
+        """Calculate the R^2 of prediction on X compared to the ground truth Y provided.
+
+        Parameters
+        ----------
+        X : ndarray
+            tensor data of shape (n_samples, N1, ..., NS), same dimension as the X
+            in self.fit() all except the first dimension
+        Y : 2D-array of shape (n_samples, n_predictions)
+            the ground truth labels associated with each sample
+        """
+        from ..metrics.regression import R2_score
+
+        return R2_score(Y - self.Y_mean_, self.predict(X) - self.Y_mean_)

@@ -90,7 +90,6 @@ class TuckerRegressor:
         norm_W = []
 
         for iteration in range(self.n_iter_max):
-
             # Optimise modes of W
             for i in range(len(W)):
                 phi = partial_tensor_to_vec(

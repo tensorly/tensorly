@@ -1,7 +1,7 @@
 # Automate testing etc
 BACKEND?='numpy'
 
-.PHONY: all test install clean debug
+.PHONY: all install debug test test-all test-coverage
 
 all: install test
 
@@ -18,7 +18,6 @@ test-all:
 	TENSORLY_BACKEND='numpy' pytest -v tensorly
 	TENSORLY_BACKEND='cupy' pytest -v tensorly
 	TENSORLY_BACKEND='pytorch' pytest -v tensorly
-	TENSORLY_BACKEND='mxnet' pytest -v tensorly
 	TENSORLY_BACKEND='jax' pytest -v tensorly
 	TENSORLY_BACKEND='tensorflow' pytest -v tensorly
 

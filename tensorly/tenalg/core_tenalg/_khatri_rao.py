@@ -1,12 +1,12 @@
-from ... import backend as T
 import warnings
+from ... import backend as T
 
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause
 
 
-def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=None):
+def khatri_rao(matrices, weights=None, skip_matrix=None, mask=None):
     """Khatri-Rao product of a list of matrices
 
         This can be seen as a column-wise kronecker product.
@@ -28,9 +28,6 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
 
     skip_matrix : None or int, optional, default is None
         if not None, index of a matrix to skip
-
-    reverse : bool, optional
-        if True, the order of the matrices is reversed
 
     Returns
     -------
@@ -78,10 +75,10 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
         matrices = [T.reshape(m, (-1, 1)) for m in matrices]
         warnings.warn(
             "Khatri-rao of a series of vectors instead of matrices. "
-            "Condidering each has a matrix with 1 column."
+            "Considering each as a matrix with 1 column."
         )
 
-    # Optional part, testing whether the matrices have the proper size
+    # Testing whether the matrices have the proper size
     for i, matrix in enumerate(matrices):
         if T.ndim(matrix) != 2:
             raise ValueError(
@@ -94,8 +91,19 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, reverse=False, mask=Non
                 f"Matrix {i} has {matrix.shape[1]} columns != {n_columns}."
             )
 
-    if reverse:
-        matrices = matrices[::-1]
-        # Note: we do NOT use .reverse() which would reverse matrices even outside this function
+    for i, e in enumerate(matrices[1:]):
+        if not i:
+            if weights is None:
+                res = matrices[0]
+            else:
+                res = matrices[0] * T.reshape(weights, (1, -1))
+        s1, s2 = T.shape(res)
+        s3, s4 = T.shape(e)
 
-    return T.kr(matrices, weights=weights, mask=mask)
+        a = T.reshape(res, (s1, 1, s2))
+        b = T.reshape(e, (1, s3, s4))
+        res = T.reshape(a * b, (-1, n_columns))
+
+    m = T.reshape(mask, (-1, 1)) if mask is not None else 1
+
+    return res * m

@@ -58,10 +58,18 @@ def test_partial_tucker():
 
     # Test random_state fixes the core and the factor matrices
     (core1, factors1), rec_errors = partial_tucker(
-        tensor, rank=ranks, modes=modes, random_state=0
+        tensor,
+        rank=ranks,
+        modes=modes,
+        random_state=0,
+        init="random",
     )
     (core2, factors2), rec_errors = partial_tucker(
-        tensor, rank=ranks, modes=modes, random_state=0
+        tensor,
+        rank=ranks,
+        modes=modes,
+        random_state=0,
+        init="random",
     )
     assert_array_equal(core1, core2)
     for factor1, factor2 in zip(factors1, factors2):

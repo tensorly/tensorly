@@ -4,6 +4,7 @@ from ... import backend as T
 from .. import kronecker
 from .. import khatri_rao
 from ...testing import assert_array_equal, assert_array_almost_equal
+import tensorly as tl
 
 # Author: Jean Kossaifi
 
@@ -11,24 +12,31 @@ from ...testing import assert_array_equal, assert_array_almost_equal
 def test_kronecker():
     """Test for kronecker product"""
     # Mathematical test
-    a = T.tensor([[1, 2, 3], [3, 2, 1]])
-    b = T.tensor([[2, 1], [2, 3]])
+    a = T.tensor([[1, 2, 3], [3, 2, 1]], dtype=tl.float32)
+    b = T.tensor([[2, 1], [2, 3]], dtype=tl.float32)
     true_res = T.tensor(
-        [[2, 1, 4, 2, 6, 3], [2, 3, 4, 6, 6, 9], [6, 3, 4, 2, 2, 1], [6, 9, 4, 6, 2, 3]]
+        [
+            [2, 1, 4, 2, 6, 3],
+            [2, 3, 4, 6, 6, 9],
+            [6, 3, 4, 2, 2, 1],
+            [6, 9, 4, 6, 2, 3],
+        ],
+        dtype=tl.float32,
     )
     res = kronecker([a, b])
     assert_array_equal(true_res, res)
 
     # Another test
-    a = T.tensor([[1, 2], [3, 4]])
-    b = T.tensor([[0, 5], [6, 7]])
+    a = T.tensor([[1, 2], [3, 4]], dtype=tl.float32)
+    b = T.tensor([[0, 5], [6, 7]], dtype=tl.float32)
     true_res = T.tensor(
-        [[0, 5, 0, 10], [6, 7, 12, 14], [0, 15, 0, 20], [18, 21, 24, 28]]
+        [[0, 5, 0, 10], [6, 7, 12, 14], [0, 15, 0, 20], [18, 21, 24, 28]],
+        dtype=tl.float32,
     )
     res = kronecker([a, b])
     assert_array_equal(true_res, res)
     # Adding a third matrices
-    c = T.tensor([[0, 1], [2, 0]])
+    c = T.tensor([[0, 1], [2, 0]], dtype=tl.float32)
     res = kronecker([c, a, b])
     assert res.shape == (
         a.shape[0] * b.shape[0] * c.shape[0],
@@ -67,15 +75,16 @@ def test_kronecker():
     for i, shape in enumerate(shapes):
         assert_array_almost_equal(res, kr)
 
-    a = T.tensor([[1, 2], [0, 3]])
-    b = T.tensor([[0.5, 1], [1, 2]])
+    a = T.tensor([[1, 2], [0, 3]], dtype=tl.float32)
+    b = T.tensor([[0.5, 1], [1, 2]], dtype=tl.float32)
     true_res = T.tensor(
         [
             [0.5, 1.0, 1.0, 2.0],
             [1.0, 2.0, 2.0, 4.0],
             [0.0, 0.0, 1.5, 3.0],
             [0.0, 0.0, 3.0, 6.0],
-        ]
+        ],
+        dtype=tl.float32,
     )
     assert_array_equal(kronecker([a, b]), true_res)
     reversed_res = T.tensor(
@@ -84,7 +93,8 @@ def test_kronecker():
             [0.0, 1.5, 0.0, 3.0],
             [1.0, 2.0, 2.0, 4.0],
             [0.0, 3.0, 0.0, 6.0],
-        ]
+        ],
+        dtype=tl.float32,
     )
     assert_array_equal(kronecker([a, b], reverse=True), reversed_res)
 

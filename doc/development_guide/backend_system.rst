@@ -3,7 +3,7 @@
 Backend System
 ==============
 The TensorLy backend system allows for switching between multiple backends in
-a thread-local way.  You can obtain the back that is currently being used with the
+a thread-local way.  You can obtain the backend that is currently being used with the
 ``get_backend()`` function::
 
     >>> import tensorly as tl
@@ -23,7 +23,7 @@ from the thread that spawned them (which is typically the main thread).
 Globally setting the backend supports interactive usage.
 
 Additionally,  we provide a context manager ``backend_context``  
-for convenience, whcih may be used to
+for convenience, which may be used to
 safely use a backend only for limited context::
 
     >>> with tl.backend_context('pytorch'):

@@ -1,6 +1,6 @@
 import warnings
 
-from .core import Backend
+from .core import Backend, backend_array
 import importlib
 import os
 import threading
@@ -33,9 +33,7 @@ class dynamically_dispatched_class_attribute(object):
 
 class BackendManager(types.ModuleType):
     _functions = [
-        "reshape",
         "moveaxis",
-        "any",
         "trace",
         "shape",
         "ndim",
@@ -43,29 +41,20 @@ class BackendManager(types.ModuleType):
         "copy",
         "transpose",
         "arange",
-        "ones",
-        "zeros",
-        "zeros_like",
         "eye",
         "kron",
         "concatenate",
         "max",
-        "min",
-        "matmul",
         "all",
         "mean",
         "sum",
-        "cumsum",
         "prod",
         "sign",
-        "abs",
-        "sqrt",
         "argmin",
         "argmax",
         "stack",
         "conj",
         "diag",
-        "einsum",
         "log",
         "log2",
         "dot",
@@ -94,7 +83,6 @@ class BackendManager(types.ModuleType):
         "is_tensor",
         "argsort",
         "flip",
-        "count_nonzero",
         "sin",
         "cos",
         "tan",
@@ -114,7 +102,8 @@ class BackendManager(types.ModuleType):
         "acosh",
         "atanh",
         "partial_svd",
-    ]
+        "logsumexp",
+    ] + backend_array
     _attributes = [
         "int64",
         "int32",
@@ -129,7 +118,7 @@ class BackendManager(types.ModuleType):
         "index",
         "backend_name",
     ]
-    available_backend_names = ["numpy", "mxnet", "pytorch", "tensorflow", "cupy", "jax"]
+    available_backend_names = ["numpy", "pytorch", "tensorflow", "cupy", "jax"]
     _default_backend = "numpy"
     _loaded_backends = dict()
     _backend = None
@@ -247,7 +236,7 @@ class BackendManager(types.ModuleType):
 
         Parameters
         ----------
-        backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
+        backend : {'numpy', 'pytorch', 'tensorflow', 'cupy'}
             The name of the backend to use. Default is 'numpy'.
         local_threadsafe : bool, optional
             If True, the backend will not become the default backend for all threads.

@@ -10,7 +10,7 @@ Refer to [1]_ for more information on tensor decomposition.
 CP form of a tensor
 ------------------------
 
-The idea is to express the tensor as a sum of rank one tensors. That is, a sum of outer product of vectors.
+The idea is to express the tensor as a sum of rank one tensors. That is, a sum of outer products of vectors.
 Such representation can be obtained by applying Canonical Polyadic Decomposition (also known as CANDECOMP-PARAFAC, CP, or PARAFAC decomposition). 
 
 CANDECOMP-PARAFAC decomposition
@@ -126,7 +126,7 @@ Note that some coefficients are almost zero (10e-16) but not exactly due to nume
 Matrix-Product-State / Tensor-Train Decomposition
 --------------------------------------------------
 
-The tensor-train decomposition, also known as matrix product state in physics community, is a way of decompositing high order tensors into third order ones. For a order d tensor A[i1,...,id], it splits each dimension into a order 3 sub-tensor, which we called factors or cores. One of the dimension of the sub-tensor is the real physical dimension, while the other two are edges connecting the cores before and after it.
+The tensor-train decomposition, also known as matrix product state in physics community, is a way of decompositing high order tensors into third order ones. For an order d tensor A[i1,...,id], it splits each dimension into an order 3 sub-tensor, which we called factors or cores. One of the dimension of the sub-tensor is the real physical dimension, while the other two are edges connecting the cores before and after it.
 
 .. math::
 
@@ -137,7 +137,7 @@ The advantage of the TT/tensor-train decomposition is that both of its number of
 Implementations
 +++++++++++++++
 
-Two versions tensor train decompositions are available in TensorLy: and SVD-based decomposition method (:func:`tensorly.decomposition.mps_decomposition` and a cross approximation-based method :func:`tensorly.contrib.mps_decomposition_cross`).
+Two versions tensor train decompositions are available in TensorLy: and SVD-based decomposition method (:func:`tensorly.decomposition.tensor_train` and a cross approximation-based method :func:`tensorly.contrib.tensor_train_cross`).
 
 Using the same tensor as previously, we will perform a rank [1,2,1]-decomposition of the shape (12,12) `tensor` meaning the first core has shape (1,12,2) and the second has (2,12,1).:
 

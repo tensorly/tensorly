@@ -1,11 +1,8 @@
 import numpy as np
-
-from .. import backend as T
 from ..base import partial_tensor_to_vec, partial_unfold
-from ..cp_tensor import cp_to_tensor, cp_to_vec
 from ..tenalg import khatri_rao
-from ..utils import DefineDeprecated
-
+from ..cp_tensor import cp_to_tensor, cp_to_vec
+from .. import backend as T
 
 # Author: Jean Kossaifi
 
@@ -84,7 +81,6 @@ class CPRegressor:
 
         # Initialise the weights randomly
         W = []
-
         for i in range(
             1, T.ndim(X)
         ):  # The first dimension of X is the number of samples
@@ -97,7 +93,6 @@ class CPRegressor:
         weights = T.ones(self.weight_rank, **T.context(X))
 
         for iteration in range(self.n_iter_max):
-
             # Optimise each factor of W
             for i in range(len(W)):
                 if i < T.ndim(X) - 1:
@@ -153,6 +148,3 @@ class CPRegressor:
         else:
             weight_shape = (-1,)
         return T.reshape(T.dot(partial_tensor_to_vec(X), T.reshape(self.weight_tensor_, weight_shape)), out_shape)
-
-
-KruskalRegressor = DefineDeprecated("KruskalRegressor", CPRegressor)

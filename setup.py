@@ -57,6 +57,7 @@ config = {
     'url': 'https://github.com/tensorly/tensorly',
     'download_url': 'https://github.com/tensorly/tensorly/tarball/' + VERSION,
     'install_requires': ['numpy', 'scipy'],
+    'include_package_data': True,
     'license': 'Modified BSD',
     'scripts': [],
     'classifiers': [

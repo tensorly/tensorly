@@ -4,10 +4,12 @@ import pytest
 from time import time
 import numpy as np
 from scipy.linalg import svd
+from scipy import special
 
 import tensorly as tl
 from .. import backend as T
 from ..testing import (
+    assert_allclose,
     assert_array_equal,
     assert_equal,
     assert_,
@@ -65,7 +67,6 @@ def test_set_backend_local_threadsafe():
     global_default = tl.get_backend()
 
     with ThreadPoolExecutor(max_workers=1) as executor:
-
         with tl.backend_context("numpy", local_threadsafe=True):
             assert tl.get_backend() == "numpy"
             # Changes only happen locally in this thread
@@ -406,21 +407,21 @@ def test_lstsq():
     # test dimensions
     a = T.randn((m, n))
     b = T.randn((m, k))
-    x, res = T.lstsq(a, b)
+    x, res, *_ = T.lstsq(a, b)
     assert_equal(x.shape, (n, k))
 
     # test residuals
     assert_array_almost_equal(T.norm(T.dot(a, x) - b, axis=0) ** 2, res)
     rank = 2
     a = T.dot(T.randn((m, rank)), T.randn((rank, n)))
-    _, res = T.lstsq(a, b)
+    _, res, *_ = T.lstsq(a, b)
     assert_array_almost_equal(tl.tensor([]), res)
 
     # test least squares solution
     a = T.randn((m, n))
     x = T.randn((n,))
     b = T.dot(a, x)
-    x_lstsq, res = T.lstsq(a, b)
+    x_lstsq, *_ = T.lstsq(a, b)
     assert_array_almost_equal(T.dot(a, x_lstsq), b, decimal=5)
 
 
@@ -533,3 +534,48 @@ def test_sum_keepdims():
     assert tl.shape(summed_tensor8) == (10, 20)
     summed_tensor9 = tl.sum(random_tensor, axis=2, keepdims=True)
     assert tl.shape(summed_tensor9) == (10, 20, 1)
+
+
+def test_logsumexp():
+    """Test the logsumexp implementation against the scipy baseline result."""
+
+    # Example data
+    x = np.arange(24).reshape((3, 4, 2)).astype(np.float32)
+
+    # Tensorly tensor
+    tensor = tl.tensor(x)
+
+    # Compare against scipy baseline result
+    for axis in [0, 1, 2]:
+        # Run tensorly logsumexp
+        tensorly_result = tl.logsumexp(tensor, axis=axis)
+        scipy_result = special.logsumexp(x, axis=axis)
+        assert_allclose(tensorly_result, scipy_result)
+
+
+def test_dtype_tensor_init():
+    dtypes_np = [np.float32, np.float64, np.int32, np.int64]
+    dtypes_torch = [
+        tl.float32,
+        tl.float64,
+        tl.int32,
+        tl.int64,
+    ]
+    for dtype_np, dtype_torch in zip(dtypes_np, dtypes_torch):
+        # Numpy array
+        array = np.zeros((1,), dtype=dtype_np)
+
+        # No dtype given -> dtype should be inferred from input array
+        tensor = T.tensor(array)
+        assert tensor.dtype == dtype_torch
+
+        # dtype given -> dtype should be overwritten
+        for dtype in dtypes_torch:
+            # Check init from numpy array
+            tensor = T.tensor(array, dtype=dtype)
+            assert tensor.dtype == dtype
+
+            # Check init from python list
+            array_py = array.tolist()
+            tensor = T.tensor(array_py, dtype=dtype)
+            assert tensor.dtype == dtype

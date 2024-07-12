@@ -1,4 +1,4 @@
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 import sys
 
@@ -58,16 +58,21 @@ from .backend import (
     ndim,
     to_numpy,
     copy,
+    float64,
     concatenate,
     reshape,
     transpose,
     moveaxis,
     arange,
+    any,
     ones,
     zeros,
     zeros_like,
     eye,
     where,
+    conj,
+    index,
+    index_update,
     clip,
     max,
     min,
@@ -88,6 +93,7 @@ from .backend import (
     qr,
     kr,
     stack,
+    maximum,
     eps,
     finfo,
     matmul,
@@ -107,6 +113,7 @@ from .backend import (
     arccos,
     arctan,
     sinh,
+    sort,
     cosh,
     tanh,
     arcsinh,
@@ -121,9 +128,6 @@ from .backend import (
     nan,
 )
 
-# Deprecated
-from .cp_tensor import kruskal_to_tensor, kruskal_to_unfolded, kruskal_to_vec
-
 from . import backend
 from . import decomposition
 from . import plugins
@@ -132,6 +136,7 @@ from . import regression
 from . import tenalg
 from . import random
 from . import datasets
+
 
 # Add Backend functions, dynamically dispatched
 def __dir__():

@@ -19,7 +19,7 @@ TensorLy
 ========
    
 
-TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, PyTorch, JAX, MXNet, TensorFlow or CuPy, and run methods at scale on CPU or GPU.
+TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, PyTorch, JAX, TensorFlow or CuPy, and run methods at scale on CPU or GPU.
 
 - **Website:** https://tensorly.org
 - **Source-code:**  https://github.com/tensorly/tensorly
@@ -55,7 +55,7 @@ The only pre-requisite is to have **Python 3** installed. The easiest way is via
 |                                                                                               |
 +-----------------------------------------------------------------------------------------------+  
  
-**Note:** TensorLy depends on NumPy by default. If you want to use the MXNet or PyTorch backends, you will need to install these packages separately.
+**Note:** TensorLy depends on NumPy by default. If you want to use other backends, you will need to install these packages separately.
 
 For detailed instruction, please see the `documentation <http://tensorly.org/dev/installation.html>`_.
 
@@ -96,11 +96,11 @@ You can also create tensors in TT-format, Tucker, etc, see `random tensors <http
 Setting the backend
 -------------------
 
-You can change the backend to perform computation with a different framework. By default, the backend is NumPy, but you can also perform the computation using  PyTorch, TensorFlow, MXNet, JAX or CuPy (requires to have installed them first). For instance, after setting the backend to PyTorch, all the computation is done by PyTorch, and tensors can be created on GPU:
+You can change the backend to perform computation with a different framework. By default, the backend is NumPy, but you can also perform the computation using  PyTorch, TensorFlow, JAX or CuPy (requires to have installed them first). For instance, after setting the backend to PyTorch, all the computation is done by PyTorch, and tensors can be created on GPU:
 
 .. code:: python
 
-   tl.set_backend('pytorch') # Or 'mxnet', 'numpy', 'tensorflow', 'cupy' or 'jax'
+   tl.set_backend('pytorch') # Or 'numpy', 'tensorflow', 'cupy' or 'jax'
    tensor = tl.tensor(np.arange(24).reshape((3, 4, 2)), device='cuda:0')
    type(tensor) # torch.Tensor
    

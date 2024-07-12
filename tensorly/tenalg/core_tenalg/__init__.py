@@ -6,7 +6,7 @@ from .outer_product import outer, batched_outer
 from .moments import higher_order_moment
 from ._tt_matrix import tt_matrix_to_tensor
 from ._batched_tensordot import tensordot
-from .mttkrp import unfolding_dot_khatri_rao
+from .mttkrp import unfolding_dot_khatri_rao, unfolding_dot_khatri_rao_memory
 
 from ..base_tenalg import TenalgBackend
 

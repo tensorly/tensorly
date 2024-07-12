@@ -1,6 +1,14 @@
-from .._tr import tensor_ring
+import pytest
+import tensorly as tl
+
+from .._tr_svd import tensor_ring, TensorRing
 from ...random import random_tr
-from ...testing import assert_, assert_array_almost_equal, assert_raises
+from ...testing import (
+    assert_,
+    assert_array_almost_equal,
+    assert_raises,
+    assert_class_wrapper_correctly_passes_arguments,
+)
 
 
 def test_tensor_ring():

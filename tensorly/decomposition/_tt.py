@@ -2,7 +2,6 @@ import tensorly as tl
 from ._base_decomposition import DecompositionMixin
 from ..tt_tensor import validate_tt_rank, TTTensor
 from ..tt_matrix import validate_tt_matrix_rank, TTMatrix
-from ..utils import DefineDeprecated
 from ..tenalg.svd import svd_interface
 
 
@@ -42,7 +41,6 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
 
     # Getting the TT factors up to n_dim - 1
     for k in range(n_dim - 1):
-
         # Reshape the unfolding matrix of the remaining factors
         n_row = int(rank[k] * tensor_size[k])
         unfolding = tl.reshape(unfolding, (n_row, -1))
@@ -207,6 +205,3 @@ class TensorTrainMatrix(DecompositionMixin):
             tensor, rank=self.rank, svd=self.svd, verbose=self.verbose
         )
         return self.decomposition_
-
-
-matrix_product_state = DefineDeprecated("matrix_product_state", tensor_train)

@@ -4,9 +4,7 @@ Core operations on tensors in Tensor-Train (TT) format, also known as Matrix-Pro
 
 import tensorly as tl
 from ._factorized_tensor import FactorizedTensor
-from .utils import DefineDeprecated
 import numpy as np
-from scipy.optimize import brentq
 import warnings
 
 
@@ -358,15 +356,3 @@ def pad_tt_rank(factor_list, n_padding=1, pad_boundaries=False):
         new_factors.append(tl.index_update(new_factor, tl.index[:r1, ..., :r2], factor))
 
     return new_factors
-
-
-mps_to_tensor = DefineDeprecated(
-    deprecated_name="mps_to_tensor", use_instead=tt_to_tensor
-)
-mps_to_unfolded = DefineDeprecated(
-    deprecated_name="mps_to_unfolded", use_instead=tt_to_unfolded
-)
-mps_to_vec = DefineDeprecated(deprecated_name="mps_to_vec", use_instead=tt_to_vec)
-_validate_mps_tensor = DefineDeprecated(
-    deprecated_name="_validate_mps_tensor", use_instead=_validate_tt_tensor
-)

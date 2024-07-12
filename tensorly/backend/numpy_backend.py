@@ -34,28 +34,8 @@ class NumpyBackend(Backend, backend_name="numpy"):
         return np.clip(tensor, a_min, a_max)
 
     @staticmethod
-    def lstsq(a, b):
-        x, residuals, _, _ = np.linalg.lstsq(a, b, rcond=None)
-        return x, residuals
-
-    def kr(self, matrices, weights=None, mask=None):
-        n_columns = matrices[0].shape[1]
-        n_factors = len(matrices)
-
-        start = ord("a")
-        common_dim = "z"
-        target = "".join(chr(start + i) for i in range(n_factors))
-        source = ",".join(i + common_dim for i in target)
-        operation = source + "->" + target + common_dim
-
-        if weights is not None:
-            matrices = [
-                m if i else m * self.reshape(weights, (1, -1))
-                for i, m in enumerate(matrices)
-            ]
-
-        m = mask.reshape((-1, 1)) if mask is not None else 1
-        return np.einsum(operation, *matrices).reshape((-1, n_columns)) * m
+    def logsumexp(tensor, axis=0):
+        return scipy.special.logsumexp(tensor, axis=axis)
 
 
 for name in (
@@ -92,7 +72,7 @@ for name in (
 ):
     NumpyBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "svd", "eigh"]:
+for name in ["solve", "qr", "svd", "eigh", "lstsq"]:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
 
 for name in ["digamma"]:

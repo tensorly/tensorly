@@ -1,4 +1,3 @@
-import numpy as np
 from .. import backend as T
 from ..base import fold, unfold
 from ..tenalg.proximal import soft_thresholding, svd_thresholding
@@ -86,7 +85,6 @@ def robust_pca(
     if mask is None:
         mask = 1
     else:
-        # Fix to address surprising MXNet.numpy behavior (Issue #19891)
         mask = T.tensor(mask, **T.context(X))
 
     # Initialise the decompositions
@@ -107,7 +105,6 @@ def robust_pca(
     mu = mu_init
 
     for iteration in range(n_iter_max):
-
         for i in range(T.ndim(X)):
             J[i] = fold(
                 svd_thresholding(unfold(D, i) + unfold(L[i], i) / mu, reg_J / mu),

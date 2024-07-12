@@ -1,4 +1,3 @@
-import warnings
 from packaging.version import Version
 
 try:
@@ -20,7 +19,9 @@ from .core import (
     backend_array,
 )
 
-linalg_lstsq_avail = Version(torch.__version__) >= Version("1.9.0")
+
+if Version(torch.__version__) < Version("1.9.0"):
+    raise RuntimeError("TensorLy only supports pytorch v1.9.0 and above.")
 
 
 class PyTorchBackend(Backend, backend_name="pytorch"):
@@ -33,12 +34,39 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         }
 
     @staticmethod
-    def tensor(data, dtype=torch.float32, device="cpu", requires_grad=False):
-        if isinstance(data, np.ndarray):
-            data = data.copy()
-        return torch.tensor(
-            data, dtype=dtype, device=device, requires_grad=requires_grad
-        )
+    def tensor(data, dtype=None, device=None, requires_grad=None):
+        """
+        Tensor constructor for the PyTorch backend.
+
+        Parameters
+        ----------
+        data : array-like
+            Data for the tensor.
+        dtype : torch.dtype, optional
+            Data type of the tensor. If None, the dtype is inferred from the data.
+        device : Union[str, torch.device], optional
+            Device on which the tensor is allocated. If None, the device is inferred from the data in case of a torch
+            Tensor.
+        requires_grad : bool, optional.
+            If autograd should record operations on the returned tensor. If None, requires_grad is inferred from the
+            data.
+
+        """
+        if isinstance(data, torch.Tensor):
+            # If source is a tensor, use clone-detach as suggested by PyTorch
+            tensor = data.clone().detach()
+        else:
+            # Else, use PyTorch's tensor constructor
+            tensor = torch.tensor(data)
+
+        # Set dtype/device/requires_grad if specified
+        if dtype is not None:
+            tensor = tensor.type(dtype)
+        if device is not None:
+            tensor = tensor.to(device=device)
+        if requires_grad is not None:
+            tensor.requires_grad_(requires_grad)
+        return tensor
 
     @staticmethod
     def to_numpy(tensor):
@@ -184,44 +212,9 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
     def update_index(tensor, index, values):
         tensor.index_put_(index, values)
 
-    def solve(self, matrix1, matrix2):
-        """Legacy only, deprecated from PyTorch 1.8.0
-
-        Solve a linear system of equation
-
-        Notes
-        -----
-        Previously, this was implemented as follows::
-            if self.ndim(matrix2) < 2:
-                # Currently, gesv doesn't support vectors for matrix2
-                # So we instead solve a least square problem...
-                solution, _ = torch.gels(matrix2, matrix1)
-            else:
-                solution, _ = torch.gesv(matrix2, matrix1)
-            return solution
-
-        Deprecated from PyTorch 1.8.0
-        """
-        if self.ndim(matrix2) < 2:
-            # Currently, solve doesn't support vectors for matrix2
-            solution, _ = torch.solve(matrix2.unsqueeze(1), matrix1)
-        else:
-            solution, _ = torch.solve(matrix2, matrix1)
-        return solution
-
     @staticmethod
-    def lstsq(a, b):
-        if linalg_lstsq_avail:
-            x, residuals, _, _ = torch.linalg.lstsq(a, b, rcond=None, driver="gelsd")
-            return x, residuals
-        else:
-            n = a.shape[1]
-            sol = torch.lstsq(b, a)[0]
-            x = sol[:n]
-            residuals = torch.norm(sol[n:], dim=0) ** 2
-            return x, residuals if torch.matrix_rank(a) == n else torch.tensor(
-                [], device=x.device
-            )
+    def lstsq(a, b, rcond=None, driver="gelsd"):
+        return torch.linalg.lstsq(a, b, rcond=rcond, driver=driver)
 
     @staticmethod
     def eigh(tensor):
@@ -234,10 +227,8 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.sgn(tensor)
 
     @staticmethod
-    def svd(matrix, full_matrices=True):
-        some = not full_matrices
-        u, s, v = torch.svd(matrix, some=some, compute_uv=True)
-        return u, s, v.transpose(-2, -1).conj()
+    def logsumexp(tensor, axis=0):
+        return torch.logsumexp(tensor, dim=axis)
 
 
 # Register the other functions
@@ -258,20 +249,8 @@ for name in (
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 
-# PyTorch 1.8.0 has a much better NumPy interface but somoe haven't updated yet
-if Version(torch.__version__) < Version("1.8.0"):
-    # Old version, will be removed in the future
-    warnings.warn(
-        f"You are using an old version of PyTorch ({torch.__version__}). "
-        "We recommend upgrading to a newest one, e.g. >1.8.0."
-    )
-    PyTorchBackend.register_method("moveaxis", getattr(torch, "movedim"))
-    PyTorchBackend.register_method("qr", getattr(torch, "qr"))
+for name in ["kron", "moveaxis"]:
+    PyTorchBackend.register_method(name, getattr(torch, name))
 
-else:
-    # New PyTorch NumPy interface
-    for name in ["kron", "moveaxis"]:
-        PyTorchBackend.register_method(name, getattr(torch, name))
-
-    for name in ["solve", "qr", "svd", "eigh"]:
-        PyTorchBackend.register_method(name, getattr(torch.linalg, name))
+for name in ["solve", "qr", "svd", "eigh"]:
+    PyTorchBackend.register_method(name, getattr(torch.linalg, name))
