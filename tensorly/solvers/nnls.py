@@ -12,7 +12,7 @@ def hals_nnls(
     ridge_coefficient=None,
     nonzero_rows=False,
     exact=False,
-    epsilon=0,
+    epsilon=0.0,
     callback=None,
 ):
     """
@@ -243,7 +243,7 @@ def fista(
         lr = 1 / (tl.truncated_svd(UtU)[1][0] + 2 * ridge_coef)
     # Parameters
     momentum_old = 1.0  # tl.tensor(1.0)
-    norm_0 = 0
+    norm_0 = 0.0
     x_update = tl.copy(x)
 
     for iteration in range(n_iter_max):
