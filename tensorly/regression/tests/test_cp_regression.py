@@ -5,7 +5,7 @@ from ...base import tensor_to_vec, partial_tensor_to_vec
 from ...metrics.regression import RMSE
 from ... import backend as T
 from ...random import random_cp
-from ...testing import assert_
+from ...testing import assert_, assert_allclose
 
 
 def test_CPRegressor():
@@ -56,19 +56,32 @@ def test_CPRegressor():
 
 
 def test_multidim_CPRegressor():
-    tol = 0.005
+    tol = 1e-3
     rng = T.check_random_state(1234)
 
-    regression_weights = random_cp(shape=(12, 5, 4, 3, 2), rank=4, full=True, random_state=rng)
+    regression_weights = random_cp(
+        shape=(12, 5, 4, 4, 3), rank=3, full=True, random_state=rng
+    )
     X = T.randn((1200, 12, 5, 4), seed=rng)
-    y = T.reshape(T.dot(partial_tensor_to_vec(X), T.reshape(regression_weights, (-1, 3*2))), (-1, 3, 2))
+    y = T.reshape(
+        T.dot(partial_tensor_to_vec(X), T.reshape(regression_weights, (-1, 4 * 3))),
+        (-1, 4, 3),
+    )
     X_train = X[:1000]
     X_test = X[1000:]
     y_train = y[:1000]
     y_test = y[1000:]
 
-    estimator = CPRegressor(weight_rank=20, tol=1e-8, reg_W=0., n_iter_max=200, verbose=True)
+    estimator = CPRegressor(
+        weight_rank=3, tol=1e-8, reg_W=0.0, n_iter_max=200, verbose=True
+    )
     estimator.fit(X_train, y_train)
     y_pred = estimator.predict(X_test)
     error = RMSE(y_test, y_pred)
-    assert_(error <= tol, msg='CP Regressor : RMSE is too large, {} > {}'.format(error, tol))
+    assert_(error <= tol, msg=f"CP Regressor : RMSE is too large, {error} > {tol}")
+    assert_allclose(
+        estimator.weight_tensor_,
+        regression_weights,
+        atol=tol,
+        err_msg="CPRegressor did not converge to the correct weights",
+    )
