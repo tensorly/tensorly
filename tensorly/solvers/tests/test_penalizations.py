@@ -6,6 +6,13 @@ from tensorly.testing import assert_array_equal
 
 
 def test_process_regularization_weights():
+    """
+    Test of process_regularization_weights.
+    Process_regularization_weights take two lists as inputs and checks that
+        - no mode is unregularized (the constrained decomposition problem would be ill-posed)
+        - turns float inputs into lists
+    This test checks that the output of the method matches a manual processing.
+    """
     # case 1: individual values for l1 l2 regularization parameters
     # nothing particular to process
     sparsity_coeffs = [1, 2, 0, 4]
