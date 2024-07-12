@@ -18,7 +18,8 @@ skip_tensorflow = pytest.mark.skipif(
 
 
 def test_hals_nnls():
-    """Test for hals_nnls operator"""
+    """Test for hals_nnls operator. A linear system is Ax=b with known A, b and ground truth x is solved using HALS NNLS.
+    We test that the estimated x_hals is almost equal to the ground truth x."""
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 1))
     b = tl.dot(a, true_res)
@@ -29,7 +30,8 @@ def test_hals_nnls():
 
 
 def test_fista():
-    """Test for fista operator"""
+    """Test for fista operator. A linear system is Ax=b with known A, b and ground truth x is solved using FISTA.
+    We test that the estimated x_fista is almost equal to the ground truth x."""
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 1))
     b = tl.dot(a, true_res)
@@ -41,7 +43,8 @@ def test_fista():
 
 @skip_tensorflow
 def test_active_set_nnls():
-    """Test for active_set_nnls operator"""
+    """Test for active_set_nnls operator. A linear system is Ax=b with known A, b and ground truth x is solved using Active Set.
+    We test that the estimated x_as is almost equal to the ground truth x"""
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 1))
     b = tl.dot(a, true_res)
