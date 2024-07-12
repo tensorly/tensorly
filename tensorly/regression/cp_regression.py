@@ -88,6 +88,8 @@ class CPRegressor:
         for i in range(
             1, T.ndim(X)
         ):  # The first dimension of X is the number of samples
+            W.append(T.tensor(rng.randn(X.shape[i], self.weight_rank), **T.context(X)))
+        for i in range(1, T.ndim(y)):
             W.append(T.tensor(rng.randn(y.shape[i], self.weight_rank), **T.context(X)))
 
         # Norm of the weight tensor at each iteration
