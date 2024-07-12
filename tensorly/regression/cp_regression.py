@@ -1,4 +1,4 @@
-import numpy as np
+import math
 from ..base import partial_tensor_to_vec, partial_unfold
 from ..tenalg import khatri_rao
 from ..cp_tensor import cp_to_tensor, cp_to_vec
@@ -108,8 +108,8 @@ class CPRegressor:
                     )
                     phi = T.reshape(phi, (-1, X.shape[i + 1] * self.weight_rank))
                     y_reshaped = T.reshape(y, (-1,))
-                    inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(
-                        np.eye(phi.shape[1]), **T.context(X)
+                    inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.eye(
+                        phi.shape[1], **T.context(X)
                     )
                     W[i] = T.reshape(
                         T.solve(inv_term, T.dot(T.transpose(phi), y_reshaped)),
@@ -128,8 +128,8 @@ class CPRegressor:
                         T.moveaxis(y, i - T.ndim(X) + 2, -1),
                         (-1, y.shape[i - T.ndim(X) + 2]),
                     )
-                    inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(
-                        np.eye(phi.shape[1]), **T.context(X)
+                    inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.eye(
+                        phi.shape[1], **T.context(X)
                     )
                     W[i] = T.transpose(
                         T.solve(inv_term, T.dot(T.transpose(phi), y_reshaped))
@@ -168,7 +168,7 @@ class CPRegressor:
         if T.ndim(self.weight_tensor_) > T.ndim(X) - 1:
             weight_shape = (
                 -1,
-                int(np.prod(self.weight_tensor_.shape[T.ndim(X) - 1 :])),
+                int(math.prod(self.weight_tensor_.shape[T.ndim(X) - 1 :])),
             )
         else:
             weight_shape = (-1,)
