@@ -66,33 +66,37 @@ def validate_constraints(
     """
     constraints = [None] * n_const
     parameters = [None] * n_const
-    
-    constraints_list = [ non_negative,
-                         l1_reg,
-                         l2_reg,
-                         l2_square_reg,
-                         unimodality,
-                         normalize,
-                         simplex,
-                         normalized_sparsity,
-                         soft_sparsity,
-                         smoothness,
-                         monotonicity,
-                         hard_sparsity]
-    
-    constraints_names = [ "non_negative",
-                          "l1_reg",
-                          "l2_reg",
-                          "l2_square_reg",
-                          "unimodality",
-                          "normalize",
-                          "simplex",
-                          "normalized_sparsity",
-                          "soft_sparsity",
-                          "smoothness",
-                          "monotonicity",
-                          "hard_sparsity"]
-    
+
+    constraints_list = [
+        non_negative,
+        l1_reg,
+        l2_reg,
+        l2_square_reg,
+        unimodality,
+        normalize,
+        simplex,
+        normalized_sparsity,
+        soft_sparsity,
+        smoothness,
+        monotonicity,
+        hard_sparsity,
+    ]
+
+    constraints_names = [
+        "non_negative",
+        "l1_reg",
+        "l2_reg",
+        "l2_square_reg",
+        "unimodality",
+        "normalize",
+        "simplex",
+        "normalized_sparsity",
+        "soft_sparsity",
+        "smoothness",
+        "monotonicity",
+        "hard_sparsity",
+    ]
+
     # Checking that no mode is constrained twice
     modes_constrained = set()
     for each_constraint in constraints_list:
@@ -119,8 +123,7 @@ def validate_constraints(
                                 "You selected two constraints for the same mode. Consider to check your input"
                             )
                         modes_constrained.add(mode)
-   
-   
+
     def registrer_constraint(list_or_dict_or_float, name_constraint):
         if isinstance(list_or_dict_or_float, dict):
             modes = list(list_or_dict_or_float)
@@ -134,11 +137,11 @@ def validate_constraints(
                     parameters[i] = list_or_dict_or_float[i]
                 else:
                     parameters[i] = list_or_dict_or_float
-    
+
     for each_constraint, each_name in zip(constraints_list, constraints_names):
         if each_constraint:
             registrer_constraint(each_constraint, each_name)
-           
+
     return constraints[order], parameters[order]
 
 
