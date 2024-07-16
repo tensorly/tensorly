@@ -18,8 +18,93 @@ from ..tenalg.svd import svd_interface
 #          Yngve Mardal Moe
 
 
+def _impute_from_mode2slices(tensor_slices, mask):
+    """
+    Fill in missing values with the mean of the mode-2 slices of observed values.
+
+    Parameters
+    ----------
+    tensor_slices : Iterable of ndarray
+    mask : ndarray
+        array of booleans with the same shape as tensor should be 0 where the values are
+        missing and 1 everywhere else.
+
+    Returns
+    -------
+    parafac2_tensor : Parafac2Tensor
+        List of initialized factors of the CP decomposition where element `i`
+        is of shape (tensor.shape[i], rank)
+    indices_missing : list
+        List of indices (tuples) masked as missing by the mask. Used for imputation in the 'parafac2' function.
+    
+    """
+    indices_missing = []
+    for slice_no, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
+        slice_mean = tl.sum(slice * slice_mask) / (
+            tl.prod(slice.shape) - len(tl.where(slice_mask == 0)[0])
+        )
+        for i in range(slice.shape[0]):
+            for j in range(slice.shape[1]):
+                if slice_mask[i, j] == 0:
+                    indices_missing.append((slice_no, i, j))
+                    tl.index_update(slice, tl.index[i, j], slice_mean)
+
+    return indices_missing
+
+def _impute_from_factors(tensor_slices,decomposition,mask,indices_missing=None):
+    """
+    Fill in missing values with the reconstructed entry from the PARAFAC2 decomposition.
+
+    Parameters
+    ----------
+    tensor_slices : Iterable of ndarray
+    mask : ndarray
+        array of booleans with the same shape as tensor should be 0 where the values are
+        missing and 1 everywhere else.
+    indices_missing : list, optional
+        List of indices (tuples) masked as missing by the mask. Used for imputation in the 'parafac2' function.
+
+    Returns
+    -------
+    parafac2_tensor : Parafac2Tensor
+        List of initialized factors of the CP decomposition where element `i`
+        is of shape (tensor.shape[i], rank)
+    indices_missing : list
+        List of indices (tuples) masked as missing by the mask. Used for imputation in the 'parafac2' function.
+    mask : ndarray
+        array of booleans with the same shape as tensor should be 0 where the values are
+        missing and 1 everywhere else.
+    indices_missing : list
+        Computes and returns indices_missing if not given. 
+    """
+
+    if indices_missing is None:
+        indices_missing = []
+        for slice_no, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
+            for i in range(slice.shape[0]):
+                for j in range(slice.shape[1]):
+                    if slice_mask[i, j] == 0:
+                        indices_missing.append((slice_no, i, j))
+
+    reconstructed_tensor = parafac2_to_tensor(decomposition)
+
+    for idx in indices_missing:
+        tl.index_update(
+            tensor_slices,
+            tl.index[idx[0], idx[1], idx[2]],
+            reconstructed_tensor[idx[0], idx[1], idx[2]],
+        )
+
+    return tensor_slices,indices_missing
+
+
 def initialize_decomposition(
-    tensor_slices, rank, init="random", svd="truncated_svd", random_state=None
+    tensor_slices,
+    rank,
+    init="random",
+    svd="truncated_svd",
+    random_state=None,
+    mask=None,
 ):
     r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices.
 
@@ -45,22 +130,38 @@ def initialize_decomposition(
     rank : int
     init : {'random', 'svd', CPTensor, Parafac2Tensor}, optional
     random_state : `np.random.RandomState`
+    mask : ndarray, optional
+        array of booleans with the same shape as tensor should be 0 where the values are
+        missing and 1 everywhere else.
 
     Returns
     -------
     parafac2_tensor : Parafac2Tensor
         List of initialized factors of the CP decomposition where element `i`
         is of shape (tensor.shape[i], rank)
+    indices_missing : list
+        List of indices (tuples) masked as missing by the mask. Used for imputation in the 'parafac2' function.
     """
     context = tl.context(tensor_slices[0])
     shapes = [m.shape for m in tensor_slices]
     concat_shape = sum(shape[0] for shape in shapes)
 
     if init == "random":
-        return random_parafac2(
-            shapes, rank, full=False, random_state=random_state, **context
+        if mask is not None:
+            indices_missing = _impute_from_mode2slices(tensor_slices, mask)
+        else:
+            indices_missing = None
+        return (
+            random_parafac2(
+                shapes, rank, full=False, random_state=random_state, **context
+            ),
+            indices_missing,
         )
     elif init == "svd":
+        if mask is not None:
+            indices_missing = _impute_from_mode2slices(tensor_slices, mask)
+        else:
+            indices_missing = None
         if shapes[0][1] < rank:
             raise ValueError(
                 f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({shapes[0][1]})"
@@ -81,7 +182,7 @@ def initialize_decomposition(
 
         B = tl.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd)
-        return Parafac2Tensor((None, [A, B, C], projections))
+        return Parafac2Tensor((None, [A, B, C], projections)), indices_missing
 
     elif isinstance(init, (tuple, list, Parafac2Tensor, CPTensor)):
         try:
@@ -93,7 +194,13 @@ def initialize_decomposition(
             )
         if decomposition.rank != rank:
             raise ValueError("Cannot init with a decomposition of different rank")
-        return decomposition
+        
+        if mask is not None:
+            decomposition,indices_missing = _impute_from_factors(tensor_slices,decomposition,mask)
+        else:
+            indices_missing = None
+
+        return decomposition,indices_missing
     raise ValueError(f'Initialization method "{init}" not recognized')
 
 
@@ -481,24 +588,9 @@ def parafac2(
     non-negative, then :math:`B` will be non-negative, but not the orthogonal `P_i` matrices.
     Consequently, the `B_i` matrices are unlikely to be non-negative.
     """
-    if mask is not None:
-        # Fill in missing values with the mean of the mode-2 slices of observed
-        indices_missing = []
-        for slice_no, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
-            slice_mean = tl.sum(slice * slice_mask) / (tl.prod(slice.shape) - len(tl.where(slice_mask==0)[0]))
-            for i in range(slice.shape[0]):
-                for j in range(slice.shape[1]):
-                    if slice_mask[i, j] == 0:
-                        indices_missing.append((slice_no, i, j))
-                        tl.index_update(slice, tl.index[i, j], slice_mean)
 
-        if verbose:
-            print(
-                f"Input has {100*len(indices_missing)/tl.prod(tensor_slices.shape):.2f}% missing values."
-            )
-
-    weights, factors, projections = initialize_decomposition(
-        tensor_slices, rank, init=init, svd=svd, random_state=random_state
+    (weights, factors, projections), indices_missing = initialize_decomposition(
+        tensor_slices, rank, init=init, svd=svd, random_state=random_state, mask=mask
     )
     factors = list(factors)
 
@@ -598,14 +690,7 @@ def parafac2(
         # Update imputations
         if mask is not None:
 
-            reconstructed_tensor = parafac2_to_tensor((weights, factors, projections))
-
-            for idx in indices_missing:
-                tl.index_update(
-                    tensor_slices,
-                    tl.index[idx[0], idx[1], idx[2]],
-                    reconstructed_tensor[idx[0], idx[1], idx[2]],
-                )
+            tensor_slices,_ = _impute_from_factors(tensor_slices=tensor_slices, decomposition=(weights, factors, projections), indices_missing=indices_missing, mask=None)
 
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
@@ -820,6 +905,6 @@ class Parafac2(DecompositionMixin):
             return_errors=self.return_errors,
             n_iter_parafac=self.n_iter_parafac,
             linesearch=self.linesearch,
-            mask=self.mask
+            mask=self.mask,
         )
         return self.decomposition_
