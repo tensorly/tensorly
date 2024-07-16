@@ -36,7 +36,7 @@ def _impute_from_mode2slices(tensor_slices, mask):
         is of shape (tensor.shape[i], rank)
     indices_missing : list
         List of indices (tuples) masked as missing by the mask. Used for imputation in the 'parafac2' function.
-    
+
     """
     indices_missing = []
     for slice_no, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
@@ -51,7 +51,8 @@ def _impute_from_mode2slices(tensor_slices, mask):
 
     return indices_missing
 
-def _impute_from_factors(tensor_slices,decomposition,mask,indices_missing=None):
+
+def _impute_from_factors(tensor_slices, decomposition, mask, indices_missing=None):
     """
     Fill in missing values with the reconstructed entry from the PARAFAC2 decomposition.
 
@@ -75,7 +76,7 @@ def _impute_from_factors(tensor_slices,decomposition,mask,indices_missing=None):
         array of booleans with the same shape as tensor should be 0 where the values are
         missing and 1 everywhere else.
     indices_missing : list
-        Computes and returns indices_missing if not given. 
+        Computes and returns indices_missing if not given.
     """
 
     if indices_missing is None:
@@ -95,7 +96,7 @@ def _impute_from_factors(tensor_slices,decomposition,mask,indices_missing=None):
             reconstructed_tensor[idx[0], idx[1], idx[2]],
         )
 
-    return tensor_slices,indices_missing
+    return tensor_slices, indices_missing
 
 
 def initialize_decomposition(
@@ -194,13 +195,15 @@ def initialize_decomposition(
             )
         if decomposition.rank != rank:
             raise ValueError("Cannot init with a decomposition of different rank")
-        
+
         if mask is not None:
-            decomposition,indices_missing = _impute_from_factors(tensor_slices,decomposition,mask)
+            decomposition, indices_missing = _impute_from_factors(
+                tensor_slices, decomposition, mask
+            )
         else:
             indices_missing = None
 
-        return decomposition,indices_missing
+        return decomposition, indices_missing
     raise ValueError(f'Initialization method "{init}" not recognized')
 
 
@@ -690,7 +693,12 @@ def parafac2(
         # Update imputations
         if mask is not None:
 
-            tensor_slices,_ = _impute_from_factors(tensor_slices=tensor_slices, decomposition=(weights, factors, projections), indices_missing=indices_missing, mask=None)
+            tensor_slices, _ = _impute_from_factors(
+                tensor_slices=tensor_slices,
+                decomposition=(weights, factors, projections),
+                indices_missing=indices_missing,
+                mask=None,
+            )
 
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
