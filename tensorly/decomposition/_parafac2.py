@@ -485,14 +485,7 @@ def parafac2(
         # Fill in missing values with the mean of the mode-2 slices of observed
         indices_missing = []
         for slice_no, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
-            slice_mean = tl.mean(
-                [
-                    slice[i, j]
-                    for i in range(slice.shape[0])
-                    for j in range(slice.shape[1])
-                    if slice_mask[i, j] == 1
-                ]
-            )
+            slice_mean = tl.sum(slice * slice_mask) / (tl.prod(slice.shape) - len(tl.where(slice_mask==0)[0]))
             for i in range(slice.shape[0]):
                 for j in range(slice.shape[1]):
                     if slice_mask[i, j] == 0:
