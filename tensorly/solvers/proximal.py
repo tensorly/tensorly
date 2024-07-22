@@ -263,6 +263,10 @@ def proximal_operator(
         return monotonicity_prox(tensor)
     elif constraint == "hard_sparsity":
         return hard_thresholding(tensor, parameter)
+    else:
+        raise RuntimeError(
+            "Invalid constraint name"
+        )
 
 
 def smoothness_prox(tensor, regularizer):
