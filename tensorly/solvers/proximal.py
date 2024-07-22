@@ -282,10 +282,11 @@ def smoothness_prox(tensor, regularizer):
     ndarray
 
     """
-    diag_matrix = (
+    diag_matrix = tl.tensor(
         tl.diag(2 * regularizer * tl.ones(tl.shape(tensor)[0]) + 1)
         + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=-1)
-        + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=1)
+        + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=1),
+        **tl.context(tensor)
     )
     return tl.solve(diag_matrix, tensor)
 
