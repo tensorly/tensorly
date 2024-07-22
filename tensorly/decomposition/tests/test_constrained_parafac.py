@@ -368,7 +368,9 @@ def test_constrained_parafac_smoothness():
     tol_max_abs = 0.5
     rank = 3
     init = "random"
-    weightsinit, facinit = initialize_constrained_parafac(T.zeros([6, 8, 4]), rank, init=init)
+    weightsinit, facinit = initialize_constrained_parafac(
+        T.zeros([6, 8, 4]), rank, init=init
+    )
     tensor = cp_to_tensor((weightsinit, facinit))
     for i in range(len(facinit)):
         facinit[i] += T.tensor(
