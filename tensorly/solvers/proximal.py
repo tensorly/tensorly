@@ -264,9 +264,7 @@ def proximal_operator(
     elif constraint == "hard_sparsity":
         return hard_thresholding(tensor, parameter)
     else:
-        raise RuntimeError(
-            "Invalid constraint name"
-        )
+        raise RuntimeError("Invalid constraint name")
 
 
 def smoothness_prox(tensor, regularizer):
