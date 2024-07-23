@@ -17,6 +17,7 @@ from .._parafac2 import (
     parafac2,
     initialize_decomposition,
     _BroThesisLineSearch,
+    _update_imputed,
 )
 from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
 from ...metrics.factors import congruence_coefficient
@@ -472,3 +473,47 @@ def test_parafac2_to_tensor():
         Bi = T.dot(projections[i], factors[1])
         manual_tensor = T.einsum("r,jr,kr", factors[0][i], Bi, factors[2])
         assert_(tl.max(tl.abs(constructed_tensor[i, :, :] - manual_tensor)) < 1e-6)
+
+
+def test_update_imputed():
+
+    rng = tl.check_random_state(1234)
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(15, 30) for _ in range(25)],
+        rank=3,
+        random_state=rng,
+    )
+
+    # test mode='factors' imputation
+
+    tensor = parafac2_to_tensor(random_parafac2_tensor)
+
+    mask = rng.binomial(1, 0.25, size=tensor.shape)
+
+    imputed_tensor = _update_imputed(
+        tensor_slices=tensor,
+        mask=mask,
+        decomposition=random_parafac2_tensor,
+        method="factors",
+    )
+
+    assert_allclose(imputed_tensor, tensor)
+
+    # test mode='mode-2' imputation
+
+    tensor = np.array(tensor)
+
+    tensor[mask == 0] == np.nan
+
+    for slice in tensor:
+        slice[slice == 0] = np.nanmean(slice)
+
+    imputed_tensor = _update_imputed(
+        tensor_slices=tensor,
+        mask=mask,
+        decomposition=random_parafac2_tensor,
+        method="mode-2",
+    )
+
+    assert_allclose(imputed_tensor, tensor)
