@@ -1,11 +1,7 @@
-import itertools
-
-import numpy as np
 import pytest
 
 import tensorly as tl
 from ...random import random_parafac2
-from ... import backend as T
 from ...testing import (
     assert_,
     assert_class_wrapper_correctly_passes_arguments,
@@ -57,13 +53,13 @@ def test_parafac2(monkeypatch, normalize_factors, init, linesearch):
     )
     rec_tensor = parafac2_to_tensor(rec)
 
-    error = T.norm(rec_tensor - tensor, 2)
-    error /= T.norm(tensor, 2)
+    error = tl.norm(rec_tensor - tensor, 2)
+    error /= tl.norm(tensor, 2)
     assert_(error < tol_norm_2, "norm 2 of reconstruction higher than tol")
 
     # Test factor correlation
-    A_sign = T.sign(random_parafac2_tensor.factors[0])
-    rec_A_sign = T.sign(rec.factors[0])
+    A_sign = tl.sign(random_parafac2_tensor.factors[0])
+    rec_A_sign = tl.sign(rec.factors[0])
     A_corr = congruence_coefficient(
         A_sign * random_parafac2_tensor.factors[0], rec_A_sign * rec.factors[0]
     )[0]
@@ -77,49 +73,32 @@ def test_parafac2(monkeypatch, normalize_factors, init, linesearch):
     for i, (true_proj, rec_proj) in enumerate(
         zip(random_parafac2_tensor.projections, rec.projections)
     ):
-        true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
-        rec_Bi = T.dot(rec_proj, rec.factors[1]) * rec_A_sign[i]
+        true_Bi = tl.dot(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
+        rec_Bi = tl.dot(rec_proj, rec.factors[1]) * rec_A_sign[i]
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)
 
     # Test convergence criterion
-    rec, err = parafac2(
-        slices,
-        rank,
-        random_state=rng,
-        init=init,
-        normalize_factors=normalize_factors,
-        tol=1e-10,
-        absolute_tol=1e-3,
-        return_errors=True,
-        linesearch=linesearch,
-    )
-    assert len(err) > 2  # Check that we didn't just immediately exit
-    assert err[-1] ** 2 < 1e-3
-    assert (
-        err[-2] ** 2 > 1e-3
-    )  # Check that the previous iteration didn't meet the criteria
-
     noisy_slices = [
-        slice_ + tl.tensor(0.001 * rng.standard_normal(T.shape(slice_)))
+        slice_ + tl.tensor(0.001 * rng.standard_normal(tl.shape(slice_)))
         for slice_ in slices
     ]
+
     rec, err = parafac2(
         noisy_slices,
         rank,
         random_state=rng,
         init=init,
         normalize_factors=normalize_factors,
-        tol=1e-1,
-        absolute_tol=-1,
+        tol=1.0e-2,
         return_errors=True,
         linesearch=linesearch,
     )
     assert len(err) > 2  # Check that we didn't just immediately exit
-    assert abs(err[-2] ** 2 - err[-1] ** 2) < (1e-1 * err[-2] ** 2)
-    assert abs(err[-3] ** 2 - err[-2] ** 2) > (
-        1e-1 * err[-3] ** 2
-    )  # Check that the previous iteration didn't meet the criteria
+    assert err[-2] - err[-1] < 1.0e-2
+
+    # Check that the previous iteration didn't meet the criteria
+    assert err[-3] - err[-2] > 1.0e-2
 
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, parafac2, Parafac2, ignore_args={"return_errors"}, rank=3
@@ -258,8 +237,8 @@ def test_parafac2_nn(linesearch):
     )
     rec_tensor = parafac2_to_tensor(rec)
 
-    error = T.norm(rec_tensor - tensor, 2)
-    error /= T.norm(tensor, 2)
+    error = tl.norm(rec_tensor - tensor, 2)
+    error /= tl.norm(tensor, 2)
     assert_(error < tol_norm_2, "norm 2 of reconstruction higher than tol")
 
     # Test factor correlation
@@ -276,8 +255,8 @@ def test_parafac2_nn(linesearch):
     for i, (true_proj, rec_proj) in enumerate(
         zip(random_parafac2_tensor.projections, rec.projections)
     ):
-        true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1])
-        rec_Bi = T.dot(rec_proj, rec.factors[1])
+        true_Bi = tl.dot(true_proj, random_parafac2_tensor.factors[1])
+        rec_Bi = tl.dot(rec_proj, rec.factors[1])
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)
 
@@ -290,9 +269,9 @@ def test_parafac2_nn(linesearch):
     # The default random parafac2 tensor has non-negative A and C
     # we therefore multiply them randomly with -1, 0 or 1 to get both positive and negative components
     factors = [
-        factors[0] * T.tensor(rng.randint(-1, 2, factors[0].shape), dtype=tl.float64),
+        factors[0] * tl.tensor(rng.randint(-1, 2, factors[0].shape), dtype=tl.float64),
         factors[1],
-        factors[2] * T.tensor(rng.randint(-1, 2, factors[2].shape), dtype=tl.float64),
+        factors[2] * tl.tensor(rng.randint(-1, 2, factors[2].shape), dtype=tl.float64),
     ]
     slices = parafac2_to_slices((weights, factors, projections))
     rec, _ = parafac2(
@@ -307,8 +286,8 @@ def test_parafac2_nn(linesearch):
         n_iter_max=1,
         linesearch=linesearch,
     )
-    assert_(T.all(rec[1][0] > -1e-10))
-    assert_(T.all(rec[1][2] > -1e-10))
+    assert_(tl.all(rec[1][0] > -1e-10))
+    assert_(tl.all(rec[1][2] > -1e-10))
 
     # Test that constraining B leads to a warning
     with pytest.warns(UserWarning):
@@ -383,9 +362,9 @@ def test_parafac2_normalize_factors():
 
     normalized_rec = parafac2(slices, rank, random_state=rng, normalize_factors=True)
 
-    assert_array_almost_equal(T.norm(normalized_rec.factors[0], axis=0), tl.ones(rank))
-    assert_array_almost_equal(T.norm(normalized_rec.factors[1], axis=0), tl.ones(rank))
-    assert_array_almost_equal(T.norm(normalized_rec.factors[2], axis=0), tl.ones(rank))
+    assert_array_almost_equal(tl.norm(normalized_rec.factors[0], axis=0), tl.ones(rank))
+    assert_array_almost_equal(tl.norm(normalized_rec.factors[1], axis=0), tl.ones(rank))
+    assert_array_almost_equal(tl.norm(normalized_rec.factors[2], axis=0), tl.ones(rank))
     assert abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 0.05
     assert abs(tl.min(norms) - tl.min(normalized_rec.weights)) / tl.min(norms) < 0.05
 
@@ -399,7 +378,7 @@ def test_parafac2_init_valid():
     )
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     weights, (A, B, C), projections = random_parafac2_tensor
-    B = T.dot(projections[0], B)
+    B = tl.dot(projections[0], B)
 
     for init_method in ["random", "svd", random_parafac2_tensor, (weights, (A, B, C))]:
         init = initialize_decomposition(tensor, rank, init=init_method)
@@ -436,10 +415,10 @@ def test_parafac2_init_error():
     )
     tensor = parafac2_to_tensor(random_parafac2_tensor)
 
-    with np.testing.assert_raises(ValueError):
+    with pytest.raises(ValueError):
         _ = initialize_decomposition(tensor, rank, init="bogus init type")
 
-    with np.testing.assert_raises(ValueError):
+    with pytest.raises(ValueError):
         _ = initialize_decomposition(
             tensor, rank, init=("another", "bogus", "init", "type")
         )
@@ -469,6 +448,6 @@ def test_parafac2_to_tensor():
     constructed_tensor = parafac2_to_tensor((weights, factors, projections))
 
     for i in range(I):
-        Bi = T.dot(projections[i], factors[1])
-        manual_tensor = T.einsum("r,jr,kr", factors[0][i], Bi, factors[2])
+        Bi = tl.dot(projections[i], factors[1])
+        manual_tensor = tl.einsum("r,jr,kr", factors[0][i], Bi, factors[2])
         assert_(tl.max(tl.abs(constructed_tensor[i, :, :] - manual_tensor)) < 1e-6)

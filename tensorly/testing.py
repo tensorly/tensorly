@@ -15,7 +15,13 @@ def assert_array_almost_equal(a, b, *args, **kwargs):
 
 
 def assert_allclose(
-    actual, desired, rtol=1e-07, atol=0, equal_nan=True, err_msg="", verbose=True
+    actual,
+    desired,
+    rtol: float = 1e-07,
+    atol: float = 0.0,
+    equal_nan: bool = True,
+    err_msg="",
+    verbose: bool = True,
 ):
     """Check if two arrays are equal up to a given relevant and absolute tolerance.
 
