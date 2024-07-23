@@ -502,7 +502,7 @@ def test_update_imputed():
 
     # test mode='mode-2' imputation
 
-    tensor = np.array(tensor)
+    tensor = np.asarray(tensor)
 
     tensor[mask == 0] == np.nan
 
