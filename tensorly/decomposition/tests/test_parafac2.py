@@ -401,9 +401,9 @@ def test_parafac2_init_valid():
     weights, (A, B, C), projections = random_parafac2_tensor
     B = T.dot(projections[0], B)
 
-    for init_method in ["random", "svd",random_parafac2_tensor, (weights, (A, B, C))]:
+    for init_method in ["random", "svd", random_parafac2_tensor, (weights, (A, B, C))]:
         init = initialize_decomposition(tensor, rank, init=init_method)
-        assert init.shape == random_parafac2_tensor.shape 
+        assert init.shape == random_parafac2_tensor.shape
 
 
 def test_parafac2_init_cross_product():
