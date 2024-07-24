@@ -34,7 +34,7 @@ To contribute code to the TensorLy code-base, you must ensure compatibility with
 .. important::
 
    We want algorithms to run transparently with all the TensorLy backends 
-   (NumPy, PyTorch, TensorLy, JAX, CuPy) and any other backend added later on!
+   (NumPy, PyTorch, TensorLy, JAX, CuPy, Paddle) and any other backend added later on!
 
    This means you should only use TensorLy functions, never directly a function from the backend
    e.g. use ``tl.mean``, **not** ``numpy.mean`` or ``torch.mean``.

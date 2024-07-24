@@ -6,15 +6,15 @@ TensorLy's backend system
 .. note::
 
    In short, you can write your code using TensorLy and you can transparently combine it and execute with any of the backends. 
-   Currently we support NumPy PyTorch, JAX, TensorFlow and CuPy as backends.
+   Currently we support NumPy PyTorch, JAX, TensorFlow, CuPy and Paddle as backends.
 
 
 Backend?
 --------
-To represent tensors and for numerical computation, TensorLy supports several backends transparently: the ubiquitous NumPy (the default), JAX, and PyTorch.
+To represent tensors and for numerical computation, TensorLy supports several backends transparently: the ubiquitous NumPy (the default), JAX, PyTorch and Paddle.
 For the end user, the interface is exactly the same, but under the hood, a different library is used to represent multi-dimensional arrays and perform computations on these.
 
-In other words, you write your code using TensorLy and can then decide whether the computation is done using NumPy, PyTorch or JAX.
+In other words, you write your code using TensorLy and can then decide whether the computation is done using NumPy, PyTorch, JAX or Paddle.
 
 Why backends?
 -------------
@@ -39,6 +39,7 @@ Alternatively during the execution, assuming you have imported TensorLy as ``imp
    * `JAX <https://jax.readthedocs.io/en/latest/developer.html#building-or-installing-jaxlib>`_ 
    * `CuPy <https://docs.cupy.dev/en/stable/install.html>`_
    * `TensorFlow <https://www.tensorflow.org/install>`_ 
+   * `Paddle` <https://www.paddlepaddle.org.cn/en/install/quick?docurl=/documentation/docs/en/develop/install/pip/linux-pip_en.html>`_ 
 
 
 Once you change the backend, all the computation is done using that backend.
