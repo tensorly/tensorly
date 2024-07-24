@@ -16,6 +16,10 @@ skip_if_backend = pytest.mark.skipif(
     tl.get_backend() in ("tensorflow",),
     reason=f"Operation not supported in {tl.get_backend()}",
 )
+skip_if_paddle = pytest.mark.skipif(
+    tl.get_backend() == "paddle",
+    reason=f"Operation not supported in {tl.get_backend()}",
+)
 
 
 TENSOR_DIMENSIONS = (100, 38, 65)
@@ -64,6 +68,7 @@ def _get_standard_synthetic():
 
 @pytest.mark.parametrize("n_modes", TEST_MODES)
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
+@skip_if_paddle
 def test_transform(n_modes, n_response):
     """Tests transform() returns first X_factor--relationship between first
     tensor mode and components.
@@ -76,6 +81,7 @@ def test_transform(n_modes, n_response):
     assert_allclose(transformed, pls.X_factors[0])
 
 
+@skip_if_paddle
 def test_factor_normality():
     """Tests components have norm of 1 across factors."""
     x, y, _, _ = _get_standard_synthetic()
@@ -89,6 +95,7 @@ def test_factor_normality():
         assert_allclose(tl.norm(y_factor, axis=0), 1, rtol=1e-6)
 
 
+@skip_if_paddle
 def test_factor_orthogonality():
     """Tests that components are orthogonal."""
     x, y, _, _ = _get_standard_synthetic()
@@ -105,6 +112,7 @@ def test_factor_orthogonality():
             assert abs(factor_product) < 1e-8
 
 
+@skip_if_paddle
 def test_consistent_components():
     """Tests that factor dimensions match CP_PLSR's n_components."""
     x, y, _, _ = _get_standard_synthetic()
@@ -123,6 +131,7 @@ def test_consistent_components():
 
 @pytest.mark.parametrize("n_modes", TEST_MODES)
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
+@skip_if_paddle
 def test_dimension_compatibility(n_modes, n_response):
     """Tests CP_PLSR accepts x and y of different ranks and sizes."""
     x, y, _, _ = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
@@ -139,6 +148,7 @@ def test_dimension_compatibility(n_modes, n_response):
 # Decomposition Accuracy Tests
 
 
+@skip_if_paddle
 def test_zero_covariance_x():
     """Tests zero covariance variables are zero in corresponding CP_PLSR
     factor
@@ -155,6 +165,7 @@ def test_zero_covariance_x():
 
 @pytest.mark.parametrize("n_modes", [3, 4, 5])
 @pytest.mark.parametrize("n_response", TEST_RESPONSE)
+@skip_if_paddle
 def test_decomposition_accuracy(n_modes, n_response):
     """Tests CP_PLSR recovers factors in original synthetic data."""
     x, y, x_cp, y_cp = _get_pls_dataset(tuple([10] * n_modes), N_LATENT, n_response)
@@ -169,6 +180,7 @@ def test_decomposition_accuracy(n_modes, n_response):
     assert congruence_coefficient(pls.Y_factors[1], y_cp.factors[1])[0] > 0.85
 
 
+@skip_if_paddle
 def test_reconstruction_x():
     """Tests CP_PLSR factors accurately reconstruct x."""
     x, y, _, _ = _get_standard_synthetic()
@@ -181,6 +193,7 @@ def test_reconstruction_x():
     assert_allclose(reconstructed_x, x, rtol=0, atol=1e-2)
 
 
+@skip_if_paddle
 def test_optimized_rand_covariance():
     """Tests CP_PLSR captures covariance between random, unrelated x and y"""
     x = tl.tensor(np.random.rand(80, 60, 50, 40))
@@ -195,6 +208,7 @@ def test_optimized_rand_covariance():
 
 
 @pytest.mark.parametrize("n_latent", np.arange(1, 5))
+@skip_if_paddle
 def test_optimized_covariance(n_latent):
     """Tests CP_PLSR components capture maximum covariance in synthetic data."""
     x, y, x_cp, _ = _get_pls_dataset(TENSOR_DIMENSIONS, n_latent, 1)
@@ -215,6 +229,7 @@ def test_optimized_covariance(n_latent):
     assert_allclose(max_cov, pls_cov)
 
 
+@skip_if_paddle
 def test_increasing_variance_random():
     """Tests that for random X and Y, the R^2s are increasing"""
     X = tl.tensor(np.random.rand(20, 8, 6, 4))
@@ -229,6 +244,7 @@ def test_increasing_variance_random():
     assert np.all(np.diff(R2s) >= 0.0)
 
 
+@skip_if_paddle
 def test_increasing_variance_synthetic():
     """Tests that for synthetic X and Y, the R^2s are increasing"""
     X, Y, _, _ = _get_pls_dataset((20, 18, 14, 13), 8, 17)
@@ -242,6 +258,7 @@ def test_increasing_variance_synthetic():
     assert np.all(np.diff(R2s) >= 0.0)
 
 
+@skip_if_paddle
 @skip_if_backend
 def test_transform_same_factors():
     """Tests transform the original X and Y will give the first factors"""

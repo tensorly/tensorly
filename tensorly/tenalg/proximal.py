@@ -587,6 +587,12 @@ def unimodality_prox(tensor):
     )
     min_indice = tl.argmin(tl.tensor(difference), axis=0)
 
+    def nueml(shape):
+        n = 1
+        for d in shape:
+            n *= d
+        return n
+
     for i in range(len(min_indice)):
         tensor_unimodal = tl.index_update(
             tensor_unimodal,

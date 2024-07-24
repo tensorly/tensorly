@@ -31,6 +31,11 @@ skip_tensorflow = pytest.mark.skipif(
     reason=f"Indexing with list not supported in TensorFlow",
 )
 
+skip_paddle = pytest.mark.skipif(
+    (T.get_backend() in ("paddle",)),
+    reason=f"Array assignment with boolean mask not supported in Paddle",
+)
+
 
 def test_smoothness():
     """Test for smoothness operator"""
@@ -238,6 +243,7 @@ def test_admm():
 
 
 @skip_tensorflow
+@skip_paddle
 def test_active_set_nnls():
     """Test for active_set_nnls operator"""
     a = T.tensor(np.random.rand(20, 10))

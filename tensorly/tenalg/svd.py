@@ -228,7 +228,7 @@ def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
     """
     n_eigenvecs, min_dim, _ = svd_checks(matrix, n_eigenvecs=n_eigenvecs)
     full_matrices = True if n_eigenvecs > min_dim else False
-
+    # print("matrix", matrix.shape, matrix)
     U, S, V = tl.svd(matrix, full_matrices=full_matrices)
     return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
 

@@ -55,6 +55,7 @@ backend_array = [
     "abs",
     "min",
     "maximum",
+    "minimum",
     "zeros_like",
 ]
 
@@ -246,8 +247,8 @@ class Backend(object):
         >>> tl.context(tensor)
         {'dtype': dtype('float32')}
 
-        Note that, if you were using, say, PyTorch, the context would also
-        include the device (i.e. CPU or GPU) and device ID.
+        Note that, if you were using, say, PyTorch or Paddle, the context would also
+        include the device or place (i.e. CPU or GPU) and device ID.
 
         If you want to create a new tensor in the same context, use this context:
 

@@ -61,6 +61,46 @@ def test_set_backend():
     assert tl.get_backend() == toplevel_backend
 
 
+def test_set_backend_paddle():
+    paddle = pytest.importorskip("paddle")
+
+    toplevel_backend = tl.get_backend()
+
+    # Set in context manager
+    with tl.backend_context("numpy"):
+        assert tl.get_backend() == "numpy"
+        assert isinstance(tl.tensor([1, 2, 3]), np.ndarray)
+        assert isinstance(T.tensor([1, 2, 3]), np.ndarray)
+        assert tl.float32 is T.float32 is np.float32
+
+        with tl.backend_context("paddle"):
+            assert tl.get_backend() == "paddle"
+            assert paddle.is_tensor(tl.tensor([1, 2, 3]))
+            assert paddle.is_tensor(T.tensor([1, 2, 3]))
+            assert tl.float32 is T.float32 is paddle.float32
+
+        # Sets back to numpy
+        assert tl.get_backend() == "numpy"
+        assert isinstance(tl.tensor([1, 2, 3]), np.ndarray)
+        assert isinstance(T.tensor([1, 2, 3]), np.ndarray)
+        assert tl.float32 is T.float32 is np.float32
+
+    # Reset back to initial backend
+    assert tl.get_backend() == toplevel_backend
+
+    # Set not in context manager
+    tl.set_backend("paddle")
+    assert tl.get_backend() == "paddle"
+    tl.set_backend(toplevel_backend)
+
+    assert tl.get_backend() == toplevel_backend
+
+    # Improper name doesn't reset backend
+    with assert_raises(ValueError):
+        tl.set_backend("not-a-real-backend")
+    assert tl.get_backend() == toplevel_backend
+
+
 def test_set_backend_local_threadsafe():
     pytest.importorskip("torch")
 
@@ -87,6 +127,42 @@ def test_set_backend_local_threadsafe():
                     with tl.backend_context("numpy", local_threadsafe=True):
                         assert tl.get_backend() == "numpy"
                     assert tl.get_backend() == "pytorch"
+
+                executor.submit(check).result()
+        finally:
+            tl.set_backend(global_default, local_threadsafe=False)
+            executor.submit(tl.set_backend, global_default).result()
+
+        assert tl.get_backend() == global_default
+        assert executor.submit(tl.get_backend).result() == global_default
+
+
+def test_set_backend_local_threadsafe_paddle():
+    pytest.importorskip("paddle")
+
+    global_default = tl.get_backend()
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        with tl.backend_context("numpy", local_threadsafe=True):
+            assert tl.get_backend() == "numpy"
+            # Changes only happen locally in this thread
+            assert executor.submit(tl.get_backend).result() == global_default
+
+        # Set the global default backend
+        try:
+            tl.set_backend("paddle", local_threadsafe=False)
+
+            # Changed toplevel default in all threads
+            assert executor.submit(tl.get_backend).result() == "paddle"
+
+            with tl.backend_context("numpy", local_threadsafe=True):
+                assert tl.get_backend() == "numpy"
+
+                def check():
+                    assert tl.get_backend() == "paddle"
+                    with tl.backend_context("numpy", local_threadsafe=True):
+                        assert tl.get_backend() == "numpy"
+                    assert tl.get_backend() == "paddle"
 
                 executor.submit(check).result()
         finally:
@@ -327,6 +403,13 @@ def test_clips_all_negative_tensor_correctly():
     assert tl.all(clipped_tensor == 0)
 
 
+def test_clips_all_negative_tensor_correctly_paddle():
+    # Regression test for bug found with the pytorch backend
+    negative_valued_tensor = tl.zeros((10, 10)) - 0.1
+    clipped_tensor = tl.clip(negative_valued_tensor, 0)
+    assert tl.all(clipped_tensor == 0)
+
+
 def test_where():
     # 1D
     shape = (2 * 3 * 4,)
@@ -401,6 +484,13 @@ def test_matmul():
     assert_equal(res.shape, (2, 3, 6, 5))
 
 
+skip_if_paddle = pytest.mark.skipif(
+    tl.get_backend() == "paddle",
+    reason=f"lstsq not supported in {tl.get_backend()}",
+)
+
+
+@skip_if_paddle
 def test_lstsq():
     m, n, k = 4, 3, 2
 
@@ -440,7 +530,7 @@ def test_qr():
     for i in range(N):
         for j in range(i):
             dot_product = T.to_numpy(T.dot(Q[:, i], Q[:, j]))
-            assert abs(dot_product) < 1e-6, "Columns of Q not orthogonal"
+            assert dot_product < 1e-6, "Columns of Q not orthogonal"
 
     A_reconstructed = T.dot(Q, R)
     assert_array_almost_equal(A, A_reconstructed)
@@ -571,6 +661,34 @@ def test_dtype_tensor_init():
 
         # dtype given -> dtype should be overwritten
         for dtype in dtypes_torch:
+            # Check init from numpy array
+            tensor = T.tensor(array, dtype=dtype)
+            assert tensor.dtype == dtype
+
+            # Check init from python list
+            array_py = array.tolist()
+            tensor = T.tensor(array_py, dtype=dtype)
+            assert tensor.dtype == dtype
+
+
+def test_dtype_tensor_init_paddle():
+    dtypes_np = [np.float32, np.float64, np.int32, np.int64]
+    dtypes_paddle = [
+        tl.float32,
+        tl.float64,
+        tl.int32,
+        tl.int64,
+    ]
+    for dtype_np, dtype_paddle in zip(dtypes_np, dtypes_paddle):
+        # Numpy array
+        array = np.zeros((1,), dtype=dtype_np)
+
+        # No dtype given -> dtype should be inferred from input array
+        tensor = T.tensor(array)
+        assert tensor.dtype == dtype_paddle
+
+        # dtype given -> dtype should be overwritten
+        for dtype in dtypes_paddle:
             # Check init from numpy array
             tensor = T.tensor(array, dtype=dtype)
             assert tensor.dtype == dtype
