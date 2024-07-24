@@ -14,9 +14,9 @@ import sys
 def test_shelve():
     """Test if shelve can be caches information
     retrieved after file is deleted"""
-    test_string = 'test information'
+    test_string = "test information"
     tmp_cache = tempfile.mkdtemp()
-    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", delete=False) as f:
         f.write(test_string)
     try:
         # recovers data from temporary file and caches it in the shelve

@@ -18,19 +18,17 @@ _app = None
 
 def _app_get_logger(name):
     class SphinxLoggerAdapter:
-        def _color_to_func(self, kwargs, default=''):
-            return getattr(sphinx.util.console,
-                           kwargs.pop('color', default),
-                           None)
+        def _color_to_func(self, kwargs, default=""):
+            return getattr(sphinx.util.console, kwargs.pop("color", default), None)
 
         def error(self, msg, *args, **kwargs):
             msg = msg % args
-            colorfunc = self._color_to_func(kwargs, default='red')
+            colorfunc = self._color_to_func(kwargs, default="red")
             return _app.warn(colorfunc(msg), **kwargs)
 
         def critical(self, msg, *args, **kwargs):
             msg = msg % args
-            colorfunc = self._color_to_func(kwargs, default='red')
+            colorfunc = self._color_to_func(kwargs, default="red")
             return _app.warn(colorfunc(msg), **kwargs)
 
         def warning(self, msg, *args, **kwargs):
@@ -42,7 +40,7 @@ def _app_get_logger(name):
                 msg = colorfunc(msg)
             return _app.warn(msg, **kwargs)
 
-        def info(self, msg='', *args, **kwargs):
+        def info(self, msg="", *args, **kwargs):
             msg = msg % args
             colorfunc = self._color_to_func(kwargs)
             if colorfunc:
@@ -61,15 +59,15 @@ def _app_get_logger(name):
 def _app_status_iterator(iterable, summary, **kwargs):
     global _app
 
-    color = kwargs.pop('color', None)
+    color = kwargs.pop("color", None)
     if color is not None:
-        kwargs['colorfunc'] = getattr(sphinx.util.console, color)
+        kwargs["colorfunc"] = getattr(sphinx.util.console, color)
 
     for item in _app.status_iterator(iterable, summary, **kwargs):
         yield item
 
 
-if LooseVersion(sphinx.__version__) >= '1.6':
+if LooseVersion(sphinx.__version__) >= "1.6":
     getLogger = sphinx.util.logging.getLogger
     status_iterator = sphinx.util.status_iterator
 else:

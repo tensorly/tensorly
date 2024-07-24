@@ -15,7 +15,7 @@ import sphinx_gallery.gen_rst
 from sphinx_gallery import sphinx_compatibility
 
 
-Params = collections.namedtuple('Params', 'args kwargs')
+Params = collections.namedtuple("Params", "args kwargs")
 
 
 class FakeSphinxApp:
@@ -23,24 +23,24 @@ class FakeSphinxApp:
         self.calls = collections.defaultdict(list)
 
     def status_iterator(self, *args, **kwargs):
-        self.calls['status_iterator'].append(Params(args, kwargs))
+        self.calls["status_iterator"].append(Params(args, kwargs))
         for it in args[0]:
             yield it
 
     def warning(self, *args, **kwargs):
-        self.calls['warning'].append(Params(args, kwargs))
+        self.calls["warning"].append(Params(args, kwargs))
 
     def warn(self, *args, **kwargs):
-        self.calls['warn'].append(Params(args, kwargs))
+        self.calls["warn"].append(Params(args, kwargs))
 
     def info(self, *args, **kwargs):
-        self.calls['info'].append(Params(args, kwargs))
+        self.calls["info"].append(Params(args, kwargs))
 
     def verbose(self, *args, **kwargs):
-        self.calls['verbose'].append(Params(args, kwargs))
+        self.calls["verbose"].append(Params(args, kwargs))
 
     def debug(self, *args, **kwargs):
-        self.calls['debug'].append(Params(args, kwargs))
+        self.calls["debug"].append(Params(args, kwargs))
 
 
 @pytest.fixture

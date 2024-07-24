@@ -12,7 +12,7 @@ import sphinx_gallery.backreferences as sg
 def test_thumbnail_div():
     """Test if the thumbnail div generates the correct string"""
 
-    html_div = sg._thumbnail_div('fake_dir', 'test_file.py', '<"test">')
+    html_div = sg._thumbnail_div("fake_dir", "test_file.py", '<"test">')
 
     reference = r"""
 .. raw:: html
@@ -36,8 +36,9 @@ def test_thumbnail_div():
 def test_backref_thumbnail_div():
     """Test if the thumbnail div generates the correct string"""
 
-    html_div = sg._thumbnail_div('fake_dir', 'test_file.py', 'test formating',
-                                 is_backref=True)
+    html_div = sg._thumbnail_div(
+        "fake_dir", "test_file.py", "test formating", is_backref=True
+    )
 
     reference = """
 .. raw:: html
@@ -77,16 +78,21 @@ identify_names
 """
     res = sg.identify_names(code_str)
     expected = {
-        'os.path.join':
-            {'name': 'join', 'module': 'os.path', 'module_short': 'os.path'},
-        'br.identify_names':
-            {'name': 'identify_names',
-             'module': 'sphinx_gallery.back_references',
-             'module_short': 'sphinx_gallery.back_references'},
-        'identify_names':
-            {'name': 'identify_names',
-             'module': 'sphinx_gallery.back_references',
-             'module_short': 'sphinx_gallery.back_references'}
+        "os.path.join": {
+            "name": "join",
+            "module": "os.path",
+            "module_short": "os.path",
+        },
+        "br.identify_names": {
+            "name": "identify_names",
+            "module": "sphinx_gallery.back_references",
+            "module_short": "sphinx_gallery.back_references",
+        },
+        "identify_names": {
+            "name": "identify_names",
+            "module": "sphinx_gallery.back_references",
+            "module_short": "sphinx_gallery.back_references",
+        },
     }
 
     assert expected == res

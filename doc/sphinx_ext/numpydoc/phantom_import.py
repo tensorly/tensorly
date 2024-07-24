@@ -14,23 +14,27 @@ without needing to rebuild the documented module.
 .. [1] http://code.google.com/p/pydocweb
 
 """
+
 from __future__ import division, absolute_import, print_function
 
 import imp, sys, compiler, types, os, inspect, re
 
+
 def setup(app):
-    app.connect('builder-inited', initialize)
-    app.add_config_value('phantom_import_file', None, True)
+    app.connect("builder-inited", initialize)
+    app.add_config_value("phantom_import_file", None, True)
+
 
 def initialize(app):
     fn = app.config.phantom_import_file
-    if (fn and os.path.isfile(fn)):
+    if fn and os.path.isfile(fn):
         print("[numpydoc] Phantom importing modules from", fn, "...")
         import_phantom_module(fn)
 
-#------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 # Creating 'phantom' modules from an XML description
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 def import_phantom_module(xml_file):
     """
     Insert a fake Python module to sys.modules, based on a XML file.
@@ -48,7 +52,7 @@ def import_phantom_module(xml_file):
     ----------
     xml_file : str
         Name of an XML file to read
-    
+
     """
     import lxml.etree as etree
 
@@ -60,74 +64,81 @@ def import_phantom_module(xml_file):
     # Sort items so that
     # - Base classes come before classes inherited from them
     # - Modules come before their contents
-    all_nodes = dict([(n.attrib['id'], n) for n in root])
-    
+    all_nodes = dict([(n.attrib["id"], n) for n in root])
+
     def _get_bases(node, recurse=False):
-        bases = [x.attrib['ref'] for x in node.findall('base')]
+        bases = [x.attrib["ref"] for x in node.findall("base")]
         if recurse:
             j = 0
             while True:
                 try:
                     b = bases[j]
-                except IndexError: break
+                except IndexError:
+                    break
                 if b in all_nodes:
                     bases.extend(_get_bases(all_nodes[b]))
                 j += 1
         return bases
 
-    type_index = ['module', 'class', 'callable', 'object']
-    
+    type_index = ["module", "class", "callable", "object"]
+
     def base_cmp(a, b):
         x = cmp(type_index.index(a.tag), type_index.index(b.tag))
-        if x != 0: return x
+        if x != 0:
+            return x
 
-        if a.tag == 'class' and b.tag == 'class':
+        if a.tag == "class" and b.tag == "class":
             a_bases = _get_bases(a, recurse=True)
             b_bases = _get_bases(b, recurse=True)
             x = cmp(len(a_bases), len(b_bases))
-            if x != 0: return x
-            if a.attrib['id'] in b_bases: return -1
-            if b.attrib['id'] in a_bases: return 1
-        
-        return cmp(a.attrib['id'].count('.'), b.attrib['id'].count('.'))
+            if x != 0:
+                return x
+            if a.attrib["id"] in b_bases:
+                return -1
+            if b.attrib["id"] in a_bases:
+                return 1
+
+        return cmp(a.attrib["id"].count("."), b.attrib["id"].count("."))
 
     nodes = root.getchildren()
     nodes.sort(base_cmp)
 
     # Create phantom items
     for node in nodes:
-        name = node.attrib['id']
-        doc = (node.text or '').decode('string-escape') + "\n"
-        if doc == "\n": doc = ""
+        name = node.attrib["id"]
+        doc = (node.text or "").decode("string-escape") + "\n"
+        if doc == "\n":
+            doc = ""
 
         # create parent, if missing
         parent = name
         while True:
-            parent = '.'.join(parent.split('.')[:-1])
-            if not parent: break
-            if parent in object_cache: break
+            parent = ".".join(parent.split(".")[:-1])
+            if not parent:
+                break
+            if parent in object_cache:
+                break
             obj = imp.new_module(parent)
             object_cache[parent] = obj
             sys.modules[parent] = obj
 
         # create object
-        if node.tag == 'module':
+        if node.tag == "module":
             obj = imp.new_module(name)
             obj.__doc__ = doc
             sys.modules[name] = obj
-        elif node.tag == 'class':
-            bases = [object_cache[b] for b in _get_bases(node)
-                     if b in object_cache]
+        elif node.tag == "class":
+            bases = [object_cache[b] for b in _get_bases(node) if b in object_cache]
             bases.append(object)
             init = lambda self: None
             init.__doc__ = doc
-            obj = type(name, tuple(bases), {'__doc__': doc, '__init__': init})
-            obj.__name__ = name.split('.')[-1]
-        elif node.tag == 'callable':
-            funcname = node.attrib['id'].split('.')[-1]
-            argspec = node.attrib.get('argspec')
+            obj = type(name, tuple(bases), {"__doc__": doc, "__init__": init})
+            obj.__name__ = name.split(".")[-1]
+        elif node.tag == "callable":
+            funcname = node.attrib["id"].split(".")[-1]
+            argspec = node.attrib.get("argspec")
             if argspec:
-                argspec = re.sub('^[^(]*', '', argspec)
+                argspec = re.sub("^[^(]*", "", argspec)
                 doc = "%s%s\n\n%s" % (funcname, argspec, doc)
             obj = lambda: 0
             obj.__argspec_is_invalid_ = True
@@ -140,7 +151,10 @@ def import_phantom_module(xml_file):
             if inspect.isclass(object_cache[parent]):
                 obj.__objclass__ = object_cache[parent]
         else:
-            class Dummy(object): pass
+
+            class Dummy(object):
+                pass
+
             obj = Dummy()
             obj.__name__ = name
             obj.__doc__ = doc
@@ -151,17 +165,18 @@ def import_phantom_module(xml_file):
         if parent:
             if inspect.ismodule(object_cache[parent]):
                 obj.__module__ = parent
-                setattr(object_cache[parent], name.split('.')[-1], obj)
+                setattr(object_cache[parent], name.split(".")[-1], obj)
 
     # Populate items
     for node in root:
-        obj = object_cache.get(node.attrib['id'])
-        if obj is None: continue
-        for ref in node.findall('ref'):
-            if node.tag == 'class':
-                if ref.attrib['ref'].startswith(node.attrib['id'] + '.'):
-                    setattr(obj, ref.attrib['name'],
-                            object_cache.get(ref.attrib['ref']))
+        obj = object_cache.get(node.attrib["id"])
+        if obj is None:
+            continue
+        for ref in node.findall("ref"):
+            if node.tag == "class":
+                if ref.attrib["ref"].startswith(node.attrib["id"] + "."):
+                    setattr(
+                        obj, ref.attrib["name"], object_cache.get(ref.attrib["ref"])
+                    )
             else:
-                setattr(obj, ref.attrib['name'],
-                        object_cache.get(ref.attrib['ref']))
+                setattr(obj, ref.attrib["name"], object_cache.get(ref.attrib["ref"]))

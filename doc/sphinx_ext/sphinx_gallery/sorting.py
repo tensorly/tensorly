@@ -32,17 +32,20 @@ class ExplicitOrder(object):
 
     def __init__(self, ordered_list):
         if not isinstance(ordered_list, (list, tuple, types.GeneratorType)):
-            raise ValueError("ExplicitOrder sorting key takes a list, "
-                             "tuple or Generator, which hold"
-                             "the paths of each gallery subfolder")
+            raise ValueError(
+                "ExplicitOrder sorting key takes a list, "
+                "tuple or Generator, which hold"
+                "the paths of each gallery subfolder"
+            )
 
-        self.ordered_list = list(os.path.normpath(path)
-                                 for path in ordered_list)
+        self.ordered_list = list(os.path.normpath(path) for path in ordered_list)
 
     def __call__(self, item):
         if item in self.ordered_list:
             return self.ordered_list.index(item)
         else:
-            raise ValueError('If you use an explicit folder ordering, you '
-                             'must specify all folders. Explicit order not '
-                             'found for {}'.format(item))
+            raise ValueError(
+                "If you use an explicit folder ordering, you "
+                "must specify all folders. Explicit order not "
+                "found for {}".format(item)
+            )

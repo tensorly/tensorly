@@ -12,8 +12,13 @@ import os
 import pytest
 
 import sphinx_gallery.gen_rst as sg
-from sphinx_gallery.notebook import (rst2md, jupyter_notebook, save_notebook,
-                                     python_to_jupyter_cli)
+from sphinx_gallery.notebook import (
+    rst2md,
+    jupyter_notebook,
+    save_notebook,
+    python_to_jupyter_cli,
+)
+
 try:
     FileNotFoundError
 except NameError:
@@ -80,10 +85,10 @@ For more details on interpolation see the page `channel_interpolation`.
 
 def test_jupyter_notebook():
     """Test that written ipython notebook file corresponds to python object"""
-    file_conf, blocks = sg.split_code_and_text_blocks('tutorials/plot_parse.py')
+    file_conf, blocks = sg.split_code_and_text_blocks("tutorials/plot_parse.py")
     example_nb = jupyter_notebook(blocks)
 
-    with tempfile.NamedTemporaryFile('w', delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", delete=False) as f:
         save_notebook(example_nb, f.name)
     try:
         with open(f.name, "r") as fname:
@@ -91,26 +96,27 @@ def test_jupyter_notebook():
     finally:
         os.remove(f.name)
 
+
 ###############################################################################
 # Notebook shell utility
 
 
 def test_with_empty_args():
-    """ User passes no args, should fail with SystemExit """
+    """User passes no args, should fail with SystemExit"""
     with pytest.raises(SystemExit):
         python_to_jupyter_cli([])
 
 
 def test_missing_file():
-    """ User passes non existing file, should fail with FileNotFoundError """
+    """User passes non existing file, should fail with FileNotFoundError"""
     with pytest.raises(FileNotFoundError) as excinfo:
-        python_to_jupyter_cli(['nofile.py'])
-    excinfo.match(r'No such file or directory.+nofile\.py')
+        python_to_jupyter_cli(["nofile.py"])
+    excinfo.match(r"No such file or directory.+nofile\.py")
 
 
 def test_file_is_generated():
     """User passes good python file. Check notebook file is created"""
 
-    python_to_jupyter_cli(['examples/plot_quantum.py'])
-    assert os.path.isfile('examples/plot_quantum.ipynb')
-    os.remove('examples/plot_quantum.ipynb')
+    python_to_jupyter_cli(["examples/plot_quantum.py"])
+    assert os.path.isfile("examples/plot_quantum.ipynb")
+    os.remove("examples/plot_quantum.ipynb")

@@ -34,34 +34,42 @@ def get_docstring_and_rest(filename):
     # can't use codecs.open(filename, 'r', 'utf-8') here b/c ast doesn't
     # seem to work with unicode strings in Python2.7
     # "SyntaxError: encoding declaration in Unicode string"
-    with open(filename, 'rb') as fid:
+    with open(filename, "rb") as fid:
         content = fid.read()
     # change from Windows format to UNIX for uniformity
-    content = content.replace(b'\r\n', b'\n')
+    content = content.replace(b"\r\n", b"\n")
 
     try:
         node = ast.parse(content)
     except SyntaxError:
-        return SYNTAX_ERROR_DOCSTRING, content.decode('utf-8'), 1
+        return SYNTAX_ERROR_DOCSTRING, content.decode("utf-8"), 1
 
     if not isinstance(node, ast.Module):
-        raise TypeError("This function only supports modules. "
-                        "You provided {0}".format(node.__class__.__name__))
-    if node.body and isinstance(node.body[0], ast.Expr) and \
-       isinstance(node.body[0].value, ast.Str):
+        raise TypeError(
+            "This function only supports modules. "
+            "You provided {0}".format(node.__class__.__name__)
+        )
+    if (
+        node.body
+        and isinstance(node.body[0], ast.Expr)
+        and isinstance(node.body[0].value, ast.Str)
+    ):
         docstring_node = node.body[0]
         docstring = docstring_node.value.s
-        if hasattr(docstring, 'decode'):  # python2.7
-            docstring = docstring.decode('utf-8')
+        if hasattr(docstring, "decode"):  # python2.7
+            docstring = docstring.decode("utf-8")
         lineno = docstring_node.lineno  # The last line of the string.
         # This get the content of the file after the docstring last line
         # Note: 'maxsplit' argument is not a keyword argument in python2
-        rest = content.decode('utf-8').split('\n', lineno)[-1]
+        rest = content.decode("utf-8").split("\n", lineno)[-1]
         return docstring, rest, lineno + 1
     else:
-        raise ValueError(('Could not find docstring in file "{0}". '
-                          'A docstring is required by sphinx-gallery')
-                         .format(filename))
+        raise ValueError(
+            (
+                'Could not find docstring in file "{0}". '
+                "A docstring is required by sphinx-gallery"
+            ).format(filename)
+        )
 
 
 def extract_file_config(content):
@@ -70,8 +78,8 @@ def extract_file_config(content):
     """
 
     prop_pat = re.compile(
-        r"^\s*#\s*sphinx_gallery_([A-Za-z0-9_]+)\s*=\s*(.+)\s*$",
-        re.MULTILINE)
+        r"^\s*#\s*sphinx_gallery_([A-Za-z0-9_]+)\s*=\s*(.+)\s*$", re.MULTILINE
+    )
     file_conf = {}
     for match in re.finditer(prop_pat, content):
         name = match.group(1)
@@ -80,8 +88,8 @@ def extract_file_config(content):
             value = ast.literal_eval(value)
         except (SyntaxError, ValueError):
             logger.warning(
-                'Sphinx-gallery option %s was passed invalid value %s',
-                name, value)
+                "Sphinx-gallery option %s was passed invalid value %s", name, value
+            )
         else:
             file_conf[name] = value
     return file_conf
@@ -100,33 +108,33 @@ def split_code_and_text_blocks(source_file):
         and content string of block.
     """
     docstring, rest_of_content, lineno = get_docstring_and_rest(source_file)
-    blocks = [('text', docstring, 1)]
+    blocks = [("text", docstring, 1)]
 
     file_conf = extract_file_config(rest_of_content)
 
     pattern = re.compile(
-        r'(?P<header_line>^#{20,}.*)\s(?P<text_content>(?:^#.*\s)*)',
-        flags=re.M)
-    sub_pat = re.compile('^#', flags=re.M)
+        r"(?P<header_line>^#{20,}.*)\s(?P<text_content>(?:^#.*\s)*)", flags=re.M
+    )
+    sub_pat = re.compile("^#", flags=re.M)
 
     pos_so_far = 0
     for match in re.finditer(pattern, rest_of_content):
-        code_block_content = rest_of_content[pos_so_far:match.start()]
+        code_block_content = rest_of_content[pos_so_far : match.start()]
         if code_block_content.strip():
-            blocks.append(('code', code_block_content, lineno))
-        lineno += code_block_content.count('\n')
+            blocks.append(("code", code_block_content, lineno))
+        lineno += code_block_content.count("\n")
 
         lineno += 1  # Ignored header line of hashes.
-        text_content = match.group('text_content')
-        text_block_content = dedent(re.sub(sub_pat, '', text_content)).lstrip()
+        text_content = match.group("text_content")
+        text_block_content = dedent(re.sub(sub_pat, "", text_content)).lstrip()
         if text_block_content.strip():
-            blocks.append(('text', text_block_content, lineno))
-        lineno += text_content.count('\n')
+            blocks.append(("text", text_block_content, lineno))
+        lineno += text_content.count("\n")
 
         pos_so_far = match.end()
 
     remaining_content = rest_of_content[pos_so_far:]
     if remaining_content.strip():
-        blocks.append(('code', remaining_content, lineno))
+        blocks.append(("code", remaining_content, lineno))
 
     return file_conf, blocks

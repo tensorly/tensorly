@@ -33,24 +33,24 @@ from io import StringIO
 from . import sphinx_compatibility
 
 
-logger = sphinx_compatibility.getLogger('sphinx-gallery')
+logger = sphinx_compatibility.getLogger("sphinx-gallery")
 
 
 def _get_data(url):
     """Helper function to get data over http(s) or from a local file"""
-    if urllib_parse.urlparse(url).scheme in ('http', 'https'):
+    if urllib_parse.urlparse(url).scheme in ("http", "https"):
         resp = urllib_request.urlopen(url)
-        encoding = resp.headers.get('content-encoding', 'plain')
+        encoding = resp.headers.get("content-encoding", "plain")
         data = resp.read()
-        if encoding == 'plain':
-            data = data.decode('utf-8')
-        elif encoding == 'gzip':
+        if encoding == "plain":
+            data = data.decode("utf-8")
+        elif encoding == "gzip":
             data = StringIO(data)
-            data = gzip.GzipFile(fileobj=data).read().decode('utf-8')
+            data = gzip.GzipFile(fileobj=data).read().decode("utf-8")
         else:
-            raise RuntimeError('unknown encoding')
+            raise RuntimeError("unknown encoding")
     else:
-        with codecs.open(url, mode='r', encoding='utf-8') as fid:
+        with codecs.open(url, mode="r", encoding="utf-8") as fid:
             data = fid.read()
 
     return data
@@ -61,9 +61,9 @@ def get_data(url, gallery_dir):
 
     # shelve keys need to be str in python 2
     if sys.version_info[0] == 2 and isinstance(url, unicode):
-        url = url.encode('utf-8')
+        url = url.encode("utf-8")
 
-    cached_file = os.path.join(gallery_dir, 'searchindex')
+    cached_file = os.path.join(gallery_dir, "searchindex")
     search_index = shelve.open(cached_file)
     if url in search_index:
         data = search_index[url]
@@ -79,7 +79,7 @@ def _select_block(str_in, start_tag, end_tag):
     """Select first block delimited by start_tag and end_tag"""
     start_pos = str_in.find(start_tag)
     if start_pos < 0:
-        raise ValueError('start_tag not found')
+        raise ValueError("start_tag not found")
     depth = 0
     for pos in range(start_pos, len(str_in)):
         if str_in[pos] == start_tag:
@@ -89,7 +89,7 @@ def _select_block(str_in, start_tag, end_tag):
 
         if depth == 0:
             break
-    sel = str_in[start_pos + 1:pos]
+    sel = str_in[start_pos + 1 : pos]
     return sel
 
 
@@ -97,38 +97,38 @@ def _parse_dict_recursive(dict_str):
     """Parse a dictionary from the search index"""
     dict_out = dict()
     pos_last = 0
-    pos = dict_str.find(':')
+    pos = dict_str.find(":")
     while pos >= 0:
         key = dict_str[pos_last:pos]
-        if dict_str[pos + 1] == '[':
+        if dict_str[pos + 1] == "[":
             # value is a list
-            pos_tmp = dict_str.find(']', pos + 1)
+            pos_tmp = dict_str.find("]", pos + 1)
             if pos_tmp < 0:
-                raise RuntimeError('error when parsing dict')
-            value = dict_str[pos + 2: pos_tmp].split(',')
+                raise RuntimeError("error when parsing dict")
+            value = dict_str[pos + 2 : pos_tmp].split(",")
             # try to convert elements to int
             for i in range(len(value)):
                 try:
                     value[i] = int(value[i])
                 except ValueError:
                     pass
-        elif dict_str[pos + 1] == '{':
+        elif dict_str[pos + 1] == "{":
             # value is another dictionary
-            subdict_str = _select_block(dict_str[pos:], '{', '}')
+            subdict_str = _select_block(dict_str[pos:], "{", "}")
             value = _parse_dict_recursive(subdict_str)
             pos_tmp = pos + len(subdict_str)
         else:
-            raise ValueError('error when parsing dict: unknown elem')
+            raise ValueError("error when parsing dict: unknown elem")
 
         key = key.strip('"')
         if len(key) > 0:
             dict_out[key] = value
 
-        pos_last = dict_str.find(',', pos_tmp)
+        pos_last = dict_str.find(",", pos_tmp)
         if pos_last < 0:
             break
         pos_last += 1
-        pos = dict_str.find(':', pos_last)
+        pos = dict_str.find(":", pos_last)
 
     return dict_out
 
@@ -149,32 +149,32 @@ def parse_sphinx_searchindex(searchindex):
         The objects parsed from the search index.
     """
     # Make sure searchindex uses UTF-8 encoding
-    if hasattr(searchindex, 'decode'):
-        searchindex = searchindex.decode('UTF-8')
+    if hasattr(searchindex, "decode"):
+        searchindex = searchindex.decode("UTF-8")
 
     # parse objects
-    query = 'objects:'
+    query = "objects:"
     pos = searchindex.find(query)
     if pos < 0:
         raise ValueError('"objects:" not found in search index')
 
-    sel = _select_block(searchindex[pos:], '{', '}')
+    sel = _select_block(searchindex[pos:], "{", "}")
     objects = _parse_dict_recursive(sel)
 
     # parse filenames
-    query = 'filenames:'
+    query = "filenames:"
     pos = searchindex.find(query)
     if pos < 0:
         raise ValueError('"filenames:" not found in search index')
-    filenames = searchindex[pos + len(query) + 1:]
-    filenames = filenames[:filenames.find(']')]
-    filenames = [f.strip('"') for f in filenames.split(',')]
+    filenames = searchindex[pos + len(query) + 1 :]
+    filenames = filenames[: filenames.find("]")]
+    filenames = [f.strip('"') for f in filenames.split(",")]
 
     return filenames, objects
 
 
 class SphinxDocLinkResolver(object):
-    """ Resolve documentation links using searchindex.js generated by Sphinx
+    """Resolve documentation links using searchindex.js generated by Sphinx
 
     Parameters
     ----------
@@ -189,8 +189,14 @@ class SphinxDocLinkResolver(object):
         package).
     """
 
-    def __init__(self, doc_url, gallery_dir, searchindex='searchindex.js',
-                 extra_modules_test=None, relative=False):
+    def __init__(
+        self,
+        doc_url,
+        gallery_dir,
+        searchindex="searchindex.js",
+        extra_modules_test=None,
+        relative=False,
+    ):
         self.doc_url = doc_url
         self.gallery_dir = gallery_dir
         self.relative = relative
@@ -198,20 +204,23 @@ class SphinxDocLinkResolver(object):
 
         self.extra_modules_test = extra_modules_test
         self._page_cache = {}
-        if doc_url.startswith(('http://', 'https://')):
+        if doc_url.startswith(("http://", "https://")):
             if relative:
-                raise ValueError('Relative links are only supported for local '
-                                 'URLs (doc_url cannot be absolute)')
-            searchindex_url = doc_url + '/' + searchindex
+                raise ValueError(
+                    "Relative links are only supported for local "
+                    "URLs (doc_url cannot be absolute)"
+                )
+            searchindex_url = doc_url + "/" + searchindex
         else:
             searchindex_url = os.path.join(doc_url, searchindex)
 
         # detect if we are using relative links on a Windows system
-        if (os.name.lower() == 'nt' and
-                not doc_url.startswith(('http://', 'https://'))):
+        if os.name.lower() == "nt" and not doc_url.startswith(("http://", "https://")):
             if not relative:
-                raise ValueError('You have to use relative=True for the local'
-                                 ' package on a Windows system.')
+                raise ValueError(
+                    "You have to use relative=True for the local"
+                    " package on a Windows system."
+                )
             self._is_windows = True
         else:
             self._is_windows = False
@@ -226,28 +235,28 @@ class SphinxDocLinkResolver(object):
         """Get a valid link, False if not found"""
 
         fname_idx = None
-        full_name = cobj['module_short'] + '.' + cobj['name']
-        if full_name in self._searchindex['objects']:
-            value = self._searchindex['objects'][full_name]
+        full_name = cobj["module_short"] + "." + cobj["name"]
+        if full_name in self._searchindex["objects"]:
+            value = self._searchindex["objects"][full_name]
             if isinstance(value, dict):
                 value = value[next(iter(value.keys()))]
             fname_idx = value[0]
-        elif cobj['module_short'] in self._searchindex['objects']:
-            value = self._searchindex['objects'][cobj['module_short']]
-            if cobj['name'] in value.keys():
-                fname_idx = value[cobj['name']][0]
+        elif cobj["module_short"] in self._searchindex["objects"]:
+            value = self._searchindex["objects"][cobj["module_short"]]
+            if cobj["name"] in value.keys():
+                fname_idx = value[cobj["name"]][0]
 
         if fname_idx is not None:
-            fname = self._searchindex['filenames'][fname_idx]
+            fname = self._searchindex["filenames"][fname_idx]
             # In 1.5+ Sphinx seems to have changed from .rst.html to only
             # .html extension in converted files. But URLs could be
             # built with < 1.5 or >= 1.5 regardless of what we're currently
             # building with, so let's just check both :(
-            fnames = [fname + '.html', os.path.splitext(fname)[0] + '.html']
+            fnames = [fname + ".html", os.path.splitext(fname)[0] + ".html"]
             for i, fname in enumerate(fnames):
                 try:
                     if self._is_windows:
-                        fname = fname.replace('/', '\\')
+                        fname = fname.replace("/", "\\")
                         link = os.path.join(self.doc_url, fname)
                     else:
                         link = posixpath.join(self.doc_url, fname)
@@ -264,15 +273,15 @@ class SphinxDocLinkResolver(object):
                     break
 
             # test if cobj appears in page
-            comb_names = [cobj['module_short'] + '.' + cobj['name']]
+            comb_names = [cobj["module_short"] + "." + cobj["name"]]
             if self.extra_modules_test is not None:
                 for mod in self.extra_modules_test:
-                    comb_names.append(mod + '.' + cobj['name'])
+                    comb_names.append(mod + "." + cobj["name"])
             url = False
 
             for comb_name in comb_names:
                 if comb_name in html:
-                    url = link + u'#' + comb_name
+                    url = link + "#" + comb_name
             link = url
         else:
             link = False
@@ -299,7 +308,7 @@ class SphinxDocLinkResolver(object):
         link : str | None
             The link (URL) to the documentation.
         """
-        full_name = cobj['module_short'] + '.' + cobj['name']
+        full_name = cobj["module_short"] + "." + cobj["name"]
         link = self._link_cache.get(full_name, None)
         if link is None:
             # we don't have it cached
@@ -315,7 +324,7 @@ class SphinxDocLinkResolver(object):
             link = os.path.relpath(link, start=this_url)
             if self._is_windows:
                 # replace '\' with '/' so it on the web
-                link = link.replace('\\', '/')
+                link = link.replace("\\", "/")
 
             # for some reason, the relative link goes one directory too high up
             link = link[3:]
@@ -328,16 +337,14 @@ def _embed_code_links(app, gallery_conf, gallery_dir):
     doc_resolvers = {}
 
     src_gallery_dir = os.path.join(app.builder.srcdir, gallery_dir)
-    for this_module, url in gallery_conf['reference_url'].items():
+    for this_module, url in gallery_conf["reference_url"].items():
         try:
             if url is None:
                 doc_resolvers[this_module] = SphinxDocLinkResolver(
-                    app.builder.outdir,
-                    src_gallery_dir,
-                    relative=True)
+                    app.builder.outdir, src_gallery_dir, relative=True
+                )
             else:
-                doc_resolvers[this_module] = SphinxDocLinkResolver(url,
-                                                                   src_gallery_dir)
+                doc_resolvers[this_module] = SphinxDocLinkResolver(url, src_gallery_dir)
 
         except HTTPError as e:
             logger.warning("The following HTTP Error has occurred: %d", e.code)
@@ -347,80 +354,92 @@ def _embed_code_links(app, gallery_conf, gallery_dir):
                 "access.\nPlease check your network connection.\nUnable to "
                 "continue embedding `%s` links due to a URL Error:\n%s",
                 this_module,
-                str(e.args))
+                str(e.args),
+            )
 
-    html_gallery_dir = os.path.abspath(os.path.join(app.builder.outdir,
-                                                    gallery_dir))
+    html_gallery_dir = os.path.abspath(os.path.join(app.builder.outdir, gallery_dir))
 
     # patterns for replacement
-    link_pattern = ('<a href="%s" title="View documentation for %s">%s</a>')
+    link_pattern = '<a href="%s" title="View documentation for %s">%s</a>'
     orig_pattern = '<span class="n">%s</span>'
     period = '<span class="o">.</span>'
 
     # This could be turned into a generator if necessary, but should be okay
-    flat = [[dirpath, filename]
-            for dirpath, _, filenames in os.walk(html_gallery_dir)
-            for filename in filenames]
+    flat = [
+        [dirpath, filename]
+        for dirpath, _, filenames in os.walk(html_gallery_dir)
+        for filename in filenames
+    ]
     iterator = sphinx_compatibility.status_iterator(
-        flat, gallery_dir, color='fuchsia',
-        length=len(flat), stringify_func=lambda x: os.path.basename(x[1]))
+        flat,
+        gallery_dir,
+        color="fuchsia",
+        length=len(flat),
+        stringify_func=lambda x: os.path.basename(x[1]),
+    )
     for dirpath, fname in iterator:
         full_fname = os.path.join(html_gallery_dir, dirpath, fname)
-        subpath = dirpath[len(html_gallery_dir) + 1:]
-        pickle_fname = os.path.join(src_gallery_dir, subpath,
-                                    fname[:-5] + '_codeobj.pickle')
+        subpath = dirpath[len(html_gallery_dir) + 1 :]
+        pickle_fname = os.path.join(
+            src_gallery_dir, subpath, fname[:-5] + "_codeobj.pickle"
+        )
 
         if os.path.exists(pickle_fname):
             # we have a pickle file with the objects to embed links for
-            with open(pickle_fname, 'rb') as fid:
+            with open(pickle_fname, "rb") as fid:
                 example_code_obj = pickle.load(fid)
             fid.close()
             str_repl = {}
             # generate replacement strings with the links
             for name, cobj in example_code_obj.items():
-                this_module = cobj['module'].split('.')[0]
+                this_module = cobj["module"].split(".")[0]
 
                 if this_module not in doc_resolvers:
                     continue
 
                 try:
-                    link = doc_resolvers[this_module].resolve(cobj,
-                                                              full_fname)
+                    link = doc_resolvers[this_module].resolve(cobj, full_fname)
                 except (HTTPError, URLError) as e:
                     if isinstance(e, HTTPError):
                         extra = e.code
                     else:
                         extra = e.reason
-                    logger.warning("Error resolving %s.%s: %r (%s)",
-                                   cobj['module'], cobj['name'], e, extra)
+                    logger.warning(
+                        "Error resolving %s.%s: %r (%s)",
+                        cobj["module"],
+                        cobj["name"],
+                        e,
+                        extra,
+                    )
                     continue
 
                 if link is not None:
-                    parts = name.split('.')
-                    name_html = period.join(orig_pattern % part
-                                            for part in parts)
-                    full_function_name = '%s.%s' % (
-                        cobj['module'], cobj['name'])
+                    parts = name.split(".")
+                    name_html = period.join(orig_pattern % part for part in parts)
+                    full_function_name = "%s.%s" % (cobj["module"], cobj["name"])
                     str_repl[name_html] = link_pattern % (
-                        link, full_function_name, name_html)
+                        link,
+                        full_function_name,
+                        name_html,
+                    )
             # do the replacement in the html file
 
             # ensure greediness
             names = sorted(str_repl, key=len, reverse=True)
-            regex_str = '|'.join(re.escape(name) for name in names)
+            regex_str = "|".join(re.escape(name) for name in names)
             regex = re.compile(regex_str)
 
             def substitute_link(match):
                 return str_repl[match.group()]
 
             if len(str_repl) > 0:
-                with open(full_fname, 'rb') as fid:
+                with open(full_fname, "rb") as fid:
                     lines_in = fid.readlines()
-                with open(full_fname, 'wb') as fid:
+                with open(full_fname, "wb") as fid:
                     for line in lines_in:
-                        line = line.decode('utf-8')
+                        line = line.decode("utf-8")
                         line = regex.sub(substitute_link, line)
-                        fid.write(line.encode('utf-8'))
+                        fid.write(line.encode("utf-8"))
 
 
 def embed_code_links(app, exception):
@@ -439,15 +458,14 @@ def embed_code_links(app, exception):
     # require searchindex.js to exist for the links to the local doc
     # and there does not seem to be a good way of knowing which
     # builders creates a searchindex.js.
-    if app.builder.name not in ['html', 'readthedocs']:
+    if app.builder.name not in ["html", "readthedocs"]:
         return
 
-    logger.info('Embedding documentation hyperlinks in examples ...',
-                color='white')
+    logger.info("Embedding documentation hyperlinks in examples ...", color="white")
 
     gallery_conf = app.config.sphinx_gallery_conf
 
-    gallery_dirs = gallery_conf['gallery_dirs']
+    gallery_dirs = gallery_conf["gallery_dirs"]
     if not isinstance(gallery_dirs, list):
         gallery_dirs = [gallery_dirs]
 

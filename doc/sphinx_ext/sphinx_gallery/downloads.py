@@ -35,7 +35,7 @@ CODE_ZIP_DOWNLOAD = """
     :download:`Download all examples in Jupyter notebooks: {2} </{3}>`\n"""
 
 
-def python_zip(file_list, gallery_path, extension='.py'):
+def python_zip(file_list, gallery_path, extension=".py"):
     """Stores all files in file_list into an zip file
 
     Parameters
@@ -56,10 +56,10 @@ def python_zip(file_list, gallery_path, extension='.py'):
         depending on the extension
     """
     zipname = os.path.basename(gallery_path)
-    zipname += '_python' if extension == '.py' else '_jupyter'
-    zipname = os.path.join(gallery_path, zipname + '.zip')
+    zipname += "_python" if extension == ".py" else "_jupyter"
+    zipname = os.path.join(gallery_path, zipname + ".zip")
 
-    zipf = zipfile.ZipFile(zipname, mode='w')
+    zipf = zipfile.ZipFile(zipname, mode="w")
     for fname in file_list:
         file_src = os.path.splitext(fname)[0] + extension
         zipf.write(file_src, os.path.relpath(file_src, gallery_path))
@@ -80,9 +80,11 @@ def list_downloadable_sources(target_dir):
     list
         list of paths to all Python source files in `target_dir`
     """
-    return [os.path.join(target_dir, fname)
-            for fname in os.listdir(target_dir)
-            if fname.endswith('.py')]
+    return [
+        os.path.join(target_dir, fname)
+        for fname in os.listdir(target_dir)
+        if fname.endswith(".py")
+    ]
 
 
 def generate_zipfiles(gallery_dir):
@@ -111,10 +113,12 @@ def generate_zipfiles(gallery_dir):
     jy_zipfile = python_zip(listdir, gallery_dir, ".ipynb")
 
     def rst_path(filepath):
-        return filepath.replace(os.sep, '/')
+        return filepath.replace(os.sep, "/")
 
-    dw_rst = CODE_ZIP_DOWNLOAD.format(os.path.basename(py_zipfile),
-                                      rst_path(py_zipfile),
-                                      os.path.basename(jy_zipfile),
-                                      rst_path(jy_zipfile))
+    dw_rst = CODE_ZIP_DOWNLOAD.format(
+        os.path.basename(py_zipfile),
+        rst_path(py_zipfile),
+        os.path.basename(jy_zipfile),
+        rst_path(jy_zipfile),
+    )
     return dw_rst
