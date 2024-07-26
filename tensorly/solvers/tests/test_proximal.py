@@ -26,7 +26,7 @@ skip_tensorflow = pytest.mark.skipif(
 )
 
 skip_paddle = pytest.mark.skipif(
-    (T.get_backend() in ("paddle",)),
+    (tl.get_backend() == "paddle"),
     reason=f"Array assignment with boolean mask not supported in Paddle",
 )
 
