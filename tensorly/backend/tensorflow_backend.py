@@ -83,7 +83,7 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
     @staticmethod
     def solve(lhs, rhs):
         squeeze = False
-        if tnp.ndim(rhs) == 1:
+        if rhs.ndim == 1:
             squeeze = [-1]
             rhs = tf.reshape(rhs, (-1, 1))
         res = tf.linalg.solve(lhs, rhs)
