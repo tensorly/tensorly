@@ -878,13 +878,11 @@ def hals_nnls(
     UtU,
     V=None,
     n_iter_max=500,
-    tol=1e-8,
+    tol=10e-8,
     sparsity_coefficient=None,
-    ridge_coefficient=None,
+    normalize=False,
     nonzero_rows=False,
     exact=False,
-    epsilon=0.0,
-    callback=None,
 ):
     """
     Non Negative Least Squares (NNLS)
@@ -894,11 +892,15 @@ def hals_nnls(
     M is m by n, U is m by r, V is r by n.
     All matrices are nonnegative componentwise.
 
-    This algorithm is a simplified implementation of the accelerated HALS defined in [1]. It features an early stop stopping criterion. It is simplified to ensure reproducibility and expose a simple API to control the number of inner iterations.
+    This algorithm is defined in [1], as an accelerated version of the HALS algorithm.
+
+    It features two accelerations: an early stop stopping criterion, and a
+    complexity averaging between precomputations and loops, so as to use large
+    precomputations several times.
 
     This function is made for being used repetively inside an
     outer-loop alternating algorithm, for instance for computing nonnegative
-    matrix Factorization or tensor factorization. To use as a stand-alone solver, set the exact flag to True.
+    matrix Factorization or tensor factorization.
 
     Parameters
     ----------
@@ -910,7 +912,7 @@ def hals_nnls(
         Initialized V array
         By default, is initialized with one non-zero entry per column
         corresponding to the closest column of U of the corresponding column of M.
-    n_iter_max: Positive integer
+    n_iter_max: Postivie integer
         Upper bound on the number of iterations
         Default: 500
     tol : float in [0,1]
@@ -922,10 +924,6 @@ def hals_nnls(
         The coefficient controling the sparisty level in the objective function.
         If set to None, the problem is solved unconstrained.
         Default: None
-    ridge_coefficient: float or None
-        The coefficient controling the ridge (l2) penalty in the objective function.
-        If set to None, no ridge penalty is imposed.
-        Default: None
     nonzero_rows: boolean
         True if the lines of the V matrix can't be zero,
         False if they can be zero
@@ -933,59 +931,42 @@ def hals_nnls(
     exact: If it is True, the algorithm gives a results with high precision but it needs high computational cost.
         If it is False, the algorithm gives an approximate solution
         Default: False
-    epsilon: float
-        Small constant such that V>=epsilon instead of V>=0.
-        Required to ensure convergence, avoids division by zero and reset.
-        Default: 0
-    callback: callable, optional
-        A callable called after each iteration. The supported signature is
-
-            callback(V: tensor, error: float)
-
-        where V is the last estimated nonnegative least squares solution, and error is the squared Euclidean norm of the difference between V at the current iteration k, and V at iteration k-1 (therefore error is not the loss function which is costly to compute).
-        Moreover, the algorithm will also terminate if the callback callable returns True.
-        Default: None
 
     Returns
     -------
     V: array
-        a r-by-n nonnegative matrix, see notes.
+        a r-by-n nonnegative matrix \approx argmin_{V >= 0} ||M-UV||_F^2
+    rec_error: float
+        number of loops authorized by the error stop criterion
+    iteration: integer
+        final number of update iteration performed
+    complexity_ratio: float
+        number of loops authorized by the stop criterion
 
     Notes
     -----
-    We solve the following problem
+    We solve the following problem :math:`\\min_{V >= 0} ||M-UV||_F^2`
+
+    The matrix V is updated linewise. The update rule for this resolution is::
 
     .. math::
+        \\begin{equation}
+            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j))/UtU[k,k]
+        \\end{equation}
 
-            \\min_{V >= \epsilon} ||M-UV||_F^2
+    with j the update iteration.
 
-    The matrix V is updated linewise. The update rule for this resolution is
-
-    .. math::
-
-            \\begin{equation}
-                V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)})/UtU[k,k]
-            \\end{equation}
-
-    with j the update iteration index. V is then thresholded to be larger than epsilon.
-
-    This problem can also be defined by adding respectively a sparsity coefficient and a ridge coefficients
-
-    .. math:: \lambda_s, \lambda_r
-
-    enhancing sparsity or smoothness in the solution [2]. In this sparse/ridge version, the update rule becomes
+    This problem can also be defined by adding a sparsity coefficient,
+    enhancing sparsity in the solution [2]. In this sparse version, the update rule becomes::
 
     .. math::
-
-            \\begin{equation}
-                V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)} - \lambda_s)/(UtU[k,k]+2\lambda_r)
-            \\end{equation}
-
-    Note that the data fitting is halved but not the ridge penalization.
+        \\begin{equation}
+            V[k,:]_(j+1) = V[k,:]_(j) + (UtM[k,:] - UtU[k,:]\\times V_(j) - sparsity_coefficient)/UtU[k,k]
+        \\end{equation}
 
     References
     ----------
-    .. [1] N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
+    .. [1]: N. Gillis and F. Glineur, Accelerated Multiplicative Updates and
        Hierarchical ALS Algorithms for Nonnegative Matrix Factorization,
        Neural Computation 24 (4): 1085-1105, 2012.
 
@@ -995,9 +976,10 @@ def hals_nnls(
 
     """
 
-    rank, _ = tl.shape(UtM)
-    if V is None:
+    rank, n_col_M = tl.shape(UtM)
+    if V is None:  # checks if V is empty
         V = tl.solve(UtU, UtM)
+
         V = tl.clip(V, a_min=0, a_max=None)
         # Scaling
         scale = tl.sum(UtM * V) / tl.sum(UtU * tl.dot(V, tl.transpose(V)))
@@ -1005,44 +987,49 @@ def hals_nnls(
 
     if exact:
         n_iter_max = 50000
-        tol = 1e-16
-
+        tol = 10e-16
     for iteration in range(n_iter_max):
         rec_error = 0
         for k in range(rank):
             if UtU[k, k]:
-                num = UtM[k, :] - tl.dot(UtU[k, :], V) + UtU[k, k] * V[k, :]
-                den = UtU[k, k]
+                term = UtM[k, :] - tl.dot(UtU[k, :], V)
 
+                # Modifying the function for sparsification
                 if sparsity_coefficient is not None:
-                    num -= sparsity_coefficient
-                if ridge_coefficient is not None:
-                    den += 2 * ridge_coefficient
+                    term -= sparsity_coefficient
 
-                newV = tl.clip(num / den, a_min=epsilon)
-                rec_error += tl.norm(V - newV) ** 2
-                V = tl.index_update(V, tl.index[k, :], newV)
+                deltaV = tl.maximum(term / UtU[k, k], -V[k, :])
+                V = tl.index_update(V, tl.index[k, :], V[k, :] + deltaV)
+
+                rec_error += tl.dot(deltaV, tl.transpose(deltaV))
 
                 # Safety procedure, if columns aren't allow to be zero
                 if nonzero_rows and tl.all(V[k, :] == 0):
                     V[k, :] = tl.eps(V.dtype) * tl.max(V)
+
             elif nonzero_rows:
-                raise ValueError(
-                    "Column " + str(k) + " of U is zero with nonzero condition"
-                )
+                raise ValueError(f"Column {k} of U is zero with nonzero condition")
 
-        if callback is not None:
-            retVal = callback(V, rec_error)
-            if retVal is True:
-                print("Received True from callback function. Exiting.")
-                break
-
+            if normalize:
+                norm = tl.norm(V[k, :])
+                if norm != 0:
+                    V[k, :] /= norm
+                else:
+                    sqrt_n = 1 / n_col_M ** (1 / 2)
+                    V[k, :] = [sqrt_n for i in range(n_col_M)]
         if iteration == 0:
             rec_error0 = rec_error
-        if rec_error < tol * rec_error0:
-            break
 
-    return V
+        numerator = tl.shape(V)[0] * tl.shape(V)[1] + tl.shape(V)[1] * rank
+        denominator = tl.shape(V)[0] * rank + tl.shape(V)[0]
+        complexity_ratio = 1 + (numerator / denominator)
+        if exact:
+            if rec_error < tol * rec_error0:
+                break
+        else:
+            if rec_error < tol * rec_error0 or iteration > 1 + 0.5 * complexity_ratio:
+                break
+    return V, rec_error, iteration, complexity_ratio
 
 
 def fista(
@@ -1052,13 +1039,11 @@ def fista(
     n_iter_max=100,
     non_negative=True,
     sparsity_coef=0,
-    ridge_coef=0,
     lr=None,
-    tol=1e-8,
-    epsilon=1e-8,
+    tol=10e-8,
 ):
     """
-    Fast Iterative Shrinkage Thresholding Algorithm (FISTA), see [1]_
+    Fast Iterative Shrinkage Thresholding Algorithm (FISTA)
 
     Computes an approximate (nonnegative) solution for Ux=M linear system.
 
@@ -1079,13 +1064,8 @@ def fista(
         learning rate
         Default : None
     sparsity_coef : float or None
-    ridge_coef : float or None
     tol : float
-        stopping criterion for the l1 error decrease relative to the first iteration error
-    epsilon : float
-        Small constant such that the solution is greater than epsilon instead of zero.
-        Required to ensure convergence, avoids division by zero and reset.
-        Default: 1e-8
+        stopping criterion
 
     Returns
     -------
@@ -1093,17 +1073,13 @@ def fista(
 
     Notes
     -----
-    We solve the following problem
+    We solve the following problem :math: `1/2 ||m - Ux ||_2^2 + \\lambda |x|_1`
 
-    .. math::
-
-            \\frac{1}{2} \\|m - Ux \\|_2^2 + \\lambda_1 \\|x\\|_1 + \\lambda_2 \\|x\\|_2^2
-
-    References
+    Reference
     ----------
-    .. [1] Beck, A., & Teboulle, M. (2009). A fast iterative
-       shrinkage-thresholding algorithm for linear inverse problems.
-       SIAM journal on imaging sciences, 2(1), 183-202.
+    [1] : Beck, A., & Teboulle, M. (2009). A fast iterative
+          shrinkage-thresholding algorithm for linear inverse problems.
+          SIAM journal on imaging sciences, 2(1), 183-202.
     """
     if sparsity_coef is None:
         sparsity_coef = 0
@@ -1111,9 +1087,9 @@ def fista(
     if x is None:
         x = tl.zeros(tl.shape(UtM), **tl.context(UtM))
     if lr is None:
-        lr = 1 / (tl.truncated_svd(UtU)[1][0] + 2 * ridge_coef)
+        lr = 1 / (tl.truncated_svd(UtU)[1][0])
     # Parameters
-    momentum_old = 1.0  # tl.tensor(1.0)
+    momentum_old = tl.tensor(1.0)
     norm_0 = 0.0
     x_update = tl.copy(x)
 
@@ -1123,24 +1099,20 @@ def fista(
                 -UtM
                 + tl.tenalg.multi_mode_dot(x_update, UtU, transpose=False)
                 + sparsity_coef
-                + 2 * ridge_coef * x_update
             )
         else:
-            x_gradient = (
-                -UtM + tl.dot(UtU, x_update) + sparsity_coef + 2 * ridge_coef * x_update
-            )
+            x_gradient = -UtM + tl.dot(UtU, x_update) + sparsity_coef
+
+        if non_negative is True:
+            x_gradient = tl.where(lr * x_gradient < x_update, x_gradient, x_update / lr)
 
         x_new = x_update - lr * x_gradient
-        if non_negative:
-            x_new = tl.where(x_new < epsilon, epsilon, x_new)
-        momentum = (1 + sqrt(1 + 4 * momentum_old**2)) / 2
+        momentum = (1 + tl.sqrt(1 + 4 * momentum_old**2)) / 2
         x_update = x_new + ((momentum_old - 1) / momentum) * (x_new - x)
         momentum_old = momentum
-        norm = tl.abs(
-            tl.sum(x - x_new)
-        )  # for tracking loss decrease, l2 has square overflow issues
         x = tl.copy(x_new)
-        if iteration == 0:
+        norm = tl.norm(lr * x_gradient)
+        if iteration == 1:
             norm_0 = norm
         if norm < tol * norm_0:
             break

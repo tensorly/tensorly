@@ -13,7 +13,8 @@
 # serve to show the default.
 
 import sys
-import os
+from datetime import datetime
+import tensorly
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -74,9 +75,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "tensorly"
-from datetime import datetime
-
+project = u'tensorly'
 year = datetime.now().year
 copyright = "2016 - {}, TensorLy Developers".format(year)
 author = "Jean Kossaifi"
@@ -87,9 +86,7 @@ author = "Jean Kossaifi"
 #
 # The short X.Y version.
 # version = '0.1'
-import tensorly
-
-version = ".".join(tensorly.__version__.split(".")[:2])
+version = '.'.join(tensorly.__version__.split('.')[:2])
 # The full version, including alpha/beta/rc tags.
 release = tensorly.__version__
 # release = ''

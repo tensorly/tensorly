@@ -362,15 +362,13 @@ def test_constrained_parafac_hard_sparsity():
 
 
 def test_constrained_parafac_smoothness():
-    """Test for the CANDECOMP-PARAFAC decomposition with smoothness constraint"""
+    """Test for the CANDECOMP-PARAFAC decomposition withsmoothness constraint"""
     rng = T.check_random_state(1234)
     tol_norm = 0.5
     tol_max_abs = 0.5
     rank = 3
-    init = "random"
-    weightsinit, facinit = initialize_constrained_parafac(
-        T.zeros([6, 8, 4]), rank, init=init, smoothness=0.01
-    )
+    init = "svd"
+    weightsinit, facinit = random_cp((6, 8, 4), rank)
     tensor = cp_to_tensor((weightsinit, facinit))
     for i in range(len(facinit)):
         facinit[i] += T.tensor(

@@ -8,10 +8,7 @@ from ..tucker_tensor import (
     validate_tucker_rank,
     tucker_normalize,
 )
-from ..solvers.penalizations import (
-    process_regularization_weights,
-)
-from ..solvers.nnls import hals_nnls, fista
+from ..tenalg.proximal import hals_nnls, active_set_nnls, fista
 from math import sqrt
 import warnings
 from collections.abc import Iterable
@@ -626,7 +623,7 @@ def non_negative_tucker_hals(
             UtM = tl.transpose(MtU)
 
             # Call the hals resolution with nnls, optimizing the current mode
-            nn_factor = hals_nnls(
+            nn_factor, _, _, _ = hals_nnls(
                 UtM,
                 UtU,
                 tl.transpose(nn_factors[mode]),
