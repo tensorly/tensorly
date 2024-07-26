@@ -40,7 +40,7 @@ def validate_tt_matrix_rank(tensorized_shape, rank="same"):
 
     if n_dim * 2 != len(tensorized_shape):
         msg = (
-            f"The order of the give tensorized shape is not a multiple of 2."
+            "The order of the give tensorized shape is not a multiple of 2."
             "However, there should be as many dimensions for the left side (number of rows)"
             " as of the right side (number of columns). "
             " For instance, to convert a matrix of size (8, 9) to the TT-format, "
@@ -75,7 +75,7 @@ def _tt_matrix_n_param(tensorized_shape, rank):
 
     if n_dim * 2 != len(tensorized_shape):
         msg = (
-            f"The order of the give tensorized shape is not a multiple of 2."
+            "The order of the give tensorized shape is not a multiple of 2."
             "However, there should be as many dimensions for the left side (number of rows)"
             " as of the right side (number of columns). "
             " For instance, to convert a matrix of size (8, 9) to the TT-format, "

@@ -1,5 +1,4 @@
 import tensorly as tl
-import numpy as np
 
 # Author: Jean Kossaifi
 #         Jeremy Cohen <jeremy.cohen@irisa.fr>
@@ -1227,7 +1226,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                 )
 
                 # Break if finished updating
-                if tl.all(active_set) != True or tl.min(support_vec[~active_set]) > 0:
+                if (not tl.all(active_set)) or tl.min(support_vec[~active_set]) > 0:
                     break
         # set x to s
         x_vec = tl.clip(support_vec, 0, tl.max(support_vec))
@@ -1235,7 +1234,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
         # gradient update
         x_gradient = Utm - tl.dot(UtU, x_vec)
 
-        if tl.any(active_set) != True or tl.max(x_gradient[active_set]) <= tol:
+        if (not tl.any(active_set)) or tl.max(x_gradient[active_set]) <= tol:
             break
 
     return x_vec

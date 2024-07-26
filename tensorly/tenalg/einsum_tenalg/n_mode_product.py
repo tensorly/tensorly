@@ -1,7 +1,4 @@
 from ... import backend as tl
-from ...base import unfold, fold
-
-from ... import unfold, fold, vec_to_tensor
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 

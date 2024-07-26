@@ -28,7 +28,7 @@ import tensorly as tl
 
 skip_tensorflow = pytest.mark.skipif(
     (T.get_backend() == "tensorflow"),
-    reason=f"Indexing with list not supported in TensorFlow",
+    reason="Indexing with list not supported in TensorFlow",
 )
 
 

@@ -3,7 +3,6 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 from time import time
 import numpy as np
-from scipy.linalg import svd
 from scipy import special
 
 import tensorly as tl
@@ -125,13 +124,13 @@ def test_svd_time():
     t = time()
     _ = tl.truncated_svd(M, 4)
     t = time() - t
-    assert_(t <= 0.1, f"Partial_SVD took too long, maybe full_matrices set wrongly")
+    assert_(t <= 0.1, "Partial_SVD took too long, maybe full_matrices set wrongly")
 
     M = tl.tensor(np.random.random_sample((10000, 4)))
     t = time()
     _ = tl.truncated_svd(M, 4)
     t = time() - t
-    assert_(t <= 0.1, f"Partial_SVD took too long, maybe full_matrices set wrongly")
+    assert_(t <= 0.1, "Partial_SVD took too long, maybe full_matrices set wrongly")
 
 
 def test_svd():

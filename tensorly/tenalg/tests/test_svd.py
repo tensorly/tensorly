@@ -2,7 +2,6 @@ import pytest
 from ...testing import assert_
 from ..svd import svd_interface
 import tensorly as tl
-from ...testing import assert_
 
 
 @pytest.mark.parametrize("shape", [(10, 5), (10, 10), (5, 10)])

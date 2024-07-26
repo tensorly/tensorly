@@ -1,6 +1,3 @@
-import numpy as np
-import pytest
-
 from .. import backend as tl
 from ..base import unfold, tensor_to_vec
 from ..parafac2_tensor import (
@@ -141,7 +138,6 @@ def test_parafac2_to_unfolded():
     -----
     Assumes that parafac2_to_tensor is properly tested
     """
-    rng = tl.check_random_state(12345)
     true_shape = [(4, 5)] * 3
     true_rank = 2
     pf2_tensor = random_parafac2(true_shape, true_rank)
@@ -159,7 +155,6 @@ def test_parafac2_to_vec():
     -----
     Assumes that parafac2_to_tensor works correctly
     """
-    rng = tl.check_random_state(12345)
     true_shape = [(4, 5)] * 3
     true_rank = 2
     pf2_tensor = random_parafac2(true_shape, true_rank)

@@ -1,6 +1,5 @@
 import tensorly as tl
 from tensorly import testing
-from tensorly import random
 from tensorly import tenalg
 
 from .. import outer, batched_outer
