@@ -10,7 +10,7 @@ from .. import backend as T
 
 
 class CPRegressor:
-    """CP tensor regression
+    r"""CP tensor regression
 
         Learns a low rank CP tensor weight
 
