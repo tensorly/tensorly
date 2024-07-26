@@ -39,7 +39,7 @@ def hals_nnls(
         Initialized V array
         By default, is initialized with one non-zero entry per column
         corresponding to the closest column of U of the corresponding column of M.
-    n_iter_max: Postive integer
+    n_iter_max: Positive integer
         Upper bound on the number of iterations
         Default: 500
     tol : float in [0,1]
