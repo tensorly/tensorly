@@ -590,12 +590,12 @@ def unimodality_prox(tensor):
         tensor_unimodal = tl.index_update(
             tensor_unimodal,
             tl.index[: int(min_indice[i]), i],
-            monotone_increasing[: int(min_indice[i]), i].contiguous(),
+            monotone_increasing[: int(min_indice[i]), i],
         )
         tensor_unimodal = tl.index_update(
             tensor_unimodal,
             tl.index[int(min_indice[i] + 1) :, i],
-            monotone_decreasing[int(min_indice[i] + 1) :, i].contiguous(),
+            monotone_decreasing[int(min_indice[i] + 1) :, i],
         )
     return tensor_unimodal
 

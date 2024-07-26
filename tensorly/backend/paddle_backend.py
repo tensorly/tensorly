@@ -28,6 +28,9 @@ if Version(paddle.__version__) < Version("2.6.0"):
 
 
 class PaddleBackend(Backend, backend_name="paddle"):
+    # set default device to cpu
+    place = paddle.device.set_device("cpu")
+
     @staticmethod
     def context(tensor: paddle.Tensor):
         return {
@@ -40,7 +43,7 @@ class PaddleBackend(Backend, backend_name="paddle"):
     def tensor(
         data: paddle.Tensor,
         dtype: paddle.dtype = None,
-        place: str = None,
+        place: str | None = None,
         stop_gradient: bool = None,
     ):
         """
@@ -60,12 +63,19 @@ class PaddleBackend(Backend, backend_name="paddle"):
             data.
 
         """
-        if isinstance(data, paddle.Tensor):
+        if paddle.is_tensor(data):
             # If source is a tensor, use clone-detach as suggested by Paddle
             tensor = data.clone().detach()
         else:
             # Else, use Paddle's tensor constructor
-            tensor = paddle.to_tensor(data)
+            if place is None:
+                # set default device to cpu when place is not specified
+                # and  gpu is avaiable
+                current_device = paddle.device.get_device()
+                if current_device.startswith("gpu"):
+                    place = "cpu"
+
+            tensor = paddle.to_tensor(data, place=place)
 
         # Set dtype/place/stop_gradient if specified
         if dtype is not None:
@@ -120,12 +130,25 @@ class PaddleBackend(Backend, backend_name="paddle"):
         --------
         index
         """
-        # NOTE: Assure source Tensor is contiguous
         if paddle.is_tensor(values):
-            tensor[indices] = (
-                values if values.is_contiguous()
-                else values.contiguous()
-            )
+            if paddle.is_tensor(indices):
+                # indices is bool mask
+                mask_coord = paddle.concat(
+                    paddle.nonzero(indices, as_tuple=True),
+                    axis=1,
+                )
+                t = paddle.scatter_nd_add(
+                    tensor * (~indices).astype(tensor.dtype),
+                    mask_coord,
+                    values,
+                )
+                paddle.assign(t, tensor) # inplace update
+            else:
+                # NOTE: Assure source Tensor is contiguous
+                tensor[indices] = (
+                    values if values.is_contiguous()
+                    else values.contiguous()
+                )
         else:
             tensor[indices] = values
         return tensor
@@ -274,7 +297,7 @@ class PaddleBackend(Backend, backend_name="paddle"):
         tensor.index_put_(index, values)
 
     @staticmethod
-    def lstsq(a: paddle.Tensor, b: paddle.Tensor, rcond=None, driver="gels"):
+    def lstsq(a: paddle.Tensor, b: paddle.Tensor, rcond=None, driver="gelsd"):
         return paddle.linalg.lstsq(a, b, rcond=rcond, driver=driver)
 
     @staticmethod
