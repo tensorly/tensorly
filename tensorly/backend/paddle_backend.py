@@ -77,7 +77,7 @@ class PaddleBackend(Backend, backend_name="paddle"):
         return tensor
 
     @staticmethod
-    def index_update(tensor, indices, values):
+    def index_update(tensor: paddle.Tensor, indices, values):
         """Updates the value of tensors in the specified indices
             Should be used as::
 
@@ -120,10 +120,14 @@ class PaddleBackend(Backend, backend_name="paddle"):
         --------
         index
         """
-        q = tensor[indices]
-        if q.shape == [0] or paddle.is_tensor(values) and values.shape == [0]:
-            return tensor
-        tensor[indices] = values
+        # NOTE: Assure source Tensor is contiguous
+        if paddle.is_tensor(values):
+            tensor[indices] = (
+                values if values.is_contiguous()
+                else values.contiguous()
+            )
+        else:
+            tensor[indices] = values
         return tensor
 
     @staticmethod
