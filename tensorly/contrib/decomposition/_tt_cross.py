@@ -474,8 +474,8 @@ def maxvol(A):
         A_new = A_new[mask, :]
 
         # update the row_idx and rest_of_rows
-        row_idx[i] = rest_of_rows[max_row_idx]
-        rest_of_rows = rest_of_rows[mask]
+        row_idx = tl.index_update(row_idx, i, rest_of_rows[max_row_idx])
+        rest_of_rows = rest_of_rows[tl.tensor(mask, dtype=tl.int64)]
         i = i + 1
 
     row_idx = tl.tensor(row_idx, dtype=tl.int64)
