@@ -142,12 +142,11 @@ class PaddleBackend(Backend, backend_name="paddle"):
                     mask_coord,
                     values,
                 )
-                paddle.assign(t, tensor) # inplace update
+                paddle.assign(t, tensor)  # inplace update
             else:
                 # NOTE: Assure source Tensor is contiguous
                 tensor[indices] = (
-                    values if values.is_contiguous()
-                    else values.contiguous()
+                    values if values.is_contiguous() else values.contiguous()
                 )
         else:
             tensor[indices] = values
@@ -298,7 +297,29 @@ class PaddleBackend(Backend, backend_name="paddle"):
 
     @staticmethod
     def lstsq(a: paddle.Tensor, b: paddle.Tensor, rcond=None, driver="gelsd"):
-        return paddle.linalg.lstsq(a, b, rcond=rcond, driver=driver)
+        # NOTE: Behavior in paddle.linalg.lstsq may be different from numpy.linalg.lstsq
+        # so we add some extra process here to keep the same behavior.
+        vector_case = b.ndim == 1 or b.ndim == a.ndim - 1
+        if vector_case:
+            b = b.unsqueeze(-1)
+
+        m, n = a.shape[-2], a.shape[-1]
+        sol, res, rank, single_value = paddle.linalg.lstsq(
+            a, b, rcond=rcond, driver=driver
+        )
+        if m > n and driver != "gelsy":
+            compute_residuals = True
+            if driver in ["gelss", "gelsd"]:
+                if a.ndim == 2:
+                    compute_residuals = rank.item() == n
+                else:
+                    compute_residuals = all([r.item() == n for r in rank])
+            if not compute_residuals:
+                res = paddle.empty([0], dtype=a.dtype)
+
+        if vector_case:
+            sol = sol.squeeze(-1)
+        return sol, res, rank, single_value
 
     @staticmethod
     def eigh(tensor: paddle.Tensor):

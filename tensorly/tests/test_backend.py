@@ -484,13 +484,6 @@ def test_matmul():
     assert_equal(res.shape, (2, 3, 6, 5))
 
 
-skip_if_paddle = pytest.mark.skipif(
-    tl.get_backend() == "paddle",
-    reason=f"lstsq not supported in {tl.get_backend()}",
-)
-
-
-@skip_if_paddle
 def test_lstsq():
     m, n, k = 4, 3, 2
 
@@ -511,6 +504,7 @@ def test_lstsq():
     a = T.randn((m, n))
     x = T.randn((n,))
     b = T.dot(a, x)
+    print(a.shape, b.shape)
     x_lstsq, *_ = T.lstsq(a, b)
     assert_array_almost_equal(T.dot(a, x_lstsq), b, decimal=5)
 
