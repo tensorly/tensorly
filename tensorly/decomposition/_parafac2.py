@@ -30,8 +30,12 @@ def _update_imputed(tensor_slices, mask, decomposition, method):
         missing values and 1 everywhere else.
     decomposition : Parafac2Tensor, optional
     method : string
-        One of 'mode-2' or 'factors'. 'mode-2' updated imputed values according to mean of each mode-2 slice. If 'factors' is chosen, update imputationa according to reconstruction given from 'decomposition'.
-        'mode-2' is used for initializing missing entries while 'factors' is used for updating imputations during optimization.
+        One of 'mode-2' or 'factors'. 'mode-2' updates imputed values according to 
+        mean of each mode-2 slice. If 'factors' is chosen, set missing entries 
+        according to reconstructed tensor given from 'decomposition'. 
+        'mode-2' is used (by default) for initializing missing entries while 
+        'factors' is used for updating imputations during optimization. If an 
+        initial decomposition is specified, 'factors' is used at initialization.
 
     Returns
     -------
