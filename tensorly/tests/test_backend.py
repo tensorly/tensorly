@@ -504,7 +504,6 @@ def test_lstsq():
     a = T.randn((m, n))
     x = T.randn((n,))
     b = T.dot(a, x)
-    print(a.shape, b.shape)
     x_lstsq, *_ = T.lstsq(a, b)
     assert_array_almost_equal(T.dot(a, x_lstsq), b, decimal=5)
 
