@@ -26,8 +26,8 @@ def _update_imputed(tensor_slices, mask, decomposition=None, method="mode-2"):
     ----------
     tensor_slices : Iterable of ndarray
     mask : ndarray
-        array of booleans with the same shape as tensor should be 0 where the values are
-        missing and 1 everywhere else.
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
     decomposition : Parafac2Tensor, optional
     method : string
         One of 'mode-2' or 'factors'. 'mode-2' updated imputed values according to mean of each mode-2 slice. If 'factors' is chosen, update imputationa according to reconstruction given from 'decomposition'.
@@ -95,8 +95,8 @@ def initialize_decomposition(
     init : {'random', 'svd', CPTensor, Parafac2Tensor}, optional
     random_state : `np.random.RandomState`
     mask : ndarray, optional
-        array of booleans with the same shape as tensor should be 0 where the values are
-        missing and 1 everywhere else.
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
 
     Returns
     -------
@@ -208,8 +208,8 @@ class _BroThesisLineSearch:
         max_fail : int
             The number of line search failures before increasing `acc_pow`.
         mask : ndarray, optional
-            array of booleans with the same shape as tensor should be 0 where the values are
-            missing and 1 everywhere else.
+            An array with the same shape as the tensor. It should be 0 where there are
+            missing values and 1 everywhere else.
 
 
         References
@@ -343,8 +343,8 @@ def _parafac2_reconstruction_error(
         The projections of X into an aligned tensor for CP decomposition. This can be optionally
         provided to avoid recalculating it.
     mask : ndarray, optional
-        array of booleans with the same shape as tensor should be 0 where the values are
-        missing and 1 everywhere else.
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
 
     Returns
     -------
@@ -496,8 +496,8 @@ def parafac2(
         Whether to perform line search as proposed by Bro in his PhD dissertation [2]_
         (similar to the PLSToolbox line search described in [3]_).
     mask : ndarray, optional
-        array of booleans with the same shape as tensor should be 0 where the values are
-        missing and 1 everywhere else.
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
 
     Returns
     -------
@@ -798,8 +798,8 @@ class Parafac2(DecompositionMixin):
     n_iter_parafac : int, optional
         Number of PARAFAC iterations to perform for each PARAFAC2 iteration
     mask : ndarray, optional
-        array of booleans with the same shape as tensor should be 0 where the values are
-        missing and 1 everywhere else.
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
 
     Returns
     -------
