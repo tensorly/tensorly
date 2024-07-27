@@ -485,7 +485,8 @@ def test_update_imputed():
         random_state=rng,
     )
 
-    # test mode='factors' imputation
+    # Check that _update_imputed works correctly when imputing values according to the reconstructed tensor,
+    # i.e. mode='factors'
 
     tensor = parafac2_to_tensor(random_parafac2_tensor)
 
@@ -500,7 +501,7 @@ def test_update_imputed():
 
     assert_allclose(imputed_tensor, tensor)
 
-    # test mode='mode-2' imputation
+    # Check that _update_imputed works correctly when imputing values according to nanmean of mode-2 slices
 
     tensor = np.asarray(tensor)
 
