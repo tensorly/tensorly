@@ -18,7 +18,7 @@ from ..tenalg.svd import svd_interface
 #          Yngve Mardal Moe
 
 
-def _update_imputed(tensor_slices, mask, decomposition=None, method="mode-2"):
+def _update_imputed(tensor_slices, mask, decomposition, method):
     """
     Update missing values of tensor slices according to method.
 
@@ -31,6 +31,7 @@ def _update_imputed(tensor_slices, mask, decomposition=None, method="mode-2"):
     decomposition : Parafac2Tensor, optional
     method : string
         One of 'mode-2' or 'factors'. 'mode-2' updated imputed values according to mean of each mode-2 slice. If 'factors' is chosen, update imputationa according to reconstruction given from 'decomposition'.
+        'mode-2' is used for initializing missing entries while 'factors' is used for updating imputations during optimization.
 
     Returns
     -------
@@ -556,7 +557,10 @@ def parafac2(
         if init == "random" or init == "svd":
 
             tensor_slices = _update_imputed(
-                tensor_slices=tensor_slices, mask=mask, method="mode-2"
+                tensor_slices=tensor_slices,
+                mask=mask,
+                decomposition=None,
+                method="mode-2",
             )
 
         else:  # if factors are provided, we can impute missing values using the decomposition
