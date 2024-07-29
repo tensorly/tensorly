@@ -23,6 +23,7 @@ from tensorly.tenalg.svd import SVD_FUNS, svd_interface
 
 def test_set_backend():
     torch = pytest.importorskip("torch")
+    paddle = pytest.importorskip("paddle")
 
     toplevel_backend = tl.get_backend()
 
@@ -38,40 +39,6 @@ def test_set_backend():
             assert torch.is_tensor(tl.tensor([1, 2, 3]))
             assert torch.is_tensor(T.tensor([1, 2, 3]))
             assert tl.float32 is T.float32 is torch.float32
-
-        # Sets back to numpy
-        assert tl.get_backend() == "numpy"
-        assert isinstance(tl.tensor([1, 2, 3]), np.ndarray)
-        assert isinstance(T.tensor([1, 2, 3]), np.ndarray)
-        assert tl.float32 is T.float32 is np.float32
-
-    # Reset back to initial backend
-    assert tl.get_backend() == toplevel_backend
-
-    # Set not in context manager
-    tl.set_backend("pytorch")
-    assert tl.get_backend() == "pytorch"
-    tl.set_backend(toplevel_backend)
-
-    assert tl.get_backend() == toplevel_backend
-
-    # Improper name doesn't reset backend
-    with assert_raises(ValueError):
-        tl.set_backend("not-a-real-backend")
-    assert tl.get_backend() == toplevel_backend
-
-
-def test_set_backend_paddle():
-    paddle = pytest.importorskip("paddle")
-
-    toplevel_backend = tl.get_backend()
-
-    # Set in context manager
-    with tl.backend_context("numpy"):
-        assert tl.get_backend() == "numpy"
-        assert isinstance(tl.tensor([1, 2, 3]), np.ndarray)
-        assert isinstance(T.tensor([1, 2, 3]), np.ndarray)
-        assert tl.float32 is T.float32 is np.float32
 
         with tl.backend_context("paddle"):
             assert tl.get_backend() == "paddle"
@@ -89,6 +56,12 @@ def test_set_backend_paddle():
     assert tl.get_backend() == toplevel_backend
 
     # Set not in context manager
+    tl.set_backend("pytorch")
+    assert tl.get_backend() == "pytorch"
+    tl.set_backend(toplevel_backend)
+
+    assert tl.get_backend() == toplevel_backend
+
     tl.set_backend("paddle")
     assert tl.get_backend() == "paddle"
     tl.set_backend(toplevel_backend)
@@ -397,13 +370,6 @@ def test_clip():
 
 
 def test_clips_all_negative_tensor_correctly():
-    # Regression test for bug found with the pytorch backend
-    negative_valued_tensor = tl.zeros((10, 10)) - 0.1
-    clipped_tensor = tl.clip(negative_valued_tensor, 0)
-    assert tl.all(clipped_tensor == 0)
-
-
-def test_clips_all_negative_tensor_correctly_paddle():
     # Regression test for bug found with the pytorch backend
     negative_valued_tensor = tl.zeros((10, 10)) - 0.1
     clipped_tensor = tl.clip(negative_valued_tensor, 0)
