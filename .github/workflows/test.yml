@@ -54,7 +54,7 @@ jobs:
           pip install jax jaxlib;
         elif [[ "${{matrix.BACKEND}}" == "paddle" ]]; then
           echo "Installing PaddlePaddle";
-          python -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/;
+          pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/;
         fi
 
     - name: Install package
