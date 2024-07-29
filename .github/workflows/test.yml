@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        BACKEND: ['numpy', 'pytorch']
+        BACKEND: ['numpy', 'pytorch', 'paddle']
         python-version: ['3.12']
         include:
           - BACKEND: 'numpy'
@@ -52,6 +52,9 @@ jobs:
         elif [[ "${{matrix.BACKEND}}" == "jax" ]]; then
           echo "Installing JAX";
           pip install jax jaxlib;
+        elif [[ "${{matrix.BACKEND}}" == "paddle" ]]; then
+          echo "Installing PaddlePaddle";
+          python -m pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/;
         fi
 
     - name: Install package
@@ -61,7 +64,7 @@ jobs:
     - name: Test with backend ${{matrix.BACKEND}} pytest and coverage
       run: |
         TENSORLY_BACKEND=${{matrix.BACKEND}} pytest -vv --cov tensorly --cov-report xml --durations=10 tensorly
-    
+
     - name: Check coverage with CodeCov
       uses: codecov/codecov-action@v3
       with:
