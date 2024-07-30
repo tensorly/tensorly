@@ -380,7 +380,7 @@ def _parafac2_reconstruction_error(
     for i, t_slice in enumerate(tensor_slices):
         B_i = (projections[i] @ B) * A[i]
 
-        if projected_tensor is None:
+        if projected_tensor is None or mask is not None:
             tmp = tl.dot(tl.transpose(B_i), t_slice)
         else:
             tmp = tl.reshape(A[i], (-1, 1)) * tl.transpose(B) @ projected_tensor[i]
