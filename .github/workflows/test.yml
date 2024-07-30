@@ -55,6 +55,7 @@ jobs:
         elif [[ "${{matrix.BACKEND}}" == "paddle" ]]; then
           echo "Installing PaddlePaddle";
           pip install --pre paddlepaddle -i https://www.paddlepaddle.org.cn/packages/nightly/cpu/;
+          pip install 'setuptools>=65.0';
         fi
 
     - name: Install package
