@@ -63,6 +63,7 @@ class BackendManager(types.ModuleType):
         "clip",
         "kr",
         "kron",
+        "diagonal",
         "lstsq",
         "eps",
         "finfo",

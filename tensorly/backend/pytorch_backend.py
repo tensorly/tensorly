@@ -230,6 +230,10 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
     def logsumexp(tensor, axis=0):
         return torch.logsumexp(tensor, dim=axis)
 
+    @staticmethod
+    def diagonal(tensor, offset=0, axis1=0, axis2=1):
+        return torch.diagonal(tensor, offset=offset, dim1=axis1, dim2=axis2)
+
 
 # Register the other functions
 for name in (
