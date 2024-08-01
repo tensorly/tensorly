@@ -92,7 +92,6 @@ from .backend import (
     solve,
     lstsq,
     qr,
-    kr,
     stack,
     maximum,
     eps,

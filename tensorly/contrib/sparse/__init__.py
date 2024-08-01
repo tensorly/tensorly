@@ -32,7 +32,6 @@ from .backend import (
     norm,
     dot,
     kron,
-    kr,
     solve,
     qr,
 )
