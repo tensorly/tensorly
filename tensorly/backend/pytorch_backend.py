@@ -217,11 +217,6 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.linalg.lstsq(a, b, rcond=rcond, driver=driver)
 
     @staticmethod
-    def eigh(tensor):
-        """Legacy only, deprecated from PyTorch 1.8.0"""
-        return torch.symeig(tensor, eigenvectors=True)
-
-    @staticmethod
     def sign(tensor):
         """torch.sign does not support complex numbers."""
         return torch.sgn(tensor)
@@ -229,6 +224,10 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
     @staticmethod
     def logsumexp(tensor, axis=0):
         return torch.logsumexp(tensor, dim=axis)
+
+    @staticmethod
+    def diagonal(tensor, offset=0, axis1=0, axis2=1):
+        return torch.diagonal(tensor, offset=offset, dim1=axis1, dim2=axis2)
 
 
 # Register the other functions
@@ -242,7 +241,6 @@ for name in (
         "trace",
         "conj",
         "finfo",
-        "log2",
         "digamma",
     ]
 ):

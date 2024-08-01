@@ -154,7 +154,6 @@ for name in (
     + backend_basic_math
     + backend_array
     + [
-        "log2",
         "concatenate",
         "flip",
         "dot",
@@ -165,6 +164,7 @@ for name in (
         "stack",
         "copy",
         "max",
+        "diagonal",
         "sign",
         "mean",
         "sum",
