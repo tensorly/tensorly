@@ -1,4 +1,3 @@
-from typing import Any
 from itertools import combinations
 import tensorly as tl
 
@@ -13,7 +12,7 @@ def jointdiag(
     max_iter: int = 50,
     threshold: float = 1e-10,
     verbose: bool = False,
-) -> tuple[Any, Any]:
+):
     """
     Jointly diagonalizes n matrices, organized in tensor of dimension (k,k,n).
     Returns the diagonalized matrices, along with the transformation matrix.
