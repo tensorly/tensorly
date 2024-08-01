@@ -2,6 +2,11 @@ from typing import Any
 from itertools import combinations
 import tensorly as tl
 
+# Authors: Aaron Meyer <a@ameyer.me>
+#          Sebastian Seljak
+
+# License: BSD 3 clause
+
 
 def jointdiag(
     X,
