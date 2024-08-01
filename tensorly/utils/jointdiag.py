@@ -14,6 +14,10 @@ def jointdiag(
     Returns the diagonalized matrices, along with the transformation matrix.
 
     If verbose = True, returns estimate of error in third index.
+
+    T. Fu and X. Gao, “Simultaneous diagonalization with similarity transformation for
+    non-defective matrices”, in Proc. IEEE International Conference on Acoustics, Speech
+    and Signal Processing (ICASSP 2006), vol. IV, pp. 1137-1140, Toulouse, France, May 2006.
     """
 
     X = tl.tensor(X, **tl.context(X))
