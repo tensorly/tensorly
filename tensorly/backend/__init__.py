@@ -1,6 +1,6 @@
 import warnings
 
-from .core import Backend, backend_array
+from .core import Backend, backend_array, backend_types, backend_basic_math
 import importlib
 import os
 import threading
@@ -55,13 +55,9 @@ class BackendManager(types.ModuleType):
         "stack",
         "conj",
         "diag",
-        "log",
-        "log2",
         "dot",
         "tensordot",
-        "exp",
         "clip",
-        "kr",
         "kron",
         "diagonal",
         "lstsq",
@@ -84,41 +80,19 @@ class BackendManager(types.ModuleType):
         "is_tensor",
         "argsort",
         "flip",
-        "sin",
-        "cos",
-        "tan",
         "asin",
         "acos",
         "atan",
-        "arcsin",
-        "arccos",
-        "arctan",
-        "sinh",
-        "cosh",
-        "tanh",
-        "arcsinh",
-        "arccosh",
-        "arctanh",
         "asinh",
         "acosh",
         "atanh",
-        "partial_svd",
         "logsumexp",
-    ] + backend_array
+    ] + backend_array + backend_basic_math
     _attributes = [
-        "int64",
-        "int32",
-        "float64",
-        "float32",
-        "pi",
-        "e",
-        "inf",
         "nan",
-        "complex128",
-        "complex64",
         "index",
         "backend_name",
-    ]
+    ] + backend_types
     available_backend_names = ["numpy", "pytorch", "tensorflow", "cupy", "jax"]
     _default_backend = "numpy"
     _loaded_backends = dict()

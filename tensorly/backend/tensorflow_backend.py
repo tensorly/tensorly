@@ -154,7 +154,6 @@ for name in (
     + backend_basic_math
     + backend_array
     + [
-        "log2",
         "concatenate",
         "flip",
         "dot",

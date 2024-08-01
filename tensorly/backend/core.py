@@ -25,6 +25,7 @@ backend_types = [
 backend_basic_math = [
     "exp",
     "log",
+    "log2",
     "tanh",
     "cosh",
     "sinh",
@@ -1251,19 +1252,49 @@ class Backend(object):
     def atanh(self, x):
         """Return the arctanh of x."""
         return self.arctanh(x)
+    
+    @staticmethod
+    def diagonal(tensor, offset=0, axis1=0, axis2=1):
+        """
+        Return specified diagonals.
 
-    def partial_svd(self, *args, **kwargs):
-        msg = (
-            "partial_svd is no longer used. "
-            "Please use tensorly.tenalg.svd_interface instead, "
-            "it provides a unified interface to all available SVD implementations."
-        )
-        raise NotImplementedError(msg)
+        If `a` is 2-D, returns the diagonal of `a` with the given offset,
+        i.e., the collection of elements of the form ``a[i, i+offset]``.  If
+        `a` has more than two dimensions, then the axes specified by `axis1`
+        and `axis2` are used to determine the 2-D sub-array whose diagonal is
+        returned.  The shape of the resulting array can be determined by
+        removing `axis1` and `axis2` and appending an index to the right equal
+        to the size of the resulting diagonals.
 
-    def kr(self, matrices, weights=None, mask=None):
-        msg = (
-            "kr is no longer used. "
-            "Please use tensorly.tenalg.khatri_rao instead, "
-            "it provides a unified interface to Khatri Rao implementations."
-        )
-        raise NotImplementedError(msg)
+        Parameters
+        ----------
+        a : array_like
+            Array from which the diagonals are taken.
+        offset : int, optional
+            Offset of the diagonal from the main diagonal.  Can be positive or
+            negative.  Defaults to main diagonal (0).
+        axis1 : int, optional
+            Axis to be used as the first axis of the 2-D sub-arrays from which
+            the diagonals should be taken.  Defaults to first axis (0).
+        axis2 : int, optional
+            Axis to be used as the second axis of the 2-D sub-arrays from
+            which the diagonals should be taken. Defaults to second axis (1).
+
+        Returns
+        -------
+        array_of_diagonals : ndarray
+            If `a` is 2-D, then a 1-D array containing the diagonal and of the
+            same type as `a` is returned unless `a` is a `matrix`, in which case
+            a 1-D array rather than a (2-D) `matrix` is returned in order to
+            maintain backward compatibility.
+
+            If ``a.ndim > 2``, then the dimensions specified by `axis1` and `axis2`
+            are removed, and a new axis inserted at the end corresponding to the
+            diagonal.
+
+        Raises
+        ------
+        ValueError
+            If the dimension of `a` is less than 2.
+        """
+        raise NotImplementedError

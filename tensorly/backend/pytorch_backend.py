@@ -246,7 +246,6 @@ for name in (
         "trace",
         "conj",
         "finfo",
-        "log2",
         "digamma",
     ]
 ):
