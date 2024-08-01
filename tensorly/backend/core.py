@@ -1252,7 +1252,7 @@ class Backend(object):
     def atanh(self, x):
         """Return the arctanh of x."""
         return self.arctanh(x)
-    
+
     @staticmethod
     def diagonal(tensor, offset=0, axis1=0, axis2=1):
         """
