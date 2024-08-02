@@ -9,6 +9,7 @@ from . import parafac, non_negative_parafac_hals
 from ..parafac2_tensor import (
     Parafac2Tensor,
     _validate_parafac2_tensor,
+    parafac2_to_tensor,
 )
 from ..cp_tensor import CPTensor, cp_normalize
 from ..tenalg.svd import svd_interface
@@ -17,8 +18,62 @@ from ..tenalg.svd import svd_interface
 #          Yngve Mardal Moe
 
 
+def _update_imputed(tensor_slices, mask, decomposition, method):
+    """
+    Update missing values of tensor slices according to method.
+
+    Parameters
+    ----------
+    tensor_slices : Iterable of ndarray
+    mask : ndarray
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
+    decomposition : Parafac2Tensor, optional
+    method : string
+        One of 'mode-2' or 'factors'. 'mode-2' updates imputed values according to
+        mean of each mode-2 slice. If 'factors' is chosen, set missing entries
+        according to reconstructed tensor given from 'decomposition'.
+        'mode-2' is used (by default) for initializing missing entries while
+        'factors' is used for updating imputations during optimization. If an
+        initial decomposition is specified, 'factors' is used at initialization.
+
+    Returns
+    -------
+    tensor_slices : Iterable of ndarray
+    """
+
+    if method == "mode-2":
+
+        for slice_no, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
+            slice_mean = tl.sum(slice * slice_mask) / (
+                tl.prod(slice.shape) - len(tl.where(slice_mask == 0)[0])
+            )
+            for i in range(slice.shape[0]):
+                for j in range(slice.shape[1]):
+                    if slice_mask[i, j] == 0:
+                        tl.index_update(
+                            tensor_slices, tl.index[slice_no, i, j], slice_mean
+                        )
+
+    else:  # factors
+
+        reconstructed_tensor = parafac2_to_tensor(decomposition)
+
+        tensor_slices = (
+            mask * tensor_slices
+            + (tl.ones(shape=mask.shape) - mask) * reconstructed_tensor
+        )
+
+    return tensor_slices
+
+
 def initialize_decomposition(
-    tensor_slices, rank, init="random", svd="truncated_svd", random_state=None
+    tensor_slices,
+    rank,
+    init="random",
+    svd="truncated_svd",
+    random_state=None,
+    mask=None,
 ):
     r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices.
 
@@ -44,6 +99,9 @@ def initialize_decomposition(
     rank : int
     init : {'random', 'svd', CPTensor, Parafac2Tensor}, optional
     random_state : `np.random.RandomState`
+    mask : ndarray, optional
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
 
     Returns
     -------
@@ -56,10 +114,12 @@ def initialize_decomposition(
     concat_shape = sum(shape[0] for shape in shapes)
 
     if init == "random":
+
         return random_parafac2(
             shapes, rank, full=False, random_state=random_state, **context
         )
     elif init == "svd":
+
         if shapes[0][1] < rank:
             raise ValueError(
                 f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({shapes[0][1]})"
@@ -92,6 +152,7 @@ def initialize_decomposition(
             )
         if decomposition.rank != rank:
             raise ValueError("Cannot init with a decomposition of different rank")
+
         return decomposition
     raise ValueError(f'Initialization method "{init}" not recognized')
 
@@ -130,6 +191,7 @@ class _BroThesisLineSearch:
         nn_modes=None,
         acc_pow: float = 2.0,
         max_fail: int = 4,
+        mask=None,
     ):
         """The line search strategy defined within Rasmus Bro's thesis [1, 2].
 
@@ -150,6 +212,10 @@ class _BroThesisLineSearch:
             Line search steps are defined as `iteration ** (1.0 / acc_pow)`.
         max_fail : int
             The number of line search failures before increasing `acc_pow`.
+        mask : ndarray, optional
+            An array with the same shape as the tensor. It should be 0 where there are
+            missing values and 1 everywhere else.
+
 
         References
         ----------
@@ -166,6 +232,7 @@ class _BroThesisLineSearch:
         self.max_fail = max_fail  # Increase acc_pow with one after max_fail failure
         self.acc_fail = 0  # How many times acceleration have failed
         self.nn_modes = nn_modes
+        self.mask = mask  # mask for missing values
 
     def line_step(
         self,
@@ -223,7 +290,10 @@ class _BroThesisLineSearch:
         projections_ls = _compute_projections(tensor_slices, factors_ls, self.svd)
 
         ls_rec_error = _parafac2_reconstruction_error(
-            tensor_slices, (weights, factors_ls, projections_ls), self.norm_tensor
+            tensor_slices=tensor_slices,
+            decomposition=(weights, factors_ls, projections_ls),
+            norm_matrices=self.norm_tensor,
+            mask=self.mask,
         )
         ls_rec_error /= self.norm_tensor
 
@@ -251,7 +321,7 @@ class _BroThesisLineSearch:
 
 
 def _parafac2_reconstruction_error(
-    tensor_slices, decomposition, norm_matrices=None, projected_tensor=None
+    tensor_slices, decomposition, norm_matrices=None, projected_tensor=None, mask=None
 ):
     """Calculates the reconstruction error of the PARAFAC2 decomposition. This implementation
     uses the inner product with each matrix for efficiency, as this avoids needing to
@@ -277,6 +347,9 @@ def _parafac2_reconstruction_error(
     projected_tensor : ndarray, optional
         The projections of X into an aligned tensor for CP decomposition. This can be optionally
         provided to avoid recalculating it.
+    mask : ndarray, optional
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
 
     Returns
     -------
@@ -286,7 +359,13 @@ def _parafac2_reconstruction_error(
     _validate_parafac2_tensor(decomposition)
 
     if norm_matrices is None:
-        norm_X_sq = sum(tl.norm(t_slice, 2) ** 2 for t_slice in tensor_slices)
+        if mask is not None:
+            norm_X_sq = sum(
+                tl.norm(tensor_slice * slice_mask, 2) ** 2
+                for tensor_slice, slice_mask in zip(tensor_slices, mask)
+            )
+        else:
+            norm_X_sq = sum(tl.norm(t_slice, 2) ** 2 for t_slice in tensor_slices)
     else:
         norm_X_sq = norm_matrices**2
 
@@ -301,7 +380,7 @@ def _parafac2_reconstruction_error(
     for i, t_slice in enumerate(tensor_slices):
         B_i = (projections[i] @ B) * A[i]
 
-        if projected_tensor is None:
+        if projected_tensor is None or mask is not None:
             tmp = tl.dot(tl.transpose(B_i), t_slice)
         else:
             tmp = tl.reshape(A[i], (-1, 1)) * tl.transpose(B) @ projected_tensor[i]
@@ -328,6 +407,7 @@ def parafac2(
     return_errors=False,
     n_iter_parafac=5,
     linesearch=True,
+    mask=None,
 ):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
@@ -420,6 +500,9 @@ def parafac2(
     linesearch : bool, default is False
         Whether to perform line search as proposed by Bro in his PhD dissertation [2]_
         (similar to the PLSToolbox line search described in [3]_).
+    mask : ndarray, optional
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
 
     Returns
     -------
@@ -467,15 +550,48 @@ def parafac2(
             tensor_slices[0].shape[1] == tensor_slices[ii].shape[1]
         ), "All tensor slices must have the same number of columns."
 
-    weights, factors, projections = initialize_decomposition(
-        tensor_slices, rank, init=init, svd=svd, random_state=random_state
+    (weights, factors, projections) = initialize_decomposition(
+        tensor_slices, rank, init=init, svd=svd, random_state=random_state, mask=mask
     )
     factors = list(factors)
 
+    # Initial missing imputation
+    if mask is not None:
+
+        if init == "random" or init == "svd":
+
+            tensor_slices = _update_imputed(
+                tensor_slices=tensor_slices,
+                mask=mask,
+                decomposition=None,
+                method="mode-2",
+            )
+
+        else:  # if factors are provided, we can impute missing values using the decomposition
+
+            tensor_slices = _update_imputed(
+                tensor_slices=tensor_slices,
+                mask=mask,
+                decomposition=(weights, factors, projections),
+                method="factors",
+            )
+
     rec_errors = []
-    norm_tensor = tl.sqrt(
-        sum(tl.norm(tensor_slice, 2) ** 2 for tensor_slice in tensor_slices)
-    )
+
+    if mask is not None:
+
+        norm_tensor = tl.sqrt(
+            sum(
+                tl.norm(tensor_slice * slice_mask, 2) ** 2
+                for tensor_slice, slice_mask in zip(tensor_slices, mask)
+            )
+        )
+
+    else:
+
+        norm_tensor = tl.sqrt(
+            sum(tl.norm(tensor_slice, 2) ** 2 for tensor_slice in tensor_slices)
+        )
 
     if absolute_tol is None:
         absolute_tol = tl.eps(factors[0].dtype) * 1000
@@ -553,6 +669,16 @@ def parafac2(
                 rec_errors[-1],
             )
 
+        # Update imputations
+        if mask is not None:
+
+            tensor_slices = _update_imputed(
+                tensor_slices=tensor_slices,
+                decomposition=(weights, factors, projections),
+                mask=mask,
+                method="factors",
+            )
+
         if normalize_factors:
             weights, factors = cp_normalize((weights, factors))
 
@@ -562,6 +688,7 @@ def parafac2(
                 (weights, factors, projections),
                 norm_tensor,
                 projected_tensor,
+                mask,
             )
             rec_error /= norm_tensor
             rec_errors.append(rec_error)
@@ -678,6 +805,9 @@ class Parafac2(DecompositionMixin):
         Activate return of iteration errors
     n_iter_parafac : int, optional
         Number of PARAFAC iterations to perform for each PARAFAC2 iteration
+    mask : ndarray, optional
+        An array with the same shape as the tensor. It should be 0 where there are
+        missing values and 1 everywhere else.
 
     Returns
     -------
@@ -719,6 +849,7 @@ class Parafac2(DecompositionMixin):
         return_errors=False,
         n_iter_parafac=5,
         linesearch=False,
+        mask=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -733,6 +864,7 @@ class Parafac2(DecompositionMixin):
         self.return_errors = return_errors
         self.n_iter_parafac = n_iter_parafac
         self.linesearch = linesearch
+        self.mask = mask
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -760,5 +892,6 @@ class Parafac2(DecompositionMixin):
             return_errors=self.return_errors,
             n_iter_parafac=self.n_iter_parafac,
             linesearch=self.linesearch,
+            mask=self.mask,
         )
         return self.decomposition_
