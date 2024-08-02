@@ -30,11 +30,11 @@ def _update_imputed(tensor_slices, mask, decomposition, method):
         missing values and 1 everywhere else.
     decomposition : Parafac2Tensor, optional
     method : string
-        One of 'mode-2' or 'factors'. 'mode-2' updates imputed values according to 
-        mean of each mode-2 slice. If 'factors' is chosen, set missing entries 
-        according to reconstructed tensor given from 'decomposition'. 
-        'mode-2' is used (by default) for initializing missing entries while 
-        'factors' is used for updating imputations during optimization. If an 
+        One of 'mode-2' or 'factors'. 'mode-2' updates imputed values according to
+        mean of each mode-2 slice. If 'factors' is chosen, set missing entries
+        according to reconstructed tensor given from 'decomposition'.
+        'mode-2' is used (by default) for initializing missing entries while
+        'factors' is used for updating imputations during optimization. If an
         initial decomposition is specified, 'factors' is used at initialization.
 
     Returns
@@ -290,10 +290,10 @@ class _BroThesisLineSearch:
         projections_ls = _compute_projections(tensor_slices, factors_ls, self.svd)
 
         ls_rec_error = _parafac2_reconstruction_error(
-            tensor_slices = tensor_slices,
-            decomposition = (weights, factors_ls, projections_ls),
-            norm_matrices = self.norm_tensor,
-            mask = self.mask,
+            tensor_slices=tensor_slices,
+            decomposition=(weights, factors_ls, projections_ls),
+            norm_matrices=self.norm_tensor,
+            mask=self.mask,
         )
         ls_rec_error /= self.norm_tensor
 
