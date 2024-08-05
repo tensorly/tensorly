@@ -96,12 +96,12 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
     @staticmethod
     def clip(tensor, a_min=None, a_max=None):
         return tnp.clip(tensor, a_min, a_max)
-    
+
     @staticmethod
-    def qr(tensor, mode='reduced'):
-        if mode == 'reduced':
+    def qr(tensor, mode="reduced"):
+        if mode == "reduced":
             full_matrices = False
-        elif mode == 'complete':
+        elif mode == "complete":
             full_matrices = True
 
         return tf.linalg.qr(tensor, full_matrices=full_matrices)
