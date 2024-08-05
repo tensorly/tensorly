@@ -170,17 +170,6 @@ class PaddleBackend(Backend, backend_name="paddle"):
         return tensor.ndim
 
     @staticmethod
-    def arange(start, stop=None, step=1.0, *args, **kwargs):
-        if stop is None:
-            return paddle.arange(
-                start=0.0, end=float(start), step=float(step), *args, **kwargs
-            )
-        else:
-            return paddle.arange(
-                float(start), float(stop), float(step), *args, **kwargs
-            )
-
-    @staticmethod
     def clip(tensor: paddle.Tensor, a_min=None, a_max=None, inplace=False):
         if inplace:
             paddle.clip_(tensor, a_min, a_max)
@@ -204,18 +193,9 @@ class PaddleBackend(Backend, backend_name="paddle"):
 
     @staticmethod
     def norm(tensor: paddle.Tensor, order=None, axis=None):
-        # paddle does not accept `None` for any keyword arguments. additionally,
-        # paddle doesn't seems to support keyword arguments in the first place
-        kwds = {}
-        if axis is not None:
-            kwds["axis"] = axis
-        if order and order != "inf":
-            kwds["p"] = order
-
-        if order == "inf":
-            res = paddle.max(paddle.abs(tensor), **kwds)
-            return res
-        return paddle.linalg.norm(tensor, **kwds)
+        if isinstance(order, str) and order in ["inf" or "-inf"]:
+            order = float(order)
+        return paddle.linalg.norm(tensor, order, axis)
 
     @staticmethod
     def dot(a: paddle.Tensor, b: paddle.Tensor):
@@ -228,13 +208,6 @@ class PaddleBackend(Backend, backend_name="paddle"):
     @staticmethod
     def tensordot(a: paddle.Tensor, b: paddle.Tensor, axes=2, **kwargs):
         return paddle.tensordot(a, b, axes=axes, **kwargs)
-
-    @staticmethod
-    def mean(tensor: paddle.Tensor, axis=None):
-        if axis is None:
-            return paddle.mean(tensor)
-        else:
-            return paddle.mean(tensor, axis=axis)
 
     @staticmethod
     def sum(tensor: paddle.Tensor, axis=None, keepdims=False):
@@ -251,9 +224,6 @@ class PaddleBackend(Backend, backend_name="paddle"):
 
     @staticmethod
     def flip(tensor: paddle.Tensor, axis=None):
-        if isinstance(axis, int):
-            axis = [axis]
-
         if axis is None:
             return paddle.flip(tensor, axis=[i for i in range(tensor.ndim)])
         else:
@@ -262,22 +232,6 @@ class PaddleBackend(Backend, backend_name="paddle"):
     @staticmethod
     def concatenate(tensors: paddle.Tensor, axis=0):
         return paddle.concat(tensors, axis=axis)
-
-    @staticmethod
-    def argmin(input: paddle.Tensor, axis=None):
-        return paddle.argmin(input, axis=axis)
-
-    @staticmethod
-    def argsort(input: paddle.Tensor, axis=None):
-        return paddle.argsort(input, axis=axis)
-
-    @staticmethod
-    def argmax(input: paddle.Tensor, axis=None):
-        return paddle.argmax(input, axis=axis)
-
-    @staticmethod
-    def stack(arrays: paddle.Tensor, axis=0):
-        return paddle.stack(arrays, axis=axis)
 
     @staticmethod
     def diag(tensor: paddle.Tensor, k=0):
@@ -322,17 +276,9 @@ class PaddleBackend(Backend, backend_name="paddle"):
         return sol, res, rank, single_value
 
     @staticmethod
-    def eigh(tensor: paddle.Tensor):
-        return paddle.linalg.eigh(tensor)
-
-    @staticmethod
     def sign(tensor: paddle.Tensor):
         """paddle.sign does not support complex numbers."""
         return paddle.sgn(tensor)
-
-    @staticmethod
-    def logsumexp(tensor: paddle.Tensor, axis=0):
-        return paddle.logsumexp(tensor, axis=axis)
 
 
 # Register the other functions
@@ -348,6 +294,13 @@ for name in (
         "finfo",
         "log2",
         "digamma",
+        "arange",
+        "mean",
+        "argmin",
+        "argmax",
+        "argsort",
+        "stack",
+        "logsumexp",
     ]
 ):
     if name in ["pi", "e", "inf", "nan"]:
