@@ -211,16 +211,7 @@ class PaddleBackend(Backend, backend_name="paddle"):
 
     @staticmethod
     def sum(tensor: paddle.Tensor, axis=None, keepdims=False):
-        if axis is None:
-            axis = tuple(range(tensor.ndim))
         return paddle.sum(tensor, axis=axis, keepdim=keepdims)
-
-    @staticmethod
-    def max(tensor: paddle.Tensor, axis=None):
-        if axis is None:
-            return paddle.max(tensor)
-        else:
-            return paddle.max(tensor, axis=axis)[0]
 
     @staticmethod
     def flip(tensor: paddle.Tensor, axis=None):
@@ -301,6 +292,7 @@ for name in (
         "argsort",
         "stack",
         "logsumexp",
+        "max",
     ]
 ):
     if name in ["pi", "e", "inf", "nan"]:
