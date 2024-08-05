@@ -428,7 +428,7 @@ def maxvol(A):
     (n, r) = tl.shape(A)
 
     # The index of row of the submatrix
-    row_idx = tl.zeros(r)
+    row_idx = tl.zeros(r, dtype=tl.int64)
 
     # Rest of rows / unselected rows
     rest_of_rows = tl.tensor(list(range(n)), dtype=tl.int64)

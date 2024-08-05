@@ -26,12 +26,6 @@ from tensorly.testing import (
     assert_array_equal,
     assert_array_almost_equal,
 )
-import pytest
-
-skip_tensorflow = pytest.mark.skipif(
-    (tl.get_backend() == "tensorflow"),
-    reason=f"Indexing with list not supported in TensorFlow",
-)
 
 
 def test_cp_normalize():
@@ -303,7 +297,6 @@ def test_cp_copy():
     assert_array_almost_equal(cp_to_tensor((weights, factors)), cp_to_tensor(cp_tensor))
 
 
-@skip_tensorflow
 def test_cp_permute_factors():
     """Test cp_permute_factors function ."""
     shape = (3, 4, 5)

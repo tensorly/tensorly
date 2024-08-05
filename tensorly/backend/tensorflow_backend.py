@@ -14,6 +14,8 @@ import numpy as np
 
 from .core import Backend, backend_types, backend_basic_math, backend_array
 
+tnp.experimental_enable_numpy_behavior()
+
 
 class TensorflowBackend(Backend, backend_name="tensorflow"):
     @staticmethod
@@ -42,7 +44,7 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
                 device = data.device
 
         # Create the tensor and cast to the determined dtype
-        out = tf.cast(tf.Variable(data), dtype=dtype)
+        out = tnp.array(data, dtype=dtype)
 
         # If device or device_id is specified, place the tensor on the correct device
         if device is not None or device_id is not None:
@@ -94,6 +96,15 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
     @staticmethod
     def clip(tensor, a_min=None, a_max=None):
         return tnp.clip(tensor, a_min, a_max)
+    
+    @staticmethod
+    def qr(tensor, mode='reduced'):
+        if mode == 'reduced':
+            full_matrices = False
+        elif mode == 'complete':
+            full_matrices = True
+
+        return tf.linalg.qr(tensor, full_matrices=full_matrices)
 
     @staticmethod
     def lstsq(a, b):
@@ -140,7 +151,7 @@ for name in ["nan"]:
 
 
 # Register linalg functions
-for name in ["diag", "qr", "eigh", "trace"]:
+for name in ["diag", "eigh", "trace"]:
     TensorflowBackend.register_method(name, getattr(tf.linalg, name))
 
 
