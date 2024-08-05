@@ -56,7 +56,7 @@ def test_mode_dot():
     U = T.tensor(np.random.random((3, 4)))
     true_res = fold(T.dot(U, unfold(X, 1)), 1, (2, 3, 5))
     res = mode_dot(X, U, 1)
-    assert res.shape == (2, 3, 5)
+    assert tuple(res.shape) == (2, 3, 5)
     assert_array_almost_equal(true_res, res)
 
     #########################################

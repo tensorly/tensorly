@@ -441,7 +441,7 @@ def test_matricize():
         matricize(t, [0, 2, 3, 4], [1, 1])
 
     res = matricize(t, [1, 3])
-    assert res.shape == (3 * 3, 2 * 4 * 5)
+    assert tuple(res.shape) == (3 * 3, 2 * 4 * 5)
 
 
 test_matricize()

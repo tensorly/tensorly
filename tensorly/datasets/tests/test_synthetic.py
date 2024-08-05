@@ -1,3 +1,4 @@
+import tensorly as tl
 import numpy as np
 
 from ... import backend as T
@@ -48,4 +49,4 @@ def test_gen_image():
     radius = 20
     surface = np.pi * radius**2
     tol = surface * 0.005  # tolerate 0.5% error
-    assert abs(T.sum(res) - surface) < tol
+    assert tl.abs(T.sum(res) - surface) < tol

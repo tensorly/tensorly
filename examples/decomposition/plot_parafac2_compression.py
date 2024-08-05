@@ -16,6 +16,7 @@ decompressing is mathematically equivalent to fitting to the original uncompress
 For more information about why this works, see the documentation of
 :py:meth:`tensorly.decomposition.preprocessing.svd_compress_tensor_slices`.
 """
+
 from time import monotonic
 import tensorly as tl
 from tensorly.decomposition import parafac2

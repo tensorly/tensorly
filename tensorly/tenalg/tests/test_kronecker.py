@@ -38,7 +38,7 @@ def test_kronecker():
     # Adding a third matrices
     c = T.tensor([[0, 1], [2, 0]], dtype=tl.float32)
     res = kronecker([c, a, b])
-    assert res.shape == (
+    assert tuple(res.shape) == (
         a.shape[0] * b.shape[0] * c.shape[0],
         a.shape[1] * b.shape[1] * c.shape[1],
     )
@@ -62,13 +62,13 @@ def test_kronecker():
     shapes = [[2, 3], [4, 5], [6, 7]]
     W = [T.tensor(np.random.randn(*shape)) for shape in shapes]
     res = kronecker(W)
-    assert res.shape == (48, 105)
+    assert tuple(res.shape) == (48, 105)
 
     # Khatri-rao is a column-wise kronecker product
     shapes = [[2, 1], [4, 1], [6, 1]]
     W = [T.tensor(np.random.randn(*shape)) for shape in shapes]
     res = kronecker(W)
-    assert res.shape == (48, 1)
+    assert tuple(res.shape) == (48, 1)
 
     # Khatri-rao product is a column-wise kronecker product
     kr = khatri_rao(W)

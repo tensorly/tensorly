@@ -103,7 +103,7 @@ def test_tt_to_tensor_random():
 
     # Create tensor with random elements
     tensor = tl.tensor(np.random.rand(3, 4, 5, 6, 2, 10))
-    tensor_shape = tensor.shape
+    tensor_shape = tuple(tensor.shape)
 
     # Find TT decomposition of the tensor
     rank = 10

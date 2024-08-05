@@ -23,6 +23,7 @@ from tensorly.tenalg.svd import SVD_FUNS, svd_interface
 
 def test_set_backend():
     torch = pytest.importorskip("torch")
+    paddle = pytest.importorskip("paddle")
 
     toplevel_backend = tl.get_backend()
 
@@ -39,6 +40,12 @@ def test_set_backend():
             assert torch.is_tensor(T.tensor([1, 2, 3]))
             assert tl.float32 is T.float32 is torch.float32
 
+        with tl.backend_context("paddle"):
+            assert tl.get_backend() == "paddle"
+            assert paddle.is_tensor(tl.tensor([1, 2, 3]))
+            assert paddle.is_tensor(T.tensor([1, 2, 3]))
+            assert tl.float32 is T.float32 is paddle.float32
+
         # Sets back to numpy
         assert tl.get_backend() == "numpy"
         assert isinstance(tl.tensor([1, 2, 3]), np.ndarray)
@@ -51,6 +58,12 @@ def test_set_backend():
     # Set not in context manager
     tl.set_backend("pytorch")
     assert tl.get_backend() == "pytorch"
+    tl.set_backend(toplevel_backend)
+
+    assert tl.get_backend() == toplevel_backend
+
+    tl.set_backend("paddle")
+    assert tl.get_backend() == "paddle"
     tl.set_backend(toplevel_backend)
 
     assert tl.get_backend() == toplevel_backend
@@ -87,6 +100,42 @@ def test_set_backend_local_threadsafe():
                     with tl.backend_context("numpy", local_threadsafe=True):
                         assert tl.get_backend() == "numpy"
                     assert tl.get_backend() == "pytorch"
+
+                executor.submit(check).result()
+        finally:
+            tl.set_backend(global_default, local_threadsafe=False)
+            executor.submit(tl.set_backend, global_default).result()
+
+        assert tl.get_backend() == global_default
+        assert executor.submit(tl.get_backend).result() == global_default
+
+
+def test_set_backend_local_threadsafe_paddle():
+    pytest.importorskip("paddle")
+
+    global_default = tl.get_backend()
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        with tl.backend_context("numpy", local_threadsafe=True):
+            assert tl.get_backend() == "numpy"
+            # Changes only happen locally in this thread
+            assert executor.submit(tl.get_backend).result() == global_default
+
+        # Set the global default backend
+        try:
+            tl.set_backend("paddle", local_threadsafe=False)
+
+            # Changed toplevel default in all threads
+            assert executor.submit(tl.get_backend).result() == "paddle"
+
+            with tl.backend_context("numpy", local_threadsafe=True):
+                assert tl.get_backend() == "numpy"
+
+                def check():
+                    assert tl.get_backend() == "paddle"
+                    with tl.backend_context("numpy", local_threadsafe=True):
+                        assert tl.get_backend() == "numpy"
+                    assert tl.get_backend() == "paddle"
 
                 executor.submit(check).result()
         finally:
@@ -440,7 +489,7 @@ def test_qr():
     for i in range(N):
         for j in range(i):
             dot_product = T.to_numpy(T.dot(Q[:, i], Q[:, j]))
-            assert abs(dot_product) < 1e-6, "Columns of Q not orthogonal"
+            assert dot_product < 1e-6, "Columns of Q not orthogonal"
 
     A_reconstructed = T.dot(Q, R)
     assert_array_almost_equal(A, A_reconstructed)
@@ -571,6 +620,34 @@ def test_dtype_tensor_init():
 
         # dtype given -> dtype should be overwritten
         for dtype in dtypes_torch:
+            # Check init from numpy array
+            tensor = T.tensor(array, dtype=dtype)
+            assert tensor.dtype == dtype
+
+            # Check init from python list
+            array_py = array.tolist()
+            tensor = T.tensor(array_py, dtype=dtype)
+            assert tensor.dtype == dtype
+
+
+def test_dtype_tensor_init_paddle():
+    dtypes_np = [np.float32, np.float64, np.int32, np.int64]
+    dtypes_paddle = [
+        tl.float32,
+        tl.float64,
+        tl.int32,
+        tl.int64,
+    ]
+    for dtype_np, dtype_paddle in zip(dtypes_np, dtypes_paddle):
+        # Numpy array
+        array = np.zeros((1,), dtype=dtype_np)
+
+        # No dtype given -> dtype should be inferred from input array
+        tensor = T.tensor(array)
+        assert tensor.dtype == dtype_paddle
+
+        # dtype given -> dtype should be overwritten
+        for dtype in dtypes_paddle:
             # Check init from numpy array
             tensor = T.tensor(array, dtype=dtype)
             assert tensor.dtype == dtype

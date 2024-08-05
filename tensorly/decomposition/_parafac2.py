@@ -574,7 +574,7 @@ def parafac2(
                     )
 
                 if (
-                    abs(rec_errors[-2] ** 2 - rec_errors[-1] ** 2)
+                    tl.abs(rec_errors[-2] ** 2 - rec_errors[-1] ** 2)
                     < (tol * rec_errors[-2] ** 2)
                     or rec_errors[-1] ** 2 < absolute_tol
                 ):

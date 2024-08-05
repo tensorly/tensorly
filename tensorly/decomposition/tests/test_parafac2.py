@@ -116,8 +116,8 @@ def test_parafac2(monkeypatch, normalize_factors, init, linesearch):
         linesearch=linesearch,
     )
     assert len(err) > 2  # Check that we didn't just immediately exit
-    assert abs(err[-2] ** 2 - err[-1] ** 2) < (1e-1 * err[-2] ** 2)
-    assert abs(err[-3] ** 2 - err[-2] ** 2) > (
+    assert tl.abs(err[-2] ** 2 - err[-1] ** 2) < (1e-1 * err[-2] ** 2)
+    assert tl.abs(err[-3] ** 2 - err[-2] ** 2) > (
         1e-1 * err[-3] ** 2
     )  # Check that the previous iteration didn't meet the criteria
 
@@ -386,8 +386,8 @@ def test_parafac2_normalize_factors():
     assert_array_almost_equal(T.norm(normalized_rec.factors[0], axis=0), tl.ones(rank))
     assert_array_almost_equal(T.norm(normalized_rec.factors[1], axis=0), tl.ones(rank))
     assert_array_almost_equal(T.norm(normalized_rec.factors[2], axis=0), tl.ones(rank))
-    assert abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 0.05
-    assert abs(tl.min(norms) - tl.min(normalized_rec.weights)) / tl.min(norms) < 0.05
+    assert tl.abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 0.05
+    assert tl.abs(tl.min(norms) - tl.min(normalized_rec.weights)) / tl.min(norms) < 0.05
 
 
 def test_parafac2_init_valid():

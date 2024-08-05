@@ -37,6 +37,9 @@ def register_backend_specific(backend, backend_func):
     >>> with backend_context("pytorch"):
     ...     print(func(5))
     5
+    >>> with backend_context("paddle"):
+    ...     print(func(5))
+    5
     """
     if backend not in available_backend_names:
         raise ValueError(

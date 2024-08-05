@@ -89,8 +89,8 @@ def test_svd_compression_compresses_only_when_necessary():
 
     # First slice is compressed
     assert compressed_slices[0] is not tensor_slices[0]
-    assert compressed_slices[0].shape == (10, 10)
-    assert loadings[0].shape == (25, 10)
+    assert tuple(compressed_slices[0].shape) == (10, 10)
+    assert tuple(loadings[0].shape) == (25, 10)
 
     # Second slice is not compressed
     assert compressed_slices[1] is tensor_slices[1]

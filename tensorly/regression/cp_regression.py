@@ -1,3 +1,4 @@
+import tensorly as tl
 import math
 from ..base import partial_tensor_to_vec, partial_unfold
 from ..tenalg import khatri_rao
@@ -140,7 +141,7 @@ class CPRegressor:
 
             # Convergence check
             if iteration > 1:
-                weight_evolution = abs(norm_W[-1] - norm_W[-2]) / norm_W[-1]
+                weight_evolution = tl.abs(norm_W[-1] - norm_W[-2]) / norm_W[-1]
 
                 if weight_evolution <= self.tol:
                     if self.verbose:

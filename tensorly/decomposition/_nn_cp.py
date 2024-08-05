@@ -159,7 +159,7 @@ def non_negative_parafac(
                     )
 
                 if cvg_criterion == "abs_rec_error":
-                    stop_flag = abs(rec_error_decrease) < tol
+                    stop_flag = tl.abs(rec_error_decrease) < tol
                 elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol
                 else:
@@ -355,7 +355,7 @@ def non_negative_parafac_hals(
                     )
 
                 if cvg_criterion == "abs_rec_error":
-                    stop_flag = abs(rec_error_decrease) < tol
+                    stop_flag = tl.abs(rec_error_decrease) < tol
                 elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol
                 else:
