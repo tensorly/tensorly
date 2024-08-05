@@ -3,6 +3,7 @@ import tensorly as tl
 from ...testing import assert_array_almost_equal, assert_raises, assert_
 from ... import random
 from .. import tensordot
+import pytest
 
 
 def test_batched_tensordot():
