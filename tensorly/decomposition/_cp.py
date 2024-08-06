@@ -607,11 +607,7 @@ def sample_khatri_rao(
         else:
             rng = random_state
         indices_list = [
-            tl.tensor(
-                rng.randint(0, tl.shape(m)[0], size=n_samples, dtype=int),
-                dtype=tl.int64,
-            )
-            for m in matrices
+            rng.randint(0, tl.shape(m)[0], size=n_samples, dtype=int) for m in matrices
         ]
 
     rank = tl.shape(matrices[0])[1]
