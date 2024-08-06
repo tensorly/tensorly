@@ -126,6 +126,8 @@ from .backend import (
     pi,
     inf,
     nan,
+    int32,
+    int64,
 )
 
 from . import backend

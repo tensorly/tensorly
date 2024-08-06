@@ -12,7 +12,6 @@ from ...random import random_tr
 from ...testing import (
     assert_,
     assert_array_almost_equal,
-    assert_raises,
     assert_class_wrapper_correctly_passes_arguments,
 )
 
@@ -101,7 +100,6 @@ def test_tensor_ring_als(
     [((6, 2, 3, 2, 6), (3, 2, 4, 12, 18, 3), 300), ((20, 18, 19), (6, 7, 8, 6), 300)],
 )
 @pytest.mark.parametrize("random_state", [1, 1234])
-@pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
 def test_tensor_ring_als_sampled(
     tensor_shape, rank, n_samples, random_state, monkeypatch
 ):
@@ -181,7 +179,6 @@ def test_tensor_ring_als_sampled(
 
 @pytest.mark.parametrize("uniform_sampling", [False, True])
 @pytest.mark.parametrize("randomized_error", [False, True])
-@pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
 def test_tensor_ring_als_sampled_large_decomp(uniform_sampling, randomized_error):
     # The point of this test is to attempt decomposing a sligthly larger tensor than the
     # test in test_tensor_ring_als_sampled. The tensor in the present function is

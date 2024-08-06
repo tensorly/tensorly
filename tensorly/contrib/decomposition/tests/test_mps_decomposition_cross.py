@@ -9,12 +9,11 @@ from ....tt_tensor import tt_to_tensor
 from tensorly.testing import assert_
 
 skip_if_backend = pytest.mark.skipif(
-    tl.get_backend() in ("tensorflow", "jax", "cupy"),
+    tl.get_backend() in ("tensorflow"),
     reason=f"Operation not supported in {tl.get_backend()}",
 )
 
 
-@skip_if_backend
 def test_tensor_train_cross_1():
     """Test for tensor-train"""
 
@@ -54,7 +53,6 @@ def test_tensor_train_cross_1():
         r_prev_iteration = r_k
 
 
-@skip_if_backend
 def test_tensor_train_cross_2():
     """Test for tensor-train"""
     rng = tl.check_random_state(1234)
@@ -98,7 +96,6 @@ def test_tensor_train_cross_3():
     assert_(error < tol, "norm 2 of reconstruction higher than tol")
 
 
-@skip_if_backend
 def test_tensor_train_cross_4():
     """Test for tensor-train"""
 

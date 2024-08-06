@@ -442,7 +442,6 @@ def test_non_negative_parafac_hals_one_unconstrained():
     assert_(T.all(nn_estimate[1][2] > -1e-10))
 
 
-@pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
 def test_sample_khatri_rao():
     """Test for sample_khatri_rao"""
     rng = tl.check_random_state(1234)
@@ -479,7 +478,6 @@ def test_sample_khatri_rao():
         )
 
 
-@pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
 def test_randomised_parafac(monkeypatch):
     """Test for randomised_parafac"""
     rng = tl.check_random_state(1234)
