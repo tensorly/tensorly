@@ -1,5 +1,5 @@
 from warnings import warn
-from typing import Iterable, Optional, Sequence, Literal, Tuple
+from typing import Iterable, Optional, Sequence, Literal, Union
 
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
@@ -316,17 +316,17 @@ def _parafac2_reconstruction_error(
 def parafac2(
     tensor_slices,
     rank: int,
-    n_iter_max: int=2000,
+    n_iter_max: int = 2000,
     init="random",
-    svd: SVD_TYPES="truncated_svd",
-    normalize_factors: bool=False,
+    svd: SVD_TYPES = "truncated_svd",
+    normalize_factors: bool = False,
     tol: float = 1.0e-8,
-    nn_modes: Optional[Sequence[int] | Literal["all"]]=None,
+    nn_modes: Optional[Union[Sequence[int], Literal["all"]]] = None,
     random_state=None,
-    verbose: bool | int=False,
-    return_errors: bool=False,
+    verbose: Union[bool, int] = False,
+    return_errors: bool = False,
     n_iter_parafac: int = 5,
-    linesearch: bool=True,
+    linesearch: bool = True,
 ):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
