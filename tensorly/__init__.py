@@ -88,6 +88,7 @@ from .backend import (
     norm,
     dot,
     kron,
+    einsum,
     solve,
     lstsq,
     qr,
