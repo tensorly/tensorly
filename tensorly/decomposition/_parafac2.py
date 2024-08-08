@@ -1,5 +1,5 @@
 from warnings import warn
-from typing import Iterable
+from typing import Iterable, Optional, Sequence, Literal, Tuple
 
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
@@ -11,7 +11,7 @@ from ..parafac2_tensor import (
     _validate_parafac2_tensor,
 )
 from ..cp_tensor import CPTensor, cp_normalize
-from ..tenalg.svd import svd_interface
+from ..tenalg.svd import svd_interface, SVD_TYPES
 
 # Authors: Marie Roald
 #          Yngve Mardal Moe
@@ -316,17 +316,17 @@ def _parafac2_reconstruction_error(
 def parafac2(
     tensor_slices,
     rank: int,
-    n_iter_max=2000,
+    n_iter_max: int=2000,
     init="random",
-    svd="truncated_svd",
-    normalize_factors=False,
+    svd: SVD_TYPES="truncated_svd",
+    normalize_factors: bool=False,
     tol: float = 1.0e-8,
-    nn_modes=None,
+    nn_modes: Optional[Sequence[int] | Literal["all"]]=None,
     random_state=None,
-    verbose=False,
-    return_errors=False,
+    verbose: bool | int=False,
+    return_errors: bool=False,
     n_iter_parafac: int = 5,
-    linesearch=True,
+    linesearch: bool=True,
 ):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 

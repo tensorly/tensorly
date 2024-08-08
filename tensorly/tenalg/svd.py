@@ -1,4 +1,5 @@
 import warnings
+from typing import Literal
 import tensorly as tl
 from .proximal import soft_thresholding
 
@@ -358,6 +359,7 @@ def randomized_svd(
 
 
 SVD_FUNS = ["truncated_svd", "symeig_svd", "randomized_svd"]
+SVD_TYPES = Literal["truncated_svd", "symeig_svd", "randomized_svd"]
 
 
 def svd_interface(
