@@ -448,6 +448,15 @@ def parafac2(
     non-negative, then :math:`B` will be non-negative, but not the orthogonal `P_i` matrices.
     Consequently, the `B_i` matrices are unlikely to be non-negative.
     """
+    assert (
+        rank <= tensor_slices[0].shape[1]
+    ), f"PARAFAC2 rank ({rank}) cannot be greater than the number of columns in each tensor slice ({tensor_slices[0].shape[1]})."
+
+    for ii in range(1, len(tensor_slices)):
+        assert (
+            tensor_slices[0].shape[1] == tensor_slices[ii].shape[1]
+        ), "All tensor slices must have the same number of columns."
+
     weights, factors, projections = initialize_decomposition(
         tensor_slices, rank, init=init, svd=svd, random_state=random_state
     )

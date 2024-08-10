@@ -50,6 +50,6 @@ def test_batched_tensordot():
     tensor = random.random_tensor((4, 3, 3))
     tensor2 = random.random_tensor((3, 4, 2))
     res = tensordot(tensor, tensor2, modes=(), batched_modes=())
-    assert_(res.shape == (4, 3, 3, 3, 4, 2))
+    assert_(tuple(res.shape) == (4, 3, 3, 3, 4, 2))
     res = tensordot(tensor, tensor2, modes=(), batched_modes=((0,), (1,)))
-    assert_(res.shape == (4, 3, 3, 3, 2))
+    assert_(tuple(res.shape) == (4, 3, 3, 3, 2))

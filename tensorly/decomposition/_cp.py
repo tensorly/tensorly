@@ -512,7 +512,7 @@ def parafac(
                     )
 
                 if cvg_criterion == "abs_rec_error":
-                    stop_flag = abs(rec_error_decrease) < tol
+                    stop_flag = tl.abs(rec_error_decrease) < tol
                 elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol
                 else:
@@ -749,7 +749,7 @@ def randomised_parafac(
                         f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2]-rec_errors[-1]}."
                     )
 
-                if (tol and abs(rec_errors[-2] - rec_errors[-1]) < tol) or (
+                if (tol and tl.abs(rec_errors[-2] - rec_errors[-1]) < tol) or (
                     stagnation and (stagnation > max_stagnation)
                 ):
                     if verbose:

@@ -5,7 +5,7 @@ API reference
 Unified backend interface (:mod:`tensorly`)
 ===========================================
 
-There are several libraries for multi-dimensional array computation, including NumPy, PyTorch, TensorFlow, JAX and CuPy.
+There are several libraries for multi-dimensional array computation, including NumPy, PyTorch, TensorFlow, JAX, CuPy and Paddle.
 They all have strenghs and weaknesses, e.g. some are better on CPU, some better on GPU etc. 
 Therefore, in TensorLy we enable you to use our algorithm (and any code you write using the library), with any of these libraries.
 

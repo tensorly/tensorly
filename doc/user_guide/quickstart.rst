@@ -38,7 +38,7 @@ Why is that?
 .. important:: 
 
    This is because we support several backends: the code you write in TensorLy can be *transparently* executed with several frameworks, without having to change anything in your code!
-   For instance, you can execute your code normally using NumPy, but you can also have it run on GPU or multiple machines, using PyTorch, TensorFlow, CuPy, or JAX. Without having to adapt your code!
+   For instance, you can execute your code normally using NumPy, but you can also have it run on GPU or multiple machines, using PyTorch, TensorFlow, CuPy, JAX or Paddle. Without having to adapt your code!
 
 
 This is why you should always manipulate tensors using tensorly backend functions only.

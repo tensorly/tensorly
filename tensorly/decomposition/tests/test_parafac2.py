@@ -365,8 +365,8 @@ def test_parafac2_normalize_factors():
     assert_array_almost_equal(tl.norm(normalized_rec.factors[0], axis=0), tl.ones(rank))
     assert_array_almost_equal(tl.norm(normalized_rec.factors[1], axis=0), tl.ones(rank))
     assert_array_almost_equal(tl.norm(normalized_rec.factors[2], axis=0), tl.ones(rank))
-    assert abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 0.05
-    assert abs(tl.min(norms) - tl.min(normalized_rec.weights)) / tl.min(norms) < 0.05
+    assert tl.abs(tl.max(norms) - tl.max(normalized_rec.weights)) / tl.max(norms) < 0.05
+    assert tl.abs(tl.min(norms) - tl.min(normalized_rec.weights)) / tl.min(norms) < 0.05
 
 
 def test_parafac2_init_valid():
