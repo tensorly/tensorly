@@ -8,7 +8,6 @@ from ...metrics.factors import congruence_coefficient
 from ...random import random_cp
 from ..cp_plsr import CP_PLSR
 
-
 # Authors: Jackson L. Chin, Cyrillus Tan, Aaron Meyer
 
 

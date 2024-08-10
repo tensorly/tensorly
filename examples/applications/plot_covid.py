@@ -18,7 +18,7 @@ Apply CP decomposition to COVID-19 Serology Dataset
 # to comprehensively profile the interactions between the antibodies and
 # `Fc receptors <https://en.wikipedia.org/wiki/Fc_receptor>`_ alongside other types of immunological
 # and demographic data. Here, we will apply CP decomposition to a
-# `COVID-19 system serology dataset <https://www.sciencedirect.com/science/article/pii/S0092867420314598>`_. 
+# `COVID-19 system serology dataset <https://www.sciencedirect.com/science/article/pii/S0092867420314598>`_.
 # In this dataset, serum antibodies
 # of 438 samples collected from COVID-19 patients were systematically profiled by their binding behavior
 # to SARS-CoV-2 (the virus that causes COVID-19) antigens and Fc receptors activities. Samples are
@@ -45,19 +45,25 @@ data = load_covid19_serology()
 # Now we apply CP decomposition to this dataset.
 
 comps = np.arange(1, 7)
-CMTFfacs = [parafac(data.tensor, cc, tol=1e-10, n_iter_max=1000,
-                    linesearch=True, orthogonalise=2) for cc in comps]
+CMTFfacs = [
+    parafac(
+        data.tensor, cc, tol=1e-10, n_iter_max=1000, linesearch=True, orthogonalise=2
+    )
+    for cc in comps
+]
 
 ##############################################################################
 # To evaluate how well CP decomposition explains the variance in the dataset, we plot the percent
 # variance reconstructed (R2X) for a range of ranks.
 
+
 def reconstructed_variance(tFac, tIn=None):
-    """ This function calculates the amount of variance captured (R2X) by the tensor method. """
+    """This function calculates the amount of variance captured (R2X) by the tensor method."""
     tMask = np.isfinite(tIn)
     vTop = np.sum(np.square(tl.cp_to_tensor(tFac) * tMask - np.nan_to_num(tIn)))
     vBottom = np.sum(np.square(np.nan_to_num(tIn)))
     return 1.0 - vTop / vBottom
+
 
 fig1 = plt.figure()
 CMTFR2X = np.array([reconstructed_variance(f, data.tensor) for f in CMTFfacs])
@@ -81,8 +87,8 @@ tfac = CMTFfacs[1]
 tfac.factors[1][:, 0] *= -1
 tfac.factors[2][:, 0] *= -1
 
-fig2, ax = plt.subplots(1, 3, figsize=(16,6))
-for ii in [0,1,2]:
+fig2, ax = plt.subplots(1, 3, figsize=(16, 6))
+for ii in [0, 1, 2]:
     fac = tfac.factors[ii]
     scales = np.linalg.norm(fac, ord=np.inf, axis=0)
     fac /= scales
@@ -92,12 +98,20 @@ for ii in [0,1,2]:
     ax[ii].set_xticklabels(["Comp. 1", "Comp. 2"])
     ax[ii].set_yticks(range(len(data.ticks[ii])))
     if ii == 0:
-        ax[0].set_yticklabels([data.ticks[0][i] if i==0 or data.ticks[0][i]!=data.ticks[0][i-1]
-                               else "" for i in range(len(data.ticks[0]))])
+        ax[0].set_yticklabels(
+            [
+                (
+                    data.ticks[0][i]
+                    if i == 0 or data.ticks[0][i] != data.ticks[0][i - 1]
+                    else ""
+                )
+                for i in range(len(data.ticks[0]))
+            ]
+        )
     else:
         ax[ii].set_yticklabels(data.ticks[ii])
     ax[ii].set_title(data.dims[ii])
-    ax[ii].set_aspect('auto')
+    ax[ii].set_aspect("auto")
 
 fig2.colorbar(ScalarMappable(norm=plt.Normalize(-1, 1), cmap="PiYG"))
 
