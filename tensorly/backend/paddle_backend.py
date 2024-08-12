@@ -293,6 +293,7 @@ for name in (
         "stack",
         "logsumexp",
         "max",
+        "diagonal",
     ]
 ):
     if name in ["pi", "e", "inf", "nan"]:
