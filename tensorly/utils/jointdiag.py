@@ -17,13 +17,23 @@ def jointdiag(
     Jointly diagonalizes n matrices, organized in tensor of dimension (k,k,n).
     Returns the diagonalized matrices, along with the transformation matrix.
 
-    If verbose = True, returns estimate of error in third index.
-
     T. Fu and X. Gao, “Simultaneous diagonalization with similarity transformation for
     non-defective matrices”, in Proc. IEEE International Conference on Acoustics, Speech
     and Signal Processing (ICASSP 2006), vol. IV, pp. 1137-1140, Toulouse, France, May 2006.
-    """
 
+    Args:
+        X (_type_): n matrices, organized in tensor of dimension (k,k,n), for joint diagonalization.
+        max_iter (int, optional): Maximum iteration number. Defaults to 50.
+        threshold (float, optional): Threshold for decrease in error indicating convergence. Defaults to 1e-10.
+        verbose (bool, optional): Output progress information during diagonalization. Defaults to False.
+
+    Raises:
+        RuntimeError: Error raised if a shear angle cannot be found.
+
+    Returns:
+        Tensor: X after joint diagonalization.
+        Tensor: The transformation matrix resulting in the diagonalization.
+    """
     X = tl.tensor(X, **tl.context(X))
     D = tl.shape(X)[0]  # Dimension of square matrix slices
     assert tl.ndim(X) == 3, "Input must be a 3D tensor"
