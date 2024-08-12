@@ -13,7 +13,7 @@ later published as a `JMLR paper <http://jmlr.org/papers/v20/18-277.html>`_ titl
 by `Jean Kossaifi`_, `Yannis Panagakis`_, `Anima Anandkumar`_ and `Maja Pantic`_.
 
 Originally, TensorLy was built on top of NumPy and SciPy only. In order to combine tensor methods with deep learning and run them on multiple devices, CPU and GPU, a flexible backend system was added.
-This allows algorithms written in TensorLy to be ran with any major framework such as PyTorch, TensorFlow, CuPy and JAX.
+This allows algorithms written in TensorLy to be ran with any major framework such as PyTorch, TensorFlow, CuPy, JAX and Paddle.
 
 Core developers
 -----------------
