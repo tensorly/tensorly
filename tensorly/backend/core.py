@@ -25,7 +25,6 @@ backend_types = [
 backend_basic_math = [
     "exp",
     "log",
-    "log2",
     "tanh",
     "cosh",
     "sinh",
