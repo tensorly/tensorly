@@ -82,6 +82,7 @@ for name in (
         "conj",
         "diag",
         "tensordot",
+        "log2",
         "argsort",
         "sort",
         "shape",

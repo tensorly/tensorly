@@ -63,6 +63,7 @@ for name in (
         "conj",
         "diag",
         "log",
+        "log2",
         "tensordot",
         "argsort",
         "sort",

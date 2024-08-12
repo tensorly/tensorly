@@ -1251,6 +1251,24 @@ class Backend(object):
     def atanh(self, x):
         """Return the arctanh of x."""
         return self.arctanh(x)
+    
+    @staticmethod
+    def partial_svd(*args, **kwargs):
+        msg = (
+            "partial_svd is no longer used. "
+            "Please use tensorly.tenalg.svd_interface instead, "
+            "it provides a unified interface to all available SVD implementations."
+        )
+        raise NotImplementedError(msg)
+
+    @staticmethod
+    def kr(matrices, weights=None, mask=None):
+        msg = (
+            "kr is no longer used. "
+            "Please use tensorly.tenalg.khatri_rao instead, "
+            "it provides a unified interface to Khatri Rao implementations."
+        )
+        raise NotImplementedError(msg)
 
     @staticmethod
     def diagonal(tensor, offset=0, axis1=0, axis2=1):

@@ -92,6 +92,7 @@ for name in (
         "conj",
         "diag",
         "clip",
+        "log2",
         "tensordot",
         "argsort",
         "sort",
