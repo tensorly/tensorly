@@ -299,8 +299,9 @@ for name in (
     if name in ["pi", "e", "inf", "nan"]:
         PaddleBackend.register_method(name, getattr(np, name))
     elif name in ["arctanh", "arccosh", "arcsinh", "arctan", "arccos", "arcsin"]:
-        name = name.replace("arc", "a")
-        PaddleBackend.register_method(name, getattr(paddle, name))
+        aname = name.replace("arc", "a")
+        PaddleBackend.register_method(aname, getattr(paddle, aname))
+        PaddleBackend.register_method(name, getattr(paddle, aname))
     else:
         PaddleBackend.register_method(name, getattr(paddle, name))
 
