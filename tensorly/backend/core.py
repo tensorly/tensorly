@@ -1251,7 +1251,7 @@ class Backend(object):
     def atanh(self, x):
         """Return the arctanh of x."""
         return self.arctanh(x)
-    
+
     @staticmethod
     def partial_svd(*args, **kwargs):
         msg = (
