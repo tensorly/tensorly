@@ -290,10 +290,10 @@ class _BroThesisLineSearch:
         projections_ls = _compute_projections(tensor_slices, factors_ls, self.svd)
 
         ls_rec_error = _parafac2_reconstruction_error(
-            tensor_slices,
-            (weights, factors_ls, projections_ls),
-            self.norm_tensor,
-            self.mask,
+            tensor_slices=tensor_slices,
+            decomposition=(weights, factors_ls, projections_ls),
+            norm_matrices=self.norm_tensor,
+            mask=self.mask,
         )
         ls_rec_error /= self.norm_tensor
 
