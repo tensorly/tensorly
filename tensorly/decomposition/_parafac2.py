@@ -30,11 +30,11 @@ def _update_imputed(tensor_slices, mask, decomposition, method):
         missing values and 1 everywhere else.
     decomposition : Parafac2Tensor, optional
     method : string
-        One of 'mode-2' or 'factors'. 'mode-2' updates imputed values according to 
-        mean of each mode-2 slice. If 'factors' is chosen, set missing entries 
-        according to reconstructed tensor given from 'decomposition'. 
-        'mode-2' is used (by default) for initializing missing entries while 
-        'factors' is used for updating imputations during optimization. If an 
+        One of 'mode-2' or 'factors'. 'mode-2' updates imputed values according to
+        mean of each mode-2 slice. If 'factors' is chosen, set missing entries
+        according to reconstructed tensor given from 'decomposition'.
+        'mode-2' is used (by default) for initializing missing entries while
+        'factors' is used for updating imputations during optimization. If an
         initial decomposition is specified, 'factors' is used at initialization.
 
     Returns
@@ -358,38 +358,44 @@ def _parafac2_reconstruction_error(
     """
     _validate_parafac2_tensor(decomposition)
 
-    if norm_matrices is None:
-        if mask is not None:
-            norm_X_sq = sum(
-                tl.norm(tensor_slice * slice_mask, 2) ** 2
-                for tensor_slice, slice_mask in zip(tensor_slices, mask)
-            )
-        else:
+    if mask is None:  # In fully observed data, we can utilize pre-computations
+
+        if norm_matrices is None:
             norm_X_sq = sum(tl.norm(t_slice, 2) ** 2 for t_slice in tensor_slices)
-    else:
-        norm_X_sq = norm_matrices**2
-
-    weights, (A, B, C), projections = decomposition
-    if weights is not None:
-        A = A * weights
-
-    norm_cmf_sq = 0
-    inner_product = 0
-    CtC = tl.dot(tl.transpose(C), C)
-
-    for i, t_slice in enumerate(tensor_slices):
-        B_i = (projections[i] @ B) * A[i]
-
-        if projected_tensor is None or mask is not None:
-            tmp = tl.dot(tl.transpose(B_i), t_slice)
         else:
-            tmp = tl.reshape(A[i], (-1, 1)) * tl.transpose(B) @ projected_tensor[i]
+            norm_X_sq = norm_matrices**2
 
-        inner_product += tl.trace(tl.dot(tmp, C))
+        weights, (A, B, C), projections = decomposition
+        if weights is not None:
+            A = A * weights
 
-        norm_cmf_sq += tl.sum((tl.transpose(B_i) @ B_i) * CtC)
+        norm_cmf_sq = 0
+        inner_product = 0
+        CtC = tl.dot(tl.transpose(C), C)
 
-    return tl.sqrt(norm_X_sq - 2 * inner_product + norm_cmf_sq)
+        for i, t_slice in enumerate(tensor_slices):
+            B_i = (projections[i] @ B) * A[i]
+
+            if projected_tensor is None:
+                tmp = tl.dot(tl.transpose(B_i), t_slice)
+            else:
+                tmp = tl.reshape(A[i], (-1, 1)) * tl.transpose(B) @ projected_tensor[i]
+
+            inner_product += tl.trace(tl.dot(tmp, C))
+
+            norm_cmf_sq += tl.sum((tl.transpose(B_i) @ B_i) * CtC)
+
+        return tl.sqrt(norm_X_sq - 2 * inner_product + norm_cmf_sq)
+
+    else:
+
+        reconstructed_tensor = parafac2_to_tensor(decomposition)
+        total_error = 0
+        for i, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
+            total_error += (
+                tl.norm(slice_mask * slice - slice_mask * reconstructed_tensor[i]) ** 2
+            )
+        return tl.sqrt(total_error)
 
 
 def parafac2(
