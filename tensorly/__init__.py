@@ -136,6 +136,7 @@ from . import regression
 from . import tenalg
 from . import random
 from . import datasets
+from . import solvers
 
 
 # Add Backend functions, dynamically dispatched
