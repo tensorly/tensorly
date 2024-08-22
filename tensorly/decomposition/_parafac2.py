@@ -78,7 +78,6 @@ def initialize_decomposition(
     init="random",
     svd="truncated_svd",
     random_state=None,
-    mask=None,
 ):
     r"""Initiate a random PARAFAC2 decomposition given rank and tensor slices.
 
@@ -562,7 +561,7 @@ def parafac2(
         ), "All tensor slices must have the same number of columns."
 
     (weights, factors, projections) = initialize_decomposition(
-        tensor_slices, rank, init=init, svd=svd, random_state=random_state, mask=mask
+        tensor_slices, rank, init=init, svd=svd, random_state=random_state
     )
     factors = list(factors)
 
