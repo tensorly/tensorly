@@ -518,3 +518,57 @@ def test_update_imputed():
     )
 
     assert_allclose(imputed_tensor, tensor)
+
+
+@pytest.mark.parametrize("linesearch", [False, True])
+def test_parafac2_em(linesearch):
+    rng = tl.check_random_state(1234)
+    rank = 3
+
+    # Create a random tensor
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        rank=rank,
+        random_state=rng,
+    )
+
+    random_parafac2_tensor.factors[0] = random_parafac2_tensor.factors[0] + 0.01
+
+    slices = parafac2_to_slices(random_parafac2_tensor)
+
+    # Form the full data and a mask with ~10% missing values
+
+    slice_mask = [rng.binomial(1, 0.9, size=T.shape(slice)) for slice in slices]
+
+    # apply parafac2
+
+    rec = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        n_iter_max=1000,
+        linesearch=linesearch,
+        mask=slice_mask,
+    )
+
+    # assert FMS > 0.98
+    A_sign = T.sign(random_parafac2_tensor.factors[0])
+    rec_A_sign = T.sign(rec.factors[0])
+    A_corr = congruence_coefficient(
+        A_sign * random_parafac2_tensor.factors[0], rec_A_sign * rec.factors[0]
+    )[0]
+    assert_(A_corr > 0.98)
+
+    C_corr = congruence_coefficient(random_parafac2_tensor.factors[2], rec.factors[2])[
+        0
+    ]
+    assert_(C_corr > 0.98)
+
+    for i, (true_proj, rec_proj) in enumerate(
+        zip(random_parafac2_tensor.projections, rec.projections)
+    ):
+        true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
+        rec_Bi = T.dot(rec_proj, rec.factors[1]) * rec_A_sign[i]
+        Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
+        assert_(Bi_corr > 0.98)

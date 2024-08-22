@@ -9,7 +9,7 @@ from . import parafac, non_negative_parafac_hals
 from ..parafac2_tensor import (
     Parafac2Tensor,
     _validate_parafac2_tensor,
-    parafac2_to_tensor,
+    parafac2_to_slices,
 )
 from ..cp_tensor import CPTensor, cp_normalize
 from ..tenalg.svd import svd_interface
@@ -48,21 +48,26 @@ def _update_imputed(tensor_slices, mask, decomposition, method):
             slice_mean = tl.sum(slice * slice_mask) / (
                 tl.prod(slice.shape) - len(tl.where(slice_mask == 0)[0])
             )
+
             for i in range(slice.shape[0]):
                 for j in range(slice.shape[1]):
                     if slice_mask[i, j] == 0:
                         tl.index_update(
-                            tensor_slices, tl.index[slice_no, i, j], slice_mean
+                            tensor_slices[slice_no], tl.index[i, j], slice_mean
                         )
 
     else:  # factors
 
-        reconstructed_tensor = parafac2_to_tensor(decomposition)
+        reconstructed_slices = parafac2_to_slices(decomposition)
 
-        tensor_slices = (
-            mask * tensor_slices
-            + (tl.ones(shape=mask.shape) - mask) * reconstructed_tensor
-        )
+        for slice_no, (slice, rec_slice, slice_mask) in enumerate(
+            zip(tensor_slices, reconstructed_slices, mask)
+        ):
+
+            tensor_slices[slice_no] = (
+                slice_mask * slice
+                + (tl.ones(shape=slice_mask.shape) - slice_mask) * rec_slice
+            )
 
     return tensor_slices
 
@@ -389,7 +394,7 @@ def _parafac2_reconstruction_error(
 
     else:
 
-        reconstructed_tensor = parafac2_to_tensor(decomposition)
+        reconstructed_tensor = parafac2_to_slices(decomposition)
         total_error = 0
         for i, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
             total_error += (
@@ -604,7 +609,7 @@ def parafac2(
 
     if linesearch and not isinstance(linesearch, _BroThesisLineSearch):
         linesearch = _BroThesisLineSearch(
-            norm_tensor, svd, verbose=verbose, nn_modes=nn_modes
+            norm_tensor, svd, verbose=verbose, nn_modes=nn_modes, mask=mask
         )
 
     # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
