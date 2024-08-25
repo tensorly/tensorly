@@ -543,7 +543,10 @@ def test_parafac2_em(linesearch):
 
     # apply the mask, setting missing values to zero
 
-    slices = [tl.where(slice_mask, slice, 0) for slice,slice_mask in zip(slices,slices_masks)]
+    slices = [
+        tl.where(slice_mask, slice, 0)
+        for slice, slice_mask in zip(slices, slices_masks)
+    ]
 
     # apply parafac2
 
