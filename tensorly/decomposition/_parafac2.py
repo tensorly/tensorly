@@ -46,16 +46,11 @@ def _update_imputed(tensor_slices, mask, decomposition, method):
 
         for slice_no, (slice, slice_mask) in enumerate(zip(tensor_slices, mask)):
 
-            slice_mean = tl.sum(slice * slice_mask) / (
-                int(T.prod(T.tensor(slice.shape))) - len(T.where(slice_mask == 0)[0]) # tensorflow required this casting to int
-            )
+            slice_mean = tl.sum(slice * slice_mask) / T.sum(slice_mask)
 
-            for i in range(slice.shape[0]):
-                for j in range(slice.shape[1]):
-                    if slice_mask[i, j] == 0:
-                        tl.index_update(
-                            tensor_slices[slice_no], tl.index[i, j], slice_mean
-                        )
+            tensor_slices[slice_no] = tl.where(
+                slice_mask == 0, slice_mean, tensor_slices[slice_no]
+            )
 
     else:  # factors
 
@@ -65,11 +60,8 @@ def _update_imputed(tensor_slices, mask, decomposition, method):
         for slice_no, (slice, rec_slice, slice_mask) in enumerate(
             zip(tensor_slices, reconstructed_slices, mask)
         ):
- 
-            tensor_slices[slice_no] = (
-                slice_mask * slice
-                + (tl.ones(slice_mask.shape) - slice_mask) * rec_slice
-            )
+
+            tensor_slices[slice_no] = tl.where(slice_mask == 0, rec_slice, slice)
 
     return tensor_slices
 
@@ -573,7 +565,7 @@ def parafac2(
         if init == "random" or init == "svd":
 
             tensor_slices = _update_imputed(
-                tensor_slices=tensor_slices,
+                tensor_slices=list(tensor_slices),  # required casting for jax
                 mask=mask,
                 decomposition=None,
                 method="mode-2",
