@@ -539,7 +539,11 @@ def test_parafac2_em(linesearch):
 
     # Form the full data and a mask with ~10% missing values
 
-    slice_mask = [rng.binomial(1, 0.9, size=T.shape(slice)) for slice in slices]
+    slices_masks = [rng.binomial(1, 0.9, size=T.shape(slice)) for slice in slices]
+
+    # apply the mask, setting missing values to zero
+
+    slices = [tl.where(slice_mask, slice, 0) for slice,slice_mask in zip(slices,slices_masks)]
 
     # apply parafac2
 
@@ -549,7 +553,7 @@ def test_parafac2_em(linesearch):
         random_state=rng,
         n_iter_max=1000,
         linesearch=linesearch,
-        mask=slice_mask,
+        mask=slices_masks,
     )
 
     # assert FMS > 0.98
