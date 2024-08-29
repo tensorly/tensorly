@@ -489,7 +489,10 @@ def test_update_imputed():
     # i.e. mode='factors'
 
     slices = parafac2_to_slices(random_parafac2_tensor)
-    slices_masks = [tl.tensor(rng.binomial(1, 0.25, size=T.shape(slice)),dtype=tl.float64) for slice in slices]
+    slices_masks = [
+        tl.tensor(rng.binomial(1, 0.25, size=T.shape(slice)), dtype=tl.float64)
+        for slice in slices
+    ]
 
     imputed_tensor = _update_imputed(
         tensor_slices=slices,
@@ -505,9 +508,13 @@ def test_update_imputed():
     slices = np.array(slices)
     slices[slices_masks == 0] == tl.nan
     slices = list(slices)
-    
+
     for i in range(len(slices)):
-        slices[i] = tl.where(tl.tensor(slices_masks[i]==0), tl.tensor(np.nanmean(slices[i])),tl.tensor(slices[i]))
+        slices[i] = tl.where(
+            tl.tensor(slices_masks[i] == 0),
+            tl.tensor(np.nanmean(slices[i])),
+            tl.tensor(slices[i]),
+        )
 
     imputed_tensor = _update_imputed(
         tensor_slices=slices,
@@ -538,12 +545,15 @@ def test_parafac2_em(linesearch):
 
     # Form the full data and a mask with ~10% missing values
 
-    slices_masks = [tl.tensor(rng.binomial(1, 0.9, size=T.shape(slice)),dtype=tl.float64) for slice in slices]
+    slices_masks = [
+        tl.tensor(rng.binomial(1, 0.9, size=T.shape(slice)), dtype=tl.float64)
+        for slice in slices
+    ]
 
     # apply the mask, setting missing values to zero
 
     slices = [
-        tl.where(slice_mask==0, 0, slice)
+        tl.where(slice_mask == 0, 0, slice)
         for slice, slice_mask in zip(slices, slices_masks)
     ]
 
