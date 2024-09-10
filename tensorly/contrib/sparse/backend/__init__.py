@@ -45,7 +45,7 @@ def register_sparse_backend(backend_name):
     else:
         msg = (
             f"Unknown backend name {backend_name!r}, known backends are [",
-            f"{''.join(map(repr, _KNOWN_BACKENDS))}]",
+            f"{', '.join(map(repr, _KNOWN_BACKENDS))}]",
         )
         raise ValueError(msg)
 
