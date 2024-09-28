@@ -560,7 +560,7 @@ def parafac2(
                         f"PARAFAC2 reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
                     )
 
-                if rec_errors[-2] - rec_errors[-1] < tol:
+                if tl.abs(rec_errors[-2] - rec_errors[-1]) < tol:
                     if verbose:
                         print(f"converged in {iteration} iterations.")
                     break
