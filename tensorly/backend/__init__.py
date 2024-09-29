@@ -10,7 +10,7 @@ import types
 import sys
 
 
-class dynamically_dispatched_class_attribute(object):
+class dynamically_dispatched_class_attribute:
     """Enable dynamically dispatched attributes such as dtype
 
     Parameters
