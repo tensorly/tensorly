@@ -505,7 +505,6 @@ def test_update_imputed():
 
     # Check that _update_imputed works correctly when imputing values according to nanmean of mode-2 slices
 
-    slices = np.array(slices)
     slices[slices_masks == 0] == tl.nan
     slices = list(slices)
 
