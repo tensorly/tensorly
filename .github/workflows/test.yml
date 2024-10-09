@@ -15,10 +15,10 @@ jobs:
           - BACKEND: 'numpy'
             python-version: '3.9'
           - BACKEND: 'numpy'
-            python-version: '3.10'
+            python-version: '3.11'
             TENSORLY_TENALG_BACKEND: ['einsum']
           - BACKEND: 'jax'
-            python-version: '3.12'
+            python-version: '3.13'
             TENSORLY_TENALG_BACKEND: ['einsum']
           - BACKEND: 'tensorflow'
             python-version: '3.12'
