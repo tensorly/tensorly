@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # tensorly documentation build configuration file
 #
@@ -75,9 +74,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u'tensorly'
+project = 'tensorly'
 year = datetime.now().year
-copyright = "2016 - {}, TensorLy Developers".format(year)
+copyright = f"2016 - {year}, TensorLy Developers"
 author = "Jean Kossaifi"
 
 # The version info for the project you're documenting, acts as replacement for

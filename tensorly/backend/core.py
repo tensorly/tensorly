@@ -88,7 +88,7 @@ class Index:
         return "Index"
 
 
-class Backend(object):
+class Backend:
     _available_backends = dict()
 
     def __init_subclass__(cls, backend_name, **kwargs):

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 """
 Demonstration of PARAFAC2

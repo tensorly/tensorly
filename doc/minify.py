@@ -12,7 +12,7 @@ for path in asset_path.glob("*.js"):
     if ".min." in str(path):
         continue
     target_path = path.with_suffix(".min.js")
-    with open(path.as_posix(), "r") as f:
+    with open(path.as_posix()) as f:
         text = f.read()
     minified = jsmin(text, mangle=True, mangle_toplevel=True)
     with open(target_path.as_posix(), "w") as f:
@@ -23,7 +23,7 @@ for path in asset_path.glob("*.css"):
     if ".min." in str(path):
         continue
     target_path = path.with_suffix(".min.css")
-    with open(path.as_posix(), "r") as f:
+    with open(path.as_posix()) as f:
         text = f.read()
     minified = cssmin(text)
     with open(target_path.as_posix(), "w") as f:

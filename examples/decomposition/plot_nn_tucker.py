@@ -109,9 +109,9 @@ time_as = time.time() - ticnew
 # To compare the various methods, first we may look at each algorithm
 # processing time:
 
-print("time for tensorly nntucker:" + " " + str("{:.2f}".format(time_mu)))
-print("time for HALS with fista:" + " " + str("{:.2f}".format(time_fista)))
-print("time for HALS with as:" + " " + str("{:.2f}".format(time_as)))
+print("time for tensorly nntucker:" + " " + str(f"{time_mu:.2f}"))
+print("time for HALS with fista:" + " " + str(f"{time_fista:.2f}"))
+print("time for HALS with as:" + " " + str(f"{time_as:.2f}"))
 
 ##############################################################################
 # All algorithms should run with about the same number of iterations on our

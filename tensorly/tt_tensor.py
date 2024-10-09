@@ -260,14 +260,10 @@ def validate_tt_rank(
 
         # Initialization
         if rank[0] != 1:
-            message = "Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
-                rank[0]
-            )
+            message = f"Provided rank[0] == {rank[0]} but boundary conditions dictate rank[0] == rank[-1] == 1."
             raise ValueError(message)
         if rank[-1] != 1:
-            message = "Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
-                rank[-1]
-            )
+            message = f"Provided rank[-1] == {rank[-1]} but boundary conditions dictate rank[0] == rank[-1] == 1."
             raise ValueError(message)
 
     if allow_overparametrization:
