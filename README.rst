@@ -4,8 +4,8 @@
 .. image:: https://anaconda.org/tensorly/tensorly/badges/version.svg   
     :target: https://anaconda.org/tensorly/tensorly
 
-.. image:: https://github.com/tensorly/tensorly/workflows/Test%20TensorLy/badge.svg
-    :target: https://github.com/tensorly/tensorly/actions?query=workflow%3A%22Test+TensorLy%22
+.. image:: https://github.com/tensorly/tensorly/actions/workflows/test.yml/badge.svg?branch=main
+    :target: https://github.com/tensorly/tensorly/actions/workflows/test.yml
 
 .. image:: https://codecov.io/gh/tensorly/tensorly/branch/master/graph/badge.svg?token=mnZ234sGSA
     :target: https://codecov.io/gh/tensorly/tensorly
