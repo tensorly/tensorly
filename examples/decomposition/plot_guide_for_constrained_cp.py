@@ -8,10 +8,10 @@ On this page, you will find examples showing how to use constrained CP/Parafac.
 # Introduction
 # -----------------------
 # Since version 0.7, Tensorly includes constrained CP decomposition which penalizes or
-# constrains factors as chosen by the user. The proposed implementation of constrained CP uses the 
+# constrains factors as chosen by the user. The proposed implementation of constrained CP uses the
 # Alternating Optimization Alternating Direction Method of Multipliers (AO-ADMM) algorithm from [1] which
 # solves alternatively convex optimization problem using primal-dual optimization. In constrained CP
-# decomposition, an auxilliary factor is introduced which is constrained or regularized using an operator called the 
+# decomposition, an auxilliary factor is introduced which is constrained or regularized using an operator called the
 # proximal operator. The proximal operator may therefore change according to the selected constraint or penalization.
 #
 # Tensorly provides several constraints and their corresponding proximal operators, each can apply to one or all factors in the CP decomposition:
@@ -94,7 +94,7 @@ _, factors = constrained_parafac(tensor, rank=rank, unimodality=True)
 fig = plt.figure()
 for i in range(rank):
     plt.plot(factors[0][:, i])
-    plt.legend(['1. column', '2. column', '3. column'], loc='upper left')
+    plt.legend(["1. column", "2. column", "3. column"], loc="upper left")
 
 ##############################################################################
 # Constraints requiring a scalar input can be used similarly as follows:
@@ -103,11 +103,11 @@ _, factors = constrained_parafac(tensor, rank=rank, l1_reg=0.05)
 ##############################################################################
 # The same regularization coefficient l1_reg is used for all the modes. Here the l1 penalization induces sparsity given that the regularization coefficient is large enough.
 fig = plt.figure()
-plt.title('Histogram of 1. factor')
+plt.title("Histogram of 1. factor")
 _, _, _ = plt.hist(factors[0].flatten())
 
 fig = plt.figure()
-plt.title('Histogram of 2. factor')
+plt.title("Histogram of 2. factor")
 _, _, _ = plt.hist(factors[1].flatten())
 
 ##############################################################################
@@ -133,15 +133,15 @@ print("2. factor\n", factors[1])
 _, factors = constrained_parafac(tensor, rank=rank, l1_reg=[0.01, 0.02, 0.03])
 
 fig = plt.figure()
-plt.title('Histogram of 1. factor')
+plt.title("Histogram of 1. factor")
 _, _, _ = plt.hist(factors[0].flatten())
 
 fig = plt.figure()
-plt.title('Histogram of 2. factor')
+plt.title("Histogram of 2. factor")
 _, _, _ = plt.hist(factors[1].flatten())
 
 fig = plt.figure()
-plt.title('Histogram of 3. factor')
+plt.title("Histogram of 3. factor")
 _, _, _ = plt.hist(factors[2].flatten())
 
 ##############################################################################
@@ -150,8 +150,9 @@ _, _, _ = plt.hist(factors[2].flatten())
 # To use different constraint for different modes, the dictionary structure
 # should be preferred:
 
-_, factors = constrained_parafac(tensor, rank=rank, non_negative={1:True}, l1_reg={0: 0.01},
-                                 l2_square_reg={2: 0.01})
+_, factors = constrained_parafac(
+    tensor, rank=rank, non_negative={1: True}, l1_reg={0: 0.01}, l2_square_reg={2: 0.01}
+)
 
 ##############################################################################
 # In the dictionary, `key` is the selected mode and `value` is a scalar value or

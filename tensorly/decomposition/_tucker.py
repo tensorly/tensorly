@@ -204,7 +204,7 @@ def partial_tucker(
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
 
         # The factors are orthonormal and therefore do not affect the reconstructed tensor's norm
-        rec_error = sqrt(abs(norm_tensor**2 - tl.norm(core, 2) ** 2)) / norm_tensor
+        rec_error = sqrt(tl.abs(norm_tensor**2 - tl.norm(core, 2) ** 2)) / norm_tensor
         rec_errors.append(rec_error)
 
         if iteration > 1:
@@ -213,7 +213,7 @@ def partial_tucker(
                     f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
                 )
 
-            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+            if tol and tl.abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
                     print(f"converged in {iteration} iterations.")
                 break
@@ -441,7 +441,7 @@ def non_negative_tucker(
                 f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
             )
 
-        if iteration > 1 and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+        if iteration > 1 and tl.abs(rec_errors[-2] - rec_errors[-1]) < tol:
             if verbose:
                 print(f"converged in {iteration} iterations.")
             break
@@ -681,7 +681,7 @@ def non_negative_tucker_hals(
                     f"reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
                 )
 
-            if tol and abs(rec_errors[-2] - rec_errors[-1]) < tol:
+            if tol and tl.abs(rec_errors[-2] - rec_errors[-1]) < tol:
                 if verbose:
                     print(f"converged in {iteration} iterations.")
                 break

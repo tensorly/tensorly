@@ -427,7 +427,6 @@ def unimodality_prox(tensor):
         tl.max(sum_inc + tl.flip(sum_dec, axis=0)),
     )
     min_indice = tl.argmin(tl.tensor(difference), axis=0)
-
     for i in range(len(min_indice)):
         tensor_unimodal = tl.index_update(
             tensor_unimodal,

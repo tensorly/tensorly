@@ -47,7 +47,8 @@ class ErrorTracker:
 @pytest.mark.parametrize("random_state", [1, 1234])
 # tensorflow has issues with type promotion that would require more code changes
 @pytest.mark.parametrize(
-    "complex", [False] if tl.get_backend() in ["tensorflow"] else [True, False]
+    "complex",
+    [False] if tl.get_backend() in ["tensorflow", "paddle"] else [True, False],
 )
 def test_parafac(
     linesearch,
@@ -442,7 +443,6 @@ def test_non_negative_parafac_hals_one_unconstrained():
     assert_(T.all(nn_estimate[1][2] > -1e-10))
 
 
-@pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
 def test_sample_khatri_rao():
     """Test for sample_khatri_rao"""
     rng = tl.check_random_state(1234)
@@ -479,7 +479,6 @@ def test_sample_khatri_rao():
         )
 
 
-@pytest.mark.xfail(tl.get_backend() == "tensorflow", reason="Fails on tensorflow")
 def test_randomised_parafac(monkeypatch):
     """Test for randomised_parafac"""
     rng = tl.check_random_state(1234)

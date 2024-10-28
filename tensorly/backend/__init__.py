@@ -118,7 +118,14 @@ class BackendManager(types.ModuleType):
         "index",
         "backend_name",
     ]
-    available_backend_names = ["numpy", "pytorch", "tensorflow", "cupy", "jax"]
+    available_backend_names = [
+        "numpy",
+        "pytorch",
+        "tensorflow",
+        "cupy",
+        "jax",
+        "paddle",
+    ]
     _default_backend = "numpy"
     _loaded_backends = dict()
     _backend = None
@@ -236,7 +243,7 @@ class BackendManager(types.ModuleType):
 
         Parameters
         ----------
-        backend : {'numpy', 'pytorch', 'tensorflow', 'cupy'}
+        backend : {'numpy', 'pytorch', 'tensorflow', 'cupy', 'paddle'}
             The name of the backend to use. Default is 'numpy'.
         local_threadsafe : bool, optional
             If True, the backend will not become the default backend for all threads.
@@ -250,6 +257,8 @@ class BackendManager(types.ModuleType):
         >>> import tensorly as tl
         >>> tl.set_backend('numpy')
         >>> with tl.backend_context('pytorch'):
+        ...     pass
+        >>> with tl.backend_context('paddle'):
         ...     pass
         """
         _old_backend = cls.current_backend()
