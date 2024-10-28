@@ -1,7 +1,7 @@
 import numpy as np
 import tensorly as tl
 
-from tensorly.solvers.proximal import (
+from tensorly.tenalg.proximal import (
     svd_thresholding,
     smoothness_prox,
     soft_thresholding,

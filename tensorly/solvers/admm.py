@@ -1,5 +1,5 @@
 import tensorly as tl
-from tensorly.solvers.proximal import *
+from tensorly.tenalg.proximal import *
 
 
 def admm(

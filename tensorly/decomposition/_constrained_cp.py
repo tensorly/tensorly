@@ -7,7 +7,7 @@ from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..cp_tensor import CPTensor, cp_norm, validate_cp_rank
 from ..solvers.admm import admm
-from ..solvers.proximal import proximal_operator, validate_constraints
+from ..tenalg.proximal import proximal_operator, validate_constraints
 from ..tenalg.svd import svd_interface
 from ..tenalg import unfolding_dot_khatri_rao
 
