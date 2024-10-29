@@ -106,14 +106,10 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
     # Initialize rank
     if rank[0] != 1:
-        message = "Provided rank[0] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
-            rank[0]
-        )
+        message = f"Provided rank[0] == {rank[0]} but boundary conditions dictate rank[0] == rank[-1] == 1."
         raise ValueError(message)
     if rank[-1] != 1:
-        message = "Provided rank[-1] == {} but boundary conditions dictate rank[0] == rank[-1] == 1.".format(
-            rank[-1]
-        )
+        message = f"Provided rank[-1] == {rank[-1]} but boundary conditions dictate rank[0] == rank[-1] == 1."
         raise ValueError(message)
 
     # list col_idx: column indices (right indices) for skeleton-decomposition: indicate which columns used in each core.
@@ -428,7 +424,7 @@ def maxvol(A):
     (n, r) = tl.shape(A)
 
     # The index of row of the submatrix
-    row_idx = tl.zeros(r)
+    row_idx = tl.zeros(r, dtype=tl.int64)
 
     # Rest of rows / unselected rows
     rest_of_rows = tl.tensor(list(range(n)), dtype=tl.int64)
@@ -474,8 +470,8 @@ def maxvol(A):
         A_new = A_new[mask, :]
 
         # update the row_idx and rest_of_rows
-        row_idx[i] = rest_of_rows[max_row_idx]
-        rest_of_rows = rest_of_rows[mask]
+        row_idx = tl.index_update(row_idx, i, rest_of_rows[max_row_idx])
+        rest_of_rows = rest_of_rows[tl.tensor(mask, dtype=tl.int64)]
         i = i + 1
 
     row_idx = tl.tensor(row_idx, dtype=tl.int64)

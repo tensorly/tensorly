@@ -88,7 +88,7 @@ class Index:
         return "Index"
 
 
-class Backend(object):
+class Backend:
     _available_backends = dict()
 
     def __init_subclass__(cls, backend_name, **kwargs):
@@ -1068,7 +1068,7 @@ class Backend(object):
         b = self.reshape(b, (1, s3, 1, s4))
         return self.reshape(a * b, (s1 * s3, s2 * s4))
 
-    def svd(self, matrix):
+    def svd(self, matrix, **_):
         raise NotImplementedError
 
     def eigh(self, matrix):

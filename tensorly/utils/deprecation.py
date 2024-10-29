@@ -19,7 +19,7 @@ def deprecated(deprecated_by, msg="", use_deprecated=True):
         if False, the new class/function will be used along with the deprecation warning for the old name
     """
 
-    class DeprecatedBy(object):
+    class DeprecatedBy:
         def __init__(self):
             self.deprecated_by = deprecated_by
             self.use_deprecated = use_deprecated
@@ -67,7 +67,7 @@ def deprecated(deprecated_by, msg="", use_deprecated=True):
     return DeprecatedBy()
 
 
-class DefineDeprecated(object):
+class DefineDeprecated:
     """Creates a dummy class or function that returns the class/fun it is deprecated by,
             along with a warning
 
