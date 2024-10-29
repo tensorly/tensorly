@@ -9,7 +9,7 @@ import tensorly as tl
 
 def joint_matrix_diagonalization(
     X,
-    max_iter: int = 50,
+    max_n_iter: int = 50,
     threshold: float = 1e-10,
     verbose: bool = False,
 ):
@@ -23,7 +23,7 @@ def joint_matrix_diagonalization(
 
     Args:
         X (_type_): n matrices, organized in tensor of dimension (k,k,n), for joint diagonalization.
-        max_iter (int, optional): Maximum iteration number. Defaults to 50.
+        max_n_iter (int, optional): Maximum iteration number. Defaults to 50.
         threshold (float, optional): Threshold for decrease in error indicating convergence. Defaults to 1e-10.
         verbose (bool, optional): Output progress information during diagonalization. Defaults to False.
 
@@ -49,7 +49,7 @@ def joint_matrix_diagonalization(
     # Additional output parameters
     Q_total = tl.eye(D)
 
-    for k in range(max_iter):
+    for k in range(max_n_iter):
         # loop over all pairs of slices
         for p, q in combinations(range(D), 2):
             # Finds matrix slice with greatest variability among diagonal elements
