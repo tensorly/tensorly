@@ -1,101 +1,94 @@
 """ 
 The :mod:`tensorly.tenalg` module contains utilities for Tensor Algebra 
 operations such as khatri-rao or kronecker product, n-mode product, etc.
-""" 
-from contextlib import contextmanager
+"""
 
-from functools import wraps
-import warnings
+import sys
+import importlib
+import threading
 
-from .core_tenalg import mode_dot, multi_mode_dot
-from .core_tenalg import kronecker
-from .core_tenalg import khatri_rao
-from .core_tenalg import inner, outer
-from .core_tenalg import contract
-from .core_tenalg import tensor_dot, batched_tensor_dot
-from .core_tenalg import higher_order_moment
-from .core_tenalg import _tt_matrix_to_tensor
-
-from . import core_tenalg as core
-from . import einsum_tenalg
-
-from ..backend import _LOCAL_STATE
-
-_DEFAULT_TENALG_BACKEND = 'core'
-_LOCAL_STATE.tenalg_backend = _DEFAULT_TENALG_BACKEND
-
-_BACKENDS = {'core':core,
-             'einsum':einsum_tenalg}
+from ..backend import BackendManager, dynamically_dispatched_class_attribute
+from .base_tenalg import TenalgBackend
+from .svd import SVD_FUNS, svd_interface, truncated_svd
 
 
-def get_tenalg_backend():
-    return _LOCAL_STATE.tenalg_backend
+class TenalgBackendManager(BackendManager):
+    _functions = [
+        "mode_dot",
+        "multi_mode_dot",
+        "kronecker",
+        "khatri_rao",
+        "inner",
+        "outer",
+        "batched_outer",
+        "higher_order_moment",
+        "_tt_matrix_to_tensor",
+        "unfolding_dot_khatri_rao",
+        "tensordot",
+    ]
+    _attributes = []
+    available_backend_names = ["core", "einsum"]
+    _default_backend = "core"
+    _loaded_backends = dict()
+    _backend = None
+    _THREAD_LOCAL_DATA = threading.local()
+    _ENV_DEFAULT_VAR = "TENSORLY_TENALG_BACKEND"
 
-def set_tenalg_backend(backend='core', local_threadsafe=False):
-    if backend in _BACKENDS:
-        _LOCAL_STATE.tenalg_backend = backend
-        if local_threadsafe == False:
-            global _DEFAULT_TENALG_BACKEND
-            _DEFAULT_TENALG_BACKEND = backend
-    else:
-        raise ValueError(f'Unknown tenalg backend {backend}')
+    @classmethod
+    def use_dynamic_dispatch(cls):
+        # Define class methods and attributes that dynamically dispatch to the backend
+        for name in cls._functions:
+            try:
+                delattr(cls, name)
+            except AttributeError:
+                pass
+            setattr(
+                cls,
+                name,
+                staticmethod(
+                    cls.dispatch_backend_method(
+                        name, getattr(cls.current_backend(), name)
+                    )
+                ),
+            )
+        for name in cls._attributes:
+            try:
+                delattr(cls, name)
+            except AttributeError:
+                pass
+            setattr(cls, name, dynamically_dispatched_class_attribute(name))
 
-@contextmanager
-def tenalg_backend_context(backend, local_threadsafe=False):
-    """Context manager to set the backend for TensorLy.
+    @classmethod
+    def load_backend(cls, backend_name):
+        """Registers a new backend by importing the corresponding module
+            and adding the correspond `Backend` class in Backend._LOADED_BACKEND
+            under the key `backend_name`
 
-    Parameters
-    ----------
-    backend : {'numpy', 'mxnet', 'pytorch', 'tensorflow', 'cupy'}
-        The name of the backend to use. Default is 'numpy'.
-    local_threadsafe : bool, optional
-        If True, the backend will not become the default backend for all threads.
-        Note that this only affects threads where the backend hasn't already
-        been explicitly set. If False (default) the backend is set for the
-        entire session.
+        Parameters
+        ----------
+        backend_name : str, name of the backend to load
 
-    Examples
-    --------
-    Set the backend to numpy globally for this thread:
+        Raises
+        ------
+        ValueError
+            If `backend_name` does not correspond to one listed
+                in `_KNOWN_BACKEND`
+        """
+        if backend_name not in cls.available_backend_names:
+            msg = f"Unknown backend name {backend_name!r}, known backends are {cls.available_backend_names}"
+            raise ValueError(msg)
+        if backend_name not in TenalgBackend._available_tenalg_backends:
+            importlib.import_module(f"tensorly.tenalg.{backend_name}_tenalg")
+        if backend_name in TenalgBackend._available_tenalg_backends:
+            backend = TenalgBackend._available_tenalg_backends[backend_name]()
+            # backend = getattr(module, )()
+            cls._loaded_backends[backend_name] = backend
 
-    >>> import tensorly as tl
-    >>> tl.set_backend('numpy')
-    >>> with tl.backend_context('pytorch'):
-    ...     pass
-    """
-    _old_backend = get_tenalg_backend()
-    set_tenalg_backend(backend, local_threadsafe=local_threadsafe)
-    try:
-        yield
-    finally:
-        set_tenalg_backend(_old_backend)
-
-def dynamically_dispatch_tenalg(function):
-    name = function.__name__
-
-    @wraps(function)
-    def dynamically_dispatched_fun(*args, **kwargs):
-        #print('hello')
-        current_backend = _BACKENDS[_LOCAL_STATE.tenalg_backend]
-        if hasattr(current_backend, name):
-            fun = getattr(current_backend, name)(*args, **kwargs)
-        else:
-            warnings.warn(f'tenalg: defaulting to core tenalg backend, {name}'
-                          f'not yet implemented in {_LOCAL_STATE.tenalg_backend} backend.')
-            fun = getattr(core, name)(*args, **kwargs)
-        return fun
-    return dynamically_dispatched_fun
+        return backend
 
 
-mode_dot = dynamically_dispatch_tenalg(mode_dot)
-multi_mode_dot = dynamically_dispatch_tenalg(multi_mode_dot)
-kronecker = dynamically_dispatch_tenalg(kronecker)
-khatri_rao = dynamically_dispatch_tenalg(khatri_rao)
-inner = dynamically_dispatch_tenalg(inner)
-contract = dynamically_dispatch_tenalg(contract)
-outer = dynamically_dispatch_tenalg(outer)
-tensor_dot = dynamically_dispatch_tenalg(tensor_dot)
-batched_tensor_dot = dynamically_dispatch_tenalg(batched_tensor_dot)
-higher_order_moment = dynamically_dispatch_tenalg(higher_order_moment)
+# Initialise the backend to the default one
+TenalgBackendManager.initialize_backend()
+TenalgBackendManager.use_dynamic_dispatch()
 
-set_tenalg_backend(_DEFAULT_TENALG_BACKEND, local_threadsafe=False)
+sys.modules[__name__].__class__ = TenalgBackendManager

@@ -38,6 +38,25 @@ def RMSE(y_true, y_pred, axis=None):
     return T.sqrt(MSE(y_true, y_pred, axis=axis))
 
 
+def R2_score(X_original, X_predicted):
+    """Returns the R^2 (coefficient of determination) regression score function.
+    Best possible score is 1.0 and it can be negative (because prediction can be
+    arbitrarily worse).
+
+    Parameters
+    ----------
+    X_original: array
+        The original array
+    X_predicted: array
+        Thre predicted array.
+
+    Returns
+    -------
+    float
+    """
+    return 1 - T.norm(X_predicted - X_original) ** 2.0 / T.norm(X_original) ** 2.0
+
+
 def reflective_correlation_coefficient(y_true, y_pred, axis=None):
     """Reflective variant of Pearson's product moment correlation coefficient
     where the predictions are not centered around their mean values.
@@ -53,7 +72,9 @@ def reflective_correlation_coefficient(y_true, y_pred, axis=None):
     -------
     float: reflective correlation coefficient
     """
-    return T.sum(y_true*y_pred, axis=axis)/T.sqrt(T.sum(y_true**2, axis=axis)*T.sum(y_pred**2, axis=axis))
+    return T.sum(y_true * y_pred, axis=axis) / T.sqrt(
+        T.sum(y_true**2, axis=axis) * T.sum(y_pred**2, axis=axis)
+    )
 
 
 def covariance(y_true, y_pred, axis=None):
@@ -69,7 +90,7 @@ def covariance(y_true, y_pred, axis=None):
         shape[axis] = 1
         centered_pred = T.reshape(centered_pred, shape)
 
-    return T.mean((y_true - centered_true)*(y_pred - centered_pred), axis=axis)
+    return T.mean((y_true - centered_true) * (y_pred - centered_pred), axis=axis)
 
 
 def variance(y, axis=None):
@@ -82,5 +103,6 @@ def standard_deviation(y, axis=None):
 
 def correlation(y_true, y_pred, axis=None):
     """Pearson's product moment correlation coefficient"""
-    return covariance(y_true, y_pred, axis=axis)/T.sqrt(variance(y_true, axis)*variance(y_pred, axis))
-
+    return covariance(y_true, y_pred, axis=axis) / T.sqrt(
+        variance(y_true, axis) * variance(y_pred, axis)
+    )

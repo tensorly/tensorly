@@ -3,7 +3,7 @@
 Backend System
 ==============
 The TensorLy backend system allows for switching between multiple backends in
-a thread-local way.  You can obtain the back that is currently being used with the
+a thread-local way.  You can obtain the backend that is currently being used with the
 ``get_backend()`` function::
 
     >>> import tensorly as tl
@@ -23,7 +23,7 @@ from the thread that spawned them (which is typically the main thread).
 Globally setting the backend supports interactive usage.
 
 Additionally,  we provide a context manager ``backend_context``  
-for convenience, whcih may be used to
+for convenience, which may be used to
 safely use a backend only for limited context::
 
     >>> with tl.backend_context('pytorch'):
@@ -45,7 +45,7 @@ A backend is represented as a class, which implements the various functions need
 A base class ``tensorly.backend.core.Backend`` is given in `tensorly/backend/core.py`,
 which implement ``staticmethods`` of the common TensorLy API
 (e.g. ``tensor``, ``fold``, ``norm``, etc.).
-It will also provide some useful functions by default (e.g. `kron`, `kr`, `partial_svd`).
+It will also provide some useful functions by default (e.g. `kron`, `kr`).
 
 This base class should be subclassed when defining a new backend.
 

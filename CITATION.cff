@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "TensorLy Team"
+title: "TensorLy"
+url: "https://github.com/github/tensorly"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Kossaifi"
+      given-names: "Jean"
+    - family-names: "Panagakis"
+      given-names: "Yannis"
+    - family-names: "Anandkumark"
+      given-names: "Anima"
+    - family-names: "Pantic"
+      given-names: "Maja"
+  doi: "10.5555/3322706.3322732"
+  journal: "Journal of Machine Learning Research"
+  month: 1
+  start: 1 # First page number
+  end: 6 # Last page number
+  title: "TensorLy: Tensor Learning in Python"
+  issue: 26
+  volume: 20
+  year: 2019

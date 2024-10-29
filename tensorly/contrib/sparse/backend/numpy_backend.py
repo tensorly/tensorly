@@ -1,5 +1,5 @@
 from copy import copy as _py_copy
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 import numpy as np
 import scipy
@@ -11,29 +11,30 @@ from . import register_sparse_backend
 from ....backend.core import Backend
 
 
-_MIN_SPARSE_VERSION = '0.4.1+10.g81eccee'
-if LooseVersion(sparse.__version__) < _MIN_SPARSE_VERSION:
-    raise ImportError("numpy sparse backend requires `sparse` version >= %r"
-                      % _MIN_SPARSE_VERSION)
+_MIN_SPARSE_VERSION = Version("0.4.1+10.g81eccee")
+if Version(sparse.__version__) < _MIN_SPARSE_VERSION:
+    raise ImportError(
+        f"NumPy sparse backend requires `sparse` version >= {_MIN_SPARSE_VERSION!r}"
+    )
 
 
 def is_sparse(x):
     return isinstance(x, sparse.SparseArray)
 
 
-class NumpySparseBackend(Backend):
-    backend_name = 'numpy.sparse'
-
+class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
     @staticmethod
     def context(tensor):
-        return {'dtype': tensor.dtype}#, 'density':tensor.density}
+        return {"dtype": tensor.dtype}  # , 'density':tensor.density}
 
     @staticmethod
     def tensor(data, dtype=None):
         if is_sparse(data):
-            return (data.astype(dtype)
-                    if dtype is not None and dtype != data.dtype
-                    else data)
+            return (
+                data.astype(dtype)
+                if dtype is not None and dtype != data.dtype
+                else data
+            )
         elif isinstance(data, np.ndarray):
             return sparse.COO.from_numpy(data.astype(dtype, copy=False))
         else:
@@ -52,19 +53,23 @@ class NumpySparseBackend(Backend):
         return _py_copy(tensor)
 
     @staticmethod
+    def clip(tensor, a_min=None, a_max=None):
+        return np.clip(tensor, a_min, a_max)
+
+    @staticmethod
     def norm(tensor, order=2, axis=None):
         # handle difference in default axis notation
         if axis == ():
             axis = None
 
-        if order == 'inf':
+        if order == "inf":
             return np.max(np.abs(tensor), axis=axis)
         if order == 1:
             return np.sum(np.abs(tensor), axis=axis)
         elif order == 2:
             return np.sqrt(np.sum(tensor**2, axis=axis))
         else:
-            return np.sum(np.abs(tensor)**order, axis=axis)**(1 / order)
+            return np.sum(np.abs(tensor) ** order, axis=axis) ** (1 / order)
 
     def dot(self, x, y):
         if is_sparse(x) or is_sparse(y):
@@ -83,12 +88,12 @@ class NumpySparseBackend(Backend):
 
         return x
 
-    @staticmethod
-    def partial_svd(matrix, n_eigenvecs=None, random_state=None, **kwargs):
+    def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
         # Check that matrix is... a matrix!
         if matrix.ndim != 2:
-            raise ValueError('matrix be a matrix. matrix.ndim is {} != 2'.format(
-                matrix.ndim))
+            raise ValueError(
+                f"matrix must be a matrix. Dimension number is {matrix.ndim} != 2"
+            )
 
         # Choose what to do depending on the params
         dim_1, dim_2 = matrix.shape
@@ -107,7 +112,7 @@ class NumpySparseBackend(Backend):
             U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
             return U, S, V
         elif n_eigenvecs is None:
-            raise ValueError('n_eigenvecs cannot be none')
+            raise ValueError("n_eigenvecs cannot be none")
         elif is_sparse(matrix) and matrix.nnz == 0:
             # all-zeros matrix, so we should do a quick return.
             U = sparse.eye(dim_1, n_eigenvecs, dtype=matrix.dtype)
@@ -115,23 +120,17 @@ class NumpySparseBackend(Backend):
             V = sparse.eye(dim_2, n_eigenvecs, dtype=matrix.dtype)
         else:
             if n_eigenvecs > min_dim:
-                msg = ('n_eigenvecs={} if greater than the minimum matrix '
-                       'dimension ({})')
-                raise ValueError(msg.format(n_eigenvecs, min(matrix.shape)))
+                msg = (
+                    f"n_eigenvecs is {n_eigenvecs}; greater than the minimum matrix "
+                    f"dimension ({min(matrix.shape)})"
+                )
+                raise ValueError(msg)
             if np.issubdtype(matrix.dtype, np.complexfloating):
                 raise NotImplementedError("Complex dtypes")
             # We can perform a partial SVD
-            # construct np.random.RandomState for sampling a starting vector
-            if random_state is None:
-                # if random_state is not specified, do not initialize a starting vector
-                v0 = None
-            elif isinstance(random_state, int):
-                rns = np.random.RandomState(random_state)
-                # initilize with [-1, 1] as in ARPACK
-                v0 = rns.uniform(-1, 1, min_dim)
-            elif isinstance(random_state, np.random.RandomState):
-                # initilize with [-1, 1] as in ARPACK
-                v0 = random_state.uniform(-1, 1, min_dim)
+            rng = self.check_random_state(random_state)
+            # initilize with [-1, 1] as in ARPACK
+            v0 = rng.uniform(-1, 1, min_dim)
 
             # First choose whether to use X * X.T or X.T *X
             if dim_1 < dim_2:
@@ -143,7 +142,9 @@ class NumpySparseBackend(Backend):
                     # use dense form when sparse form will fail
                     S, U = scipy.linalg.eigh(xxT.toarray())
                 else:
-                    S, U = scipy.sparse.linalg.eigsh(xxT, k=n_eigenvecs, which='LM', v0=v0)
+                    S, U = scipy.sparse.linalg.eigsh(
+                        xxT, k=n_eigenvecs, which="LM", v0=v0
+                    )
                 S = np.sqrt(S)
                 V = conj.dot(U / S[None, :])
             else:
@@ -154,7 +155,9 @@ class NumpySparseBackend(Backend):
                     # use dense form when sparse form will fail
                     S, V = scipy.linalg.eigh(xTx.toarray())
                 else:
-                    S, V = scipy.sparse.linalg.eigsh(xTx, k=n_eigenvecs, which='LM', v0=v0)
+                    S, V = scipy.sparse.linalg.eigsh(
+                        xTx, k=n_eigenvecs, which="LM", v0=v0
+                    )
                 S = np.sqrt(S)
                 U = matrix.dot(V / S[None, :])
 
@@ -162,23 +165,39 @@ class NumpySparseBackend(Backend):
             U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T.conj()
 
-    @property
-    def SVD_FUNS(self):
-        return {'numpy_svd': self.partial_svd,
-                'truncated_svd': self.partial_svd}
 
-# moveaxis is temporarily uses the default implementation to fix issue #131
-# Using the builting function raises a TypeError:
-#     no implementation found for 'numpy.shape' on types
-#     that implement __array_function__: [<class 'sparse._coo.core.COO'>]
-#     This is fixed on sparse master
-for name in ['int64', 'int32', 'float64', 'float32', 'transpose',
-             'reshape', 'ndim', 'max', 'min', 'all', 'mean', 'sum',
-             'prod', 'sqrt', 'abs', 'sign', 'clip', 'arange', 'conj', 'shape']:
+for name in [
+    "int64",
+    "int32",
+    "float64",
+    "float32",
+    "transpose",
+    "moveaxis",
+    "reshape",
+    "ndim",
+    "max",
+    "min",
+    "all",
+    "mean",
+    "sum",
+    "prod",
+    "sqrt",
+    "abs",
+    "sign",
+    "arange",
+    "conj",
+    "shape",
+]:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
-for name in ['where', 'concatenate', 'kron', 'zeros', 'zeros_like', 'eye',
-             'ones', 'stack']:
+for name in [
+    "where",
+    "concatenate",
+    "kron",
+    "zeros",
+    "zeros_like",
+    "eye",
+    "ones",
+    "stack",
+]:
     NumpySparseBackend.register_method(name, getattr(sparse, name))
-
-

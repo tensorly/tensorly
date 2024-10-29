@@ -13,7 +13,7 @@ later published as a `JMLR paper <http://jmlr.org/papers/v20/18-277.html>`_ titl
 by `Jean Kossaifi`_, `Yannis Panagakis`_, `Anima Anandkumar`_ and `Maja Pantic`_.
 
 Originally, TensorLy was built on top of NumPy and SciPy only. In order to combine tensor methods with deep learning and run them on multiple devices, CPU and GPU, a flexible backend system was added.
-This allows algorithms written in TensorLy to be ran with any major framework such as PyTorch, MXNet, TensorFlow, CuPy and JAX.
+This allows algorithms written in TensorLy to be ran with any major framework such as PyTorch, TensorFlow, CuPy, JAX and Paddle.
 
 Core developers
 -----------------
@@ -21,15 +21,18 @@ Core developers
 TensorLy is first and formost a community 
 aiming to make tensor learning easy and accessible.
 
-With a robust and active group of contributors, we would like to thank all those who have contributed, including:
+With a robust and active group of contributors, we would like to thank all those who have contributed, including (alphabetical order):
 
-* `Jean Kossaifi`_
 * `Jeremy Cohen <https://jeremy-e-cohen.jimdofree.com/>`_
 * `Julia Gusak <https://juliagusak.github.io/about/>`_
+* `Meraj Hashemizadeh <http://www-ens.iro.umontreal.ca/~hashemis/>`_
+* `Jean Kossaifi`_
 * `Aaron Meurer <https://www.asmeurer.com/blog/about/>`_
-* `Marie Roald <https://github.com/MarieRoald>`_ 
 * `Yngve Mardal Moe <https://github.com/yngvem>`_ 
 * `Aaron Meyer <https://ameyer.me>`_ 
+* `Taylor Lee Patti <https://www.linkedin.com/in/taylor-patti/>`_
+* `Marie Roald <https://github.com/MarieRoald>`_ 
+* `Caglayan Tuna <https://github.com/caglayantuna>`_
 
 For a full list of contributors check the `Github page <https://github.com/tensorly/tensorly/graphs/contributors>`_.
 
@@ -83,11 +86,12 @@ INRIA is funding a full-time engineer to work on TensorLy.
 
 ........  
 
-.. image:: _static/logos/logo_skoltech.png
+.. image:: _static/logos/logo_ucla.png
    :width: 150pt
    :align: center
-   :target: https://www.skoltech.ru/en/
-   :alt: Skolkovo Institute of Science and Technology 
+   :target: https://www.ucla.edu/
+   :alt: UCLA
+
 ........  
 
 

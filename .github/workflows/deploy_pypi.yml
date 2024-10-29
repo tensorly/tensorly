@@ -1,0 +1,69 @@
+name: Deploy to Pypi
+
+on:
+  push:
+    tags:
+    - '*'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r doc/requirements_doc.txt
+          pip install setuptools wheel
+      - name: Make doc
+        run: |
+          cd doc
+          python minify.py
+          make html
+          cd ..
+      - name: Install package
+        run: |
+          python -m pip install -e .
+      - name: Build a binary wheel and a source tarball
+        run: |
+          python setup.py sdist bdist_wheel
+      - name: Publish package to TestPyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_PASSWORD }}
+          repository_url: https://test.pypi.org/legacy/
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_PASSWORD }}
+      - name: Push doc to stable
+        if: success()
+        run: |
+          # Add deploy key and clone through ssh
+          eval "$(ssh-agent -s)"
+          mkdir ~/.ssh
+          echo "${{ secrets.DEPLOY_DOC_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -t rsa github.com
+          echo 'Documentation was successfully built, updating the website.'
+          # See https://github.community/t/github-actions-bot-email-address/17204/5
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions"
+          git clone "git@github.com:tensorly/tensorly.github.io.git" doc_folder
+          echo "-- Updating the content"
+          cd doc_folder
+          cp -r dev/* stable/
+          echo "Pushing to git"
+          git add stable
+          git commit -m "Github action: new release."
+          git push --force origin main

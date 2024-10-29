@@ -1,7 +1,8 @@
 from ..deprecation import deprecated, DefineDeprecated
 
+
 def test_deprecated():
-    class Dummy(object):
+    class Dummy:
         def __init__(self, arg=1):
             self.arg = arg + 1
 
@@ -10,7 +11,7 @@ def test_deprecated():
 
     # Test using the deprecated function
     @deprecated(Dummy, use_deprecated=True)
-    class Deprecated():
+    class Deprecated:
         def __init__(self, arg=1):
             self.arg = arg
 
@@ -24,7 +25,7 @@ def test_deprecated():
 
     # Test using the new function instead
     @deprecated(Dummy, use_deprecated=False)
-    class Deprecated():
+    class Deprecated:
         def __init__(self, arg=1):
             self.arg = arg
 

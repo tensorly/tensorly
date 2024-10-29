@@ -5,20 +5,107 @@ import sys
 import threading
 import types
 import warnings
+import math
 
 import numpy as np
-import scipy.linalg
-import scipy.sparse.linalg
+import scipy.special
 
 
-class Index():
+backend_types = [
+    "int32",
+    "int64",
+    "float32",
+    "float64",
+    "complex64",
+    "complex128",
+    "pi",
+    "e",
+    "inf",
+]
+backend_basic_math = [
+    "exp",
+    "log",
+    "tanh",
+    "cosh",
+    "sinh",
+    "sin",
+    "cos",
+    "tan",
+    "arctanh",
+    "arccosh",
+    "arcsinh",
+    "arctan",
+    "arccos",
+    "arcsin",
+]
+backend_array = [
+    "einsum",
+    "matmul",
+    "ones",
+    "zeros",
+    "any",
+    "prod",
+    "all",
+    "where",
+    "reshape",
+    "cumsum",
+    "count_nonzero",
+    "eye",
+    "sqrt",
+    "abs",
+    "min",
+    "maximum",
+    "minimum",
+    "zeros_like",
+]
+
+
+class Index:
+    """Convenience class used as a an array, to be used with index_update
+
+    Parameters
+    ----------
+    indices : indices for indexing
+
+    Examples
+    --------
+    Usage: index[indices], e.g. ::
+
+        index[1:3, 4:5, :None]
+
+    See also
+    --------
+    index_update : updating the values of a tensor for specified indices
+    """
+
     __slots__ = ()
 
     def __getitem__(self, indices):
         return indices
 
+    @property
+    def __name__(self):
+        return "Index"
 
-class Backend(object):
+
+class Backend:
+    _available_backends = dict()
+
+    def __init_subclass__(cls, backend_name, **kwargs):
+        """When a subclass is created, register it in _known_backends"""
+        super().__init_subclass__(**kwargs)
+
+        if backend_name != "":
+            cls._available_backends[backend_name.lower()] = cls
+            cls.backend_name = backend_name
+        else:
+            warnings.warn(
+                f"Creating a subclass of BaseBackend ({cls.__name__}) with no name."
+            )
+
+    def __repr__(self):
+        return f"TensorLy {self.backend_name}-backend"
+
     @classmethod
     def register_method(cls, name, func):
         """Register a method with the backend.
@@ -31,6 +118,22 @@ class Backend(object):
             The method
         """
         setattr(cls, name, staticmethod(func))
+
+    @property
+    def e(self):
+        raise NotImplementedError
+
+    @property
+    def pi(self):
+        return math.pi
+
+    @property
+    def nan(self):
+        raise NotImplementedError
+
+    @property
+    def inf(self):
+        raise NotImplementedError
 
     @property
     def int64(self):
@@ -49,8 +152,72 @@ class Backend(object):
         raise NotImplementedError
 
     @property
-    def SVD_FUNS(self):
+    def complex128(self):
         raise NotImplementedError
+
+    @property
+    def complex64(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def check_random_state(seed):
+        """Returns a valid RandomState
+
+        Parameters
+        ----------
+        seed : None or instance of int or np.random.RandomState(), default is None
+        if seed is None NumPy's global seed is used.
+
+        Returns
+        -------
+        Valid instance np.random.RandomState
+
+        Notes
+        -----
+        Inspired by the scikit-learn eponymous function
+        """
+        if seed is None:
+            return np.random.mtrand._rand
+
+        elif isinstance(seed, int):
+            return np.random.RandomState(seed)
+
+        elif isinstance(seed, np.random.RandomState):
+            return seed
+
+        raise ValueError("Seed should be None, int or np.random.RandomState")
+
+    def randn(self, shape, seed=None, **context):
+        """Returns a random tensor with samples from the “standard normal” distribution.
+
+        Parameters
+        ----------
+        shape: Iterable[int]
+            shape of the random tensor
+        seed: None or instance of int or np.random.RandomState(), default is None
+        if seed is None NumPy's global seed is used
+        context: context of tensor
+
+        Returns
+        -------
+        random_tensor: tl.tensor
+        """
+        rng = self.check_random_state(seed)
+        random_tensor = rng.randn(*shape)
+        random_tensor = self.tensor(random_tensor, **context)
+        return random_tensor
+
+    def gamma(self, shape, scale=1.0, size=None, seed=None, **context):
+        """Draw samples from a Gamma distribution.
+
+        Samples are drawn from a Gamma distribution with specified parameters,
+        shape (sometimes designated “k”) and scale (sometimes designated “theta”),
+        where both parameters are > 0.
+        """
+        rng = self.check_random_state(seed)
+        random_tensor = rng.gamma(shape=shape, scale=scale, size=size)
+        random_tensor = self.tensor(random_tensor, **context)
+        return random_tensor
 
     @staticmethod
     def context(tensor):
@@ -80,8 +247,8 @@ class Backend(object):
         >>> tl.context(tensor)
         {'dtype': dtype('float32')}
 
-        Note that, if you were using, say, PyTorch, the context would also
-        include the device (i.e. CPU or GPU) and device ID.
+        Note that, if you were using, say, PyTorch or Paddle, the context would also
+        include the device or place (i.e. CPU or GPU) and device ID.
 
         If you want to create a new tensor in the same context, use this context:
 
@@ -261,6 +428,46 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
+    def count_nonzero(tensor):
+        """Returns number of non-zero elements in the tensor.
+        Parameters
+        ----------
+        tensor : tensor
+        Returns
+        -------
+        out : scalar
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def trace(tensor):
+        """Returns sum of the elements on the diagonal of the tensor.
+
+        Parameters
+        ----------
+        tensor : tensor
+
+        Returns
+        -------
+        out : scalar or tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def cumsum(tensor, axis=None):
+        """Computes the cumulative sum of a tensor, optionally along an axis.
+
+        Parameters
+        ----------
+        tensor : tensor
+
+        Returns
+        -------
+        tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def where(condition, x, y):
         """Return elements, either from `x` or `y`, depending on `condition`.
 
@@ -274,6 +481,42 @@ class Backend(object):
         Returns
         -------
         tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def any(tensor, axis=None, keepdims=False, **kwargs):
+        """Test whether any array element along a given axis evaluates to True.
+
+        Parameters
+        ----------
+        tensor : tensor
+            input tensor to check for non-zero values
+        axis : int or None, default is None
+            optional, indicates an axis along which to check for non-zero values
+        keepdims : bool, default is False
+
+        Returns
+        -------
+        bool or tensor
+            if axis is None, returns a bool indicating whether any value is non-zero
+            otherwise, returns a tensor of bools.
+        """
+        return tensor.any(axis=axis, keepdims=keepdims, **kwargs)
+
+    @staticmethod
+    def maximum(x1, x2, *args, **kwargs):
+        """Element-wise maximum of array elements.
+
+        Parameters
+        ----------
+        x1, x2 : tensor
+            The arrays holding the elements to be compared.
+
+        Returns
+        -------
+        tensor
+            The maximum of x1 and x2, element-wise.
         """
         raise NotImplementedError
 
@@ -303,33 +546,38 @@ class Backend(object):
         raise NotImplementedError
 
     @staticmethod
-    def max(tensor):
+    def max(tensor, axis=None):
         """The max value in a tensor.
 
         Parameters
         ----------
         tensor : tensor
+        axis : int or None, default is None
+            optional, indicates an axis along which to check for non-zero values
 
         Returns
         -------
-        scalar
+        scalar or tensor
+            If axis is None, returns a scalar. Otherwise, returns a tensor of scalars.
         """
         raise NotImplementedError
 
     @staticmethod
-    def min(tensor):
+    def min(tensor, axis=None):
         """The min value in a tensor.
 
         Parameters
         ----------
         tensor : tensor
+        axis : int or None, default is None
+            optional, indicates an axis along which to check for non-zero values
 
         Returns
         -------
-        scalar
+        scalar or tensor
+            If axis is None, returns a scalar. Otherwise, returns a tensor of scalars.
         """
         raise NotImplementedError
-
 
     @staticmethod
     def argmax(tensor):
@@ -463,8 +711,7 @@ class Backend(object):
         """
         raise NotImplementedError
 
-    @staticmethod
-    def norm(tensor, order=2, axis=None):
+    def norm(self, tensor, order=2, axis=None):
         """Computes the l-`order` norm of a tensor.
 
         Parameters
@@ -478,7 +725,18 @@ class Backend(object):
         float or tensor
             If `axis` is provided returns a tensor.
         """
-        raise NotImplementedError
+        # handle difference in default axis notation
+        if axis == ():
+            axis = None
+
+        if order == "inf":
+            return self.max(self.abs(tensor), axis=axis)
+        if order == 1:
+            return self.sum(self.abs(tensor), axis=axis)
+        elif order == 2:
+            return self.sqrt(self.sum(self.abs(tensor) ** 2, axis=axis))
+        else:
+            return self.sum(self.abs(tensor) ** order, axis=axis) ** (1 / order)
 
     @staticmethod
     def dot(a, b):
@@ -492,6 +750,105 @@ class Backend(object):
         Returns
         -------
         tensor
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def matmul(a, b):
+        """Matrix multiplication of tensors representing (batches of) matrices
+
+        Parameters
+        ----------
+        a : tl.tensor
+            [description]
+        b : tl.tensor
+            tensors representing the matrices to contract
+
+        Returns
+        -------
+        a @ b
+            matrix product of a and b
+
+        Notes
+        -----
+        The behavior depends on the arguments in the following way.
+
+            * If both arguments are 2-D they are multiplied like conventional matrices.
+
+            * If either argument is N-D, N > 2, it is treated as a stack of matrices residing in the last two indexes and broadcast accordingly.
+
+            * If the first argument is 1-D, it is promoted to a matrix by prepending a 1 to its dimensions. After matrix multiplication the prepended 1 is removed.
+
+            * If the second argument is 1-D, it is promoted to a matrix by appending a 1 to its dimensions. After matrix multiplication the appended 1 is removed.
+
+        `matmul` differs from dot in two important ways:
+
+           * Multiplication by scalars is not allowed, use * instead.
+
+           * Stacks of matrices are broadcast together as if the matrices were elements, respecting the signature ``(n,k),(k,m)->(n,m)``:
+
+           .. code-block:: python
+
+              >>> a = np.ones([9, 5, 7, 4])
+
+              >>> c = np.ones([9, 5, 4, 3])
+
+              >>> np.dot(a, c).shape
+              (9, 5, 7, 9, 5, 3)
+
+              >>> np.matmul(a, c).shape
+              (9, 5, 7, 3)
+
+              >>> # n is 7, k is 4, m is 3
+
+        The matmul function implements the semantics of the ``@`` operator introduced in Python 3.5 following `PEP 465 <https://www.python.org/dev/peps/pep-0465/>`_.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def tensordot(a, b, axes=2):
+        """
+        Compute tensor dot product along specified axes.
+        Given two tensors, `a` and `b`, and an array_like object containing
+        two array_like objects, ``(a_axes, b_axes)``, sum the products of
+        `a`'s and `b`'s elements (components) over the axes specified by
+        ``a_axes`` and ``b_axes``. The third argument can be a single non-negative
+        integer_like scalar, ``N``; if it is such, then the last ``N`` dimensions
+        of `a` and the first ``N`` dimensions of `b` are summed over.
+
+        Parameters
+        ----------
+        a, b : array_like
+            Tensors to "dot".
+        axes : int or (2,) array_like
+            * integer_like
+            If an int N, sum over the last N axes of `a` and the first N axes
+            of `b` in order. The sizes of the corresponding axes must match.
+            * (2,) array_like
+            Or, a list of axes to be summed over, first sequence applying to `a`,
+            second to `b`. Both elements array_like must be of the same length.
+
+        Returns
+        -------
+        output : ndarray
+            The tensor dot product of the input.
+
+        Notes
+        -----
+        Three common use cases are:
+            * ``axes = 0`` : tensor product :math:`a\\otimes b`
+            * ``axes = 1`` : tensor dot product :math:`a\\cdot b`
+            * ``axes = 2`` : (default) tensor double contraction :math:`a:b`
+
+        When `axes` is integer_like, the sequence for evaluation will be: first
+        the -Nth axis in `a` and 0th axis in `b`, and the -1th axis in `a` and
+        Nth axis in `b` last.
+        When there is more than one axis to sum over - and they are not the last
+        (first) axes of `a` (`b`) - the argument `axes` should consist of
+        two sequences of the same length, with the first axis to sum over given
+        first in both sequences, the second axis second, and so forth.
+        The shape of the result consists of the non-contracted axes of the
+        first tensor, followed by the non-contracted axes of the second.
         """
         raise NotImplementedError
 
@@ -513,6 +870,30 @@ class Backend(object):
         -------
         x : tensor, shape (M,) or (M, K)
             Solution to the system a x = b. Returned shape is identical to `b`.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def lstsq(a, b):
+        """Computes a solution to the least squares problem :math:`||ax-b||_F`
+
+        If the coefficient martix is underdetermined (m<n) and multiple
+        solutions exist, the min norm solution is returned.
+
+        Parameters
+        ----------
+        a : tensor, shape (M, N)
+            The coefficient matrix.
+        b : tensor, shape (M,) or (M, K)
+             The ordinate values.
+
+        Returns
+        -------
+        x : tensor, shape (N,) or (N, K)
+            Solution to the least squares problem :math:`||ax-b||_F`.
+        residuals : tensor, shape (K,)
+            Sums of squared residuals: Squared Euclidean 2-norm for each column in ax-b.
+            If the rank of a is < N or M <= N, this is an empty tensor.
         """
         raise NotImplementedError
 
@@ -542,22 +923,40 @@ class Backend(object):
         raise NotImplementedError
 
     def eps(self, dtype):
+        """Returns the machine epsilon for a given floating point dtype
+
+        Parameters
+        ----------
+        dtype : tensorly.dtype
+            the dtype for which to get the machine epsilon
+
+        Returns
+        -------
+        eps : machine epsilon for `dtype`
+        """
         return self.finfo(dtype).eps
 
     def finfo(self, dtype):
+        """Machine limits for floating point types.
+
+        Parameters
+        ----------
+        dtype: float, dtype or instance
+                Kind of floating point data-type about which to get information.
+        """
         return np.finfo(self.to_numpy(self.tensor([], dtype=dtype)).dtype)
 
     @staticmethod
     def conj(x, *args, **kwargs):
         """Return the complex conjugate, element-wise.
 
-            The complex conjugate of a complex number is obtained by changing the sign of its imaginary part.
+        The complex conjugate of a complex number is obtained by
+        changing the sign of its imaginary part.
         """
         raise NotImplementedError
 
-
     @staticmethod
-    def sort(tensor, axis, descending = False):
+    def sort(tensor, axis):
         """Return a sorted copy of an array
 
         Parameters
@@ -566,8 +965,6 @@ class Backend(object):
             An N-D tensor
         axis : int or None
             Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
-        descending : bool
-            If True, values are sorted in descending order, otherwise in ascending.
 
         Returns
         -------
@@ -576,6 +973,24 @@ class Backend(object):
         """
         raise NotImplementedError
 
+    @staticmethod
+    def argsort(tensor, axis):
+        """Returns arguments of a sorted array
+
+        Parameters
+        ----------
+        tensor : tensor
+            An N-D tensor
+        axis : int or None
+            Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
+
+        Returns
+        -------
+        list of scalar values
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def einsum(subscripts, *operands):
         """Evaluates the Einstein summation convention on the operands.
 
@@ -591,6 +1006,10 @@ class Backend(object):
         -------
         output : ndarray
             The calculation based on the Einstein summation convention
+
+        Notes
+        -----
+        This is only available for certain backends.
         """
         raise NotImplementedError
 
@@ -610,19 +1029,25 @@ class Backend(object):
         -------
         tensor
         """
+
         axes = list(range(self.ndim(tensor)))
-        if source < 0: source = axes[source]
-        if destination < 0: destination = axes[destination]
+        if source < 0:
+            source = axes[source]
+        if destination < 0:
+            destination = axes[destination]
         try:
             axes.pop(source)
         except IndexError:
-            raise ValueError('Source should verify 0 <= source < tensor.ndim'
-                             'Got %d' % source)
+            raise ValueError(
+                "Source should verify 0 <= source < tensor.ndim" "Got %d" % source
+            )
         try:
             axes.insert(destination, source)
         except IndexError:
-            raise ValueError('Destination should verify 0 <= destination < tensor.ndim'
-                             'Got %d' % destination)
+            raise ValueError(
+                "Destination should verify 0 <= destination < tensor.ndim"
+                "Got %d" % destination
+            )
         return self.transpose(tensor, axes)
 
     def kron(self, a, b):
@@ -643,198 +1068,14 @@ class Backend(object):
         b = self.reshape(b, (1, s3, 1, s4))
         return self.reshape(a * b, (s1 * s3, s2 * s4))
 
-    def kr(self, matrices, weights=None, mask=None):
-        """Khatri-Rao product of a list of matrices
+    def svd(self, matrix, **_):
+        raise NotImplementedError
 
-        This can be seen as a column-wise kronecker product.
-
-        Parameters
-        ----------
-        matrices : list of tensors
-            List of 2D tensors with the same number of columns, i.e.::
-
-                for i in len(matrices):
-                    matrices[i].shape = (n_i, m)
-
-        Returns
-        -------
-        khatri_rao_product : tensor of shape ``(prod(n_i), m)``
-            Where ``prod(n_i) = prod([m.shape[0] for m in matrices])`` (i.e. the
-            product of the number of rows of all the matrices in the product.)
-
-        Notes
-        -----
-        Mathematically:
-
-        .. math::
-            \\text{If every matrix } U_k \\text{ is of size } (I_k \\times R),\\\\
-            \\text{Then } \\left(U_1 \\bigodot \\cdots \\bigodot U_n \\right) \\\\
-            text{ is of size } (\\prod_{k=1}^n I_k \\times R)
-        """
-        if len(matrices) < 2:
-            raise ValueError('kr requires a list of at least 2 matrices, but {} '
-                            'given.'.format(len(matrices)))
-
-        n_col = self.shape(matrices[0])[1]
-        for i, e in enumerate(matrices[1:]):
-            if not i:
-                if weights is None:
-                    res = matrices[0]
-                else:
-                    res = matrices[0]*self.reshape(weights, (1, -1))
-            s1, s2 = self.shape(res)
-            s3, s4 = self.shape(e)
-            if not s2 == s4 == n_col:
-                raise ValueError('All matrices should have the same number of columns.')
-
-            a = self.reshape(res, (s1, 1, s2))
-            b = self.reshape(e, (1, s3, s4))
-            res = self.reshape(a * b, (-1, n_col))
-
-        m = self.reshape(mask, (-1, 1)) if mask is not None else 1
-
-        return res*m
-
-    def partial_svd(self, matrix, n_eigenvecs=None, random_state=None, **kwargs):
-        """Computes a fast partial SVD on `matrix`
-
-        If `n_eigenvecs` is specified, sparse eigendecomposition is used on
-        either matrix.dot(matrix.T) or matrix.T.dot(matrix).
-
-        Parameters
-        ----------
-        matrix : tensor
-            A 2D tensor.
-        n_eigenvecs : int, optional, default is None
-            If specified, number of eigen[vectors-values] to return.
-        random_state: {None, int, np.random.RandomState}
-            If specified, use it for sampling starting vector in a partial SVD(scipy.sparse.linalg.eigsh)
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2-D tensor, shape (matrix.shape[0], n_eigenvecs)
-            Contains the right singular vectors
-        S : 1-D tensor, shape (n_eigenvecs, )
-            Contains the singular values of `matrix`
-        V : 2-D tensor, shape (n_eigenvecs, matrix.shape[1])
-            Contains the left singular vectors
-        """
-        # Check that matrix is... a matrix!
-        if self.ndim(matrix) != 2:
-            raise ValueError('matrix be a matrix. matrix.ndim is %d != 2'
-                             % self.ndim(matrix))
-
-        ctx = self.context(matrix)
-        is_numpy = isinstance(matrix, np.ndarray)
-
-        if not is_numpy:
-            matrix = self.to_numpy(matrix)
-
-        # Choose what to do depending on the params
-        dim_1, dim_2 = matrix.shape
-        if dim_1 <= dim_2:
-            min_dim = dim_1
-            max_dim = dim_2
-        else:
-            min_dim = dim_2
-            max_dim = dim_1
-
-        if n_eigenvecs is None:
-            # Default on standard SVD
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=True)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        elif min_dim <= n_eigenvecs:
-            if max_dim < n_eigenvecs:
-                warnings.warn(('Trying to compute SVD with n_eigenvecs={0}, which '
-                               'is larger than max(matrix.shape)={1}. Setting '
-                               'n_eigenvecs to {1}').format(n_eigenvecs, max_dim))
-                n_eigenvecs = max_dim
-            if n_eigenvecs > min_dim:
-                full_matrices=True
-            else:
-                full_matrices=False
-            U, S, V = scipy.linalg.svd(matrix, full_matrices=full_matrices)
-            U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        else:
-            # We can perform a partial SVD
-            # construct np.random.RandomState for sampling a starting vector
-            if random_state is None:
-                # if random_state is not specified, do not initialize a starting vector
-                v0 = None
-            elif isinstance(random_state, int):
-                rns = np.random.RandomState(random_state)
-                # initilize with [-1, 1] as in ARPACK
-                v0 = rns.uniform(-1, 1, min_dim)
-            elif isinstance(random_state, np.random.RandomState):
-                # initilize with [-1, 1] as in ARPACK
-                v0 = random_state.uniform(-1, 1, min_dim)
-
-            # First choose whether to use X * X.T or X.T *X
-            if dim_1 < dim_2:
-                S, U = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix, matrix.T.conj()), k=n_eigenvecs, which='LM', v0=v0
-                )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-                V = np.dot(matrix.T.conj(), U * np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :])
-            else:
-                S, V = scipy.sparse.linalg.eigsh(
-                    np.dot(matrix.T.conj(), matrix), k=n_eigenvecs, which='LM', v0=v0
-                )
-                S = np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, np.sqrt(S))
-                U = np.dot(matrix, V) *  np.where(np.abs(S) <= np.finfo(S.dtype).eps, 0, 1/S)[None, :]
-
-            # WARNING: here, V is still the transpose of what it should be
-            U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
-            V = V.T.conj()
-
-        if not is_numpy:
-            U = self.tensor(U, **ctx)
-            S = self.tensor(S, **ctx)
-            V = self.tensor(V, **ctx)
-        return U, S, V
-
-    def truncated_svd(self, matrix, n_eigenvecs=None, **kwargs):
-        """Computes a truncated SVD on `matrix` using pytorch's SVD
-
-        Parameters
-        ----------
-        matrix : 2D-array
-        n_eigenvecs : int, optional, default is None
-            if specified, number of eigen[vectors-values] to return
-        **kwargs : optional
-            kwargs are used to absorb the difference of parameters among the other SVD functions
-
-        Returns
-        -------
-        U : 2D-array
-            of shape (matrix.shape[0], n_eigenvecs)
-            contains the right singular vectors
-        S : 1D-array
-            of shape (n_eigenvecs, )
-            contains the singular values of `matrix`
-        V : 2D-array
-            of shape (n_eigenvecs, matrix.shape[1])
-            contains the left singular vectors
-        """
-        dim_1, dim_2 = matrix.shape
-        if dim_1 <= dim_2:
-            min_dim = dim_1
-        else:
-            min_dim = dim_2
-
-        if n_eigenvecs is None or n_eigenvecs > min_dim:
-            full_matrices = True
-        else:
-            full_matrices = False
-
-        U, S, V = self.svd(matrix)
-        U, S, V = U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
-        return U, S, V
+    def eigh(self, matrix):
+        raise NotImplementedError
 
     index = Index()
-    
+
     @staticmethod
     def index_update(tensor, indices, values):
         """Updates the value of tensors in the specified indices
@@ -843,7 +1084,7 @@ class Backend(object):
                 index_update(tensor, tensorly.index[:, 3:5], values)
 
             Equivalent of::
-            
+
                 tensor[:, 3:5] = values
 
         Parameters
@@ -854,7 +1095,7 @@ class Backend(object):
             indices to update
         values : tensorly.tensor
             values to use to fill tensor[indices]
-        
+
         Returns
         -------
         tensor
@@ -862,7 +1103,7 @@ class Backend(object):
 
         Example
         -------
-        
+
         >>> import tensorly as tl
         >>> import numpy as np
         >>> tensor = tl.tensor([[1, 2, 3], [4, 5, 6]])
@@ -874,6 +1115,156 @@ class Backend(object):
         >>> tl.index_update(tensor, tl.index[:, 1], 0)
         array([[1, 0, 3],
                [4, 0, 6]])
+
+        See also
+        --------
+        index
         """
         tensor[indices] = values
         return tensor
+
+    @staticmethod
+    def log2(x):
+        """Return the base 2 logarithm of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def log(x):
+        """Calculate the natural logarithm of all elements in the input array."""
+        raise
+
+    @staticmethod
+    def logsumexp(x, axis=None):
+        """
+        Calculate the log of the sum of exponentials of input elements in a numerically stable way.
+
+        Parameters
+        ----------
+        x: tensorly.tensor
+            Input tensor.
+        axis: int
+            Axis along which logsumexp should be applied.
+
+        Returns
+        -------
+        tensor
+            Output of ``log(sum(exp(x)))``.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def exp(x):
+        """Calculate the exponential of all elements in the input array."""
+        raise NotImplementedError
+
+    def digamma(self, x):
+        """The digamma function.
+
+        The logarithmic derivative of the gamma function evaluated at z.
+        """
+        return self.tensor(scipy.special.digamma(x), **self.context(x))
+
+    @staticmethod
+    def flip(tensor, axis=None):
+        """Reverse the order of elements in an array along the given axis."""
+        raise NotImplementedError
+
+    @staticmethod
+    def sin(x):
+        """Return the sin of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def cos(x):
+        """Return the cos of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def tan(x):
+        """Return the tan of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arcsin(x):
+        """Return the arcsin of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arccos(x):
+        """Return the arccos of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arctan(x):
+        """Return the arctan of x."""
+        raise NotImplementedError
+
+    def asin(self, x):
+        """Return the arcsin of x."""
+        return self.arcsin(x)
+
+    def acos(self, x):
+        """Return the arccos of x."""
+        return self.arccos(x)
+
+    def atan(self, x):
+        """Return the arctan of x."""
+        return self.arctan(x)
+
+    @staticmethod
+    def sinh(x):
+        """Return the sinh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def cosh(x):
+        """Return the cosh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def tanh(x):
+        """Return the tanh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arcsinh(x):
+        """Return the arcsinh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arccosh(x):
+        """Return the arccosh of x."""
+        raise NotImplementedError
+
+    @staticmethod
+    def arctanh(x):
+        """Return the arctanh of x."""
+        raise NotImplementedError
+
+    def asinh(self, x):
+        """Return the arcsinh of x."""
+        return self.arcsinh(x)
+
+    def acosh(self, x):
+        """Return the arccosh of x."""
+        return self.arccosh(x)
+
+    def atanh(self, x):
+        """Return the arctanh of x."""
+        return self.arctanh(x)
+
+    def partial_svd(self, *args, **kwargs):
+        msg = (
+            "partial_svd is no longer used. "
+            "Please use tensorly.tenalg.svd_interface instead, "
+            "it provides a unified interface to all available SVD implementations."
+        )
+        raise NotImplementedError(msg)
+
+    def kr(self, matrices, weights=None, mask=None):
+        msg = (
+            "kr is no longer used. "
+            "Please use tensorly.tenalg.khatri_rao instead, "
+            "it provides a unified interface to Khatri Rao implementations."
+        )
+        raise NotImplementedError(msg)

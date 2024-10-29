@@ -45,8 +45,8 @@ sparse tensor would use::
     >>> from tensorly.contrib.sparse import tensor, unfold
     >>> X = sparse.COO(np.arange(24).reshape((3, 4, 2)))
     >>> X = sparse.COO(X.coords, X.data, shape=(100, 100, 100))
-    >>> X = tl.tensor(X)
-    >>> unfold(X, 0) # mode-1 unfolding
+    >>> X = tensor(X, dtype='float')
+    >>> unfold(X, 0).data # mode-1 unfolding
     array([[ 0,  1,  2,  3,  4,  5,  6,  7],
            [ 8,  9, 10, 11, 12, 13, 14, 15],
            [16, 17, 18, 19, 20, 21, 22, 23]])
@@ -123,7 +123,7 @@ much memory.
    <COO: shape=(1000, 1001, 1002), dtype=float64, nnz=5044, fill_value=0.0>
 
 This is how much memory the sparse array takes up, vs. how much it would take
-up if it were represented densly.
+up if it were represented densely.
 
    >>> tensor.nbytes / 1e9 # Actual memory usage in GB
    0.000161408

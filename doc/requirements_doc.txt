@@ -1,5 +1,7 @@
 sphinx
-slimit
+jsmin
 rcssmin
 numpydoc
-sphinx-gallery
+sphinx-gallery==0.17.0
+matplotlib==3.6.3
+tensorly_sphinx_theme
