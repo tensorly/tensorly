@@ -1,13 +1,13 @@
 import numpy as np
 import tensorly as tl
-from ..jointdiag import jointdiag
+from ..joint_matrix_diagonalization import joint_matrix_diagonalization
 
 
-def test_jointdiag():
+def test_joint_matrix_diagonalization():
     """
     Generates random diagonal tensor, and random mixing matrix
     Multiplies every slice of diagonal tensor with matrix 'synthetic' S * D * S^-1
-    Sends altered tensor into jointdiag function
+    Sends altered tensor into joint_matrix_diagonalization function
     Returns the diagonal tensor estimate and mixing matrix estimate
     """
     k = 14
@@ -26,7 +26,7 @@ def test_jointdiag():
 
     synthetic = tl.tensor(synthetic, dtype=tl.float64)
 
-    diag_est, _ = jointdiag(synthetic, verbose=False)
+    diag_est, _ = joint_matrix_diagonalization(synthetic, verbose=False)
     diag_est = tl.to_numpy(diag_est)
 
     ## Sorts outputted diagonal data

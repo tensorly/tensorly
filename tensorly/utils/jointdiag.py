@@ -7,7 +7,7 @@ import tensorly as tl
 # License: BSD 3 clause
 
 
-def jointdiag(
+def joint_matrix_diagonalization(
     X,
     max_iter: int = 50,
     threshold: float = 1e-10,
@@ -128,7 +128,7 @@ def jointdiag(
             elif angle_selection < 0.0:
                 theta_k = (th1 + tl.pi) / 4
             else:
-                raise RuntimeError("Jointdiag: No solution found.")
+                raise RuntimeError("joint_matrix_diagonalization: No solution found.")
 
             # Given's rotation, this will minimize norm of off-diagonal elements only
             pvec = tl.copy(X[p, :, :])
