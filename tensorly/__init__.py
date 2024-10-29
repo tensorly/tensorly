@@ -84,6 +84,7 @@ from .backend import (
     prod,
     sign,
     abs,
+    diagonal,
     sqrt,
     norm,
     dot,
