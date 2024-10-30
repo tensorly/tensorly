@@ -2,7 +2,7 @@ from ..deprecation import deprecated, DefineDeprecated
 
 
 def test_deprecated():
-    class Dummy(object):
+    class Dummy:
         def __init__(self, arg=1):
             self.arg = arg + 1
 

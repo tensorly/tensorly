@@ -67,7 +67,7 @@ for i, pattern in enumerate(patterns):
         ax.set_axis_off()
 
         if i == 0:
-            ax.set_title("Learned\nrank = {}".format(rank))
+            ax.set_title(f"Learned\nrank = {rank}")
 
 plt.suptitle("CP tensor regression")
 plt.show()

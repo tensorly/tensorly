@@ -31,7 +31,7 @@ fig = plt.figure()
 
 for i, pattern in enumerate(patterns):
 
-    print("fitting pattern n.{}".format(i))
+    print(f"fitting pattern n.{i}")
 
     # Generate the original image
     weight_img = gen_image(
@@ -50,7 +50,7 @@ for i, pattern in enumerate(patterns):
         ax.set_title("Original\nweights")
 
     for j, rank in enumerate(ranks):
-        print("fitting for rank = {}".format(rank))
+        print(f"fitting for rank = {rank}")
 
         # Create a tensor Regressor estimator
         estimator = TuckerRegressor(
@@ -69,7 +69,7 @@ for i, pattern in enumerate(patterns):
         ax.set_axis_off()
 
         if i == 0:
-            ax.set_title("Learned\nrank = {}".format(rank))
+            ax.set_title(f"Learned\nrank = {rank}")
 
 plt.suptitle("Tucker tensor regression")
 plt.show()
