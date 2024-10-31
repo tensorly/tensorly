@@ -11,7 +11,7 @@ from ..tucker_tensor import (
 from ..solvers.penalizations import (
     process_regularization_weights,
 )
-from ..solvers.nnls import hals_nnls, fista
+from ..solvers.nnls import hals_nnls, fista, active_set_nnls
 from math import sqrt
 import warnings
 from collections.abc import Iterable
