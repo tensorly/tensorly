@@ -90,7 +90,7 @@ def admm(
     -----
     ADMM solves the convex optimization problem
 
-    .. math:: \\min_ f(x) + g(z),\; A(x_{split}) + Bx = c.
+    .. math:: \\min_ f(x) + g(z),\\; A(x_{split}) + Bx = c.
 
     Following updates are iterated to solve the problem
 

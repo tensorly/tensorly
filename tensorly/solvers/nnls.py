@@ -86,7 +86,7 @@ def hals_nnls(
 
     .. math::
 
-            \\min_{V >= \epsilon} ||M-UV||_F^2
+            \\min_{V >= \\epsilon} ||M-UV||_F^2
 
     The matrix V is updated linewise. The update rule for this resolution is
 
