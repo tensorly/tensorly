@@ -30,4 +30,4 @@ from ._symmetric_cp import (
 )
 from ._cp_power import parafac_power_iteration, power_iteration, CPPower
 from ._cmtf_als import coupled_matrix_tensor_3d_factorization
-from ._constrained_cp import constrained_parafac, ConstrainedCP
+from ._constrained_cp import constrained_parafac, ConstrainedCP, constrained_parafac_supervised

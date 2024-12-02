@@ -1,4 +1,5 @@
 import tensorly as tl
+import numpy as np
 
 
 def validate_constraints(
@@ -267,6 +268,27 @@ def proximal_operator(
         raise RuntimeError("Invalid constraint name")
 
 
+def proximal_operator_supervised(
+    tensor,
+    l1_reg,
+    l2_reg
+):
+    """
+    Returns L1/L2 penalized factor
+    """
+    if l1_reg is not None:
+        constraint = "l1_reg"
+    if l2_reg is not None:
+        constraint = "l2_reg"
+    if constraint is None:
+        return tensor
+    elif constraint == "l1_reg":
+        return soft_thresholding(tensor, l1_reg)
+    elif constraint == "l2_reg":
+        return l2_prox_element(tensor, l2_reg)
+    else:
+        raise RuntimeError("Invalid constraint name")
+
 def smoothness_prox(tensor, regularizer):
     """Proximal operator for smoothness
 
@@ -491,6 +513,18 @@ def l2_prox(tensor, regularizer):
     else:
         bigger_value = regularizer
     return tensor - (tensor * regularizer / bigger_value)
+
+
+def l2_prox_element(tensor, regularizer):
+    norm = np.abs(tensor)
+    
+    # Calculate the scaling factor element-wise
+    scale = np.maximum(norm, regularizer)
+    
+    # Apply the proximal operator element-wise
+    result = tensor * (1 - regularizer / scale)
+    
+    return result
 
 
 def normalized_sparsity_prox(tensor, threshold):

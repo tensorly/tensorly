@@ -6,8 +6,8 @@ from ..random import random_cp
 from ._base_decomposition import DecompositionMixin
 from ..base import unfold
 from ..cp_tensor import CPTensor, cp_norm, validate_cp_rank
-from ..solvers.admm import admm
-from ..tenalg.proximal import proximal_operator, validate_constraints
+from ..solvers.admm import admm, admm_super
+from ..tenalg.proximal import proximal_operator, proximal_operator_supervised, validate_constraints
 from ..tenalg.svd import svd_interface
 from ..tenalg import unfolding_dot_khatri_rao
 
@@ -159,6 +159,82 @@ def initialize_constrained_parafac(
             n_const=n_modes,
             order=i,
         )
+    kt = CPTensor((None, factors))
+    return kt
+
+
+def initialize_constrained_parafac_super(
+    tensor,
+    rank,
+    init="svd",
+    svd="randomized_svd",
+    random_state=None,
+    l1_reg=None,
+    l2_reg=None,
+):
+    r"""Initialize factors used in `constrained_parafac_super`.
+
+    """
+    n_modes = tl.ndim(tensor)
+    rng = tl.check_random_state(random_state)
+
+    if init == "random":
+        weights, factors = random_cp(
+            tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor)
+        )
+
+    elif init == "svd":
+        factors = []
+        for mode in range(tl.ndim(tensor)):
+            U, S, _ = svd_interface(unfold(tensor, mode), n_eigenvecs=rank, method=svd)
+
+            # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
+            if mode == 0:
+                idx = min(rank, tl.shape(S)[0])
+                U = tl.index_update(U, tl.index[:, :idx], U[:, :idx] * S[:idx])
+
+            if tensor.shape[mode] < rank:
+                random_part = tl.tensor(
+                    rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
+                    **tl.context(tensor),
+                )
+                U = tl.concatenate([U, random_part], axis=1)
+
+            factors.append(U[:, :rank])
+
+    elif isinstance(init, (tuple, list, CPTensor)):
+        try:
+            weights, factors = CPTensor(init)
+
+            if tl.all(weights == 1):
+                weights, factors = CPTensor((None, factors))
+            else:
+                weights_avg = tl.prod(weights) ** (1.0 / tl.shape(weights)[0])
+                for i in range(len(factors)):
+                    factors[i] = factors[i] * weights_avg
+            kt = CPTensor((None, factors))
+            return kt
+        except ValueError:
+            raise ValueError(
+                "If initialization method is a mapping, then it must "
+                "be possible to convert it to a CPTensor instance"
+            )
+    else:
+        raise ValueError(f'Initialization method "{init}" not recognized')
+
+    for i in range(n_modes):
+        if l1_reg is not None:
+            factors[i] = proximal_operator_supervised(
+                factors[i],
+                l1_reg=l1_reg[i],
+                l2_reg=l2_reg,
+            )
+        elif l2_reg is not None:
+            factors[i] = proximal_operator_supervised(
+                factors[i],
+                l1_reg=l1_reg,
+                l2_reg=l2_reg[i],
+            )
     kt = CPTensor((None, factors))
     return kt
 
@@ -397,8 +473,137 @@ def constrained_parafac(
                         f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
                     )
 
-                if constraint_error < tol_outer:
+                #if constraint_error < tol_outer:
+                #    print("Hey")
+                #    break
+                if cvg_criterion == "abs_rec_error":
+                    stop_flag = tl.abs(rec_error_decrease) < tol_outer
+                elif cvg_criterion == "rec_error":
+                    stop_flag = rec_error_decrease < tol_outer
+                else:
+                    raise TypeError("Unknown convergence criterion")
+
+                if stop_flag:
+                    if verbose:
+                        print(f"PARAFAC converged after {iteration} iterations")
                     break
+
+            else:
+                if verbose:
+                    print(f"reconstruction error={rec_errors[-1]}")
+
+    cp_tensor = CPTensor((weights, factors))
+
+    if return_errors:
+        return cp_tensor, rec_errors
+    else:
+        return cp_tensor
+
+
+def constrained_parafac_supervised(
+    tensor,
+    rank,
+    n_iter_max=100,
+    n_iter_max_inner=10,
+    init="svd",
+    svd="randomized_svd",
+    tol_outer=1e-8,
+    tol_inner=1e-6,
+    random_state=None,
+    verbose=0,
+    return_errors=False,
+    cvg_criterion="abs_rec_error",
+    l1_reg=None,
+    l2_reg=None,
+):
+    """
+    Supervised tensor factorization
+    """
+
+    if l1_reg is not None and l2_reg is not None:
+        raise TypeError("Unknown convergence criterion")
+
+    weights, factors = initialize_constrained_parafac_super(
+        tensor,
+        rank,
+        init=init,
+        svd=svd,
+        random_state=random_state,
+        l1_reg=l1_reg,
+        l2_reg=l2_reg,
+    )
+
+    rec_errors = []
+    norm_tensor = tl.norm(tensor, 2)
+
+    modes_list = [mode for mode in range(tl.ndim(tensor))]
+
+    # ADMM inits
+    dual_variables = []
+    factors_aux = []
+    for i in range(len(factors)):
+        dual_variables.append(tl.zeros(tl.shape(factors[i])))
+        factors_aux.append(tl.transpose(tl.zeros(tl.shape(factors[i]))))
+
+    for iteration in range(n_iter_max):
+        if verbose > 1:
+            print("Starting iteration", iteration + 1)
+        for mode in modes_list:
+            if verbose > 1:
+                print("Mode", mode, "of", tl.ndim(tensor))
+
+            pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
+            for i, factor in enumerate(factors):
+                if i != mode:
+                    pseudo_inverse = pseudo_inverse * tl.dot(
+                        tl.transpose(factor), factor
+                    )
+
+            mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)
+            if l1_reg is not None:
+                factors[mode], factors_aux[mode], dual_variables[mode] = admm_super(
+                    mttkrp,
+                    pseudo_inverse,
+                    factors[mode],
+                    dual_variables[mode],
+                    n_iter_max=n_iter_max_inner,
+                    l1_reg=l1_reg[mode],
+                    tol=tol_inner,
+                )
+            elif l2_reg is not None:
+                factors[mode], factors_aux[mode], dual_variables[mode] = admm_super(
+                    mttkrp,
+                    pseudo_inverse,
+                    factors[mode],
+                    dual_variables[mode],
+                    n_iter_max=n_iter_max_inner,
+                    l2_reg=l2_reg[mode],
+                    tol=tol_inner,
+                )
+
+        factors_norm = cp_norm((weights, factors))
+        iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0) * weights)
+        rec_error = (
+            tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
+        )
+        rec_errors.append(rec_error)
+        constraint_error = 0
+        for mode in modes_list:
+            constraint_error += tl.norm(
+                factors[mode] - tl.transpose(factors_aux[mode])
+            ) / tl.norm(factors[mode])
+        if tol_outer:
+            if iteration >= 1:
+                rec_error_decrease = rec_errors[-2] - rec_errors[-1]
+
+                if verbose:
+                    print(
+                        f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
+                    )
+
+                #if constraint_error < tol_outer:
+                #    print("Hey")
+                #    break
                 if cvg_criterion == "abs_rec_error":
                     stop_flag = tl.abs(rec_error_decrease) < tol_outer
                 elif cvg_criterion == "rec_error":

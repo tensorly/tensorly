@@ -14,6 +14,7 @@ from ..cp_tensor import (
 )
 from ..tenalg.svd import svd_interface
 from ..tenalg import unfolding_dot_khatri_rao
+from scipy.optimize import least_squares, minimize
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -247,6 +248,7 @@ def parafac(
     svd_mask_repeats=5,
     linesearch=False,
     callback=None,
+    new_solve=False
 ):
     """CANDECOMP/PARAFAC decomposition via alternating least squares (ALS)
     Computes a rank-`rank` decomposition of `tensor` [1]_ such that:
@@ -421,10 +423,16 @@ def parafac(
                 * tl.reshape(weights, (1, -1))
             )
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
+            
+            if new_solve:
+                factor = minimize(objective, factors[mode].ravel(), method='L-BFGS-B', args=(factors[mode], tl.conj(tl.transpose(pseudo_inverse)), mttkrp))
+                factor = factor.x
 
-            factor = tl.transpose(
-                tl.solve(tl.conj(tl.transpose(pseudo_inverse)), tl.transpose(mttkrp))
-            )
+            else:
+                factor = tl.transpose(
+                    tl.solve(tl.conj(tl.transpose(pseudo_inverse)), tl.transpose(mttkrp))
+                )
+            factor = factor.reshape(factors[mode].shape)
             factors[mode] = factor
 
         # Will we be performing a line search iteration
@@ -542,6 +550,38 @@ def parafac(
     else:
         return cp_tensor
 
+
+def least_squares_objective(A, factor, pseudo_inverse, mttkrp):
+    A = A.reshape(factor.shape)
+    residual = np.dot(A, pseudo_inverse) - mttkrp
+    # Apply regularization
+    #for idx in regularize_indices:
+        #residual[idx[0], idx[1]] += lambda_ * A[idx[0], idx[1]]
+    
+    return residual.ravel()
+
+
+def objective(A, factor, pseudo_inverse, mttkrp):
+    L2_pen = np.sum(A)
+    A = A.reshape(factor.shape)
+    residual = np.dot(A, pseudo_inverse) - mttkrp
+    # Apply regularization
+    #for idx in regularize_indices:
+        #residual[idx[0], idx[1]] += lambda_ * A[idx[0], idx[1]]
+    
+    return np.linalg.norm(residual)**2 + L2_pen
+
+
+def objective2(A, factor, X_slice, mttkrp):
+    L2_pen = np.sum(A**2)
+    A = A.reshape(factor.shape)
+    residual = np.matmul(A, X_slice) - mttkrp
+    # Apply regularization
+    #for idx in regularize_indices:
+        #residual[idx[0], idx[1]] += lambda_ * A[idx[0], idx[1]]
+    
+    return np.linalg.norm(residual)**2 + L2_pen
+    
 
 def sample_khatri_rao(
     matrices,
