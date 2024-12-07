@@ -15,7 +15,7 @@ def hals_nnls(
     epsilon=0.0,
     callback=None,
 ):
-    """
+    r"""
     Non Negative Least Squares (NNLS)
 
     Computes an approximate solution of a nonnegative least
