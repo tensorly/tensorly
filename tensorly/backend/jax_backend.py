@@ -85,6 +85,7 @@ for name in (
         "mean",
         "sum",
         "argmin",
+        "diagonal",
         "argmax",
         "stack",
         "sign",
