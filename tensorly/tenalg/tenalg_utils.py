@@ -18,11 +18,8 @@ def _validate_contraction_modes(shape1, shape2, modes, batched_modes=False):
             modes1 = list(range(-modes, 0))
             modes2 = list(range(0, modes))
     else:
-        try:
-            modes1, modes2 = modes
-        except ValueError:
-            modes1 = modes
-            modes2 = modes
+        modes1 = modes
+        modes2 = modes
     try:
         modes1 = list(modes1)
     except TypeError:
