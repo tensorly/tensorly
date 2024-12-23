@@ -326,6 +326,7 @@ def test_partial_tensor_to_vec():
     rec = partial_vec_to_tensor(TT, T.shape(tensor), skip_begin=0, skip_end=2)
     assert T.shape(rec) == T.shape(tensor)
 
+
 def test_partial_vec_to_tensor():
     """Test for partial_vec_to_tensor"""
     X = np.arange(24).reshape((3, 4, 2))
