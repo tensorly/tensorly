@@ -79,7 +79,7 @@ def initialize_decomposition(
         C = svd_interface(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
 
         B = tl.eye(rank, **context)
-        projections = _compute_projections(tensor_slices, (A, B, C), svd)
+        projections = _compute_projections(tensor_slices, (A, B, C))
         return Parafac2Tensor((None, [A, B, C], projections))
 
     elif isinstance(init, (tuple, list, Parafac2Tensor, CPTensor)):
@@ -96,17 +96,17 @@ def initialize_decomposition(
     raise ValueError(f'Initialization method "{init}" not recognized')
 
 
-def _compute_projections(tensor_slices, factors, svd):
-    n_eig = factors[0].shape[1]
+def _compute_projections(tensor_slices, factors):
     out = []
 
     for A, tensor_slice in zip(factors[0], tensor_slices):
         lhs = T.dot(factors[1], T.transpose(A * factors[2]))
         rhs = T.transpose(tensor_slice)
-        U, _, Vh = svd_interface(
-            T.dot(lhs, rhs), n_eigenvecs=n_eig, method=svd, flip_sign=False
-        )
 
+        # We call the backend directly, and not the SVD interface,
+        # because this has to be the full SVD. The backend currently
+        # only offers the reduced SVD.
+        U, _, Vh = tl.svd(T.dot(lhs, rhs), full_matrices=True)
         out.append(T.transpose(T.dot(U, Vh)))
 
     return out
@@ -220,7 +220,7 @@ class _BroThesisLineSearch:
             if 2 in self.nn_modes:
                 factors_ls[2] = tl.clip(factors_ls[2], 0)
 
-        projections_ls = _compute_projections(tensor_slices, factors_ls, self.svd)
+        projections_ls = _compute_projections(tensor_slices, factors_ls)
 
         ls_rec_error = _parafac2_reconstruction_error(
             tensor_slices, (weights, factors_ls, projections_ls), self.norm_tensor
@@ -537,7 +537,7 @@ def parafac2(
         else:
             line_iter = False
 
-        projections = _compute_projections(tensor_slices, factors, svd)
+        projections = _compute_projections(tensor_slices, factors)
         projected_tensor = _project_tensor_slices(tensor_slices, projections)
         factors = parafac_updates(projected_tensor, weights, factors)
 

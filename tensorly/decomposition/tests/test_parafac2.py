@@ -221,6 +221,31 @@ def test_linesearch_accepts_only_improved_fit():
     assert line_search.acc_fail == 0
 
 
+def test_parafac2_rank_gt_rows():
+    """Tests that PARAFAC2 decomposition handles rank > slice rows correctly.
+    Previously, this would throw an error due to use of reduced instead of full SVD.
+    """
+    rank = 8
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(50, 30), (65, 30), (6, 30), (80, 30)],
+        rank=rank,
+    )
+
+    slices = parafac2_to_slices(random_parafac2_tensor)
+
+    _, err = parafac2(
+        slices,
+        rank,
+        init="random",
+        normalize_factors=False,
+        return_errors=True,
+        n_iter_max=10,
+    )
+
+    assert len(err) > 3  # Check that we didn't just immediately exit
+
+
 @pytest.mark.parametrize("linesearch", [False, True])
 def test_parafac2_nn(linesearch):
     rng = tl.check_random_state(1234)
