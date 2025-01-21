@@ -109,7 +109,7 @@ def _compute_projections(tensor_slices, factors):
         U, _, Vh = tl.svd(T.dot(lhs, rhs), full_matrices=True)
 
         n_eigenvecs = min(U.shape[1], Vh.shape[0])
-        U, _, Vh = U[:, :n_eigenvecs], Vh[:n_eigenvecs, :]
+        U, Vh = U[:, :n_eigenvecs], Vh[:n_eigenvecs, :]
         out.append(T.transpose(T.dot(U, Vh)))
 
     return out
