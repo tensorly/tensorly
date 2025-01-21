@@ -452,12 +452,12 @@ def maxvol(A):
 
         # Find the row of max norm
         max_row_idx = tl.argmax(rows_norms, axis=0)
-        max_row = A_new[rest_of_rows[max_row_idx], :]
+        max_row = A_new[max_row_idx, :]
 
         # Compute the projection of max_row to other rows
         # projection = <b, a>/|a|^2
         projection = tl.dot(A_new, tl.transpose(max_row))
-        projection = projection/(np.sum(max_row**2))
+        projection = projection / (np.sum(max_row**2))
     
         # Subtract the projection from A_new:  b <- b - a * projection
         A_new = A_new - tl.tenalg.outer((projection, max_row))
