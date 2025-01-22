@@ -47,7 +47,7 @@ def _validate_tucker_tensor(tucker_tensor):
     return tuple(shape), tuple(rank)
 
 
-def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False):
+def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False, modes=None):
     """Converts the Tucker tensor into a full tensor
 
     Parameters
@@ -59,6 +59,8 @@ def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False):
         Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
     transpose_factors : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
+    modes : None or int list, optional, default is None
+        list of the modes on which to perform the decomposition
 
     Returns
     -------
@@ -66,7 +68,7 @@ def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False):
        full tensor of shape ``(factors[0].shape[0], ..., factors[-1].shape[0])``
     """
     core, factors = tucker_tensor
-    return multi_mode_dot(core, factors, skip=skip_factor, transpose=transpose_factors)
+    return multi_mode_dot(core, factors, skip=skip_factor, transpose=transpose_factors, modes=modes)
 
 
 def tucker_normalize(tucker_tensor):
