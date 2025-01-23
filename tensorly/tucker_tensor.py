@@ -47,7 +47,9 @@ def _validate_tucker_tensor(tucker_tensor):
     return tuple(shape), tuple(rank)
 
 
-def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False, modes=None):
+def tucker_to_tensor(
+    tucker_tensor, skip_factor=None, transpose_factors=False, modes=None
+):
     """Converts the Tucker tensor into a full tensor
 
     Parameters
@@ -68,7 +70,9 @@ def tucker_to_tensor(tucker_tensor, skip_factor=None, transpose_factors=False, m
        full tensor of shape ``(factors[0].shape[0], ..., factors[-1].shape[0])``
     """
     core, factors = tucker_tensor
-    return multi_mode_dot(core, factors, skip=skip_factor, transpose=transpose_factors, modes=modes)
+    return multi_mode_dot(
+        core, factors, skip=skip_factor, transpose=transpose_factors, modes=modes
+    )
 
 
 def tucker_normalize(tucker_tensor):
