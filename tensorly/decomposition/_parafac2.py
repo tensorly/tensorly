@@ -1,5 +1,5 @@
 from warnings import warn
-from typing import Iterable
+from typing import Iterable, Optional, Sequence, Literal, Union
 
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
@@ -11,7 +11,7 @@ from ..parafac2_tensor import (
     _validate_parafac2_tensor,
 )
 from ..cp_tensor import CPTensor, cp_normalize
-from ..tenalg.svd import svd_interface
+from ..tenalg.svd import svd_interface, SVD_TYPES
 
 # Authors: Marie Roald
 #          Yngve Mardal Moe
@@ -315,19 +315,18 @@ def _parafac2_reconstruction_error(
 
 def parafac2(
     tensor_slices,
-    rank,
-    n_iter_max=2000,
+    rank: int,
+    n_iter_max: int = 2000,
     init="random",
-    svd="truncated_svd",
-    normalize_factors=False,
-    tol=1e-8,
-    absolute_tol=1e-13,
-    nn_modes=None,
+    svd: SVD_TYPES = "truncated_svd",
+    normalize_factors: bool = False,
+    tol: float = 1.0e-8,
+    nn_modes: Optional[Union[Sequence[int], Literal["all"]]] = None,
     random_state=None,
-    verbose=False,
-    return_errors=False,
-    n_iter_parafac=5,
-    linesearch=True,
+    verbose: Union[bool, int] = False,
+    return_errors: bool = False,
+    n_iter_parafac: int = 5,
+    linesearch: bool = True,
 ):
     r"""PARAFAC2 decomposition [1]_ of a third order tensor via alternating least squares (ALS)
 
@@ -396,15 +395,6 @@ def parafac2(
 
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
-    absolute_tol : float, optional
-        (Default: 1e-13) Absolute reconstruction error tolerance. The algorithm
-        is considered to have converged when
-        :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
-        That is, when the relative sum of squared error is less than the specified tolerance.
-        The absolute tolerance is necessary for stopping the algorithm when used on noise-free
-        data that follows the PARAFAC2 constraint.
-
-        If None, then the machine precision + 1000 will be used.
     nn_modes: None, 'all' or array of integers
         (Default: None) Used to specify which modes to impose non-negativity constraints on.
         We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
@@ -476,9 +466,6 @@ def parafac2(
     norm_tensor = tl.sqrt(
         sum(tl.norm(tensor_slice, 2) ** 2 for tensor_slice in tensor_slices)
     )
-
-    if absolute_tol is None:
-        absolute_tol = tl.eps(factors[0].dtype) * 1000
 
     if linesearch and not isinstance(linesearch, _BroThesisLineSearch):
         linesearch = _BroThesisLineSearch(
@@ -573,11 +560,7 @@ def parafac2(
                         f"PARAFAC2 reconstruction error={rec_errors[-1]}, variation={rec_errors[-2] - rec_errors[-1]}."
                     )
 
-                if (
-                    tl.abs(rec_errors[-2] ** 2 - rec_errors[-1] ** 2)
-                    < (tol * rec_errors[-2] ** 2)
-                    or rec_errors[-1] ** 2 < absolute_tol
-                ):
+                if tl.abs(rec_errors[-2] - rec_errors[-1]) < tol:
                     if verbose:
                         print(f"converged in {iteration} iterations.")
                     break
@@ -656,16 +639,6 @@ class Parafac2(DecompositionMixin):
 
             Previously, the stopping condition was
             :math:`\left|\| X - \hat{X}_{n-1} \| - \| X - \hat{X}_{n} \|\right| < \epsilon`.
-
-    absolute_tol : float, optional
-        (Default: 1e-13) Absolute reconstruction error tolearnce. The algorithm
-        is considered to have converged when
-        :math:`\left|\| X - \hat{X}_{n-1} \|^2 - \| X - \hat{X}_{n} \|^2\right| < \epsilon_\text{abs}`.
-        That is, when the relative sum of squared error is less than the specified tolerance.
-        The absolute tolerance is necessary for stopping the algorithm when used on noise-free
-        data that follows the PARAFAC2 constraint.
-
-        If None, then the machine precision + 1000 will be used.
     nn_modes: None, 'all' or array of integers
         (Default: None) Used to specify which modes to impose non-negativity constraints on.
         We cannot impose non-negativity constraints on the the B-mode (mode 1) with the ALS
@@ -712,7 +685,6 @@ class Parafac2(DecompositionMixin):
         svd="truncated_svd",
         normalize_factors=False,
         tol=1e-8,
-        absolute_tol=1e-13,
         nn_modes=None,
         random_state=None,
         verbose=False,
@@ -726,7 +698,6 @@ class Parafac2(DecompositionMixin):
         self.svd = svd
         self.normalize_factors = normalize_factors
         self.tol = tol
-        self.absolute_tol = absolute_tol
         self.nn_modes = nn_modes
         self.random_state = random_state
         self.verbose = verbose
@@ -753,7 +724,6 @@ class Parafac2(DecompositionMixin):
             svd=self.svd,
             normalize_factors=self.normalize_factors,
             tol=self.tol,
-            absolute_tol=self.absolute_tol,
             nn_modes=self.nn_modes,
             random_state=self.random_state,
             verbose=self.verbose,

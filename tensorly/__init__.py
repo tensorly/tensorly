@@ -1,4 +1,4 @@
-__version__ = "0.8.1"
+__version__ = "0.9.0"
 
 import sys
 
@@ -88,6 +88,7 @@ from .backend import (
     norm,
     dot,
     kron,
+    einsum,
     solve,
     lstsq,
     qr,
@@ -138,6 +139,7 @@ from . import regression
 from . import tenalg
 from . import random
 from . import datasets
+from . import solvers
 
 
 # Add Backend functions, dynamically dispatched

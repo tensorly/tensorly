@@ -290,14 +290,14 @@ Other tensor algebraic functionalities:
     kronecker
     mode_dot
     multi_mode_dot
-    proximal.soft_thresholding
-    proximal.svd_thresholding
-    proximal.procrustes
     inner
     outer
     batched_outer
     tensordot
     higher_order_moment
+    proximal.soft_thresholding
+    proximal.svd_thresholding
+    proximal.procrustes
 
 Tensor Algebra Backend
 ----------------------
@@ -410,6 +410,26 @@ Tensor Regression (:mod:`tensorly.regression`)
     cp_regression.CPRegressor
     CP_PLSR
 
+
+Solvers (:mod:`tensorly.solvers`)
+=================================
+
+Tensorly provides with efficient solvers for nonnegative least squares problems which are crucial to nonnegative tensor decomposition, as well as a generic admm solver useful for constrained decompositions. Several proximal (projection) operators are located in tenalg.
+
+.. automodule:: tensorly.solvers
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: tensorly.solvers
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    nnls.hals_nnls
+    nnls.fista
+    nnls.active_set_nnls
+    admm.admm
 
 Performance measures (:mod:`tensorly.metrics`)
 ==============================================
