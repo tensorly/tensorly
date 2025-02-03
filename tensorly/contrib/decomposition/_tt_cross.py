@@ -457,7 +457,7 @@ def maxvol(A):
         # Compute the projection of max_row to other rows
         # projection = <b, a>/|a|^2
         projection = tl.dot(A_new, tl.transpose(max_row))
-        projection = projection / (np.sum(max_row**2))
+        projection = projection / (tl.sum(max_row**2))
     
         # Subtract the projection from A_new:  b <- b - a * projection
         A_new = A_new - tl.tenalg.outer((projection, max_row))
