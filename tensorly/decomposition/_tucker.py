@@ -109,10 +109,10 @@ def initialize_tucker(
             # Recompute core from tensor and factors
             core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
         else:
-            raise ValueError("Init must be 'svd', 'random', a (core, factors) tuple, or a list of factors")
+            raise ValueError("Init must be 'svd', 'random', a (core, factors) tuple, or a list of factors with the same length as modes")
 
     else:
-        raise ValueError("Init must be 'svd', 'random', a (core, factors) tuple, or a list of factors")
+        raise ValueError("Init must be 'svd', 'random', a (core, factors) tuple, or a list of factors with the same length as modes")
 
     if non_negative is True:
         factors = [tl.abs(f) for f in factors]
