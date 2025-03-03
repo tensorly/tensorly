@@ -59,8 +59,6 @@ def initialize_tucker(
               initialized core tensor
     factors : list of factors
     """
-    # Validate rank against tensor shape
-    rank = validate_tucker_rank(tensor.shape, rank)
     
     # Initialisation
     if init == "svd":
@@ -94,23 +92,32 @@ def initialize_tucker(
             )
             for index, mode in enumerate(modes)
         ]
-
-    elif isinstance(init, (tuple, list)): # either a tuple (core, factors) or a list of factors
-        if isinstance(init, tuple) and len(init) == 2:
-            core, factors = init  # Standard (core, factors) tuple
-        elif isinstance(init, list):  # Just factors provided
+    elif isinstance(init, Iterable): # tuple (core, factors) or an iterable of factors
+        if isinstance(init, tuple) and len(init) == 2: # Check if init is a tuple with two elements (core, factors)
+            if not isinstance(init[1], Iterable): # Check if factors is an iterable 
+                raise ValueError(
+                    "For init as a tuple, expected (core, factors) where factors is an iterable of matrices, "
+                    f"got {type(init[1])} for factors"
+                )
+            core, factors = init
+            # Validate core shape against rank and modes
+            expected_core_shape = tuple(
+                rank[modes.index(m)] if m in modes else tensor.shape[m] 
+                for m in range(tensor.ndim)
+            )
+            if core.shape != expected_core_shape:
+                raise ValueError(f"Core shape {core.shape} doesn’t match expected {expected_core_shape}")
+        else:
             factors = init
-            # Validate factor shapes
-            if len(factors) != len(modes):
-                raise ValueError(f"Expected {len(modes)} factors, got {len(factors)}")
-            for i, (f, mode) in enumerate(zip(factors, modes)):
-                if f.shape != (tensor.shape[mode], rank[i]):
-                    raise ValueError(f"Factor {i} shape {f.shape} doesn’t match expected ({tensor.shape[mode]}, {rank[i]})")
             # Recompute core from tensor and factors
             core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
-        else:
-            raise ValueError("Init must be 'svd', 'random', a (core, factors) tuple, or a list of factors with the same length as modes")
-
+            
+        # Validate factor count and shapes
+        if len(factors) != len(modes):
+            raise ValueError(f"Expected {len(modes)} factors, got {len(factors)}")
+        for i, (f, mode) in enumerate(zip(factors, modes)):
+            if f.shape != (tensor.shape[mode], rank[i]):
+                raise ValueError(f"Factor {i} shape {f.shape} doesn’t match expected ({tensor.shape[mode]}, {rank[i]})")
     else:
         raise ValueError("Init must be 'svd', 'random', a (core, factors) tuple, or a list of factors with the same length as modes")
 
@@ -304,9 +311,10 @@ def tucker(
     """
     if fixed_factors:
         try:
-            if isinstance(init, list):  # Handle factors-only init
-                init = initialize_tucker(tensor, rank, list(range(tensor.ndim)), random_state, init=init)
-            (core, factors) = init
+            if isinstance(init, Iterable):  # Handle factors-only init
+                core, factors = initialize_tucker(tensor, rank, list(range(tensor.ndim)), random_state, init=init)
+            else:
+                (core, factors) = init
         except:
             raise ValueError(
                 f'Got fixed_factor={fixed_factors} but no appropriate Tucker tensor was passed for "init".'
