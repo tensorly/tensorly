@@ -42,11 +42,13 @@ tensor = tl.tensor(np.arange(24000).reshape((30, 40, 20)), dtype=tl.float32)
 # for our NCP. In fact, in order to compare both algorithmic options in a
 # fair way, it is a good idea to use same initialized factors in decomposition
 # algorithms. We make use of the ``initialize_cp`` function to initialize the
-# factors of the NCP (setting the ``non_negative`` option to `True`) 
+# factors of the NCP (setting the ``non_negative`` option to `True`)
 # and transform these factors (and factors weights) into
 # an instance of the CPTensor class:
 
-weights_init, factors_init = initialize_cp(tensor, non_negative=True, init='random', rank=10)
+weights_init, factors_init = initialize_cp(
+    tensor, non_negative=True, init="random", rank=10
+)
 
 cp_init = CPTensor((weights_init, factors_init))
 
@@ -58,9 +60,11 @@ cp_init = CPTensor((weights_init, factors_init))
 # Multiplicative Update, which can be called as follows:
 
 tic = time.time()
-tensor_mu, errors_mu = non_negative_parafac(tensor, rank=10, init=deepcopy(cp_init), return_errors=True)
+tensor_mu, errors_mu = non_negative_parafac(
+    tensor, rank=10, init=deepcopy(cp_init), return_errors=True
+)
 cp_reconstruction_mu = tl.cp_to_tensor(tensor_mu)
-time_mu = time.time()-tic
+time_mu = time.time() - tic
 
 ##############################################################################
 # Here, we also compute the output tensor from the decomposed factors by using
@@ -69,8 +73,8 @@ time_mu = time.time()-tic
 # first few values of both tensors shows that this is indeed
 # the case but the approximation is quite coarse.
 
-print('reconstructed tensor\n', cp_reconstruction_mu[10:12, 10:12, 10:12], '\n')
-print('input data tensor\n', tensor[10:12, 10:12, 10:12])
+print("reconstructed tensor\n", cp_reconstruction_mu[10:12, 10:12, 10:12], "\n")
+print("input data tensor\n", tensor[10:12, 10:12, 10:12])
 
 ##############################################################################
 # Non-negative Parafac with HALS
@@ -79,15 +83,17 @@ print('input data tensor\n', tensor[10:12, 10:12, 10:12])
 # used as follows:
 
 tic = time.time()
-tensor_hals, errors_hals = non_negative_parafac_hals(tensor, rank=10, init=deepcopy(cp_init), return_errors=True)
+tensor_hals, errors_hals = non_negative_parafac_hals(
+    tensor, rank=10, init=deepcopy(cp_init), return_errors=True
+)
 cp_reconstruction_hals = tl.cp_to_tensor(tensor_hals)
-time_hals = time.time()-tic
+time_hals = time.time() - tic
 
 ##############################################################################
 # Again, we can look at the reconstructed tensor entries.
 
-print('reconstructed tensor\n',cp_reconstruction_hals[10:12, 10:12, 10:12], '\n')
-print('input data tensor\n', tensor[10:12, 10:12, 10:12])
+print("reconstructed tensor\n", cp_reconstruction_hals[10:12, 10:12, 10:12], "\n")
+print("input data tensor\n", tensor[10:12, 10:12, 10:12])
 
 ##############################################################################
 # Non-negative Parafac with Exact HALS
@@ -102,18 +108,20 @@ print('input data tensor\n', tensor[10:12, 10:12, 10:12])
 # in the function:
 
 tic = time.time()
-tensorhals_exact, errors_exact = non_negative_parafac_hals(tensor, rank=10, init=deepcopy(cp_init), return_errors=True, exact=True)
+tensorhals_exact, errors_exact = non_negative_parafac_hals(
+    tensor, rank=10, init=deepcopy(cp_init), return_errors=True, exact=True
+)
 cp_reconstruction_exact_hals = tl.cp_to_tensor(tensorhals_exact)
-time_exact_hals = time.time()-tic
+time_exact_hals = time.time() - tic
 
 ##############################################################################
 # Comparison
 # -----------------------
 # First comparison option is processing time for each algorithm:
 
-print(str("{:.2f}".format(time_mu)) + ' ' + 'seconds')
-print(str("{:.2f}".format(time_hals)) + ' ' + 'seconds')
-print(str("{:.2f}".format(time_exact_hals)) + ' ' + 'seconds')
+print(str(f"{time_mu:.2f}") + " " + "seconds")
+print(str(f"{time_hals:.2f}") + " " + "seconds")
+print(str(f"{time_exact_hals:.2f}") + " " + "seconds")
 
 ##############################################################################
 # As it is expected, the exact solution takes much longer than the approximate
@@ -125,6 +133,7 @@ print(str("{:.2f}".format(time_exact_hals)) + ' ' + 'seconds')
 # In Tensorly, we provide a function to calculate Root Mean Square Error (RMSE):
 
 from tensorly.metrics.regression import RMSE
+
 print(RMSE(tensor, cp_reconstruction_mu))
 print(RMSE(tensor, cp_reconstruction_hals))
 print(RMSE(tensor, cp_reconstruction_exact_hals))
@@ -136,17 +145,19 @@ print(RMSE(tensor, cp_reconstruction_exact_hals))
 # in convergence speed on the following error per iteration plot:
 
 import matplotlib.pyplot as plt
-def each_iteration(a,b,c,title):
-    fig=plt.figure()
+
+
+def each_iteration(a, b, c, title):
+    fig = plt.figure()
     fig.set_size_inches(10, fig.get_figheight(), forward=True)
     plt.plot(a)
     plt.plot(b)
     plt.plot(c)
     plt.title(str(title))
-    plt.legend(['MU', 'HALS', 'Exact HALS'], loc='upper left')
+    plt.legend(["MU", "HALS", "Exact HALS"], loc="upper left")
 
 
-each_iteration(errors_mu, errors_hals, errors_exact, 'Error for each iteration')
+each_iteration(errors_mu, errors_hals, errors_exact, "Error for each iteration")
 
 ##############################################################################
 # In conclusion, on this quick test, it appears that the HALS algorithm gives

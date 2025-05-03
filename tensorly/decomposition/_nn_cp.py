@@ -1,7 +1,7 @@
 import warnings
 import tensorly as tl
 from ._base_decomposition import DecompositionMixin
-from ._cp import initialize_cp
+from ._cp import initialize_cp, error_calc
 from ..solvers.nnls import hals_nnls
 from ..cp_tensor import (
     CPTensor,
@@ -10,7 +10,6 @@ from ..cp_tensor import (
     cp_normalize,
     validate_cp_rank,
 )
-from ..tenalg.svd import svd_interface
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Chris Swierczewski <csw@amazon.com>
@@ -139,17 +138,19 @@ def non_negative_parafac(
                 weights, factors = cp_normalize((weights, factors))
 
         if tol:
-            # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
-            factors_norm = cp_norm((weights, factors))
-
-            # mttkrp and factor for the last mode. This is equivalent to the
-            # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp * factor, axis=0))
-            rec_error = (
-                tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
-                / norm_tensor
+            # Calculate the reconstruction error. We can use the same method from CP.
+            unnorml_rec_error, tensor, norm_tensor = error_calc(
+                tensor,
+                norm_tensor,
+                weights,
+                factors,
+                sparsity=None,
+                mask=mask,
+                mttkrp=mttkrp,
             )
+            rec_error = unnorml_rec_error / norm_tensor
             rec_errors.append(rec_error)
+
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
@@ -159,7 +160,7 @@ def non_negative_parafac(
                     )
 
                 if cvg_criterion == "abs_rec_error":
-                    stop_flag = abs(rec_error_decrease) < tol
+                    stop_flag = tl.abs(rec_error_decrease) < tol
                 elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol
                 else:
@@ -346,6 +347,7 @@ def non_negative_parafac_hals(
                 / norm_tensor
             )
             rec_errors.append(rec_error)
+
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
@@ -355,7 +357,7 @@ def non_negative_parafac_hals(
                     )
 
                 if cvg_criterion == "abs_rec_error":
-                    stop_flag = abs(rec_error_decrease) < tol
+                    stop_flag = tl.abs(rec_error_decrease) < tol
                 elif cvg_criterion == "rec_error":
                     stop_flag = rec_error_decrease < tol
                 else:
@@ -462,6 +464,7 @@ class CP_NN(DecompositionMixin):
         cvg_criterion="abs_rec_error",
         fixed_modes=None,
     ):
+        self.rank = rank
         self.n_iter_max = n_iter_max
         self.init = init
         self.svd = svd
@@ -489,6 +492,7 @@ class CP_NN(DecompositionMixin):
 
         cp_tensor, errors = non_negative_parafac(
             tensor,
+            rank=self.rank,
             n_iter_max=self.n_iter_max,
             init=self.init,
             svd=self.svd,

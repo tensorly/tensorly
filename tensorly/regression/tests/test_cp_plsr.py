@@ -8,14 +8,7 @@ from ...metrics.factors import congruence_coefficient
 from ...random import random_cp
 from ..cp_plsr import CP_PLSR
 
-
 # Authors: Jackson L. Chin, Cyrillus Tan, Aaron Meyer
-
-
-skip_if_backend = pytest.mark.skipif(
-    tl.get_backend() in ("tensorflow",),
-    reason=f"Operation not supported in {tl.get_backend()}",
-)
 
 
 TENSOR_DIMENSIONS = (100, 38, 65)
@@ -242,7 +235,6 @@ def test_increasing_variance_synthetic():
     assert np.all(np.diff(R2s) >= 0.0)
 
 
-@skip_if_backend
 def test_transform_same_factors():
     """Tests transform the original X and Y will give the first factors"""
     X, Y, _, _ = _get_pls_dataset((20, 18, 14, 13), 6, 17)

@@ -1,6 +1,7 @@
 import warnings
+from typing import Literal
 import tensorly as tl
-from ..solvers.proximal import soft_thresholding
+from .proximal import soft_thresholding
 
 # Authors: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 #          Meraj Hashemizadeh <merajhse@mila.quebec>
@@ -228,7 +229,6 @@ def truncated_svd(matrix, n_eigenvecs=None, **kwargs):
     """
     n_eigenvecs, min_dim, _ = svd_checks(matrix, n_eigenvecs=n_eigenvecs)
     full_matrices = True if n_eigenvecs > min_dim else False
-
     U, S, V = tl.svd(matrix, full_matrices=full_matrices)
     return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
 
@@ -358,6 +358,7 @@ def randomized_svd(
 
 
 SVD_FUNS = ["truncated_svd", "symeig_svd", "randomized_svd"]
+SVD_TYPES = Literal["truncated_svd", "symeig_svd", "randomized_svd"]
 
 
 def svd_interface(

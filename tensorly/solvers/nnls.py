@@ -39,7 +39,7 @@ def hals_nnls(
         Initialized V array
         By default, is initialized with one non-zero entry per column
         corresponding to the closest column of U of the corresponding column of M.
-    n_iter_max: Postive integer
+    n_iter_max: Positive integer
         Upper bound on the number of iterations
         Default: 500
     tol : float in [0,1]
@@ -86,7 +86,7 @@ def hals_nnls(
 
     .. math::
 
-            \\min_{V >= \epsilon} ||M-UV||_F^2
+            \\min_{V >= \\epsilon} ||M-UV||_F^2
 
     The matrix V is updated linewise. The update rule for this resolution is
 
@@ -100,14 +100,14 @@ def hals_nnls(
 
     This problem can also be defined by adding respectively a sparsity coefficient and a ridge coefficients
 
-    .. math:: \lambda_s, \lambda_r
+    .. math:: \\lambda_s, \\lambda_r
 
     enhancing sparsity or smoothness in the solution [2]. In this sparse/ridge version, the update rule becomes
 
     .. math::
 
             \\begin{equation}
-                V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)} - \lambda_s)/(UtU[k,k]+2\lambda_r)
+                V[k,:]_{(j+1)} = V[k,:]_{(j)} + (UtM[k,:] - UtU[k,:]\\times V_{(j)} - \\lambda_s)/(UtU[k,k]+2\\lambda_r)
             \\end{equation}
 
     Note that the data fitting is halved but not the ridge penalization.

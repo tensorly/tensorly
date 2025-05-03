@@ -1,5 +1,5 @@
 import tensorly as tl
-from tensorly.solvers.proximal import *
+from tensorly.tenalg.proximal import *
 
 
 def admm(
@@ -90,13 +90,13 @@ def admm(
     -----
     ADMM solves the convex optimization problem
 
-    .. math:: \\min_ f(x) + g(z),\; A(x_{split}) + Bx = c.
+    .. math:: \\min_ f(x) + g(z),\\; A(x_{split}) + Bx = c.
 
     Following updates are iterated to solve the problem
 
     .. math:: x_{split} = argmin_{x_{split}}~ f(x_{split}) + (\\rho/2)\\|Ax_{split} + Bx - c\\|_2^2
     .. math:: x = argmin_x~ g(x) + (\\rho/2)\\|Ax_{split} + Bx - c\\|_2^2
-    .. math:: dual\_var = dual\_var + (Ax + Bx_{split} - c)
+    .. math:: dual\\_var = dual\\_var + (Ax + Bx_{split} - c)
 
     where rho is a constant defined by the user.
 
@@ -104,12 +104,12 @@ def admm(
 
     ADMM can be adapted to this least square problem as following
 
-    .. math:: x_{split} = (UtU + \\rho\\times I)\\times(UtM + \\rho\\times(x + dual\_var)^T)
-    .. math:: x = argmin_{x}~ r(x) + (\\rho/2)\\|x - x_{split}^T + dual\_var\\|_2^2
-    .. math:: dual\_var = dual\_var + x - x_{split}^T
+    .. math:: x_{split} = (UtU + \\rho\\times I)\\times(UtM + \\rho\\times(x + dual\\_var)^T)
+    .. math:: x = argmin_{x}~ r(x) + (\\rho/2)\\|x - x_{split}^T + dual\\_var\\|_2^2
+    .. math:: dual\\_var = dual\\_var + x - x_{split}^T
 
     where r is the regularization operator. Here, x can be updated by using proximity operator
-    of :math:`x_{split}^T - dual\_var`.
+    of :math:`x_{split}^T - dual\\_var`.
 
     References
     ----------

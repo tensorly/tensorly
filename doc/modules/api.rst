@@ -5,7 +5,7 @@ API reference
 Unified backend interface (:mod:`tensorly`)
 ===========================================
 
-There are several libraries for multi-dimensional array computation, including NumPy, PyTorch, TensorFlow, JAX and CuPy.
+There are several libraries for multi-dimensional array computation, including NumPy, PyTorch, TensorFlow, JAX, CuPy and Paddle.
 They all have strenghs and weaknesses, e.g. some are better on CPU, some better on GPU etc. 
 Therefore, in TensorLy we enable you to use our algorithm (and any code you write using the library), with any of these libraries.
 
@@ -295,6 +295,9 @@ Other tensor algebraic functionalities:
     batched_outer
     tensordot
     higher_order_moment
+    proximal.soft_thresholding
+    proximal.svd_thresholding
+    proximal.procrustes
 
 Tensor Algebra Backend
 ----------------------
@@ -411,7 +414,7 @@ Tensor Regression (:mod:`tensorly.regression`)
 Solvers (:mod:`tensorly.solvers`)
 =================================
 
-Tensorly provides with efficient solvers for nonnegative least squares problems which are crucial to nonnegative tensor decomposition, as well as a generic admm solver useful for constrained decompositions and several proximal (projection) operators.
+Tensorly provides with efficient solvers for nonnegative least squares problems which are crucial to nonnegative tensor decomposition, as well as a generic admm solver useful for constrained decompositions. Several proximal (projection) operators are located in tenalg.
 
 .. automodule:: tensorly.solvers
     :no-members:
@@ -427,9 +430,6 @@ Tensorly provides with efficient solvers for nonnegative least squares problems 
     nnls.fista
     nnls.active_set_nnls
     admm.admm
-    proximal.soft_thresholding
-    proximal.svd_thresholding
-    proximal.procrustes
 
 Performance measures (:mod:`tensorly.metrics`)
 ==============================================

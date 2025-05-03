@@ -1,6 +1,6 @@
 import numpy as np
 
-from .. import backend as T
+import tensorly as T
 from ..base import fold, unfold
 from ..base import partial_fold, partial_unfold
 from ..base import tensor_to_vec, vec_to_tensor
@@ -320,6 +320,12 @@ def test_partial_tensor_to_vec():
     for j in range(n_samples):  # test for each sample
         assert_array_equal(T.transpose(vectorised)[j], vec_X + j)
 
+    tensor = T.randn((2, 3, 4, 5))
+    TT = partial_tensor_to_vec(tensor, skip_begin=0, skip_end=2)
+    assert T.shape(TT) == (6, 4, 5)
+    rec = partial_vec_to_tensor(TT, T.shape(tensor), skip_begin=0, skip_end=2)
+    assert T.shape(rec) == T.shape(tensor)
+
 
 def test_partial_vec_to_tensor():
     """Test for partial_vec_to_tensor"""
@@ -441,7 +447,7 @@ def test_matricize():
         matricize(t, [0, 2, 3, 4], [1, 1])
 
     res = matricize(t, [1, 3])
-    assert res.shape == (3 * 3, 2 * 4 * 5)
+    assert tuple(res.shape) == (3 * 3, 2 * 4 * 5)
 
 
 test_matricize()

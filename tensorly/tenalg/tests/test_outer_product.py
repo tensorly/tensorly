@@ -12,7 +12,7 @@ def test_outer_product():
 
     X = tl.tensor(rng.random_sample((4, 5, 6)))
     Y = tl.tensor(rng.random_sample((3, 4)))
-    Z = tl.tensor(rng.random_sample((2)))
+    Z = tl.tensor(rng.random_sample(2))
     tdot = outer([X, Y, Z])
     true_dot = tenalg.tensordot(X, Y, ())
     true_dot = tenalg.tensordot(true_dot, Z, ())

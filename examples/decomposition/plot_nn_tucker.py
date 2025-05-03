@@ -60,7 +60,7 @@ import matplotlib.pyplot as plt
 
 # tensor generation
 array = np.random.randint(1000, size=(10, 30, 40))
-tensor = tl.tensor(array, dtype='float')
+tensor = tl.tensor(array, dtype="float")
 
 ##############################################################################
 # Non-negative Tucker
@@ -68,9 +68,11 @@ tensor = tl.tensor(array, dtype='float')
 # First, multiplicative update can be implemented as:
 
 tic = time.time()
-tensor_mu, error_mu = non_negative_tucker(tensor, rank=[5, 5, 5], tol=1e-12, n_iter_max=100, return_errors=True)
+tensor_mu, error_mu = non_negative_tucker(
+    tensor, rank=[5, 5, 5], tol=1e-12, n_iter_max=100, return_errors=True
+)
 tucker_reconstruction_mu = tl.tucker_to_tensor(tensor_mu)
-time_mu = time.time()-tic
+time_mu = time.time() - tic
 
 ##############################################################################
 # Here, we also compute the output tensor from the decomposed factors by using
@@ -83,9 +85,11 @@ time_mu = time.time()-tic
 # HALS algorithm with FISTA can be calculated as:
 
 ticnew = time.time()
-tensor_hals_fista, error_fista = non_negative_tucker_hals(tensor, rank=[5, 5, 5], algorithm='fista', return_errors=True)
+tensor_hals_fista, error_fista = non_negative_tucker_hals(
+    tensor, rank=[5, 5, 5], algorithm="fista", return_errors=True
+)
 tucker_reconstruction_fista = tl.tucker_to_tensor(tensor_hals_fista)
-time_fista = time.time()-ticnew
+time_fista = time.time() - ticnew
 
 ##############################################################################
 # Non-negative Tucker with HALS and Active Set
@@ -93,9 +97,11 @@ time_fista = time.time()-ticnew
 # As a second option, HALS algorithm with Active Set can be called as follows:
 
 ticnew = time.time()
-tensor_hals_as, error_as = non_negative_tucker_hals(tensor, rank=[5, 5, 5], algorithm='active_set', return_errors=True)
+tensor_hals_as, error_as = non_negative_tucker_hals(
+    tensor, rank=[5, 5, 5], algorithm="active_set", return_errors=True
+)
 tucker_reconstruction_as = tl.tucker_to_tensor(tensor_hals_as)
-time_as = time.time()-ticnew
+time_as = time.time() - ticnew
 
 ##############################################################################
 # Comparison
@@ -103,9 +109,9 @@ time_as = time.time()-ticnew
 # To compare the various methods, first we may look at each algorithm
 # processing time:
 
-print('time for tensorly nntucker:'+' ' + str("{:.2f}".format(time_mu)))
-print('time for HALS with fista:'+' ' + str("{:.2f}".format(time_fista)))
-print('time for HALS with as:'+' ' + str("{:.2f}".format(time_as)))
+print("time for tensorly nntucker:" + " " + str(f"{time_mu:.2f}"))
+print("time for HALS with fista:" + " " + str(f"{time_fista:.2f}"))
+print("time for HALS with as:" + " " + str(f"{time_as:.2f}"))
 
 ##############################################################################
 # All algorithms should run with about the same number of iterations on our
@@ -114,9 +120,11 @@ print('time for HALS with as:'+' ' + str("{:.2f}".format(time_as)))
 # the error between the output and input tensor. In Tensorly, there is a function
 # to compute Root Mean Square Error (RMSE):
 
-print('RMSE tensorly nntucker:'+' ' + str(RMSE(tensor, tucker_reconstruction_mu)))
-print('RMSE for hals with fista:'+' ' + str(RMSE(tensor, tucker_reconstruction_fista)))
-print('RMSE for hals with as:'+' ' + str(RMSE(tensor, tucker_reconstruction_as)))
+print("RMSE tensorly nntucker:" + " " + str(RMSE(tensor, tucker_reconstruction_mu)))
+print(
+    "RMSE for hals with fista:" + " " + str(RMSE(tensor, tucker_reconstruction_fista))
+)
+print("RMSE for hals with as:" + " " + str(RMSE(tensor, tucker_reconstruction_as)))
 
 ##############################################################################
 # According to the RMSE results, HALS is better than the multiplicative update
@@ -124,17 +132,17 @@ print('RMSE for hals with as:'+' ' + str(RMSE(tensor, tucker_reconstruction_as))
 # the difference in convergence speed on the following error per iteration plot:
 
 
-def each_iteration(a,b,c,title):
-    fig=plt.figure()
+def each_iteration(a, b, c, title):
+    fig = plt.figure()
     fig.set_size_inches(10, fig.get_figheight(), forward=True)
     plt.plot(a)
     plt.plot(b)
     plt.plot(c)
     plt.title(str(title))
-    plt.legend(['MU', 'HALS + Fista', 'HALS + AS'], loc='upper right')
+    plt.legend(["MU", "HALS + Fista", "HALS + AS"], loc="upper right")
 
 
-each_iteration(error_mu, error_fista, error_as, 'Error for each iteration')
+each_iteration(error_mu, error_fista, error_as, "Error for each iteration")
 
 ##############################################################################
 # In conclusion, on this quick test, it appears that the HALS algorithm gives
@@ -151,5 +159,5 @@ each_iteration(error_mu, error_fista, error_as, 'Error for each iteration')
 #
 # Gillis, N., & Glineur, F. (2012). Accelerated multiplicative updates and
 # hierarchical ALS algorithms for nonnegative matrix factorization.
-# Neural computation, 24(4), 1085-1105. 
+# Neural computation, 24(4), 1085-1105.
 # `(Link) https://direct.mit.edu/neco/article/24/4/1085/7755/Accelerated-Multiplicative-Updates-and>`_

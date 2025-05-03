@@ -4,8 +4,8 @@
 .. image:: https://anaconda.org/tensorly/tensorly/badges/version.svg   
     :target: https://anaconda.org/tensorly/tensorly
 
-.. image:: https://github.com/tensorly/tensorly/workflows/Test%20TensorLy/badge.svg
-    :target: https://github.com/tensorly/tensorly/actions?query=workflow%3A%22Test+TensorLy%22
+.. image:: https://github.com/tensorly/tensorly/actions/workflows/test.yml/badge.svg?branch=main
+    :target: https://github.com/tensorly/tensorly/actions/workflows/test.yml
 
 .. image:: https://codecov.io/gh/tensorly/tensorly/branch/master/graph/badge.svg?token=mnZ234sGSA
     :target: https://codecov.io/gh/tensorly/tensorly
@@ -19,7 +19,7 @@ TensorLy
 ========
    
 
-TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, PyTorch, JAX, TensorFlow or CuPy, and run methods at scale on CPU or GPU.
+TensorLy is a Python library that aims at making tensor learning simple and accessible. It allows to easily perform tensor decomposition, tensor learning and tensor algebra. Its backend system allows to seamlessly perform computation with NumPy, PyTorch, JAX, TensorFlow, CuPy or Paddle, and run methods at scale on CPU or GPU.
 
 - **Website:** https://tensorly.org
 - **Source-code:**  https://github.com/tensorly/tensorly
@@ -96,7 +96,7 @@ You can also create tensors in TT-format, Tucker, etc, see `random tensors <http
 Setting the backend
 -------------------
 
-You can change the backend to perform computation with a different framework. By default, the backend is NumPy, but you can also perform the computation using  PyTorch, TensorFlow, JAX or CuPy (requires to have installed them first). For instance, after setting the backend to PyTorch, all the computation is done by PyTorch, and tensors can be created on GPU:
+You can change the backend to perform computation with a different framework. By default, the backend is NumPy, but you can also perform the computation using  PyTorch, TensorFlow, JAX, CuPy or Paddle (requires to have installed them first). For instance, after setting the backend to PyTorch, all the computation is done by PyTorch, and tensors can be created on GPU:
 
 .. code:: python
 
