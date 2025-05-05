@@ -547,7 +547,7 @@ def test_parafac2_em(linesearch):
     )
 
     # assert FMS > 0.98
-    A_sign = T.sign(random_parafac2_tensor.factors[0])
+    A_sign = tl.sign(random_parafac2_tensor.factors[0])
     rec_A_sign = tl.sign(rec.factors[0])
     A_corr = congruence_coefficient(
         A_sign * random_parafac2_tensor.factors[0], rec_A_sign * rec.factors[0]
