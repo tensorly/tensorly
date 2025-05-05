@@ -1,6 +1,7 @@
 import pytest
 
 import tensorly as tl
+import numpy as np
 from ...random import random_parafac2
 from ...testing import (
     assert_,
@@ -531,7 +532,7 @@ def test_parafac2_em(linesearch):
     # apply the mask, setting missing values to zero
 
     slices = [
-        tl.where(slice_mask == 0, 0, slice)
+        tl.where(slice_mask == 0.0, 0.0, slice)
         for slice, slice_mask in zip(slices, slices_masks)
     ]
 
