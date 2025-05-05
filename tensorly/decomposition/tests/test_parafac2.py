@@ -1,6 +1,7 @@
 import pytest
 
 import tensorly as tl
+import numpy as np
 from ...random import random_parafac2
 from ...testing import (
     assert_,
@@ -13,6 +14,7 @@ from .._parafac2 import (
     parafac2,
     initialize_decomposition,
     _BroThesisLineSearch,
+    _update_imputed,
 )
 from ...parafac2_tensor import Parafac2Tensor, parafac2_to_tensor, parafac2_to_slices
 from ...metrics.factors import congruence_coefficient
@@ -451,3 +453,117 @@ def test_parafac2_to_tensor():
         Bi = tl.dot(projections[i], factors[1])
         manual_tensor = tl.einsum("r,jr,kr", factors[0][i], Bi, factors[2])
         assert_(tl.max(tl.abs(constructed_tensor[i, :, :] - manual_tensor)) < 1e-6)
+
+
+def test_update_imputed():
+
+    rng = tl.check_random_state(1234)
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(15, 30) for _ in range(25)],
+        rank=3,
+        random_state=rng,
+    )
+
+    # Check that _update_imputed works correctly when imputing values according to the reconstructed tensor,
+    # i.e. mode='factors'
+
+    slices = parafac2_to_slices(random_parafac2_tensor)
+    slices_masks = [
+        tl.tensor(rng.binomial(1, 0.25, size=tl.shape(slice)), dtype=tl.float64)
+        for slice in slices
+    ]
+
+    imputed_tensor = _update_imputed(
+        tensor_slices=slices,
+        mask=slices_masks,
+        decomposition=random_parafac2_tensor,
+        method="factors",
+    )
+
+    assert_allclose(imputed_tensor, slices)
+
+    # Check that _update_imputed works correctly when imputing values according to nanmean of mode-2 slices
+
+    slices[slices_masks == 0] == tl.nan
+    slices = list(slices)
+
+    for i in range(len(slices)):
+        slices[i] = tl.where(
+            tl.tensor(slices_masks[i] == 0),
+            tl.tensor(np.nanmean(slices[i])),
+            tl.tensor(slices[i]),
+        )
+
+    imputed_tensor = _update_imputed(
+        tensor_slices=slices,
+        mask=slices_masks,
+        decomposition=random_parafac2_tensor,
+        method="mode-2",
+    )
+
+    assert_allclose(imputed_tensor, slices)
+
+
+@pytest.mark.parametrize("linesearch", [False, True])
+def test_parafac2_em(linesearch):
+    rng = tl.check_random_state(1234)
+    rank = 3
+
+    # Create a random tensor
+
+    random_parafac2_tensor = random_parafac2(
+        shapes=[(15 + rng.randint(5), 30) for _ in range(25)],
+        rank=rank,
+        random_state=rng,
+    )
+
+    random_parafac2_tensor.factors[0] = random_parafac2_tensor.factors[0] + 0.01
+
+    slices = parafac2_to_slices(random_parafac2_tensor)
+
+    # Form the full data and a mask with ~10% missing values
+
+    slices_masks = [
+        tl.tensor(rng.binomial(1, 0.9, size=tl.shape(slice)), dtype=tl.float64)
+        for slice in slices
+    ]
+
+    # apply the mask, setting missing values to zero
+
+    slices = [
+        tl.where(slice_mask == 0.0, 0.0, slice)
+        for slice, slice_mask in zip(slices, slices_masks)
+    ]
+
+    # apply parafac2
+
+    rec = parafac2(
+        slices,
+        rank,
+        random_state=rng,
+        n_iter_max=1000,
+        linesearch=linesearch,
+        mask=slices_masks,
+    )
+
+    # assert FMS > 0.98
+    A_sign = tl.sign(random_parafac2_tensor.factors[0])
+    rec_A_sign = tl.sign(rec.factors[0])
+    A_corr = congruence_coefficient(
+        A_sign * random_parafac2_tensor.factors[0], rec_A_sign * rec.factors[0]
+    )[0]
+    assert_(A_corr > 0.98)
+
+    C_corr = congruence_coefficient(random_parafac2_tensor.factors[2], rec.factors[2])[
+        0
+    ]
+    assert_(C_corr > 0.98)
+
+    for i, (true_proj, rec_proj) in enumerate(
+        zip(random_parafac2_tensor.projections, rec.projections)
+    ):
+        true_Bi = tl.dot(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
+        rec_Bi = tl.dot(rec_proj, rec.factors[1]) * rec_A_sign[i]
+        Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
+        assert_(Bi_corr > 0.98)
