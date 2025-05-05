@@ -469,7 +469,7 @@ def test_update_imputed():
 
     slices = parafac2_to_slices(random_parafac2_tensor)
     slices_masks = [
-        tl.tensor(rng.binomial(1, 0.25, size=T.shape(slice)), dtype=tl.float64)
+        tl.tensor(rng.binomial(1, 0.25, size=tl.shape(slice)), dtype=tl.float64)
         for slice in slices
     ]
 
