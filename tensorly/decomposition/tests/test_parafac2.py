@@ -524,7 +524,7 @@ def test_parafac2_em(linesearch):
     # Form the full data and a mask with ~10% missing values
 
     slices_masks = [
-        tl.tensor(rng.binomial(1, 0.9, size=T.shape(slice)), dtype=tl.float64)
+        tl.tensor(rng.binomial(1, 0.9, size=tl.shape(slice)), dtype=tl.float64)
         for slice in slices
     ]
 
