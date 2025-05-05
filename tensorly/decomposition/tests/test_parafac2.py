@@ -562,7 +562,7 @@ def test_parafac2_em(linesearch):
     for i, (true_proj, rec_proj) in enumerate(
         zip(random_parafac2_tensor.projections, rec.projections)
     ):
-        true_Bi = T.dot(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
+        true_Bi = tl.dot(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
         rec_Bi = tl.dot(rec_proj, rec.factors[1]) * rec_A_sign[i]
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)
