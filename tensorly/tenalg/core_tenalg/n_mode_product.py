@@ -1,12 +1,11 @@
 from ... import backend as T
 from ... import unfold, fold, vec_to_tensor
+import torch
 
-
-def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
+def mode_dot(tensor, matrix_or_vector, mode, transpose=False, handle_complex_half_by_upcasting=False):
     """n-mode product of a tensor and a matrix or vector at the specified mode
 
     Mathematically: :math:`\\text{tensor} \\times_{\\text{mode}} \\text{matrix or vector}`
-
 
     Parameters
     ----------
@@ -19,7 +18,9 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
     transpose : bool, default is False
         If True, the matrix is transposed.
         For complex tensors, the conjugate transpose is used.
-
+    handle_complex_half_by_upcasting : bool, default is False
+        If True, handle complex half tensors by upcasting to complex64.
+    
     Returns
     -------
     ndarray
@@ -36,17 +37,17 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
     new_shape = list(tensor.shape)
 
     if T.ndim(matrix_or_vector) == 2:  # Tensor times matrix
-        # Test for the validity of the operation
+         # Test for the validity of the operation
         dim = 0 if transpose else 1
         if matrix_or_vector.shape[dim] != tensor.shape[mode]:
             raise ValueError(
                 f"shapes {tensor.shape} and {matrix_or_vector.shape} not aligned in mode-{mode} multiplication: "
                 f"{tensor.shape[mode]} (mode {mode}) != {matrix_or_vector.shape[dim]} (dim 1 of matrix)"
             )
-
-        if transpose:
+            
+        if transpose and matrix_or_vector.dtype == torch.complex32:
             matrix_or_vector = T.conj(T.transpose(matrix_or_vector))
-
+            
         new_shape[mode] = matrix_or_vector.shape[0]
         vec = False
 
@@ -68,9 +69,31 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
             f"Provided array of dimension {T.ndim(matrix_or_vector)} not in [1, 2]."
         )
 
-    res = T.dot(matrix_or_vector, unfold(tensor, mode))
+    unfolded = unfold(tensor, mode)
+    if tensor.dtype == torch.complex32 and not handle_complex_half_by_upcasting:
+        # Split complex32 into real and imaginary half tensors
+        tensor_real = unfolded.real
+        tensor_imag = unfolded.imag
+        mat_or_vec = matrix_or_vector
+        mat_real = mat_or_vec.real
+        mat_imag = mat_or_vec.imag
+        # Compute real and imaginary parts using matmul/dot on half-precision floats
+        if vec:
+            result_real = T.dot(mat_real, tensor_real) - T.dot(mat_imag, tensor_imag)
+            result_imag = T.dot(mat_real, tensor_imag) + T.dot(mat_imag, tensor_real)
+        else:
+            result_real = T.matmul(mat_real, tensor_real) - T.matmul(mat_imag, tensor_imag)
+            result_imag = T.matmul(mat_real, tensor_imag) + T.matmul(mat_imag, tensor_real)
+        # Combine back to complex32 using PyTorch-specific call
+        res = torch.complex(result_real, result_imag).to(torch.complex32)
+    else:
+        if handle_complex_half_by_upcasting and tensor.dtype == torch.complex32:
+            matrix_or_vector = matrix_or_vector.to(torch.complex64)
+        # Use backend's dot for other dtypes
+        res = T.dot(matrix_or_vector, unfolded)
+        
 
-    if vec:  # We contracted with a vector, leading to a vector
+    if vec: # We contracted with a vector, leading to a vector
         return vec_to_tensor(res, shape=new_shape)
     else:  # tensor times vec: refold the unfolding
         return fold(res, fold_mode, new_shape)
