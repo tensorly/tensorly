@@ -13,6 +13,7 @@ from ._tucker import (
     Tucker,
 )
 from .robust_decomposition import robust_pca
+from .mda import mda, compute_modek_wb_scatters
 from ._tt import tensor_train, tensor_train_matrix
 from ._tt import TensorTrain, TensorTrainMatrix
 from ._tr_svd import tensor_ring, TensorRing
