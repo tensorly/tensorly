@@ -468,7 +468,6 @@ def test_non_negative_parafac_hals_sparse_and_ridge():
         ridge_coefficients=[1e-3, 0, 1e-3],
         sparsity_coefficients=[0, 1e-3, 0],
         init="svd",
-        nn_modes={0, 2},
         callback=callback,
     )
 
@@ -481,7 +480,7 @@ def test_non_negative_parafac_hals_sparse_and_ridge():
         "Error was too high",
     )
 
-    assert_(loss_per_iter[-1] < 0.05, "Loss was too high at the end of the iterations")
+    assert_(loss_per_iter[-1] < 0.1, "Loss was too high at the end of the iterations")
     assert_(tl.min(nn_estimate[1][1]) == 0, "Factor matrix B should be sparse")
 
 

@@ -343,16 +343,22 @@ def non_negative_parafac_hals(
         if sparsity_coefficients[i] is None:
             sparsity_coefficients[i] = 0
 
+    # Add a warning if ridge or sparsity is used with normalization
+    if ridge_coefficients or sparsity_coefficients:
+        if normalize_factors is not None:
+            warnings.warn(
+                "Ridge and sparsity coefficients are not compatible with normalization or non-unitary weights. "
+            )
+            normalize_factors = False
+
     if callback is not None:
         cp_tensor = CPTensor((weights, factors))
         loss = (tl.norm(tensor - tl.cp_to_tensor(cp_tensor)) ** 2) / 2
         rec_error = tl.sqrt(2 * loss) / norm_tensor
         for mode, factor in enumerate(factors):
-            loss += ridge_coefficients[mode] * weights[mode] ** 2 * tl.norm(
+            loss += ridge_coefficients[mode] ** 2 * tl.norm(
                 factor
-            ) ** 2 + sparsity_coefficients[mode] * weights[mode] * tl.sum(
-                tl.abs(factor)
-            )
+            ) ** 2 + sparsity_coefficients[mode] * tl.sum(tl.abs(factor))
 
     # Iteration
     for iteration in range(n_iter_max):
@@ -406,11 +412,9 @@ def non_negative_parafac_hals(
             loss = tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod) / 2
             rec_error = tl.sqrt(2 * loss) / norm_tensor
             for mode, factor in enumerate(factors):
-                loss += ridge_coefficients[mode] * weights[mode] ** 2 * tl.norm(
+                loss += ridge_coefficients[mode] ** 2 * tl.norm(
                     factor
-                ) ** 2 + sparsity_coefficients[mode] * weights[mode] * tl.sum(
-                    tl.abs(factor)
-                )
+                ) ** 2 + sparsity_coefficients[mode] * tl.sum(tl.abs(factor))
             rec_errors.append(rec_error)
 
             if callback is not None:
@@ -641,6 +645,11 @@ class CP_NN_HALS(DecompositionMixin):
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
+    callback : callable, optional
+        A callback function that is called at each iteration of the algorithm.
+        The callback function should take three arguments: the current CP tensor, the current reconstruction error,
+        and the current loss value. If the callback function returns True, the algorithm will stop.
+        Default: None
 
     Returns
     -------
@@ -681,6 +690,7 @@ class CP_NN_HALS(DecompositionMixin):
         normalize_factors=False,
         cvg_criterion="abs_rec_error",
         random_state=None,
+        callback=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -697,6 +707,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.normalize_factors = normalize_factors
         self.cvg_criterion = cvg_criterion
         self.random_state = random_state
+        self.callback = callback
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -729,6 +740,7 @@ class CP_NN_HALS(DecompositionMixin):
             normalize_factors=self.normalize_factors,
             return_errors=True,
             cvg_criterion=self.cvg_criterion,
+            callback=self.callback,
         )
 
         self.decomposition_ = cp_tensor
