@@ -346,7 +346,7 @@ def non_negative_parafac_hals(
     if callback is not None:
         cp_tensor = CPTensor((weights, factors))
         loss = (tl.norm(tensor - tl.cp_to_tensor(cp_tensor)) ** 2) / 2
-        rec_error = tl.sqrt(2*loss) / norm_tensor
+        rec_error = tl.sqrt(2 * loss) / norm_tensor
         for mode, factor in enumerate(factors):
             loss += ridge_coefficients[mode] * weights[mode] ** 2 * tl.norm(
                 factor
@@ -404,7 +404,7 @@ def non_negative_parafac_hals(
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
             loss = tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod) / 2
-            rec_error = tl.sqrt(2*loss) / norm_tensor
+            rec_error = tl.sqrt(2 * loss) / norm_tensor
             for mode, factor in enumerate(factors):
                 loss += ridge_coefficients[mode] * weights[mode] ** 2 * tl.norm(
                     factor
