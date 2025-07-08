@@ -86,7 +86,7 @@ def hals_nnls(
 
     .. math::
 
-            \\min_{V >= \\epsilon} ||M-UV||_F^2 + ridge\\_coefficient \\|V\\|_2^2 + sparsity\\_coefficient \\|V\\|_1
+            \\min_{V >= \\epsilon} \\frac{1}{2}\\|M-UV\\|_F^2 + ridge\\_coefficient \\|V\\|_2^2 + sparsity\\_coefficient \\|V\\|_1
 
     The matrix V is updated linewise. The update rule for this resolution is
 

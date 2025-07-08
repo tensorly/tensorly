@@ -200,10 +200,18 @@ def non_negative_parafac_hals(
     verbose=False,
     return_errors=False,
     cvg_criterion="abs_rec_error",
-    callback=None
+    callback=None,
 ):
     """
     Non-negative CP decomposition via HALS
+
+    The loss function is:
+
+    .. math::
+
+            \\frac{1}{2} \\|tensor - cp\_tensor \\|_F^2
+            + \\sum_{i=1}^{rank} \\lambda_s[i] \\|factors[i]]\\|_1
+            + \\sum_{i=1}^{rank} \\lambda_r[i] \\|factors[i]\\|_F^2
 
     Uses Hierarchical ALS (Alternating Least Squares)
     which updates each factor column-wise (one column at a time while keeping all other columns fixed), see [1]_
@@ -291,12 +299,20 @@ def non_negative_parafac_hals(
     norm_tensor = tl.norm(tensor, 2)
 
     n_modes = tl.ndim(tensor)
-    if sparsity_coefficients is None or isinstance(sparsity_coefficients, float) or isinstance(sparsity_coefficients, int):
+    if (
+        sparsity_coefficients is None
+        or isinstance(sparsity_coefficients, float)
+        or isinstance(sparsity_coefficients, int)
+    ):
         sparsity_coefficients = [sparsity_coefficients] * n_modes
 
-    if ridge_coefficients is None or isinstance(ridge_coefficients, float) or isinstance(ridge_coefficients, int):
+    if (
+        ridge_coefficients is None
+        or isinstance(ridge_coefficients, float)
+        or isinstance(ridge_coefficients, int)
+    ):
         ridge_coefficients = [ridge_coefficients] * n_modes
-        
+
     if fixed_modes is None:
         fixed_modes = []
 
@@ -313,13 +329,13 @@ def non_negative_parafac_hals(
     for mode in range(n_modes):
         if (sparsity_coefficients[mode] is not None) and (mode not in nn_modes):
             warnings.warn("Sparsity coefficient is ignored in unconstrained modes.")
-            
+
     # Generating the mode update sequence
     modes = [mode for mode in range(n_modes) if mode not in fixed_modes]
 
     # initialisation - declare local variables
     rec_errors = []
-    
+
     # Changing None values to 0 in regularization coefficients
     for i in range(n_modes):
         if ridge_coefficients[i] is None:
@@ -329,11 +345,14 @@ def non_negative_parafac_hals(
 
     if callback is not None:
         cp_tensor = CPTensor((weights, factors))
-        loss = tl.norm(tensor - tl.cp_to_tensor(cp_tensor))
+        loss = (tl.norm(tensor - tl.cp_to_tensor(cp_tensor)) ** 2) / 2
         rec_error = tl.sqrt(loss) / norm_tensor
         for mode, factor in enumerate(factors):
-            loss += ridge_coefficients[mode] * weights[mode]**2 * tl.norm(factor)**2 + sparsity_coefficients[mode] * weights[mode] * tl.sum(tl.abs(factor))
-        retVal = callback(cp_tensor, rec_error, loss)
+            loss += ridge_coefficients[mode] * weights[mode] ** 2 * tl.norm(
+                factor
+            ) ** 2 + sparsity_coefficients[mode] * weights[mode] * tl.sum(
+                tl.abs(factor)
+            )
 
     # Iteration
     for iteration in range(n_iter_max):
@@ -369,20 +388,29 @@ def non_negative_parafac_hals(
             else:
                 if ridge_coefficients[mode] is not None:
                     factor = tl.solve(
-                        tl.transpose(pseudo_inverse) + ridge_coefficients[mode] * tl.eye(rank),
-                        tl.transpose(mttkrp))
+                        tl.transpose(pseudo_inverse)
+                        + 2 * ridge_coefficients[mode] * tl.eye(rank),
+                        tl.transpose(mttkrp),
+                    )
                 else:
-                    factor = tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp))
+                    factor = tl.solve(
+                        tl.transpose(pseudo_inverse), tl.transpose(mttkrp)
+                    )
                 factors[mode] = tl.transpose(factor)
             if normalize_factors and mode != modes[-1]:
                 weights, factors = cp_normalize((weights, factors))
+
         if tol or callback:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
-            loss = tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
+            loss = tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod) / 2
             rec_error = tl.sqrt(loss) / norm_tensor
             for mode, factor in enumerate(factors):
-                loss += ridge_coefficients[mode] * weights[mode]**2 * tl.norm(factor)**2 + sparsity_coefficients[mode] * weights[mode] * tl.sum(tl.abs(factor))
+                loss += ridge_coefficients[mode] * weights[mode] ** 2 * tl.norm(
+                    factor
+                ) ** 2 + sparsity_coefficients[mode] * weights[mode] * tl.sum(
+                    tl.abs(factor)
+                )
             rec_errors.append(rec_error)
 
             if callback is not None:
@@ -599,8 +627,14 @@ class CP_NN_HALS(DecompositionMixin):
         Stopping criterion for ALS, works if `tol` is not None.
         If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
         If 'abs_rec_error', ALS terminates when ``|previous rec_error - current rec_error| < tol``.
-    sparsity : float or int
-        If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+    sparsity_coefficients: array of float (of length the number of modes)
+        The sparsity coefficients on each factor.
+        If set to None, the algorithm is computed without sparsity
+        Default: None
+    ridge_coefficients: array of float (of length the number of modes)
+        The ridge coefficients on each factor.
+        If set to None, the algorithm is computed without sparsity
+        Default: None
     fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
@@ -639,6 +673,7 @@ class CP_NN_HALS(DecompositionMixin):
         svd="truncated_svd",
         tol=10e-8,
         sparsity_coefficients=None,
+        ridge_coefficients=None,
         fixed_modes=None,
         nn_modes="all",
         exact=False,
@@ -653,6 +688,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.svd = svd
         self.tol = tol
         self.sparsity_coefficients = sparsity_coefficients
+        self.ridge_coefficients = ridge_coefficients
         self.random_state = random_state
         self.fixed_modes = fixed_modes
         self.nn_modes = nn_modes
@@ -685,6 +721,7 @@ class CP_NN_HALS(DecompositionMixin):
             tol=self.tol,
             random_state=self.random_state,
             sparsity_coefficients=self.sparsity_coefficients,
+            ridge_coefficients=self.sparsity_coefficients,
             fixed_modes=self.fixed_modes,
             nn_modes=self.nn_modes,
             exact=self.exact,
