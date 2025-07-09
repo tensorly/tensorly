@@ -209,7 +209,7 @@ def non_negative_parafac_hals(
 
     .. math::
 
-            \\frac{1}{2} \\|tensor - cp\_tensor \\|_F^2
+            \\frac{1}{2} \\|tensor - cp\\_tensor \\|_F^2
             + \\sum_{i=1}^{rank} \\lambda_s[i] \\|factors[i]]\\|_1
             + \\sum_{i=1}^{rank} \\lambda_r[i] \\|factors[i]\\|_F^2
 

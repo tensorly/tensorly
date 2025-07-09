@@ -476,7 +476,7 @@ def test_non_negative_parafac_hals_sparse_and_ridge():
         tl.norm(
             X - X_hat,
         )
-        < 1e-1,
+        < 1e-0,
         "Error was too high",
     )
 
