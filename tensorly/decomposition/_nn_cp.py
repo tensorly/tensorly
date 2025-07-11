@@ -353,7 +353,6 @@ def non_negative_parafac_hals(
         if sparsity_coefficients[i] is None:
             sparsity_coefficients[i] = 0
 
-
     if callback is not None:
         cp_tensor = CPTensor((weights, factors))
         loss = (tl.norm(tensor - tl.cp_to_tensor(cp_tensor)) ** 2) / 2
@@ -362,6 +361,7 @@ def non_negative_parafac_hals(
             loss += ridge_coefficients[mode] ** 2 * tl.norm(
                 factor
             ) ** 2 + sparsity_coefficients[mode] * tl.sum(tl.abs(factor))
+        callback(cp_tensor, rec_error, loss)
 
     # Iteration
     for iteration in range(n_iter_max):
