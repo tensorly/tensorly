@@ -28,6 +28,8 @@ def hals_nnls(
     This function is made for being used repetively inside an
     outer-loop alternating algorithm, for instance for computing nonnegative
     matrix Factorization or tensor factorization. To use as a stand-alone solver, set the exact flag to True.
+    
+    If an initial value for V is provided, it is modified inplace.
 
     Parameters
     ----------
