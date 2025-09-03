@@ -38,7 +38,7 @@ def svd_flip(U, V, u_based_decision=True):
                 **tl.context(U),
             )
         )
-        U = U * signs
+        U = U * tl.conj(signs)
         if tl.shape(V)[0] > tl.shape(U)[1]:
             signs = tl.concatenate(
                 (signs, tl.ones(tl.shape(V)[0] - tl.shape(U)[1], **tl.context(V)))
@@ -53,7 +53,7 @@ def svd_flip(U, V, u_based_decision=True):
                 **tl.context(V),
             )
         )
-        V = V * signs[:, None]
+        V = V * tl.conj(signs[:, None])
         if tl.shape(U)[1] > tl.shape(V)[0]:
             signs = tl.concatenate(
                 (signs, tl.ones(tl.shape(U)[1] - tl.shape(V)[0], **tl.context(V)))
