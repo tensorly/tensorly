@@ -13,7 +13,7 @@ from .proximal import soft_thresholding
 def svd_flip(U, V, u_based_decision=True):
     """Sign correction to ensure deterministic output from SVD.
     Adjusts the columns of u and the rows of v such that the loadings in the
-    columns in u that are largest in absolute value are always positive.
+    columns in u that are largest in absolute value are always positive and real-valued.
     This function is borrowed from scikit-learn/utils/extmath.py
     Parameters
     ----------
@@ -38,6 +38,7 @@ def svd_flip(U, V, u_based_decision=True):
                 **tl.context(U),
             )
         )
+        # Multiply by conjugate of signs to make max-amplitude values real and positive
         U = U * tl.conj(signs)
         if tl.shape(V)[0] > tl.shape(U)[1]:
             signs = tl.concatenate(
@@ -53,6 +54,7 @@ def svd_flip(U, V, u_based_decision=True):
                 **tl.context(V),
             )
         )
+        # Multiply by conjugate of signs to make max-amplitude values real and positive
         V = V * tl.conj(signs[:, None])
         if tl.shape(U)[1] > tl.shape(V)[0]:
             signs = tl.concatenate(
