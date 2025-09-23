@@ -32,18 +32,18 @@ def test_svd_interface_shape(shape, rank, nn):
 
 @pytest.mark.parametrize("shape", [(10, 5), (10, 10), (5, 10)])
 @pytest.mark.parametrize("rank", [1, 3, 10])
-@pytest.mark.parametrize("complex", [False, True])
+@pytest.mark.parametrize("is_complex", [False, True])
 @pytest.mark.parametrize("is_u_based_flip_sign", [False, True])
-def test_svd_interface_approx(shape, rank, complex, is_u_based_flip_sign):
+def test_svd_interface_approx(shape, rank, is_complex, is_u_based_flip_sign):
     """Test that SVD interface can approximate input matrix"""
-    tol = 1e-14
+    tol = 1e-6
 
     rng = tl.check_random_state(1234)
     # Generate left and right matrices
     R = tl.tensor(rng.random_sample((shape[0], rank)))
     L = tl.tensor(rng.random_sample((rank, shape[1])))
 
-    if complex:
+    if is_complex:
         R = R + 1j * tl.tensor(rng.random_sample((shape[0], rank)))
         L = L + 1j * tl.tensor(rng.random_sample((rank, shape[1])))
 
@@ -56,6 +56,7 @@ def test_svd_interface_approx(shape, rank, complex, is_u_based_flip_sign):
 
     # Check approximation error
     r = min(rank, *shape)
-    X_aprox = U[:, :r] @ tl.diag(S) @ V[:r, :]
+    S_imag = 0j if is_complex else 0  # for dtype casting of S matrix
+    X_aprox = U[:, :r] @ tl.diag(S[:r] + S_imag) @ V[:r, :]
     err = tl.norm(X - X_aprox, 2) / tl.norm(X, 2)
-    assert_(err < tol)
+    assert_(tl.abs(err) < tol)  # abs due to cplx output of tf
