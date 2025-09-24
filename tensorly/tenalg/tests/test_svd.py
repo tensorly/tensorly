@@ -32,8 +32,11 @@ def test_svd_interface_shape(shape, rank, nn):
 
 @pytest.mark.parametrize("shape", [(10, 5), (10, 10), (5, 10)])
 @pytest.mark.parametrize("rank", [1, 3, 10])
-@pytest.mark.parametrize("is_complex", [False, True])
 @pytest.mark.parametrize("is_u_based_flip_sign", [False, True])
+@pytest.mark.parametrize(
+    "is_complex",
+    [False] if tl.get_backend() is "paddle" else [True, False],
+)  # due to unsupported svd of cplx input in v3.0
 def test_svd_interface_approx(shape, rank, is_complex, is_u_based_flip_sign):
     """Test that SVD interface can approximate input matrix"""
     tol = 1e-6
