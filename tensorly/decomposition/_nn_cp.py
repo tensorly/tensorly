@@ -299,7 +299,7 @@ def non_negative_parafac_hals(
     norm_tensor = tl.norm(tensor, 2)
 
     n_modes = tl.ndim(tensor)
-    
+
     # Add a warning if ridge or sparsity is used with normalization
     if ridge_coefficients or sparsity_coefficients:
         if normalize_factors:
@@ -307,7 +307,7 @@ def non_negative_parafac_hals(
                 "Ridge and sparsity coefficients are not compatible with normalization or non-unitary weights. "
             )
             normalize_factors = False
-    
+
     if (
         sparsity_coefficients is None
         or isinstance(sparsity_coefficients, float)
@@ -330,7 +330,6 @@ def non_negative_parafac_hals(
     elif nn_modes is None:
         nn_modes = set()
 
-            
     # Avoiding errors
     for fixed_value in fixed_modes:
         sparsity_coefficients[fixed_value] = None
