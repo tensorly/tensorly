@@ -1,5 +1,4 @@
-"""Sparse-specific tests for the :mod:`tensorly.tenalg` module.
-"""
+"""Sparse-specific tests for the :mod:`tensorly.tenalg` module."""
 
 from .... import backend as tl
 

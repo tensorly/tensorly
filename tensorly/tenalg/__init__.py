@@ -1,5 +1,5 @@
-""" 
-The :mod:`tensorly.tenalg` module contains utilities for Tensor Algebra 
+"""
+The :mod:`tensorly.tenalg` module contains utilities for Tensor Algebra
 operations such as khatri-rao or kronecker product, n-mode product, etc.
 """
 

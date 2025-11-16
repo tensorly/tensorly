@@ -1,6 +1,6 @@
 """
 The :mod:`tensorly.decomposition` module includes utilities for performing
-tensor decomposition such as CANDECOMP-PARAFAC and Tucker.                                                                                               
+tensor decomposition such as CANDECOMP-PARAFAC and Tucker.
 """
 
 from ._cp import parafac, CP, RandomizedCP, randomised_parafac, sample_khatri_rao

@@ -1,5 +1,4 @@
-"""Core operations on PARAFAC2 tensors whose second mode evolve over their first.
-"""
+"""Core operations on PARAFAC2 tensors whose second mode evolve over their first."""
 
 # Authors: Marie Roald
 #          Yngve Mardal Moe

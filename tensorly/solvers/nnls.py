@@ -29,6 +29,8 @@ def hals_nnls(
     outer-loop alternating algorithm, for instance for computing nonnegative
     matrix Factorization or tensor factorization. To use as a stand-alone solver, set the exact flag to True.
 
+    If an initial value for V is provided, it is modified inplace.
+
     Parameters
     ----------
     UtM: r-by-n array
@@ -86,7 +88,7 @@ def hals_nnls(
 
     .. math::
 
-            \\min_{V >= \\epsilon} ||M-UV||_F^2
+            \\min_{V >= \\epsilon} \\frac{1}{2}\\|M-UV\\|_F^2 + ridge\\_coefficient \\|V\\|_2^2 + sparsity\\_coefficient \\|V\\|_1
 
     The matrix V is updated linewise. The update rule for this resolution is
 
