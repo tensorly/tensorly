@@ -1,4 +1,5 @@
 import tensorly as tl
+import pytest
 from .._tt import tensor_train, tensor_train_matrix, TensorTrain, TensorTrainMatrix
 from ...tt_matrix import tt_matrix_to_tensor
 from ...random import random_tt
@@ -9,9 +10,18 @@ from ...testing import (
 )
 
 
-def test_tensor_train(monkeypatch):
+@pytest.mark.parametrize("random_state", [1, 1234])
+@pytest.mark.parametrize(
+    "complex",
+    [False] if tl.get_backend() in ["tensorflow", "paddle"] else [True, False],
+)
+def test_tensor_train(
+    random_state,
+    complex,
+    monkeypatch,
+):
     """Test for tensor_train"""
-    rng = tl.check_random_state(1234)
+    rng = tl.check_random_state(random_state)
 
     ## Test 1
 
@@ -67,13 +77,30 @@ def test_tensor_train(monkeypatch):
         first_error_message += str(r_k) + " > " + str(rank[k + 1])
         assert r_k <= rank[k + 1], first_error_message
 
-    ## Test 3
-    tol = 10e-5
-    tensor = tl.tensor(rng.random_sample([3, 3, 3]))
-    factors = tensor_train(tensor, (1, 3, 3, 1))
-    reconstructed_tensor = tl.tt_to_tensor(factors)
-    error = tl.norm(reconstructed_tensor - tensor, 2)
-    error /= tl.norm(tensor, 2)
+    ## Test 3. Check error of reconstruction
+    tol = 1e-9
+    shape = (3, 3, 3)
+    true_rank = (1, 2, 3, 1)
+
+    rng = tl.check_random_state(random_state)
+    factors = tl.random.random_tt(
+        shape=shape, full=False, rank=true_rank, random_state=rng, dtype=tl.float64
+    )
+
+    if complex:
+        factors_imag = tl.random.random_tt(
+            shape=shape, full=False, rank=true_rank, random_state=rng, dtype=tl.float64
+        )
+
+        factors.factors = [
+            fm_re + (fm_im * 1.0j)
+            for fm_re, fm_im in zip(factors.factors, factors_imag.factors)
+        ]
+    tensor = tl.tt_to_tensor(factors)
+    rec_factors = tensor_train(tensor, true_rank)
+    rec_tensor = tl.tt_to_tensor(rec_factors)
+
+    error = tl.norm(rec_tensor - tensor, 2) / tl.norm(tensor, 2)
     assert_(error < tol, "norm 2 of reconstruction higher than tol")
 
     assert_class_wrapper_correctly_passes_arguments(
