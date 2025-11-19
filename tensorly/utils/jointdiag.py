@@ -18,6 +18,31 @@ def joint_matrix_diagonalization(
     Jointly diagonalizes n matrices, organized in tensor of dimension (k,k,n).
     Returns the diagonalized matrices, along with the transformation matrix [1]_ .
 
+    Notes
+    -----
+    This algorithm performs joint eigenstructure estimation for a set of
+    non-defective matrices by computing a similarity transformation matrix
+    ``P`` that simultaneously diagonalizes the set.
+
+    **Algorithm Details**
+    The method minimizes the Frobenius norm of the off-diagonal elements of the
+    transformed matrices. Unlike methods restricted to simultaneous Schur
+    decomposition (which use only unitary transformations), this algorithm
+    alternates between two specific updates:
+
+    1. **Non-unitary Shear Transformations:** Reduces the matrices' departure
+        from normality.
+    2. **Unitary Rotations:** Minimizes the off-diagonal norm of the resulting
+        matrices.
+
+    **Scrambling and Robustness**
+    This approach is specifically designed to handle "scrambling" defined as
+    significant deviation from normality. Purely unitary methods often fail to
+    converge when input matrices are far from normal or possess repeated/close
+    eigenvalues. By incorporating non-unitary shears, this algorithm robustly
+    converges in these difficult scenarios and exhibits an asymptotically
+    quadratic convergence rate.
+
     Args:
         X (_type_): n matrices, organized in a single tensor of dimension (k, k, n).
         max_n_iter (int, optional): Maximum iteration number. Defaults to 50.
