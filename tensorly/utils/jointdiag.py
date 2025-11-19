@@ -1,4 +1,5 @@
 from itertools import combinations
+
 import tensorly as tl
 
 # Authors: Aaron Meyer <a@ameyer.me>
@@ -8,18 +9,14 @@ import tensorly as tl
 
 
 def joint_matrix_diagonalization(
-    X,
+    matrices_tensor,
     max_n_iter: int = 50,
     threshold: float = 1e-10,
     verbose: bool = False,
 ):
     """
     Jointly diagonalizes n matrices, organized in tensor of dimension (k,k,n).
-    Returns the diagonalized matrices, along with the transformation matrix.
-
-    T. Fu and X. Gao, “Simultaneous diagonalization with similarity transformation for
-    non-defective matrices”, in Proc. IEEE International Conference on Acoustics, Speech
-    and Signal Processing (ICASSP 2006), vol. IV, pp. 1137-1140, Toulouse, France, May 2006.
+    Returns the diagonalized matrices, along with the transformation matrix [1]_ .
 
     Args:
         X (_type_): n matrices, organized in a single tensor of dimension (k, k, n).
@@ -33,15 +30,24 @@ def joint_matrix_diagonalization(
     Returns:
         Tensor: X after joint diagonalization.
         Tensor: The transformation matrix resulting in the diagonalization.
+
+    References
+    ----------
+    .. [1] T. Fu and X. Gao, “Simultaneous diagonalization with similarity transformation for
+       non-defective matrices”, in Proc. IEEE International Conference on Acoustics, Speech
+       and Signal Processing (ICASSP 2006), vol. IV, pp. 1137-1140, Toulouse, France, May 2006.
     """
-    X = tl.copy()
-    matrix_dimension = tl.shape(X)[0]  # Dimension of square matrix slices
-    assert tl.ndim(X) == 3, "Input must be a 3D tensor"
-    assert matrix_dimension == X.shape[1], "All matrices must be square."
+    matrices_tensor = tl.copy(matrices_tensor)
+    matrix_dimension = tl.shape(matrices_tensor)[0]  # Dimension of square matrix slices
+    assert tl.ndim(matrices_tensor) == 3, "Input must be a 3D tensor"
+    assert matrix_dimension == matrices_tensor.shape[1], "All matrices must be square."
 
     # Initial error calculation
     # Transpose is because np.tril operates on the last two dimensions
-    e = tl.norm(X) ** 2.0 - tl.norm(tl.diagonal(X, axis1=1, axis2=2)) ** 2.0
+    e = (
+        tl.norm(matrices_tensor) ** 2.0
+        - tl.norm(tl.diagonal(matrices_tensor, axis1=1, axis2=2)) ** 2.0
+    )
 
     if verbose:
         print(f"Sweep # 0: e = {e:.3e}")
@@ -52,36 +58,40 @@ def joint_matrix_diagonalization(
     for k in range(max_n_iter):
         # loop over all pairs of slices
         for p, q in combinations(range(matrix_dimension), 2):
-            # Finds matrix slice with greatest variability among diagonal elements
-            d_ = X[p, p, :] - X[q, q, :]
+            # Comparing the p and q chords across matrices, identifies the
+            # position h with the largest difference
+            d_ = matrices_tensor[p, p, :] - matrices_tensor[q, q, :]
             h = tl.argmax(tl.abs(d_))
 
-            # List of indices
+            # List of non-selected indices
             all_but_pq = list(set(range(matrix_dimension)) - set([p, q]))
 
             # Compute certain quantities
             dh = d_[h]
-            Xh = X[:, :, h]
-            Kh = tl.dot(Xh[p, all_but_pq], Xh[q, all_but_pq]) - tl.dot(
-                Xh[all_but_pq, p], Xh[all_but_pq, q]
+            matrix_h = matrices_tensor[:, :, h]
+            Kh = tl.dot(matrix_h[p, all_but_pq], matrix_h[q, all_but_pq]) - tl.dot(
+                matrix_h[all_but_pq, p], matrix_h[all_but_pq, q]
             )
             Gh = (
-                tl.norm(Xh[p, all_but_pq]) ** 2
-                + tl.norm(Xh[q, all_but_pq]) ** 2
-                + tl.norm(Xh[all_but_pq, p]) ** 2
-                + tl.norm(Xh[all_but_pq, q]) ** 2
+                tl.norm(matrix_h[p, all_but_pq]) ** 2
+                + tl.norm(matrix_h[q, all_but_pq]) ** 2
+                + tl.norm(matrix_h[all_but_pq, p]) ** 2
+                + tl.norm(matrix_h[all_but_pq, q]) ** 2
             )
-            xih = Xh[p, q] - Xh[q, p]
+            matrix_h_pq_diff = matrix_h[p, q] - matrix_h[q, p]
 
             # Build shearing matrix out of these quantities
-            yk = tl.arctanh((Kh - xih * dh) / (2 * (dh**2 + xih**2) + Gh))
+            yk = tl.arctanh(
+                (Kh - matrix_h_pq_diff * dh) / (2 * (dh**2 + matrix_h_pq_diff**2) + Gh)
+            )
 
             # Inverse of Sk on left side
-            pvec = tl.copy(X[p, :, :])
+            pvec = tl.copy(matrices_tensor[p, :, :])
             X = tl.index_update(
-                X,
+                matrices_tensor,
                 tl.index[p, :, :],
-                X[p, :, :] * tl.cosh(yk) - X[q, :, :] * tl.sinh(yk),
+                matrices_tensor[p, :, :] * tl.cosh(yk)
+                - matrices_tensor[q, :, :] * tl.sinh(yk),
             )
             X = tl.index_update(
                 X, tl.index[q, :, :], -pvec * tl.sinh(yk) + X[q, :, :] * tl.cosh(yk)
@@ -170,7 +180,10 @@ def joint_matrix_diagonalization(
 
         # Error computation, check if loop needed...
         old_e = e
-        e = tl.norm(X) ** 2.0 - tl.norm(tl.diagonal(X, axis1=1, axis2=2)) ** 2.0
+        e = (
+            tl.norm(matrices_tensor) ** 2.0
+            - tl.norm(tl.diagonal(matrices_tensor, axis1=1, axis2=2)) ** 2.0
+        )
 
         if verbose:
             print(f"Sweep # {k + 1}: e = {e:.3e}")
@@ -179,4 +192,4 @@ def joint_matrix_diagonalization(
         if old_e - e < threshold and k > 2:
             break
 
-    return X, Q_total
+    return matrices_tensor, Q_total

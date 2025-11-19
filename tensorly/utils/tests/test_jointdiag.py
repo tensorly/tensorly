@@ -1,6 +1,8 @@
 import numpy as np
+
 import tensorly as tl
-from ..joint_matrix_diagonalization import joint_matrix_diagonalization
+
+from ..jointdiag import joint_matrix_diagonalization
 
 
 def test_joint_matrix_diagonalization():
