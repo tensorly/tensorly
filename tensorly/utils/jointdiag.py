@@ -8,10 +8,42 @@ import tensorly as tl
 # License: BSD 3 clause
 
 
+def deviation_from_normality(matrices_tensor):
+    """
+    Calculates the total deviation from normality for a set of matrices.
+
+    Metric: Sum of || A @ A.T - A.T @ A ||_F^2 for all matrices in the tensor.
+
+    Args:
+        matrices_tensor (Tensor): Dimension (k, k, n)
+
+    Returns:
+        float: The total deviation error.
+    """
+    n_matrices = matrices_tensor.shape[2]
+    total_deviation = 0.0
+
+    for i in range(n_matrices):
+        A = matrices_tensor[:, :, i]
+        # Calculate A Transpose
+        A_t = tl.transpose(A)
+
+        # Calculate Commutator: (A * A^T) - (A^T * A)
+        # Note: Depending on the backend, tl.dot might act differently on 2D matrices.
+        # Using explicit matrix multiplication is safer if available,
+        # but here is the standard dot approach for 2D slices:
+        commutator = tl.dot(A, A_t) - tl.dot(A_t, A)
+
+        # Add the squared norm of the commutator
+        total_deviation += tl.norm(commutator) ** 2
+
+    return total_deviation
+
+
 def joint_matrix_diagonalization(
     matrices_tensor,
     max_n_iter: int = 50,
-    threshold: float = 1e-10,
+    threshold: float = 1e-8,
     verbose: bool = False,
 ):
     """
@@ -46,7 +78,7 @@ def joint_matrix_diagonalization(
     Args:
         X (_type_): n matrices, organized in a single tensor of dimension (k, k, n).
         max_n_iter (int, optional): Maximum iteration number. Defaults to 50.
-        threshold (float, optional): Threshold for decrease in error indicating convergence. Defaults to 1e-10.
+        threshold (float, optional): Threshold for decrease in deviation indicating convergence. Defaults to 1e-8.
         verbose (bool, optional): Output progress information during diagonalization. Defaults to False.
 
     Raises:
@@ -67,15 +99,11 @@ def joint_matrix_diagonalization(
     assert tl.ndim(matrices_tensor) == 3, "Input must be a 3D tensor"
     assert matrix_dimension == matrices_tensor.shape[1], "All matrices must be square."
 
-    # Initial error calculation
-    # Transpose is because np.tril operates on the last two dimensions
-    error = (
-        tl.norm(matrices_tensor) ** 2.0
-        - tl.norm(tl.diagonal(matrices_tensor, axis1=1, axis2=2)) ** 2.0
-    )
+    # Deviation from normality is strictly decreasing
+    deviation = deviation_from_normality(matrices_tensor)
 
     if verbose:
-        print(f"Sweep # 0: e = {error:.3e}")
+        print(f"Sweep # 0: dev = {deviation:.3e}")
 
     # Initialize transformation matrix as identity
     transform_P = tl.eye(matrix_dimension)
@@ -205,18 +233,14 @@ def joint_matrix_diagonalization(
                 pvec * tl.sin(theta_k) + transform_P[:, q] * tl.cos(theta_k),
             )
 
-        # Error computation, check if loop needed...
-        old_error = error
-        error = (
-            tl.norm(matrices_tensor) ** 2.0
-            - tl.norm(tl.diagonal(matrices_tensor, axis1=1, axis2=2)) ** 2.0
-        )
+        # Update deviation from normality
+        old_deviation = deviation
+        deviation = deviation_from_normality(matrices_tensor)
 
         if verbose:
-            print(f"Sweep # {k + 1}: e = {error:.3e}")
+            print(f"Sweep # {k + 1}: dev = {deviation:.3e}")
 
-        # TODO: Strangely the error increases on the first iteration
-        if old_error - error < threshold and k > 2:
+        if (old_deviation - deviation < threshold) or (deviation < threshold):
             break
 
     return matrices_tensor, transform_P
