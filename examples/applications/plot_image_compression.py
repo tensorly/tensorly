@@ -8,7 +8,7 @@ Example on how to use :func:`tensorly.decomposition.parafac` and :func:`tensorly
 import matplotlib.pyplot as plt
 import tensorly as tl
 import numpy as np
-from scipy.misc import face
+from scipy.datasets import face
 from scipy.ndimage import zoom
 from tensorly.decomposition import parafac
 from tensorly.decomposition import tucker

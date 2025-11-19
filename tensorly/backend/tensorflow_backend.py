@@ -85,7 +85,7 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
     @staticmethod
     def solve(lhs, rhs):
         squeeze = False
-        if rhs.ndim == 1:
+        if tnp.ndim(rhs) == 1:
             squeeze = [-1]
             rhs = tf.reshape(rhs, (-1, 1))
         res = tf.linalg.solve(lhs, rhs)
@@ -117,9 +117,11 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
         return x, residuals if tf.linalg.matrix_rank(a) == n else tf.constant([])
 
     def svd(self, matrix, full_matrices):
-        """Correct for the atypical return order of tf.linalg.svd."""
+        """Correct for the atypical return order of tf.linalg.svd.
+        According to the https://www.tensorflow.org/api_docs/python/tf/linalg/svd#expandable-2
+        not only the order is changed, but V is returned instead of V^H"""
         S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
-        return U, S, tf.transpose(a=V)
+        return U, S, tfm.conj(tf.transpose(a=V))
 
     def index_update(self, tensor, indices, values):
         if not isinstance(tensor, tf.Variable):

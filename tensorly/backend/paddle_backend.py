@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from packaging.version import Version
+import warnings
 
 try:
     import paddle
@@ -23,14 +24,14 @@ from .core import (
 )
 
 
-if Version(paddle.__version__) < Version("2.6.0"):
-    raise RuntimeError("TensorLy only supports paddle v2.6.0 and above.")
+if paddle.__version__ != "0.0.0" and Version(paddle.__version__) < Version("2.6.0"):
+    raise RuntimeError(
+        "TensorLy only supports paddle v2.6.0 and above, or the develop version, "
+        f"but got {paddle.__version__}"
+    )
 
 
 class PaddleBackend(Backend, backend_name="paddle"):
-    # set default device to cpu
-    place = paddle.device.set_device("cpu")
-
     @staticmethod
     def context(tensor: paddle.Tensor):
         return {
@@ -67,15 +68,7 @@ class PaddleBackend(Backend, backend_name="paddle"):
             # If source is a tensor, use clone-detach as suggested by Paddle
             tensor = data.clone().detach()
         else:
-            # Else, use Paddle's tensor constructor
-            if place is None:
-                # set default device to cpu when place is not specified
-                # and  gpu is avaiable
-                current_device = paddle.device.get_device()
-                if current_device.startswith("gpu"):
-                    place = "cpu"
-
-            tensor = paddle.to_tensor(data, place=place)
+            tensor = paddle.to_tensor(data)
 
         # Set dtype/place/stop_gradient if specified
         if dtype is not None:
@@ -249,9 +242,32 @@ class PaddleBackend(Backend, backend_name="paddle"):
             b = b.unsqueeze(-1)
 
         m, n = a.shape[-2], a.shape[-1]
-        sol, res, rank, single_value = paddle.linalg.lstsq(
-            a, b, rcond=rcond, driver=driver
-        )
+        if driver != "gels" and paddle.device.get_device() != "cpu":
+            fallback_device = "cpu"
+            # NOTE: Paddle only support 'gels' on CUDA, so we use a.cpu() and b.cpu()
+            # as input, then fall back to CPU lstsq implementation and show warnings.
+            with paddle.base.dygraph.guard(fallback_device):
+                sol, res, rank, single_value = paddle.linalg.lstsq(
+                    a.to(fallback_device),
+                    b.to(fallback_device),
+                    rcond=rcond,
+                    driver=driver,
+                )
+            # copy result back to current device
+            current_device = paddle.device.get_device()
+            sol = sol.to(current_device)
+            res = res.to(current_device)
+            rank = rank.to(current_device)
+            single_value = single_value.to(current_device)
+            warnings.warn(
+                f"lstsq is falling back to {fallback_device} as the"
+                f" specified driver '{driver}' is only supported on {fallback_device}, "
+                "which may result in additional overhead."
+            )
+        else:
+            sol, res, rank, single_value = paddle.linalg.lstsq(
+                a, b, rcond=rcond, driver=driver
+            )
         if m > n and driver != "gelsy":
             compute_residuals = True
             if driver in ["gelss", "gelsd"]:

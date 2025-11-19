@@ -91,6 +91,45 @@ def test_tucker_to_tensor():
     assert_array_equal(true_res, res)
 
 
+def test_tucker_to_tensor_with_partial_modes():
+    """Test for tucker_to_tensor with partial modes"""
+    X = tl.tensor(
+        np.array(
+            [
+                [[1.0, 13], [4, 16], [7, 19], [10, 22]],
+                [[2, 14], [5, 17], [8, 20], [11, 23]],
+                [[3, 15], [6, 18], [9, 21], [12, 24]],
+            ]
+        )
+    )
+    ranks = [3, 4]
+    U = [
+        tl.tensor(np.arange(R * s, dtype=float).reshape((R, s)))
+        for (R, s) in zip(ranks, tl.shape(X)[1:])
+    ]
+    true_res = np.array(
+        [
+            [
+                [120.0, 456.0, 792.0, 1128.0],
+                [400.0, 1472.0, 2544.0, 3616.0],
+                [680.0, 2488.0, 4296.0, 6104.0],
+            ],
+            [
+                [126.0, 486.0, 846.0, 1206.0],
+                [422.0, 1582.0, 2742.0, 3902.0],
+                [718.0, 2678.0, 4638.0, 6598.0],
+            ],
+            [
+                [132.0, 516.0, 900.0, 1284.0],
+                [444.0, 1692.0, 2940.0, 4188.0],
+                [756.0, 2868.0, 4980.0, 7092.0],
+            ],
+        ]
+    )
+    res = tucker_to_tensor((X, U), modes=[1, 2])
+    assert_array_equal(true_res, res)
+
+
 def test_tucker_to_unfolded():
     """Test for tucker_to_unfolded
 

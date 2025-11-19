@@ -1,4 +1,5 @@
 import warnings
+from typing import Literal
 import tensorly as tl
 from .proximal import soft_thresholding
 
@@ -12,7 +13,7 @@ from .proximal import soft_thresholding
 def svd_flip(U, V, u_based_decision=True):
     """Sign correction to ensure deterministic output from SVD.
     Adjusts the columns of u and the rows of v such that the loadings in the
-    columns in u that are largest in absolute value are always positive.
+    columns in u that are largest in absolute value are always positive and real-valued.
     This function is borrowed from scikit-learn/utils/extmath.py
     Parameters
     ----------
@@ -37,7 +38,8 @@ def svd_flip(U, V, u_based_decision=True):
                 **tl.context(U),
             )
         )
-        U = U * signs
+        # Multiply by conjugate of signs to make max-amplitude values real and positive
+        U = U * tl.conj(signs)
         if tl.shape(V)[0] > tl.shape(U)[1]:
             signs = tl.concatenate(
                 (signs, tl.ones(tl.shape(V)[0] - tl.shape(U)[1], **tl.context(V)))
@@ -52,7 +54,8 @@ def svd_flip(U, V, u_based_decision=True):
                 **tl.context(V),
             )
         )
-        V = V * signs[:, None]
+        # Multiply by conjugate of signs to make max-amplitude values real and positive
+        V = V * tl.conj(signs[:, None])
         if tl.shape(U)[1] > tl.shape(V)[0]:
             signs = tl.concatenate(
                 (signs, tl.ones(tl.shape(U)[1] - tl.shape(V)[0], **tl.context(V)))
@@ -357,6 +360,7 @@ def randomized_svd(
 
 
 SVD_FUNS = ["truncated_svd", "symeig_svd", "randomized_svd"]
+SVD_TYPES = Literal["truncated_svd", "symeig_svd", "randomized_svd"]
 
 
 def svd_interface(
