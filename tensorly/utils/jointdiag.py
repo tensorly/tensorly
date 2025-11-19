@@ -69,16 +69,16 @@ def joint_matrix_diagonalization(
 
     # Initial error calculation
     # Transpose is because np.tril operates on the last two dimensions
-    e = (
+    error = (
         tl.norm(matrices_tensor) ** 2.0
         - tl.norm(tl.diagonal(matrices_tensor, axis1=1, axis2=2)) ** 2.0
     )
 
     if verbose:
-        print(f"Sweep # 0: e = {e:.3e}")
+        print(f"Sweep # 0: e = {error:.3e}")
 
-    # Additional output parameters
-    Q_total = tl.eye(matrix_dimension)
+    # Initialize transformation matrix as identity
+    transform_P = tl.eye(matrix_dimension)
 
     for k in range(max_n_iter):
         # loop over all pairs of slices
@@ -133,23 +133,23 @@ def joint_matrix_diagonalization(
                 X, tl.index[:, q, :], pvec * tl.sinh(yk) + X[:, q, :] * tl.cosh(yk)
             )
 
-            # Update Q_total
-            pvec = tl.copy(Q_total[:, p])
-            Q_total = tl.index_update(
-                Q_total,
+            # Update transform_P
+            pvec = tl.copy(transform_P[:, p])
+            transform_P = tl.index_update(
+                transform_P,
                 tl.index[:, p],
-                Q_total[:, p] * tl.cosh(yk) + Q_total[:, q] * tl.sinh(yk),
+                transform_P[:, p] * tl.cosh(yk) + transform_P[:, q] * tl.sinh(yk),
             )
-            Q_total = tl.index_update(
-                Q_total,
+            transform_P = tl.index_update(
+                transform_P,
                 tl.index[:, q],
-                pvec * tl.sinh(yk) + Q_total[:, q] * tl.cosh(yk),
+                pvec * tl.sinh(yk) + transform_P[:, q] * tl.cosh(yk),
             )
 
             # Defines array of off-diagonal element differences
             xi_ = -X[q, p, :] - X[p, q, :]
 
-            # More quantities computed
+            # Compute rotation angle
             Esum = 2 * tl.dot(xi_, d_)
             Dsum = tl.dot(d_, d_) - tl.dot(xi_, xi_)
             qt = Esum / Dsum
@@ -178,6 +178,7 @@ def joint_matrix_diagonalization(
                 pvec * tl.sin(theta_k) + X[q, :, :] * tl.cos(theta_k),
             )
 
+            # Right side rotation
             pvec = tl.copy(X[:, p, :])
             X = tl.index_update(
                 X,
@@ -190,31 +191,32 @@ def joint_matrix_diagonalization(
                 pvec * tl.sin(theta_k) + X[:, q, :] * tl.cos(theta_k),
             )
 
-            # Update Q_total
-            pvec = tl.copy(Q_total[:, p])
-            Q_total = tl.index_update(
-                Q_total,
+            # Update transform_P
+            pvec = tl.copy(transform_P[:, p])
+            transform_P = tl.index_update(
+                transform_P,
                 tl.index[:, p],
-                Q_total[:, p] * tl.cos(theta_k) - Q_total[:, q] * tl.sin(theta_k),
+                transform_P[:, p] * tl.cos(theta_k)
+                - transform_P[:, q] * tl.sin(theta_k),
             )
-            Q_total = tl.index_update(
-                Q_total,
+            transform_P = tl.index_update(
+                transform_P,
                 tl.index[:, q],
-                pvec * tl.sin(theta_k) + Q_total[:, q] * tl.cos(theta_k),
+                pvec * tl.sin(theta_k) + transform_P[:, q] * tl.cos(theta_k),
             )
 
         # Error computation, check if loop needed...
-        old_e = e
-        e = (
+        old_error = error
+        error = (
             tl.norm(matrices_tensor) ** 2.0
             - tl.norm(tl.diagonal(matrices_tensor, axis1=1, axis2=2)) ** 2.0
         )
 
         if verbose:
-            print(f"Sweep # {k + 1}: e = {e:.3e}")
+            print(f"Sweep # {k + 1}: e = {error:.3e}")
 
         # TODO: Strangely the error increases on the first iteration
-        if old_e - e < threshold and k > 2:
+        if old_error - error < threshold and k > 2:
             break
 
-    return matrices_tensor, Q_total
+    return matrices_tensor, transform_P
