@@ -1,5 +1,4 @@
-"""Base classes for all estimators, ensure compatibility with Scikit-Learn
-"""
+"""Base classes for all estimators, ensure compatibility with Scikit-Learn"""
 
 
 class DecompositionMixin:

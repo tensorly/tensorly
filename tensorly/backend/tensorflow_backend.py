@@ -178,6 +178,7 @@ for name in (
         "stack",
         "copy",
         "max",
+        "diagonal",
         "sign",
         "mean",
         "sum",

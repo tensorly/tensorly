@@ -73,6 +73,7 @@ for name in (
         "concatenate",
         "max",
         "flip",
+        "diagonal",
         "mean",
         "argmax",
         "sum",
