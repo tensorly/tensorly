@@ -76,7 +76,7 @@ def joint_matrix_diagonalization(
     quadratic convergence rate.
 
     Args:
-        X (_type_): n matrices, organized in a single tensor of dimension (k, k, n).
+        matrices_tensor (_type_): n matrices, organized in a single tensor of dimension (k, k, n).
         max_n_iter (int, optional): Maximum iteration number. Defaults to 50.
         threshold (float, optional): Threshold for decrease in deviation indicating convergence. Defaults to 1e-8.
         verbose (bool, optional): Output progress information during diagonalization. Defaults to False.
@@ -139,30 +139,35 @@ def joint_matrix_diagonalization(
             )
 
             # Inverse of Sk on left side
-            pvec = tl.copy(matrices_tensor[p, :, :])
-            X = tl.index_update(
+            prev_vec = tl.copy(matrices_tensor[p, :, :])
+            matrices_tensor = tl.index_update(
                 matrices_tensor,
                 tl.index[p, :, :],
                 matrices_tensor[p, :, :] * tl.cosh(yk)
                 - matrices_tensor[q, :, :] * tl.sinh(yk),
             )
-            X = tl.index_update(
-                X, tl.index[q, :, :], -pvec * tl.sinh(yk) + X[q, :, :] * tl.cosh(yk)
+            matrices_tensor = tl.index_update(
+                matrices_tensor,
+                tl.index[q, :, :],
+                -prev_vec * tl.sinh(yk) + matrices_tensor[q, :, :] * tl.cosh(yk),
             )
 
             # Sk on right side
-            pvec = tl.copy(X[:, p, :])
-            X = tl.index_update(
-                X,
+            prev_vec = tl.copy(matrices_tensor[:, p, :])
+            matrices_tensor = tl.index_update(
+                matrices_tensor,
                 tl.index[:, p, :],
-                X[:, p, :] * tl.cosh(yk) + X[:, q, :] * tl.sinh(yk),
+                matrices_tensor[:, p, :] * tl.cosh(yk)
+                + matrices_tensor[:, q, :] * tl.sinh(yk),
             )
-            X = tl.index_update(
-                X, tl.index[:, q, :], pvec * tl.sinh(yk) + X[:, q, :] * tl.cosh(yk)
+            matrices_tensor = tl.index_update(
+                matrices_tensor,
+                tl.index[:, q, :],
+                prev_vec * tl.sinh(yk) + matrices_tensor[:, q, :] * tl.cosh(yk),
             )
 
             # Update transform_P
-            pvec = tl.copy(transform_P[:, p])
+            prev_vec = tl.copy(transform_P[:, p])
             transform_P = tl.index_update(
                 transform_P,
                 tl.index[:, p],
@@ -171,11 +176,11 @@ def joint_matrix_diagonalization(
             transform_P = tl.index_update(
                 transform_P,
                 tl.index[:, q],
-                pvec * tl.sinh(yk) + transform_P[:, q] * tl.cosh(yk),
+                prev_vec * tl.sinh(yk) + transform_P[:, q] * tl.cosh(yk),
             )
 
             # Defines array of off-diagonal element differences
-            xi_ = -X[q, p, :] - X[p, q, :]
+            xi_ = -matrices_tensor[q, p, :] - matrices_tensor[p, q, :]
 
             # Compute rotation angle
             Esum = 2 * tl.dot(xi_, d_)
@@ -194,33 +199,35 @@ def joint_matrix_diagonalization(
                 raise RuntimeError("joint_matrix_diagonalization: No solution found.")
 
             # Given's rotation, this will minimize norm of off-diagonal elements only
-            pvec = tl.copy(X[p, :, :])
-            X = tl.index_update(
-                X,
+            prev_vec = tl.copy(matrices_tensor[p, :, :])
+            matrices_tensor = tl.index_update(
+                matrices_tensor,
                 tl.index[p, :, :],
-                X[p, :, :] * tl.cos(theta_k) - X[q, :, :] * tl.sin(theta_k),
+                matrices_tensor[p, :, :] * tl.cos(theta_k)
+                - matrices_tensor[q, :, :] * tl.sin(theta_k),
             )
-            X = tl.index_update(
-                X,
+            matrices_tensor = tl.index_update(
+                matrices_tensor,
                 tl.index[q, :, :],
-                pvec * tl.sin(theta_k) + X[q, :, :] * tl.cos(theta_k),
+                prev_vec * tl.sin(theta_k) + matrices_tensor[q, :, :] * tl.cos(theta_k),
             )
 
             # Right side rotation
-            pvec = tl.copy(X[:, p, :])
-            X = tl.index_update(
-                X,
+            prev_vec = tl.copy(matrices_tensor[:, p, :])
+            matrices_tensor = tl.index_update(
+                matrices_tensor,
                 tl.index[:, p, :],
-                X[:, p, :] * tl.cos(theta_k) - X[:, q, :] * tl.sin(theta_k),
+                matrices_tensor[:, p, :] * tl.cos(theta_k)
+                - matrices_tensor[:, q, :] * tl.sin(theta_k),
             )
-            X = tl.index_update(
-                X,
+            matrices_tensor = tl.index_update(
+                matrices_tensor,
                 tl.index[:, q, :],
-                pvec * tl.sin(theta_k) + X[:, q, :] * tl.cos(theta_k),
+                prev_vec * tl.sin(theta_k) + matrices_tensor[:, q, :] * tl.cos(theta_k),
             )
 
             # Update transform_P
-            pvec = tl.copy(transform_P[:, p])
+            prev_vec = tl.copy(transform_P[:, p])
             transform_P = tl.index_update(
                 transform_P,
                 tl.index[:, p],
@@ -230,7 +237,7 @@ def joint_matrix_diagonalization(
             transform_P = tl.index_update(
                 transform_P,
                 tl.index[:, q],
-                pvec * tl.sin(theta_k) + transform_P[:, q] * tl.cos(theta_k),
+                prev_vec * tl.sin(theta_k) + transform_P[:, q] * tl.cos(theta_k),
             )
 
         # Update deviation from normality
