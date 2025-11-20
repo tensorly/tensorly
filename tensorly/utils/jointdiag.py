@@ -113,19 +113,19 @@ def joint_matrix_diagonalization(
         for p, q in combinations(range(matrix_dimension), 2):
             # Comparing the p and q chords across matrices, identifies the
             # position h with the largest difference
-            d_ = matrices_tensor[p, p, :] - matrices_tensor[q, q, :]
-            h = tl.argmax(tl.abs(d_))
+            diag_diff_vector = matrices_tensor[p, p, :] - matrices_tensor[q, q, :]
+            h = tl.argmax(tl.abs(diag_diff_vector))
 
             # List of non-selected indices
             all_but_pq = list(set(range(matrix_dimension)) - set([p, q]))
 
             # Compute certain quantities
-            dh = d_[h]
+            dh = diag_diff_vector[h]
             matrix_h = matrices_tensor[:, :, h]
-            Kh = tl.dot(matrix_h[p, all_but_pq], matrix_h[q, all_but_pq]) - tl.dot(
-                matrix_h[all_but_pq, p], matrix_h[all_but_pq, q]
-            )
-            Gh = (
+            off_diag_shear_mismatch = tl.dot(
+                matrix_h[p, all_but_pq], matrix_h[q, all_but_pq]
+            ) - tl.dot(matrix_h[all_but_pq, p], matrix_h[all_but_pq, q])
+            off_diag_energy = (
                 tl.norm(matrix_h[p, all_but_pq]) ** 2
                 + tl.norm(matrix_h[q, all_but_pq]) ** 2
                 + tl.norm(matrix_h[all_but_pq, p]) ** 2
@@ -134,8 +134,9 @@ def joint_matrix_diagonalization(
             matrix_h_pq_diff = matrix_h[p, q] - matrix_h[q, p]
 
             # Build shearing matrix out of these quantities
-            yk = tl.arctanh(
-                (Kh - matrix_h_pq_diff * dh) / (2 * (dh**2 + matrix_h_pq_diff**2) + Gh)
+            shear_angle = tl.arctanh(
+                (off_diag_shear_mismatch - matrix_h_pq_diff * dh)
+                / (2 * (dh**2 + matrix_h_pq_diff**2) + off_diag_energy)
             )
 
             # Inverse of Sk on left side
@@ -143,13 +144,14 @@ def joint_matrix_diagonalization(
             matrices_tensor = tl.index_update(
                 matrices_tensor,
                 tl.index[p, :, :],
-                matrices_tensor[p, :, :] * tl.cosh(yk)
-                - matrices_tensor[q, :, :] * tl.sinh(yk),
+                matrices_tensor[p, :, :] * tl.cosh(shear_angle)
+                - matrices_tensor[q, :, :] * tl.sinh(shear_angle),
             )
             matrices_tensor = tl.index_update(
                 matrices_tensor,
                 tl.index[q, :, :],
-                -prev_vec * tl.sinh(yk) + matrices_tensor[q, :, :] * tl.cosh(yk),
+                -prev_vec * tl.sinh(shear_angle)
+                + matrices_tensor[q, :, :] * tl.cosh(shear_angle),
             )
 
             # Sk on right side
@@ -157,13 +159,14 @@ def joint_matrix_diagonalization(
             matrices_tensor = tl.index_update(
                 matrices_tensor,
                 tl.index[:, p, :],
-                matrices_tensor[:, p, :] * tl.cosh(yk)
-                + matrices_tensor[:, q, :] * tl.sinh(yk),
+                matrices_tensor[:, p, :] * tl.cosh(shear_angle)
+                + matrices_tensor[:, q, :] * tl.sinh(shear_angle),
             )
             matrices_tensor = tl.index_update(
                 matrices_tensor,
                 tl.index[:, q, :],
-                prev_vec * tl.sinh(yk) + matrices_tensor[:, q, :] * tl.cosh(yk),
+                prev_vec * tl.sinh(shear_angle)
+                + matrices_tensor[:, q, :] * tl.cosh(shear_angle),
             )
 
             # Update transform_P
@@ -171,30 +174,35 @@ def joint_matrix_diagonalization(
             transform_P = tl.index_update(
                 transform_P,
                 tl.index[:, p],
-                transform_P[:, p] * tl.cosh(yk) + transform_P[:, q] * tl.sinh(yk),
+                transform_P[:, p] * tl.cosh(shear_angle)
+                + transform_P[:, q] * tl.sinh(shear_angle),
             )
             transform_P = tl.index_update(
                 transform_P,
                 tl.index[:, q],
-                prev_vec * tl.sinh(yk) + transform_P[:, q] * tl.cosh(yk),
+                prev_vec * tl.sinh(shear_angle)
+                + transform_P[:, q] * tl.cosh(shear_angle),
             )
 
             # Defines array of off-diagonal element differences
-            xi_ = -matrices_tensor[q, p, :] - matrices_tensor[p, q, :]
+            offdiag_symmetry_diff = -matrices_tensor[q, p, :] - matrices_tensor[p, q, :]
 
             # Compute rotation angle
-            Esum = 2 * tl.dot(xi_, d_)
-            Dsum = tl.dot(d_, d_) - tl.dot(xi_, xi_)
-            qt = Esum / Dsum
+            Esum = 2 * tl.dot(offdiag_symmetry_diff, diag_diff_vector)
+            Dsum = tl.dot(diag_diff_vector, diag_diff_vector) - tl.dot(
+                offdiag_symmetry_diff, offdiag_symmetry_diff
+            )
 
-            th1 = tl.arctan(qt)
-            angle_selection = tl.cos(th1) * Dsum + tl.sin(th1) * Esum
+            base_rotation_angle = tl.arctan(Esum / Dsum)
+            angle_selection = (
+                tl.cos(base_rotation_angle) * Dsum + tl.sin(base_rotation_angle) * Esum
+            )
 
             # Defines 1 of 2 possible angles
             if angle_selection > 0.0:
-                theta_k = th1 / 4
+                theta_k = base_rotation_angle / 4
             elif angle_selection < 0.0:
-                theta_k = (th1 + tl.pi) / 4
+                theta_k = (base_rotation_angle + tl.pi) / 4
             else:
                 raise RuntimeError("joint_matrix_diagonalization: No solution found.")
 
