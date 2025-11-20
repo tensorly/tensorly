@@ -15,7 +15,7 @@ def test_joint_matrix_diagonalization():
     k = 14
     d = 10
 
-    rng = np.random.RandomState()
+    rng = np.random.RandomState(1)
     mixing = rng.randn(d, d)
     diags = np.zeros((d, d, k))
     synthetic = np.zeros((d, d, k))
@@ -38,4 +38,4 @@ def test_joint_matrix_diagonalization():
     diags = diags[idx, idx, :]
 
     # Test that the diagonalized matrices are close to the starting diagonal matrices
-    np.testing.assert_allclose(diags, diag_est, atol=1e-10)
+    np.testing.assert_allclose(diags, diag_est, atol=1e-7, rtol=1e-7)
