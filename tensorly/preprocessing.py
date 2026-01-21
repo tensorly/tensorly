@@ -5,7 +5,7 @@ from .tenalg.svd import svd_interface
 
 
 def svd_compress_tensor_slices(
-    tensor_slices, compression_threshold=0.0, max_rank=None, svd="truncated_svd"
+    tensor_slices, compression_threshold=0.0, max_rank=None, svd="truncated_svd", random_state=None
 ):
     r"""Compress data with the SVD for running PARAFAC2.
 
@@ -88,7 +88,7 @@ def svd_compress_tensor_slices(
             score_matrices[i] = tensor_slice
             continue
 
-        U, s, Vh = svd_interface(tensor_slice, n_eigenvecs=rank_limit, method=svd)
+        U, s, Vh = svd_interface(tensor_slice, n_eigenvecs=rank_limit, method=svd, random_state=random_state)
 
         # Threshold SVD, keeping only singular values that satisfy s_i >= s_0 * epsilon
         # where epsilon is the compression threshold

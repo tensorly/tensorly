@@ -191,6 +191,7 @@ def test_svd():
     for svd in SVD_FUNS:
         if svd == "randomized_svd":
             decimal = 2
+            rng = tl.check_random_state(1234)
         else:
             decimal = 3
         sizes = [(100, 100), (100, 5), (10, 10), (10, 4), (5, 100)]
@@ -199,7 +200,7 @@ def test_svd():
         for s, n in zip(sizes, n_eigenvecs):
             matrix = np.random.random(s)
             matrix_backend = T.tensor(matrix)
-            fU, fS, fV = svd_interface(matrix_backend, n_eigenvecs=n, method=svd)
+            fU, fS, fV = svd_interface(matrix_backend, n_eigenvecs=n, method=svd, random_state=rng)
             U, S, V = np.linalg.svd(matrix, full_matrices=True)
             U, S, V = U[:, :n], S[:n], V[:n, :]
 
@@ -237,7 +238,7 @@ def test_svd():
         # Should fail on non-matrices
         with assert_raises(ValueError):
             tensor = T.tensor(np.random.random((3, 3, 3)))
-            svd_interface(tensor, n_eigenvecs=n, method=svd)
+            svd_interface(tensor, n_eigenvecs=n, method=svd, random_state=rng)
 
         # Test for singular matrices (some eigenvals will be zero)
         # Rank at most 5
