@@ -105,7 +105,7 @@ def initialize_constrained_parafac(
     elif init == "svd":
         factors = []
         for mode in range(tl.ndim(tensor)):
-            U, S, _ = svd_interface(unfold(tensor, mode), n_eigenvecs=rank, method=svd)
+            U, S, _ = svd_interface(unfold(tensor, mode), n_eigenvecs=rank, method=svd, random_state=rng)
 
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
             if mode == 0:

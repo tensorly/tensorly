@@ -5,7 +5,7 @@ from ..tt_matrix import validate_tt_matrix_rank, TTMatrix
 from ..tenalg.svd import svd_interface
 
 
-def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
+def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False, random_state=None):
     """TT decomposition via recursive SVD
 
         Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
@@ -48,7 +48,7 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
         # SVD of unfolding matrix
         (n_row, n_column) = unfolding.shape
         current_rank = min(n_row, n_column, rank[k + 1])
-        U, S, V = svd_interface(unfolding, n_eigenvecs=current_rank, method=svd)
+        U, S, V = svd_interface(unfolding, n_eigenvecs=current_rank, method=svd, random_state=random_state)
 
         rank[k + 1] = current_rank
 
