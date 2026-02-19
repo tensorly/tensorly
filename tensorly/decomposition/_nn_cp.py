@@ -265,8 +265,7 @@ def non_negative_parafac_hals(
         If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
     callback : callable, optional
         A callback function that is called at each iteration of the algorithm.
-        The callback function should take three arguments: the current CP tensor, the current reconstruction error,
-        and the current loss value. If the callback function returns True, the algorithm will stop.
+        The callback function should take two arguments: the current CP tensor, the current unnormalized reconstruction error. If the callback function returns True, the algorithm will stop.
         Default: None
     sparsity : float or int
     random_state : {None, int, np.random.RandomState}
@@ -354,13 +353,8 @@ def non_negative_parafac_hals(
 
     if callback is not None:
         cp_tensor = CPTensor((weights, factors))
-        loss = (tl.norm(tensor - tl.cp_to_tensor(cp_tensor)) ** 2) / 2
-        rec_error = tl.sqrt(2 * loss) / norm_tensor
-        for mode, factor in enumerate(factors):
-            loss += ridge_coefficients[mode] ** 2 * tl.norm(
-                factor
-            ) ** 2 + sparsity_coefficients[mode] * tl.sum(tl.abs(factor))
-        callback(cp_tensor, rec_error, loss)
+        unnorml_rec_error = tl.norm(tensor - tl.cp_to_tensor(cp_tensor), 2)
+        callback(cp_tensor, unnorml_rec_error)
 
     # Iteration
     for iteration in range(n_iter_max):
@@ -411,17 +405,12 @@ def non_negative_parafac_hals(
         if tol or callback:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
-            loss = tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod) / 2
-            rec_error = tl.sqrt(2 * loss) / norm_tensor
-            for mode, factor in enumerate(factors):
-                loss += ridge_coefficients[mode] ** 2 * tl.norm(
-                    factor
-                ) ** 2 + sparsity_coefficients[mode] * tl.sum(tl.abs(factor))
-            rec_errors.append(rec_error)
+            unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+            rec_errors.append(unnorml_rec_error)
 
             if callback is not None:
                 cp_tensor = CPTensor((weights, factors))
-                retVal = callback(cp_tensor, rec_error, loss)
+                retVal = callback(cp_tensor, unnorml_rec_error)
 
                 if retVal is True:
                     if verbose:
