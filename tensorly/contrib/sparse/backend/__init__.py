@@ -5,7 +5,6 @@ import functools
 from ....backend import backend_context, get_backend
 from .... import backend, base, cp_tensor, tucker_tensor, tt_tensor
 
-
 _KNOWN_BACKENDS = {"numpy": "NumpySparseBackend"}
 _LOADED_BACKENDS = {}
 

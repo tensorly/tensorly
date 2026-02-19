@@ -4,7 +4,6 @@ from ... import backend as T
 from .. import khatri_rao
 from ...testing import assert_array_equal, assert_raises
 
-
 # Author: Jean Kossaifi
 
 

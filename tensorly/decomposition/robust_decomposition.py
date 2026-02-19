@@ -2,7 +2,6 @@ from .. import backend as T
 from ..base import fold, unfold
 from ..tenalg.proximal import soft_thresholding, svd_thresholding
 
-
 # Author: Jean Kossaifi
 
 # License: BSD 3 clause

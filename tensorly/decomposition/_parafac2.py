@@ -544,7 +544,7 @@ def parafac2(
             tensor_slices[0].shape[1] == tensor_slices[ii].shape[1]
         ), "All tensor slices must have the same number of columns."
 
-    (weights, factors, projections) = initialize_decomposition(
+    weights, factors, projections = initialize_decomposition(
         tensor_slices, rank, init=init, svd=svd, random_state=random_state
     )
     factors = list(factors)

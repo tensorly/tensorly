@@ -19,7 +19,6 @@ from .core import (
     backend_array,
 )
 
-
 if Version(torch.__version__) < Version("1.9.0"):
     raise RuntimeError("TensorLy only supports pytorch v1.9.0 and above.")
 

@@ -26,7 +26,7 @@ def test_tensor_ring():
     )
 
     for k in range(len(tensor_shape)):
-        (r_prev_k, n_k, r_k) = tr_tensor[k].shape
+        r_prev_k, n_k, r_k = tr_tensor[k].shape
         assert_(
             n_k == tensor_shape[k],
             f"Mode 2 of factor {k} should have {tensor_shape[k]} dimensions, currently has {n_k}",
@@ -54,7 +54,7 @@ def test_tensor_ring_mode():
     )
 
     for k in range(len(tensor_shape)):
-        (r_prev_k, n_k, r_k) = tr_tensor[k].shape
+        r_prev_k, n_k, r_k = tr_tensor[k].shape
         assert_(
             n_k == tensor_shape[k],
             f"Mode 2 of factor {k} should have {tensor_shape[k]} dimensions, currently has {n_k}",

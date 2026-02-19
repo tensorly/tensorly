@@ -31,7 +31,7 @@ def test_tensor_train(monkeypatch):
     # has the correct number of elements
     r_prev_iteration = 1
     for k in range(6):
-        (r_prev_k, n_k, r_k) = factors[k].shape
+        r_prev_k, n_k, r_k = factors[k].shape
         assert tensor_shape[k] == n_k, (
             "Mode 1 of factor "
             + str(k)
@@ -53,7 +53,7 @@ def test_tensor_train(monkeypatch):
     factors = tensor_train(tensor, rank)
 
     for k in range(6):
-        (r_prev, n_k, r_k) = factors[k].shape
+        r_prev, n_k, r_k = factors[k].shape
 
         first_error_message = (
             "TT rank " + str(k) + " is greater than the maximum allowed "

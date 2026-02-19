@@ -23,7 +23,6 @@ from .core import (
     backend_array,
 )
 
-
 if paddle.__version__ != "0.0.0" and Version(paddle.__version__) < Version("2.6.0"):
     raise RuntimeError(
         "TensorLy only supports paddle v2.6.0 and above, or the develop version, "

@@ -10,7 +10,6 @@ import numpy as np
 from scipy.optimize import brentq
 import warnings
 
-
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
 # License: BSD 3 clause

@@ -23,7 +23,6 @@ from .core import (
     backend_array,
 )
 
-
 if Version(jax.__version__) < Version("0.3.0"):
     raise RuntimeError("TensorLy only supports JAX v0.3.0 and above.")
 
