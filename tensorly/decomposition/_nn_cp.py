@@ -388,16 +388,11 @@ def non_negative_parafac_hals(
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
-                if ridge_coefficients[mode] is not None:
-                    factor = tl.solve(
-                        tl.transpose(pseudo_inverse)
-                        + 2 * ridge_coefficients[mode] * tl.eye(rank),
-                        tl.transpose(mttkrp),
-                    )
-                else:
-                    factor = tl.solve(
-                        tl.transpose(pseudo_inverse), tl.transpose(mttkrp)
-                    )
+                factor = tl.solve(
+                    tl.transpose(pseudo_inverse)
+                    + 2 * ridge_coefficients[mode] * tl.eye(rank),
+                    tl.transpose(mttkrp),
+                )
                 factors[mode] = tl.transpose(factor)
             if normalize_factors and mode != modes[-1]:
                 weights, factors = cp_normalize((weights, factors))
