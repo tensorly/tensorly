@@ -78,11 +78,9 @@ def load_IL2data():
     times = [4, 2, 1, 0.5]
     doses = np.geomspace(84.0, 0.000474, 12)
     dims = ["ligands", "times", "doses", "cells"]
-    reference = [
-        "Orcutt-Jahns, B., Emmel, P. C., Snyder, E. M., Posner, C., \
+    reference = ["Orcutt-Jahns, B., Emmel, P. C., Snyder, E. M., Posner, C., \
                 Carlson, S. M., & Meyer, A. S. (2021). Multivalency enhances the \
-                specificity of Fc-cytokine fusions. BioRxiv."
-    ]
+                specificity of Fc-cytokine fusions. BioRxiv."]
     task = ["Non-Negative CP"]
     DESC = "This dataset includes a tensor of eight cell types' responses to 13 IL-2 muteins, at 4 different time points, and at 12 different IL-2 concentrations."
     LICENSE = """Copyright 2021 The Regents of the University of California

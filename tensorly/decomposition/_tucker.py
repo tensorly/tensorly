@@ -93,7 +93,7 @@ def initialize_tucker(
         ]
 
     else:
-        (core, factors) = init
+        core, factors = init
 
     if non_negative is True:
         factors = [tl.abs(f) for f in factors]
@@ -285,7 +285,7 @@ def tucker(
     """
     if fixed_factors:
         try:
-            (core, factors) = init
+            core, factors = init
         except:
             raise ValueError(
                 f'Got fixed_factor={fixed_factors} but no appropriate Tucker tensor was passed for "init".'

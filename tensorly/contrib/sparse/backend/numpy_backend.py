@@ -10,7 +10,6 @@ import sparse
 from . import register_sparse_backend
 from ....backend.core import Backend
 
-
 _MIN_SPARSE_VERSION = Version("0.4.1+10.g81eccee")
 if Version(sparse.__version__) < _MIN_SPARSE_VERSION:
     raise ImportError(

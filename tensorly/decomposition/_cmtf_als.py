@@ -4,7 +4,6 @@ from ..tenalg import khatri_rao
 from ..cp_tensor import CPTensor, validate_cp_rank, cp_to_tensor, cp_normalize
 from ._cp import initialize_cp
 
-
 # Authors: Isabell Lehmann <isabell.lehmann94@outlook.de>
 
 # License: BSD 3 clause

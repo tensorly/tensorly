@@ -116,7 +116,7 @@ def test_tt_to_tensor_random():
     # Check that the rank is 10
     D = len(factors)
     for k in range(D):
-        (r_prev, _, r_k) = factors[k].shape
+        r_prev, _, r_k = factors[k].shape
         assert r_prev <= rank, "TT rank with index " + str(k) + "exceeds rank"
         assert r_k <= rank, "TT rank with index " + str(k + 1) + "exceeds rank"
 

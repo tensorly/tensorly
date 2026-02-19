@@ -192,6 +192,7 @@ def non_negative_parafac_hals(
     tol=10e-8,
     random_state=None,
     sparsity_coefficients=None,
+    ridge_coefficients=None,
     fixed_modes=None,
     nn_modes="all",
     exact=False,
@@ -199,9 +200,18 @@ def non_negative_parafac_hals(
     verbose=False,
     return_errors=False,
     cvg_criterion="abs_rec_error",
+    callback=None,
 ):
     """
     Non-negative CP decomposition via HALS
+
+    The loss function is:
+
+    .. math::
+
+            \\frac{1}{2} \\|tensor - cp\\_tensor \\|_F^2
+            + \\sum_{i=1}^{rank} \\lambda_s[i] \\|factors[i]]\\|_1
+            + \\sum_{i=1}^{rank} \\lambda_r[i] \\|factors[i]\\|_F^2
 
     Uses Hierarchical ALS (Alternating Least Squares)
     which updates each factor column-wise (one column at a time while keeping all other columns fixed), see [1]_
@@ -224,7 +234,11 @@ def non_negative_parafac_hals(
     sparsity_coefficients: array of float (of length the number of modes)
         The sparsity coefficients on each factor.
         If set to None, the algorithm is computed without sparsity
-        Default: None,
+        Default: None
+    ridge_coefficients: array of float (of length the number of modes)
+        The ridge coefficients on each factor.
+        If set to None, the algorithm is computed without sparsity
+        Default: None
     fixed_modes: array of integers (between 0 and the number of modes)
         Has to be set not to update a factor, 0 and 1 for U and V respectively
         Default: None
@@ -249,6 +263,10 @@ def non_negative_parafac_hals(
         Stopping criterion for ALS, works if `tol` is not None.
         If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
         If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
+    callback : callable, optional
+        A callback function that is called at each iteration of the algorithm.
+        The callback function should take two arguments: the current CP tensor, the current unnormalized reconstruction error. If the callback function returns True, the algorithm will stop.
+        Default: None
     sparsity : float or int
     random_state : {None, int, np.random.RandomState}
 
@@ -280,8 +298,28 @@ def non_negative_parafac_hals(
     norm_tensor = tl.norm(tensor, 2)
 
     n_modes = tl.ndim(tensor)
-    if sparsity_coefficients is None or isinstance(sparsity_coefficients, float):
+
+    # Add a warning if ridge or sparsity is used with normalization
+    if ridge_coefficients or sparsity_coefficients:
+        if normalize_factors:
+            warnings.warn(
+                "Ridge and sparsity coefficients are not compatible with normalization or non-unitary weights. "
+            )
+            normalize_factors = False
+
+    if (
+        sparsity_coefficients is None
+        or isinstance(sparsity_coefficients, float)
+        or isinstance(sparsity_coefficients, int)
+    ):
         sparsity_coefficients = [sparsity_coefficients] * n_modes
+
+    if (
+        ridge_coefficients is None
+        or isinstance(ridge_coefficients, float)
+        or isinstance(ridge_coefficients, int)
+    ):
+        ridge_coefficients = [ridge_coefficients] * n_modes
 
     if fixed_modes is None:
         fixed_modes = []
@@ -294,17 +332,31 @@ def non_negative_parafac_hals(
     # Avoiding errors
     for fixed_value in fixed_modes:
         sparsity_coefficients[fixed_value] = None
+        ridge_coefficients[fixed_value] = None
 
     for mode in range(n_modes):
-        if sparsity_coefficients[mode] is not None:
+        if (sparsity_coefficients[mode] is not None) and (mode not in nn_modes):
             warnings.warn("Sparsity coefficient is ignored in unconstrained modes.")
+
     # Generating the mode update sequence
     modes = [mode for mode in range(n_modes) if mode not in fixed_modes]
 
-    # initialisation - declare local varaibles
+    # initialisation - declare local variables
     rec_errors = []
 
-    # Iteratation
+    # Changing None values to 0 in regularization coefficients
+    for i in range(n_modes):
+        if ridge_coefficients[i] is None:
+            ridge_coefficients[i] = 0
+        if sparsity_coefficients[i] is None:
+            sparsity_coefficients[i] = 0
+
+    if callback is not None:
+        cp_tensor = CPTensor((weights, factors))
+        unnorml_rec_error = tl.norm(tensor - tl.cp_to_tensor(cp_tensor), 2)
+        callback(cp_tensor, unnorml_rec_error)
+
+    # Iteration
     for iteration in range(n_iter_max):
         # One pass of least squares on each updated mode
         for mode in modes:
@@ -331,23 +383,37 @@ def non_negative_parafac_hals(
                     tl.transpose(factors[mode]),
                     n_iter_max=100,
                     sparsity_coefficient=sparsity_coefficients[mode],
+                    ridge_coefficient=ridge_coefficients[mode],
                     exact=exact,
                 )
                 factors[mode] = tl.transpose(nn_factor)
             else:
-                factor = tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp))
+                factor = tl.solve(
+                    tl.transpose(pseudo_inverse)
+                    + 2 * ridge_coefficients[mode] * tl.eye(rank),
+                    tl.transpose(mttkrp),
+                )
                 factors[mode] = tl.transpose(factor)
             if normalize_factors and mode != modes[-1]:
                 weights, factors = cp_normalize((weights, factors))
-        if tol:
+
+        if tol or callback:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
-            rec_error = (
-                tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
-                / norm_tensor
+            unnorml_rec_error = tl.sqrt(
+                tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
             )
-            rec_errors.append(rec_error)
+            rec_errors.append(unnorml_rec_error)
 
+            if callback is not None:
+                cp_tensor = CPTensor((weights, factors))
+                retVal = callback(cp_tensor, unnorml_rec_error)
+
+                if retVal is True:
+                    if verbose:
+                        print("Received True from callback function. Exiting.")
+                    break
+        if tol:
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
 
@@ -553,14 +619,25 @@ class CP_NN_HALS(DecompositionMixin):
         Stopping criterion for ALS, works if `tol` is not None.
         If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
         If 'abs_rec_error', ALS terminates when ``|previous rec_error - current rec_error| < tol``.
-    sparsity : float or int
-        If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
+    sparsity_coefficients: array of float (of length the number of modes)
+        The sparsity coefficients on each factor.
+        If set to None, the algorithm is computed without sparsity
+        Default: None
+    ridge_coefficients: array of float (of length the number of modes)
+        The ridge coefficients on each factor.
+        If set to None, the algorithm is computed without sparsity
+        Default: None
     fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
+    callback : callable, optional
+        A callback function that is called at each iteration of the algorithm.
+        The callback function should take three arguments: the current CP tensor, the current reconstruction error,
+        and the current loss value. If the callback function returns True, the algorithm will stop.
+        Default: None
 
     Returns
     -------
@@ -593,6 +670,7 @@ class CP_NN_HALS(DecompositionMixin):
         svd="truncated_svd",
         tol=10e-8,
         sparsity_coefficients=None,
+        ridge_coefficients=None,
         fixed_modes=None,
         nn_modes="all",
         exact=False,
@@ -600,6 +678,7 @@ class CP_NN_HALS(DecompositionMixin):
         normalize_factors=False,
         cvg_criterion="abs_rec_error",
         random_state=None,
+        callback=None,
     ):
         self.rank = rank
         self.n_iter_max = n_iter_max
@@ -607,6 +686,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.svd = svd
         self.tol = tol
         self.sparsity_coefficients = sparsity_coefficients
+        self.ridge_coefficients = ridge_coefficients
         self.random_state = random_state
         self.fixed_modes = fixed_modes
         self.nn_modes = nn_modes
@@ -615,6 +695,7 @@ class CP_NN_HALS(DecompositionMixin):
         self.normalize_factors = normalize_factors
         self.cvg_criterion = cvg_criterion
         self.random_state = random_state
+        self.callback = callback
 
     def fit_transform(self, tensor):
         """Decompose an input tensor
@@ -639,6 +720,7 @@ class CP_NN_HALS(DecompositionMixin):
             tol=self.tol,
             random_state=self.random_state,
             sparsity_coefficients=self.sparsity_coefficients,
+            ridge_coefficients=self.sparsity_coefficients,
             fixed_modes=self.fixed_modes,
             nn_modes=self.nn_modes,
             exact=self.exact,
@@ -646,6 +728,7 @@ class CP_NN_HALS(DecompositionMixin):
             normalize_factors=self.normalize_factors,
             return_errors=True,
             cvg_criterion=self.cvg_criterion,
+            callback=self.callback,
         )
 
         self.decomposition_ = cp_tensor

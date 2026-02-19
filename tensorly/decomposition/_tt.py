@@ -46,7 +46,7 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
         unfolding = tl.reshape(unfolding, (n_row, -1))
 
         # SVD of unfolding matrix
-        (n_row, n_column) = unfolding.shape
+        n_row, n_column = unfolding.shape
         current_rank = min(n_row, n_column, rank[k + 1])
         U, S, V = svd_interface(unfolding, n_eigenvecs=current_rank, method=svd)
 
@@ -64,7 +64,7 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False):
         unfolding = tl.reshape(S, (-1, 1)) * V
 
     # Getting the last factor
-    (prev_rank, last_dim) = unfolding.shape
+    prev_rank, last_dim = unfolding.shape
     factors[-1] = tl.reshape(unfolding, (prev_rank, last_dim, 1))
 
     if verbose is True:

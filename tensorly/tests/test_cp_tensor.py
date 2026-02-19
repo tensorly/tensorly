@@ -57,7 +57,7 @@ def test_validate_cp_tensor():
     true_shape = (3, 4, 5)
     true_rank = 3
     cp_tensor = random_cp(true_shape, true_rank)
-    (weights, factors) = cp_normalize(cp_tensor)
+    weights, factors = cp_normalize(cp_tensor)
 
     # Check correct rank and shapes are returned
     shape, rank = _validate_cp_tensor((weights, factors))
@@ -146,9 +146,7 @@ def test_cp_to_tensor_with_weights():
     expected = tl.tensor([[-2, -2], [6, 10]])  # computed by hand
     assert_array_equal(out, expected)
 
-    (weigths, factors) = random_cp(
-        (5, 5, 5), rank=5, normalise_factors=True, full=False
-    )
+    weigths, factors = random_cp((5, 5, 5), rank=5, normalise_factors=True, full=False)
     true_res = tl.dot(
         tl.dot(factors[0], tl.diag(weigths)),
         tl.transpose(tl.tenalg.khatri_rao(factors[1:])),

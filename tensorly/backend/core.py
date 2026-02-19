@@ -10,7 +10,6 @@ import math
 import numpy as np
 import scipy.special
 
-
 backend_types = [
     "int32",
     "int64",

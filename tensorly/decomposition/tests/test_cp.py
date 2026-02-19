@@ -443,6 +443,47 @@ def test_non_negative_parafac_hals_one_unconstrained():
     assert_(T.all(nn_estimate[1][2] > -1e-10))
 
 
+def test_non_negative_parafac_hals_sparse_and_ridge():
+    """Test sparsity and ridge regularization in non-negative PARAFAC HALS"""
+    rng = tl.check_random_state(1234)
+    t_shape = (8, 9, 10)
+    rank = 3
+    weights = T.tensor(rng.uniform(size=rank))
+    A = T.tensor(rng.uniform(size=(t_shape[0], rank)))
+    B = T.tensor(rng.uniform(size=(t_shape[1], rank)))
+    C = T.tensor(rng.uniform(0.1, 1.1, size=(t_shape[2], rank)))
+    cp_tensor = (weights, (A, B, C))
+    X = cp_to_tensor(cp_tensor)
+
+    loss_per_iter = []
+
+    def callback(cp_rec, rec_error):
+        loss_per_iter.append(rec_error)
+
+    nn_estimate = non_negative_parafac_hals(
+        X,
+        rank=3,
+        n_iter_max=200,
+        tol=0,
+        ridge_coefficients=[1e-3, 0, 1e-3],
+        sparsity_coefficients=[0, 1e-3, 0],
+        init="svd",
+        callback=callback,
+    )
+
+    X_hat = cp_to_tensor(nn_estimate)
+    assert_(
+        tl.norm(
+            X - X_hat,
+        )
+        < 1e-0,
+        "Error was too high",
+    )
+
+    assert_(loss_per_iter[-1] < 1, "Loss was too high at the end of the iterations")
+    assert_(tl.min(nn_estimate[1][1]) == 0, "Factor matrix B should be sparse")
+
+
 def test_sample_khatri_rao():
     """Test for sample_khatri_rao"""
     rng = tl.check_random_state(1234)

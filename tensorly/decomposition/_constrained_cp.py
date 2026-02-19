@@ -11,7 +11,6 @@ from ..tenalg.proximal import proximal_operator, validate_constraints
 from ..tenalg.svd import svd_interface
 from ..tenalg import unfolding_dot_khatri_rao
 
-
 # Author: Jean Kossaifi
 #         Jeremy Cohen <jeremy.cohen@irisa.fr>
 #         Caglayan Tuna <caglayantun@gmail.com>
