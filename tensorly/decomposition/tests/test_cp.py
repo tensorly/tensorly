@@ -457,8 +457,8 @@ def test_non_negative_parafac_hals_sparse_and_ridge():
 
     loss_per_iter = []
 
-    def callback(cp_rec, rec_error, loss):
-        loss_per_iter.append(loss)
+    def callback(cp_rec, rec_error):
+        loss_per_iter.append(rec_error)
 
     nn_estimate = non_negative_parafac_hals(
         X,
