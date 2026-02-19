@@ -400,7 +400,9 @@ def non_negative_parafac_hals(
         if tol or callback:
             factors_norm = cp_norm((weights, factors))
             iprod = tl.sum(tl.sum(mttkrp * factors[-1], axis=0))
-            unnorml_rec_error = tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod))
+            unnorml_rec_error = tl.sqrt(
+                tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
+            )
             rec_errors.append(unnorml_rec_error)
 
             if callback is not None:
