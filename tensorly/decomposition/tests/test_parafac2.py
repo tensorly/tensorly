@@ -425,14 +425,33 @@ def test_parafac2_init_error():
             tensor, rank, init=("another", "bogus", "init", "type")
         )
 
+
+def test_parafac2_init_svd_warns_and_is_reproducible_for_high_rank():
+    rng = tl.check_random_state(1234)
     rank = 4
+
     random_parafac2_tensor = random_parafac2(
         shapes=[(15, 3)] * 25, rank=rank, random_state=rng
     )
     tensor = parafac2_to_tensor(random_parafac2_tensor)
 
-    with pytest.raises(Exception):
-        _ = initialize_decomposition(tensor, rank, init="svd")
+    with pytest.warns(UserWarning):
+        init_1 = initialize_decomposition(tensor, rank, init="svd", random_state=123)
+    with pytest.warns(UserWarning):
+        init_2 = initialize_decomposition(tensor, rank, init="svd", random_state=123)
+
+    assert init_1.shape == random_parafac2_tensor.shape
+    assert_array_almost_equal(init_1.factors[0], init_2.factors[0])
+    assert_array_almost_equal(init_1.factors[1], init_2.factors[1])
+    assert_array_almost_equal(init_1.factors[2], init_2.factors[2])
+
+    rank_equal = 3
+    random_parafac2_tensor_equal = random_parafac2(
+        shapes=[(15, 3)] * 25, rank=rank_equal, random_state=rng
+    )
+    tensor_equal = parafac2_to_tensor(random_parafac2_tensor_equal)
+    with pytest.warns(UserWarning):
+        initialize_decomposition(tensor_equal, rank_equal, init="svd", random_state=123)
 
 
 def test_parafac2_to_tensor():

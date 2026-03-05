@@ -96,6 +96,9 @@ def initialize_decomposition(
     tensor_slices : Iterable of ndarray
     rank : int
     init : {'random', 'svd', CPTensor, Parafac2Tensor}, optional
+        If ``init='svd'`` and ``rank`` exceeds the number of columns in each
+        slice, then as many components as possible are initialized from SVD and
+        the remaining components are initialized randomly.
     random_state : `np.random.RandomState`
     mask : ndarray, optional
         An array with the same shape as the tensor. It should be 0 where there are
@@ -117,10 +120,12 @@ def initialize_decomposition(
             shapes, rank, full=False, random_state=random_state, **context
         )
     elif init == "svd":
+        n_svd = min(rank, shapes[0][1])
 
-        if shapes[0][1] < rank:
-            raise ValueError(
-                f"Cannot perform SVD init if rank ({rank}) is greater than the number of columns in each tensor slice ({shapes[0][1]})"
+        if rank >= shapes[0][1]:
+            warn(
+                f"PARAFAC2 SVD initialization rank {rank} >= columns {shapes[0][1]} initializing remainder randomly",
+                UserWarning,
             )
 
         A = tl.ones((len(tensor_slices), rank), **context)
@@ -134,7 +139,17 @@ def initialize_decomposition(
         else:
             unfolded_mode_2 = tl.transpose(tl.concatenate(list(tensor_slices), axis=0))
 
-        C = svd_interface(unfolded_mode_2, n_eigenvecs=rank, method=svd)[0]
+        C = svd_interface(unfolded_mode_2, n_eigenvecs=n_svd, method=svd)[0]
+
+        if n_svd < rank:
+            random_part = random_parafac2(
+                shapes,
+                rank - n_svd,
+                full=False,
+                random_state=random_state,
+                **context,
+            ).factors[2]
+            C = tl.concatenate([C, random_part], axis=1)
 
         B = tl.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd)
@@ -461,7 +476,9 @@ def parafac2(
 
             Previously, the default maximum number of iterations was 100.
     init : {'svd', 'random', CPTensor, Parafac2Tensor}
-        Type of factor matrix initialization. See `initialize_factors`.
+        Type of factor matrix initialization. See `initialize_decomposition`.
+        When ``init='svd'`` and ``rank`` exceeds the number of columns in each
+        slice, remaining components are initialized randomly.
     svd : str, default is 'truncated_svd'
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     normalize_factors : bool (optional)
@@ -544,7 +561,7 @@ def parafac2(
             tensor_slices[0].shape[1] == tensor_slices[ii].shape[1]
         ), "All tensor slices must have the same number of columns."
 
-    (weights, factors, projections) = initialize_decomposition(
+    weights, factors, projections = initialize_decomposition(
         tensor_slices, rank, init=init, svd=svd, random_state=random_state
     )
     factors = list(factors)
