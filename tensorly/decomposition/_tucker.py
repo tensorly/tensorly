@@ -22,6 +22,13 @@ from ..tenalg.svd import svd_interface
 # License: BSD 3 clause
 
 
+def _is_tucker_factors_init(init):
+    return (
+        isinstance(init, Iterable)
+        and not isinstance(init, (str, bytes, tuple, TuckerTensor))
+    )
+
+
 def initialize_tucker(
     tensor,
     rank,
@@ -92,8 +99,34 @@ def initialize_tucker(
             for index, mode in enumerate(modes)
         ]
 
-    else:
+    elif isinstance(init, tuple):
+        if len(init) != 2 or not isinstance(init[1], Iterable):
+            raise ValueError(
+                "If `init` is a tuple, it must be of the form (core, factors) "
+                "with `factors` an iterable of factor matrices."
+            )
         (core, factors) = init
+    elif isinstance(init, TuckerTensor):
+        core, factors = init
+    elif _is_tucker_factors_init(init):
+        factors = list(init)
+        if len(factors) != len(modes):
+            raise ValueError(f"Expected {len(modes)} factors, got {len(factors)}")
+
+        for i, (factor, mode) in enumerate(zip(factors, modes)):
+            expected_shape = (tensor.shape[mode], rank[i])
+            if tl.shape(factor) != expected_shape:
+                raise ValueError(
+                    f"Factor {i} has shape {tl.shape(factor)} but expected "
+                    f"{expected_shape}"
+                )
+
+        core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
+    else:
+        raise ValueError(
+            "Got invalid `init`. Expected 'svd', 'random', a Tucker tensor, "
+            "a (core, factors) tuple, or an iterable of factors."
+        )
 
     if non_negative is True:
         factors = [tl.abs(f) for f in factors]
@@ -285,8 +318,18 @@ def tucker(
     """
     if fixed_factors:
         try:
-            (core, factors) = init
-        except:
+            if _is_tucker_factors_init(init):
+                core, factors = initialize_tucker(
+                    tensor,
+                    rank,
+                    modes=list(range(tl.ndim(tensor))),
+                    init=init,
+                    svd=svd,
+                    random_state=random_state,
+                )
+            else:
+                (core, factors) = init
+        except Exception:
             raise ValueError(
                 f'Got fixed_factor={fixed_factors} but no appropriate Tucker tensor was passed for "init".'
             )

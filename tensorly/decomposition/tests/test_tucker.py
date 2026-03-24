@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 import tensorly as tl
 from .._tucker import (
+    initialize_tucker,
     tucker,
     partial_tucker,
     non_negative_tucker,
@@ -143,6 +144,47 @@ def test_tucker(monkeypatch):
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, tucker, Tucker, ignore_args={}, rank=3
     )
+
+
+def test_tucker_factors_only_init_recomputes_core():
+    rng = tl.check_random_state(1234)
+    rank = (2, 3, 2)
+    core, factors = random_tucker((4, 5, 6), rank=rank, random_state=rng)
+    tensor = tucker_to_tensor((core, factors))
+
+    initialized_core, initialized_factors = initialize_tucker(
+        tensor,
+        rank=rank,
+        modes=list(range(tl.ndim(tensor))),
+        random_state=rng,
+        init=[tl.copy(factor) for factor in factors],
+    )
+
+    expected_core = multi_mode_dot(
+        tensor, initialized_factors, modes=list(range(tl.ndim(tensor))), transpose=True
+    )
+
+    assert_array_equal(initialized_core, expected_core)
+    for factor, expected_factor in zip(initialized_factors, factors):
+        assert_array_equal(factor, expected_factor)
+
+
+def test_tucker_runs_with_factors_only_init():
+    rng = tl.check_random_state(1234)
+    rank = (2, 2, 2)
+    core, factors = random_tucker((3, 4, 5), rank=rank, random_state=rng)
+    tensor = tucker_to_tensor((core, factors))
+
+    decomposition = tucker(
+        tensor,
+        rank=rank,
+        init=[tl.copy(factor) for factor in factors],
+        n_iter_max=5,
+    )
+    reconstruction_error = tl.norm(tucker_to_tensor(decomposition) - tensor, 2)
+    reconstruction_error /= tl.norm(tensor, 2)
+
+    assert_(reconstruction_error < 1e-6)
 
 
 def test_masked_tucker():
