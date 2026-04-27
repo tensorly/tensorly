@@ -183,7 +183,8 @@ def proximal_operator(
     l1_reg : float or list or dictionary, optional
         Penalizes the factor with the given regularizer
     group_lasso : float or list or dictionary, optional
-        Penalizes each row of the factor with the given group lasso regularizer
+        Penalizes each row of the factor with the given group lasso regularizer,
+        following Yuan and Lin [3]_.
     l2_reg : float or list or dictionary, optional
         Penalizes the factor with the given regularizer
     l2_square_reg : float or list or dictionary, optional
@@ -226,6 +227,9 @@ def proximal_operator(
             Comptes rendus hebdomadaires des séances de l'Académie des sciences, 255, 2897-2899.
     .. [2]: Parikh, N., & Boyd, S. (2014). Proximal algorithms.
             Foundations and Trends in optimization, 1(3), 127-239.
+    .. [3] Yuan, M. and Lin, Y. (2006). Model selection and estimation in
+           regression with grouped variables. Journal of the Royal Statistical
+           Society: Series B, 68(1), 49-67.
     """
     if n_const is None:
         return tensor

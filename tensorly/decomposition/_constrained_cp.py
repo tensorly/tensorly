@@ -237,7 +237,8 @@ def constrained_parafac(
     l1_reg : float or list or dictionary, optional
         Penalizes the factor with the l1 norm using the input value as regularization parameter.
     group_lasso : float or list or dictionary, optional
-        Penalizes each row of the factor with the given group lasso regularization parameter.
+        Penalizes each row of the factor with the given group lasso regularization parameter,
+        following Yuan and Lin [3]_.
     l2_reg : float or list or dictionary, optional
         Penalizes the factor with the l2 norm using the input value as regularization parameter.
     l2_square_reg : float or list or dictionary, optional
@@ -286,6 +287,9 @@ def constrained_parafac(
     .. [2] Huang, Kejun, Nicholas D. Sidiropoulos, and Athanasios P. Liavas.
            "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization." IEEE
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
+    .. [3] Yuan, M. and Lin, Y. (2006). Model selection and estimation in
+           regression with grouped variables. Journal of the Royal Statistical
+           Society: Series B, 68(1), 49-67.
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
     _, _ = validate_constraints(
@@ -475,6 +479,9 @@ class ConstrainedCP(DecompositionMixin):
         If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
         Penalizes the factor with the l1 norm using the input value as regularization parameter.
+    group_lasso : float or list or dictionary, optional
+        Penalizes each row of the factor with the given group lasso regularization parameter,
+        following Yuan and Lin [3]_.
     l2_reg : float or list or dictionary, optional
         Penalizes the factor with the l2 norm using the input value as regularization parameter.
     l2_square_reg : float or list or dictionary, optional
@@ -523,6 +530,9 @@ class ConstrainedCP(DecompositionMixin):
     .. [2] Huang, Kejun, Nicholas D. Sidiropoulos, and Athanasios P. Liavas.
            "A flexible and efficient algorithmic framework for constrained matrix and tensor factorization." IEEE
            Transactions on Signal Processing 64.19 (2016): 5052-5065.
+    .. [3] Yuan, M. and Lin, Y. (2006). Model selection and estimation in
+           regression with grouped variables. Journal of the Royal Statistical
+           Society: Series B, 68(1), 49-67.
     """
 
     def __init__(
