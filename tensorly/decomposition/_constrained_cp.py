@@ -27,6 +27,7 @@ def initialize_constrained_parafac(
     random_state=None,
     non_negative=None,
     l1_reg=None,
+    group_lasso=None,
     l2_reg=None,
     l2_square_reg=None,
     unimodality=None,
@@ -64,6 +65,8 @@ def initialize_constrained_parafac(
         If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
         Penalizes the factor with the l1 norm using the input value as regularization parameter.
+    group_lasso : float or list or dictionary, optional
+        Penalizes each row of the factor with the given group lasso regularization parameter.
     l2_reg : float or list or dictionary, optional
         Penalizes the factor with the l2 norm using the input value as regularization parameter.
     l2_square_reg : float or list or dictionary, optional
@@ -146,6 +149,7 @@ def initialize_constrained_parafac(
             factors[i],
             non_negative=non_negative,
             l1_reg=l1_reg,
+            group_lasso=group_lasso,
             l2_reg=l2_reg,
             l2_square_reg=l2_square_reg,
             unimodality=unimodality,
@@ -179,6 +183,7 @@ def constrained_parafac(
     fixed_modes=None,
     non_negative=None,
     l1_reg=None,
+    group_lasso=None,
     l2_reg=None,
     l2_square_reg=None,
     unimodality=None,
@@ -231,6 +236,8 @@ def constrained_parafac(
         If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
         Penalizes the factor with the l1 norm using the input value as regularization parameter.
+    group_lasso : float or list or dictionary, optional
+        Penalizes each row of the factor with the given group lasso regularization parameter.
     l2_reg : float or list or dictionary, optional
         Penalizes the factor with the l2 norm using the input value as regularization parameter.
     l2_square_reg : float or list or dictionary, optional
@@ -284,6 +291,7 @@ def constrained_parafac(
     _, _ = validate_constraints(
         non_negative=non_negative,
         l1_reg=l1_reg,
+        group_lasso=group_lasso,
         l2_reg=l2_reg,
         l2_square_reg=l2_square_reg,
         unimodality=unimodality,
@@ -305,6 +313,7 @@ def constrained_parafac(
         random_state=random_state,
         non_negative=non_negative,
         l1_reg=l1_reg,
+        group_lasso=group_lasso,
         l2_reg=l2_reg,
         l2_square_reg=l2_square_reg,
         unimodality=unimodality,
@@ -364,6 +373,7 @@ def constrained_parafac(
                 order=mode,
                 non_negative=non_negative,
                 l1_reg=l1_reg,
+                group_lasso=group_lasso,
                 l2_reg=l2_reg,
                 l2_square_reg=l2_square_reg,
                 unimodality=unimodality,
@@ -531,6 +541,7 @@ class ConstrainedCP(DecompositionMixin):
         fixed_modes=None,
         non_negative=None,
         l1_reg=None,
+        group_lasso=None,
         l2_reg=None,
         l2_square_reg=None,
         unimodality=None,
@@ -556,6 +567,7 @@ class ConstrainedCP(DecompositionMixin):
         self.fixed_modes = fixed_modes
         self.non_negative = non_negative
         self.l1_reg = l1_reg
+        self.group_lasso = group_lasso
         self.l2_reg = l2_reg
         self.l2_square_reg = l2_square_reg
         self.unimodality = unimodality
@@ -595,6 +607,7 @@ class ConstrainedCP(DecompositionMixin):
             fixed_modes=self.fixed_modes,
             non_negative=self.non_negative,
             l1_reg=self.l1_reg,
+            group_lasso=self.group_lasso,
             l2_reg=self.l2_reg,
             l2_square_reg=self.l2_square_reg,
             unimodality=self.unimodality,
