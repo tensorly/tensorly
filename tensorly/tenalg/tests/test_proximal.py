@@ -7,6 +7,7 @@ from tensorly.tenalg.proximal import (
     soft_thresholding,
     procrustes,
     hard_thresholding,
+    group_lasso_prox,
     soft_sparsity_prox,
     simplex_prox,
     normalized_sparsity_prox,
@@ -119,6 +120,14 @@ def test_l2_prox():
     tensor = tl.tensor([2.0, 4.0, 4.0])
     res = l2_prox(tensor, 3)
     true_res = tl.tensor([1.0, 2.0, 2.0])
+    assert_array_almost_equal(true_res, res)
+
+
+def test_group_lasso_prox():
+    """Test for row-wise group lasso prox operator"""
+    tensor = tl.tensor([[3.0, 4.0], [0.3, 0.4], [0.0, 2.0]])
+    res = group_lasso_prox(tensor, 1.0)
+    true_res = tl.tensor([[2.4, 3.2], [0.0, 0.0], [0.0, 1.0]])
     assert_array_almost_equal(true_res, res)
 
 

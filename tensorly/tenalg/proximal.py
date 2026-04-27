@@ -4,6 +4,7 @@ import tensorly as tl
 def validate_constraints(
     non_negative=None,
     l1_reg=None,
+    group_lasso=None,
     l2_reg=None,
     l2_square_reg=None,
     unimodality=None,
@@ -28,6 +29,8 @@ def validate_constraints(
         If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
         Penalizes the factor with the l1 norm using the input value as regularization parameter.
+    group_lasso : float or list or dictionary, optional
+        Penalizes each row of the factor with the given group lasso regularization parameter.
     l2_reg : float or list or dictionary, optional
         Penalizes the factor with the l2 norm using the input value as regularization parameter.
     l2_square_reg : float or list or dictionary, optional
@@ -70,6 +73,7 @@ def validate_constraints(
     constraints_list = [
         non_negative,
         l1_reg,
+        group_lasso,
         l2_reg,
         l2_square_reg,
         unimodality,
@@ -85,6 +89,7 @@ def validate_constraints(
     constraints_names = [
         "non_negative",
         "l1_reg",
+        "group_lasso",
         "l2_reg",
         "l2_square_reg",
         "unimodality",
@@ -149,6 +154,7 @@ def proximal_operator(
     tensor,
     non_negative=None,
     l1_reg=None,
+    group_lasso=None,
     l2_reg=None,
     l2_square_reg=None,
     unimodality=None,
@@ -176,6 +182,9 @@ def proximal_operator(
         If it is True, non-negative constraint is applied to all modes.
     l1_reg : float or list or dictionary, optional
         Penalizes the factor with the given regularizer
+    group_lasso : float or list or dictionary, optional
+        Penalizes each row of the factor with the given group lasso regularizer,
+        following Yuan and Lin [3]_.
     l2_reg : float or list or dictionary, optional
         Penalizes the factor with the given regularizer
     l2_square_reg : float or list or dictionary, optional
@@ -218,12 +227,16 @@ def proximal_operator(
             Comptes rendus hebdomadaires des séances de l'Académie des sciences, 255, 2897-2899.
     .. [2]: Parikh, N., & Boyd, S. (2014). Proximal algorithms.
             Foundations and Trends in optimization, 1(3), 127-239.
+    .. [3] Yuan, M. and Lin, Y. (2006). Model selection and estimation in
+           regression with grouped variables. Journal of the Royal Statistical
+           Society: Series B, 68(1), 49-67.
     """
     if n_const is None:
         return tensor
     constraint, parameter = validate_constraints(
         non_negative=non_negative,
         l1_reg=l1_reg,
+        group_lasso=group_lasso,
         l2_reg=l2_reg,
         l2_square_reg=l2_square_reg,
         unimodality=unimodality,
@@ -243,6 +256,8 @@ def proximal_operator(
         return tl.clip(tensor, 0, tl.max(tensor))
     elif constraint == "l1_reg":
         return soft_thresholding(tensor, parameter)
+    elif constraint == "group_lasso":
+        return group_lasso_prox(tensor, parameter)
     elif constraint == "l2_reg":
         return l2_prox(tensor, parameter)
     elif constraint == "l2_square_reg":
@@ -491,6 +506,33 @@ def l2_prox(tensor, regularizer):
     else:
         bigger_value = regularizer
     return tensor - (tensor * regularizer / bigger_value)
+
+
+def group_lasso_prox(tensor, regularizer):
+    """
+    Proximal operator of a row-wise group lasso penalty.
+
+    Each row is treated as one group. For CP factors this couples the
+    coefficients of a single feature across all components.
+
+    Parameters
+    ----------
+    tensor : ndarray
+    regularizer : float
+
+    Returns
+    -------
+    ndarray
+    """
+
+    row_norms = tl.sqrt(tl.sum(tensor * tensor, axis=1))
+    safe_row_norms = tl.where(
+        row_norms > 0,
+        row_norms,
+        tl.ones(tl.shape(row_norms), **tl.context(tensor)),
+    )
+    shrinkage = tl.clip(1 - regularizer / safe_row_norms, 0, 1)
+    return tensor * tl.reshape(shrinkage, (-1, 1))
 
 
 def normalized_sparsity_prox(tensor, threshold):
