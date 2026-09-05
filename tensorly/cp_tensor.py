@@ -155,9 +155,14 @@ class CPTensor(FactorizedTensor):
         Returns
         -------
         CPTensor = (normalisation_weights, normalised_factors)
-            returns itself if inplace is False, a normalized copy otherwise
+            returns itself if inplace is True, a normalized copy otherwise
         """
-        self.weights, self.factors = cp_normalize(self)
+        weights, factors = cp_normalize(self)
+        if not inplace:
+            return CPTensor((weights, factors))
+
+        self.weights, self.factors = weights, factors
+        return self
 
 
 def _validate_cp_tensor(cp_tensor):

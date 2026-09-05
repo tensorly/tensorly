@@ -39,6 +39,41 @@ def test_cp_normalize():
     assert_array_almost_equal(cp_to_tensor((weights, factors)), cp_to_tensor(cp_tensor))
 
 
+def test_cptensor_normalize_inplace():
+    """CPTensor.normalize must honour `inplace` and return the tensor.
+
+    It used to ignore the flag, always mutating the caller, and returned
+    None in both cases.
+    """
+    shape = (3, 4, 5)
+    rank = 4
+
+    # inplace=False must leave the caller alone and hand back a normalized copy
+    cp_tensor = random_cp(shape, rank)
+    original = cp_to_tensor(cp_tensor)
+    original_factors = [tl.copy(f) for f in cp_tensor.factors]
+
+    normalized = cp_tensor.normalize(inplace=False)
+
+    assert_(normalized is not cp_tensor)
+    for before, after in zip(original_factors, cp_tensor.factors):
+        assert_array_almost_equal(before, after)
+    for f in normalized.factors:
+        assert_array_almost_equal(tl.norm(f, axis=0), tl.ones(rank))
+    assert_array_almost_equal(cp_to_tensor(normalized), original)
+
+    # inplace=True must normalize in place and return the tensor itself
+    cp_tensor = random_cp(shape, rank)
+    original = cp_to_tensor(cp_tensor)
+
+    returned = cp_tensor.normalize(inplace=True)
+
+    assert_(returned is cp_tensor)
+    for f in cp_tensor.factors:
+        assert_array_almost_equal(tl.norm(f, axis=0), tl.ones(rank))
+    assert_array_almost_equal(cp_to_tensor(cp_tensor), original)
+
+
 def test_cp_flip_sign():
     shape = (3, 4, 5)
     rank = 4
