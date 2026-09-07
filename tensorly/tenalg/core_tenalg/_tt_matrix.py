@@ -12,7 +12,7 @@ def tt_matrix_to_tensor(tt_matrix):
 
     Parameters
     ----------
-    factors: list of 4D-arrays
+    tt_matrix: list of 4D-arrays
               TT-Matrix factors (known as core) of shape (rank_k, left_dim_k, right_dim_k, rank_{k+1})
 
     Returns

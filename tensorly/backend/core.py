@@ -405,7 +405,7 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def diag(diagnoal):
+    def diag(diagonal):
         """Return a 2-D tensor with the elements of `diagonal` on the diagonal and zeros elsewhere.
 
         Parameters
