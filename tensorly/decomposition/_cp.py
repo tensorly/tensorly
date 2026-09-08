@@ -577,7 +577,7 @@ def sample_khatri_rao(
         if int, used to set the seed of the random number generator
         if numpy.random.RandomState, used to generate random_samples
 
-    returned_sampled_rows : bool, default is False
+    return_sampled_rows : bool, default is False
         if True, also returns a list of the rows sampled from the full
         khatri-rao product
 
