@@ -173,15 +173,16 @@ def initialize_decomposition(
 
 
 def _compute_projections(tensor_slices, factors, svd, random_state=None):
-    n_eig = factors[0].shape[1]
+    rank = factors[0].shape[1]
     out = []
 
     for A, tensor_slice in zip(factors[0], tensor_slices):
         lhs = T.dot(factors[1], T.transpose(A * factors[2]))
         rhs = T.transpose(tensor_slice)
+        # A slice with fewer rows than the rank has at most that many singular vectors
         U, _, Vh = svd_interface(
             T.dot(lhs, rhs),
-            n_eigenvecs=n_eig,
+            n_eigenvecs=min(rank, tl.shape(tensor_slice)[0]),
             method=svd,
             flip_sign=False,
             random_state=random_state,
@@ -211,6 +212,7 @@ class _BroThesisLineSearch:
         acc_pow: float = 2.0,
         max_fail: int = 4,
         mask=None,
+        random_state=None,
     ):
         """The line search strategy defined within Rasmus Bro's thesis [1, 2].
 
@@ -234,7 +236,8 @@ class _BroThesisLineSearch:
         mask : ndarray, optional
             An array with the same shape as the tensor. It should be 0 where there are
             missing values and 1 everywhere else.
-
+        random_state : {None, int, np.random.RandomState}
+            Passed to the SVD function used to compute the projections.
 
         References
         ----------
@@ -252,6 +255,7 @@ class _BroThesisLineSearch:
         self.acc_fail = 0  # How many times acceleration have failed
         self.nn_modes = nn_modes
         self.mask = mask  # mask for missing values
+        self.random_state = random_state
 
     def line_step(
         self,
@@ -306,7 +310,9 @@ class _BroThesisLineSearch:
             if 2 in self.nn_modes:
                 factors_ls[2] = tl.clip(factors_ls[2], 0)
 
-        projections_ls = _compute_projections(tensor_slices, factors_ls, self.svd)
+        projections_ls = _compute_projections(
+            tensor_slices, factors_ls, self.svd, self.random_state
+        )
 
         ls_rec_error = _parafac2_reconstruction_error(
             tensor_slices=tensor_slices,
@@ -612,7 +618,12 @@ def parafac2(
 
     if linesearch and not isinstance(linesearch, _BroThesisLineSearch):
         linesearch = _BroThesisLineSearch(
-            norm_tensor, svd, verbose=verbose, nn_modes=nn_modes, mask=mask
+            norm_tensor,
+            svd,
+            verbose=verbose,
+            nn_modes=nn_modes,
+            mask=mask,
+            random_state=random_state,
         )
 
     # If nn_modes is set, we use HALS, otherwise, we use the standard parafac implementation.
@@ -667,7 +678,7 @@ def parafac2(
         else:
             line_iter = False
 
-        projections = _compute_projections(tensor_slices, factors, svd)
+        projections = _compute_projections(tensor_slices, factors, svd, random_state)
         projected_tensor = _project_tensor_slices(tensor_slices, projections)
         factors = parafac_updates(projected_tensor, weights, factors)
 

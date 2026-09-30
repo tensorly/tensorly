@@ -63,3 +63,34 @@ def test_svd_interface_approx(shape, rank, is_complex, is_u_based_flip_sign):
     X_aprox = U[:, :r] @ tl.diag(S[:r] + S_imag) @ V[:r, :]
     err = tl.norm(X - X_aprox, 2) / tl.norm(X, 2)
     assert_(tl.abs(err) < tol)  # abs due to cplx output of tf
+
+
+@pytest.mark.parametrize("shape", [(10, 5), (5, 10)])
+@pytest.mark.parametrize("method", ["truncated_svd", "symeig_svd", "randomized_svd"])
+def test_svd_interface_caps_n_eigenvecs_at_min_dim(shape, method):
+    """Requesting more than min(shape) vectors warns and returns min(shape)."""
+    rng = tl.check_random_state(1234)
+    X = tl.tensor(rng.random_sample(shape))
+    k = min(shape)
+
+    with pytest.warns(UserWarning, match="n_eigenvecs"):
+        U, S, V = svd_interface(X, method=method, n_eigenvecs=max(shape))
+
+    assert tl.shape(U) == (shape[0], k)
+    assert tl.shape(S) == (k,)
+    assert tl.shape(V) == (k, shape[1])
+
+
+@pytest.mark.parametrize("shape", [(10, 5), (5, 10)])
+@pytest.mark.parametrize("method", ["truncated_svd", "symeig_svd", "randomized_svd"])
+def test_svd_interface_default_n_eigenvecs(shape, method):
+    """Without n_eigenvecs, the reduced SVD is returned without a warning."""
+    rng = tl.check_random_state(1234)
+    X = tl.tensor(rng.random_sample(shape))
+    k = min(shape)
+
+    U, S, V = svd_interface(X, method=method)
+
+    assert tl.shape(U) == (shape[0], k)
+    assert tl.shape(S) == (k,)
+    assert tl.shape(V) == (k, shape[1])

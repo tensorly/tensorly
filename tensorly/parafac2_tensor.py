@@ -135,12 +135,21 @@ def _validate_parafac2_tensor(parafac2_tensor):
                 f"columns as the rank. However, rank={rank} but projections[{i}].shape[1]={T.shape(projection)[1]}"
             )
 
-        inner_product = T.dot(T.transpose(projection), projection)
-        if T.max(T.abs(inner_product - T.eye(rank, **T.context(inner_product)))) > 1e-5:
+        if current_mode_size >= rank:
+            # Orthonormal columns
+            inner_product = T.dot(T.transpose(projection), projection)
+            expected = "P.T@P = I"
+        else:
+            # Fewer rows than the rank: orthonormal columns are impossible, so
+            # the projection has orthonormal rows instead
+            inner_product = T.dot(projection, T.transpose(projection))
+            expected = "P@P.T = I"
+        identity = T.eye(T.shape(inner_product)[0], **T.context(inner_product))
+        if T.max(T.abs(inner_product - identity)) > 1e-5:
             raise ValueError(
-                "All the projection matrices must be orthonormal, that is, P.T@P = I. "
-                f"However, T.norm(projection[{i}].T@projection[{i}] - T.eye(rank)) = "
-                f"{T.norm(inner_product - T.eye(rank, **T.context(inner_product)))}"
+                f"All the projection matrices must be orthonormal, that is, {expected}. "
+                f"However, for projection {i}, the norm of the deviation from the identity is "
+                f"{T.norm(inner_product - identity)}"
             )
 
         shape.append(
