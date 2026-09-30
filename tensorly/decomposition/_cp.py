@@ -110,15 +110,15 @@ def initialize_cp(
 
             kt = CPTensor(init)
             weights, factors = kt
-            # Copy the list so that the caller's init is never modified in place
-            factors = list(factors)
+            # Copy the factors so that the caller's init is never modified in place
+            factors = [tl.copy(f) for f in factors]
 
             if tl.all(weights == 1):
                 kt = CPTensor((None, factors))
             else:
-                weights_avg = tl.prod(weights) ** (1.0 / tl.shape(weights)[0])
-                for i in range(len(factors)):
-                    factors[i] = factors[i] * weights_avg
+                # Pull the weights in the last factor, which is never fixed, so
+                # that fixed factors are left untouched and the model is preserved
+                factors[-1] = factors[-1] * tl.reshape(weights, (1, -1))
                 kt = CPTensor((None, factors))
 
             return kt

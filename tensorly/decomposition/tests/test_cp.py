@@ -546,4 +546,26 @@ def test_parafac_does_not_modify_init():
 
     # A fixed mode whose size does not match the tensor is an error
     with pytest.raises(ValueError):
-        parafac(X2.transpose(3, 0, 1, 2), rank=3, init=init, fixed_modes=[0, 1])
+        parafac(tl.transpose(X2, (3, 0, 1, 2)), rank=3, init=init, fixed_modes=[0, 1])
+
+
+@pytest.mark.parametrize(
+    "func", [parafac, non_negative_parafac, non_negative_parafac_hals]
+)
+def test_fixed_modes_not_rescaled_by_init_weights(func):
+    """Fixed factors are returned unchanged even if `init` has non-unit weights"""
+    rng = tl.check_random_state(1234)
+    shape = (6, 3, 12)
+    factors = [tl.tensor(rng.uniform(0.1, 1, size=(s, 2))) for s in shape]
+    init = CPTensor((tl.tensor([2.0, 5.0]), factors))
+    tensor = tl.cp_to_tensor(init)
+    factors_before = [tl.copy(f) for f in factors]
+
+    for fixed in ([0], [1], [0, 1]):
+        fixed_modes = list(fixed)
+        out = func(tensor, rank=2, init=init, fixed_modes=fixed_modes, n_iter_max=2)
+        assert fixed_modes == list(fixed)
+        for mode in fixed:
+            assert_array_almost_equal(out.factors[mode], factors_before[mode])
+        for f, f0 in zip(init.factors, factors_before):
+            assert_array_equal(f, f0)
