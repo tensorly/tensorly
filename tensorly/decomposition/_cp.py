@@ -80,6 +80,7 @@ def initialize_cp(
                 non_negative=non_negative,
                 mask=mask_unfold,
                 n_iter_mask_imputation=svd_mask_repeats,
+                random_state=rng,
             )
 
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False

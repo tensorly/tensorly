@@ -23,9 +23,8 @@ from ..tenalg.svd import svd_interface
 
 
 def _is_tucker_factors_init(init):
-    return (
-        isinstance(init, Iterable)
-        and not isinstance(init, (str, bytes, tuple, TuckerTensor))
+    return isinstance(init, Iterable) and not isinstance(
+        init, (str, bytes, tuple, TuckerTensor)
     )
 
 
@@ -105,7 +104,7 @@ def initialize_tucker(
                 "If `init` is a tuple, it must be of the form (core, factors) "
                 "with `factors` an iterable of factor matrices."
             )
-        (core, factors) = init
+        core, factors = init
     elif isinstance(init, TuckerTensor):
         core, factors = init
     elif _is_tucker_factors_init(init):
@@ -328,7 +327,7 @@ def tucker(
                     random_state=random_state,
                 )
             else:
-                (core, factors) = init
+                core, factors = init
         except Exception:
             raise ValueError(
                 f'Got fixed_factor={fixed_factors} but no appropriate Tucker tensor was passed for "init".'

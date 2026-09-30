@@ -139,7 +139,9 @@ def initialize_decomposition(
         else:
             unfolded_mode_2 = tl.transpose(tl.concatenate(list(tensor_slices), axis=0))
 
-        C = svd_interface(unfolded_mode_2, n_eigenvecs=n_svd, method=svd)[0]
+        C = svd_interface(
+            unfolded_mode_2, n_eigenvecs=n_svd, method=svd, random_state=random_state
+        )[0]
 
         if n_svd < rank:
             random_part = random_parafac2(
@@ -152,7 +154,7 @@ def initialize_decomposition(
             C = tl.concatenate([C, random_part], axis=1)
 
         B = tl.eye(rank, **context)
-        projections = _compute_projections(tensor_slices, (A, B, C), svd)
+        projections = _compute_projections(tensor_slices, (A, B, C), svd, random_state)
         return Parafac2Tensor((None, [A, B, C], projections))
 
     elif isinstance(init, (tuple, list, Parafac2Tensor, CPTensor)):
@@ -170,7 +172,7 @@ def initialize_decomposition(
     raise ValueError(f'Initialization method "{init}" not recognized')
 
 
-def _compute_projections(tensor_slices, factors, svd):
+def _compute_projections(tensor_slices, factors, svd, random_state=None):
     n_eig = factors[0].shape[1]
     out = []
 
@@ -178,7 +180,11 @@ def _compute_projections(tensor_slices, factors, svd):
         lhs = T.dot(factors[1], T.transpose(A * factors[2]))
         rhs = T.transpose(tensor_slice)
         U, _, Vh = svd_interface(
-            T.dot(lhs, rhs), n_eigenvecs=n_eig, method=svd, flip_sign=False
+            T.dot(lhs, rhs),
+            n_eigenvecs=n_eig,
+            method=svd,
+            flip_sign=False,
+            random_state=random_state,
         )
 
         out.append(T.transpose(T.dot(U, Vh)))
