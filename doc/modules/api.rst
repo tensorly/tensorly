@@ -295,7 +295,38 @@ Other tensor algebraic functionalities:
     batched_outer
     tensordot
     higher_order_moment
+
+.. _proximal_operators:
+
+Proximal operators
+------------------
+
+The :mod:`tensorly.tenalg.proximal` module implements proximal operators (and projections onto constraint sets),
+the building blocks of constrained tensor decompositions, e.g. through :func:`tensorly.solvers.admm.admm`
+or :func:`tensorly.decomposition.constrained_parafac`.
+The proximal operator of a function :math:`f` is :math:`\operatorname{prox}_f(v) = \operatorname{argmin}_x f(x) + \frac{1}{2}||x - v||_2^2`;
+when :math:`f` is the indicator function of a set, it reduces to the projection onto that set.
+
+:func:`~tensorly.tenalg.proximal.proximal_operator` is a single entry point that applies one of the operators below
+according to the constraint name (e.g. ``non_negative=True``, ``l1_reg=0.1``, ``simplex=1``), per mode.
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    proximal.proximal_operator
+    proximal.validate_constraints
     proximal.soft_thresholding
+    proximal.hard_thresholding
+    proximal.l2_prox
+    proximal.l2_square_prox
+    proximal.group_lasso_prox
+    proximal.simplex_prox
+    proximal.soft_sparsity_prox
+    proximal.normalized_sparsity_prox
+    proximal.monotonicity_prox
+    proximal.unimodality_prox
+    proximal.smoothness_prox
     proximal.svd_thresholding
     proximal.procrustes
 
@@ -414,7 +445,7 @@ Tensor Regression (:mod:`tensorly.regression`)
 Solvers (:mod:`tensorly.solvers`)
 =================================
 
-Tensorly provides with efficient solvers for nonnegative least squares problems which are crucial to nonnegative tensor decomposition, as well as a generic admm solver useful for constrained decompositions. Several proximal (projection) operators are located in tenalg.
+Tensorly provides with efficient solvers for nonnegative least squares problems which are crucial to nonnegative tensor decomposition, as well as a generic admm solver useful for constrained decompositions. Several proximal (projection) operators are located in tenalg, see :ref:`proximal_operators`.
 
 .. automodule:: tensorly.solvers
     :no-members:
