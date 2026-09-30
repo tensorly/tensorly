@@ -16,7 +16,12 @@ from tensorly.tenalg.proximal import (
     l2_prox,
     l2_square_prox,
 )
-from tensorly.testing import assert_, assert_array_equal, assert_array_almost_equal
+from tensorly.testing import (
+    assert_,
+    assert_equal,
+    assert_array_equal,
+    assert_array_almost_equal,
+)
 from tensorly import truncated_svd
 import pytest
 
@@ -58,7 +63,7 @@ def test_soft_sparsity():
     tensor = tl.tensor([[0.5, 1.3, 4.5], [0.8, 0.3, 2]])
     threshold = 2
     res = soft_sparsity_prox(tensor, threshold)
-    true_res = tl.tensor([[0.85, 1.5, 2.0], [1.15, 0.5, 0.0]])
+    true_res = tl.tensor([[0.5, 1.3, 2.0], [0.8, 0.3, 0.0]])
     assert_array_almost_equal(true_res, res)
 
 
@@ -205,3 +210,32 @@ def test_procrustes():
     true_res = tl.dot(S, V)
     res = procrustes(U)
     assert_array_almost_equal(true_res, res)
+
+
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+@pytest.mark.parametrize("shape", ["vector", "column", "matrix"])
+@pytest.mark.parametrize("threshold", [0.0, 1.0, 2.0, 10.0])
+def test_soft_sparsity_l1_ball(dtype, shape, threshold):
+    # Columns are outside, inside, and on the unit l1 ball, respectively.
+    values = np.array([[-0.5, 0.1, -0.2], [2.0, -0.2, 0.3], [-3.0, 0.3, -0.5]])
+    expected = values.copy()
+    if threshold == 0:
+        expected[:] = 0
+    elif threshold == 1:
+        expected[:, 0] = [0, 0, -1]
+    elif threshold == 2:
+        # Two active coordinates shrink by 1.5; the smallest is clipped to zero.
+        expected[:, 0] = [0, 0.5, -1.5]
+    if shape == "vector":
+        values, expected = values[:, 0], expected[:, 0]
+    elif shape == "column":
+        values, expected = values[:, :1], expected[:, :1]
+    tensor = tl.tensor(values, dtype=getattr(tl, dtype))
+    copy_tensor = tl.copy(tensor)
+    actual = soft_sparsity_prox(tensor, threshold)
+    assert_equal(tl.shape(actual), tl.shape(tensor))
+    assert_equal(tl.context(actual)["dtype"], tl.context(tensor)["dtype"])
+    assert_array_almost_equal(actual, tl.tensor(expected, **tl.context(tensor)))
+    assert_array_equal(tensor, copy_tensor)
+    # Projection is idempotent, including feasible columns and zero radius.
+    assert_array_almost_equal(soft_sparsity_prox(actual, threshold), actual)

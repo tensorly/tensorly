@@ -584,7 +584,9 @@ def normalized_sparsity_prox(tensor, threshold):
 
 def soft_sparsity_prox(tensor, threshold):
     """
-    Projects the input tensor on the set of tensors with l1 norm smaller than threshold, using Soft Thresholding.
+    Projects each column onto the l1 ball of radius ``threshold``.
+
+    Columns already inside the ball are unchanged.
 
     Parameters
     ----------
@@ -604,12 +606,21 @@ def soft_sparsity_prox(tensor, threshold):
 
     Notes
     -----
+    For columns outside the ball, projection is given by
+
     .. math::
         \\begin{equation}
            \\text{result} = \\text{sign}(x) \\odot \\text{proj}_{\\Delta_{t}}(|x|), \\quad ||\\text{result}||_1 \\leq t
         \\end{equation}
     """
-    return simplex_prox(tl.abs(tensor), threshold) * tl.sign(tensor)
+    if threshold == 0:
+        return tl.zeros(tl.shape(tensor), **tl.context(tensor))
+    projected = tl.reshape(simplex_prox(tl.abs(tensor), threshold), tl.shape(tensor))
+    return tl.where(
+        tl.sum(tl.abs(tensor), axis=0, keepdims=True) <= threshold,
+        tensor,
+        projected * tl.sign(tensor),
+    )
 
 
 def simplex_prox(tensor, parameter):
@@ -643,11 +654,11 @@ def simplex_prox(tensor, parameter):
     tensor_sort = tl.flip(tl.sort(tensor, axis=0), axis=0)
     # Broadcasting is used to divide rows by 1,2,3...
     cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(
-        tl.ones([row, 1]), axis=0
+        tl.ones([row, 1], **tl.context(tensor)), axis=0
     )
     # Added -1 to correspond to a Python index
     to_change = tl.sum(tl.where(tensor_sort > cumsum_min_param_by_k, 1, 0), axis=0) - 1
-    difference = tl.zeros(col)
+    difference = tl.zeros_like(tensor[0])
     for i in range(col):
         difference = tl.index_update(
             difference, tl.index[i], cumsum_min_param_by_k[to_change[i], i]
