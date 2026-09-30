@@ -349,6 +349,9 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
             passive_solution = tl.solve(
                 UtU[passive_set, :][:, passive_set], Utm[passive_set]
             )
+            if not tl.all(tl.abs(passive_solution) < float("inf")):
+                # some backends (e.g. jax) return nan/inf instead of raising
+                raise ValueError("Singular matrix in active set solve")
             indice_list = []
             for i in range(tl.shape(support_vec)[0]):
                 if passive_set[i]:
@@ -362,7 +365,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                     support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
         # Start from zeros if solve is not achieved
         except:
-            x_vec = tl.zeros(tl.shape(UtU)[1])
+            x_vec = tl.zeros(tl.shape(UtU)[1], **tl.context(UtU))
             support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
             passive_set = x_vec > 0
             active_set = x_vec <= 0
