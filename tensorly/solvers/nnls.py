@@ -362,7 +362,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                     support_vec = tl.index_update(support_vec, tl.index[int(i)], 0)
         # Start from zeros if solve is not achieved
         except:
-            x_vec = tl.zeros(tl.shape(UtU)[1])
+            x_vec = tl.zeros(tl.shape(UtU)[1], **tl.context(UtU))
             support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
             passive_set = x_vec > 0
             active_set = x_vec <= 0

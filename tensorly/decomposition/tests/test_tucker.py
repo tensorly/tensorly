@@ -287,6 +287,10 @@ def test_non_negative_tucker(init, hals, monkeypatch):
         )
 
 
+@pytest.mark.skipif(
+    tl.get_backend() == "tensorflow",
+    reason="Active set is not supported with the tensorflow backend",
+)
 @pytest.mark.parametrize("init", ["svd", "random"])
 def test_non_negative_tucker_hals_active_set(init):
     """Test non_negative_tucker_hals with algorithm="active_set" (issue #581)"""
