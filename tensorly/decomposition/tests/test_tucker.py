@@ -285,3 +285,39 @@ def test_non_negative_tucker(init, hals, monkeypatch):
             ignore_args={"return_errors"},
             rank=3,
         )
+
+
+@pytest.mark.parametrize("init", ["svd", "random"])
+def test_non_negative_tucker_hals_active_set(init):
+    """Test non_negative_tucker_hals with algorithm="active_set" (issue #581)"""
+    tol_norm_2 = 10e-1
+    tol_max_abs = 10e-1
+    core, factors = random_tucker((3, 4, 3), rank=[3, 4, 3], non_negative=True)
+    tensor = tucker_to_tensor((core, factors))
+
+    nn_core, nn_factors = non_negative_tucker_hals(
+        tensor, rank=[3, 4, 3], init=init, n_iter_max=40, algorithm="active_set"
+    )
+
+    # Make sure all components are non-negative
+    for factor in nn_factors:
+        assert_(tl.all(factor >= 0))
+    assert_(tl.all(nn_core >= 0))
+
+    nn_reconstructed_tensor = tucker_to_tensor((nn_core, nn_factors))
+    error = tl.norm(tensor - nn_reconstructed_tensor, 2)
+    error /= tl.norm(tensor, 2)
+    assert_(error < tol_norm_2, "norm 2 of reconstruction error higher than tol")
+    assert_(
+        tl.norm(tensor - nn_reconstructed_tensor, "inf") < tol_max_abs,
+        "abs norm of reconstruction error higher than tol",
+    )
+
+    # A single rank is used for all modes
+    rank = 3
+    core, factors = non_negative_tucker_hals(
+        tensor, rank=rank, n_iter_max=2, algorithm="active_set"
+    )
+    assert_(tl.shape(core) == (rank,) * tl.ndim(tensor))
+    for i, f in enumerate(factors):
+        assert_(tl.shape(f) == (tl.shape(tensor)[i], rank))
