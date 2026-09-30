@@ -189,9 +189,9 @@ def test_svd():
     tol_orthogonality = 0.01
 
     for svd in SVD_FUNS:
+        rng = tl.check_random_state(1234)
         if svd == "randomized_svd":
             decimal = 2
-            rng = tl.check_random_state(1234)
         else:
             decimal = 3
         sizes = [(100, 100), (100, 5), (10, 10), (10, 4), (5, 100)]
@@ -200,7 +200,9 @@ def test_svd():
         for s, n in zip(sizes, n_eigenvecs):
             matrix = np.random.random(s)
             matrix_backend = T.tensor(matrix)
-            fU, fS, fV = svd_interface(matrix_backend, n_eigenvecs=n, method=svd, random_state=rng)
+            fU, fS, fV = svd_interface(
+                matrix_backend, n_eigenvecs=n, method=svd, random_state=rng
+            )
             U, S, V = np.linalg.svd(matrix, full_matrices=True)
             U, S, V = U[:, :n], S[:n], V[:n, :]
 

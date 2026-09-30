@@ -180,7 +180,11 @@ def _compute_projections(tensor_slices, factors, svd, random_state=None):
         lhs = T.dot(factors[1], T.transpose(A * factors[2]))
         rhs = T.transpose(tensor_slice)
         U, _, Vh = svd_interface(
-            T.dot(lhs, rhs), n_eigenvecs=n_eig, method=svd, flip_sign=False, random_state=random_state
+            T.dot(lhs, rhs),
+            n_eigenvecs=n_eig,
+            method=svd,
+            flip_sign=False,
+            random_state=random_state,
         )
 
         out.append(T.transpose(T.dot(U, Vh)))

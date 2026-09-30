@@ -5,7 +5,9 @@ from ..tt_matrix import validate_tt_matrix_rank, TTMatrix
 from ..tenalg.svd import svd_interface
 
 
-def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False, random_state=None):
+def tensor_train(
+    input_tensor, rank, svd="truncated_svd", verbose=False, random_state=None
+):
     """TT decomposition via recursive SVD
 
         Decomposes `input_tensor` into a sequence of order-3 tensors (factors)
@@ -22,6 +24,8 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False, random_
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     verbose : boolean, optional
             level of verbosity
+    random_state : {None, int, np.random.RandomState}, optional
+        used by randomized SVD methods
 
     Returns
     -------
@@ -48,7 +52,9 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False, random_
         # SVD of unfolding matrix
         n_row, n_column = unfolding.shape
         current_rank = min(n_row, n_column, rank[k + 1])
-        U, S, V = svd_interface(unfolding, n_eigenvecs=current_rank, method=svd, random_state=random_state)
+        U, S, V = svd_interface(
+            unfolding, n_eigenvecs=current_rank, method=svd, random_state=random_state
+        )
 
         rank[k + 1] = current_rank
 
@@ -78,7 +84,9 @@ def tensor_train(input_tensor, rank, svd="truncated_svd", verbose=False, random_
     return TTTensor(factors)
 
 
-def tensor_train_matrix(tensor, rank, svd="truncated_svd", verbose=False):
+def tensor_train_matrix(
+    tensor, rank, svd="truncated_svd", verbose=False, random_state=None
+):
     """Decompose a tensor into a matrix in tt-format
 
     Parameters
@@ -94,6 +102,8 @@ def tensor_train_matrix(tensor, rank, svd="truncated_svd", verbose=False):
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     verbose : boolean, optional
             level of verbosity
+    random_state : {None, int, np.random.RandomState}, optional
+        used by randomized SVD methods
 
     Returns
     -------
@@ -124,7 +134,9 @@ def tensor_train_matrix(tensor, rank, svd="truncated_svd", verbose=False):
     new_shape = list([a * b for (a, b) in zip(in_shape, out_shape)])
     tensor = tl.reshape(tl.transpose(tensor, new_idx), new_shape)
 
-    factors = tensor_train(tensor, rank, svd=svd, verbose=verbose).factors
+    factors = tensor_train(
+        tensor, rank, svd=svd, verbose=verbose, random_state=random_state
+    ).factors
     for i in range(len(factors)):
         factors[i] = tl.reshape(
             factors[i], (factors[i].shape[0], in_shape[i], out_shape[i], -1)
@@ -149,20 +161,27 @@ class TensorTrain(DecompositionMixin):
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     verbose : boolean, optional
             level of verbosity
+    random_state : {None, int, np.random.RandomState}, optional
+        used by randomized SVD methods
 
     Returns
     -------
     tt_matrix
     """
 
-    def __init__(self, rank, svd="truncated_svd", verbose=False):
+    def __init__(self, rank, svd="truncated_svd", verbose=False, random_state=None):
         self.rank = rank
         self.svd = svd
         self.verbose = verbose
+        self.random_state = random_state
 
     def fit_transform(self, tensor):
         self.decomposition_ = tensor_train(
-            tensor, rank=self.rank, svd=self.svd, verbose=self.verbose
+            tensor,
+            rank=self.rank,
+            svd=self.svd,
+            verbose=self.verbose,
+            random_state=self.random_state,
         )
         return self.decomposition_
 
@@ -184,6 +203,8 @@ class TensorTrainMatrix(DecompositionMixin):
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     verbose : boolean, optional
             level of verbosity
+    random_state : {None, int, np.random.RandomState}, optional
+        used by randomized SVD methods
 
     Returns
     -------
@@ -195,13 +216,18 @@ class TensorTrainMatrix(DecompositionMixin):
     .. [1] Ivan V. Oseledets. "Tensor-train decomposition", SIAM J. Scientific Computing, 33(5):2295–2317, 2011.
     """
 
-    def __init__(self, rank, svd="truncated_svd", verbose=False):
+    def __init__(self, rank, svd="truncated_svd", verbose=False, random_state=None):
         self.rank = rank
         self.svd = svd
         self.verbose = verbose
+        self.random_state = random_state
 
     def fit_transform(self, tensor):
         self.decomposition_ = tensor_train_matrix(
-            tensor, rank=self.rank, svd=self.svd, verbose=self.verbose
+            tensor,
+            rank=self.rank,
+            svd=self.svd,
+            verbose=self.verbose,
+            random_state=self.random_state,
         )
         return self.decomposition_
