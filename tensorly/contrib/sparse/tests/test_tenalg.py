@@ -55,3 +55,21 @@ def test_sparse_truncated_svd_with_rank_deficient_matrix(shape):
     np.testing.assert_allclose(U @ (S[:, None] * V), matrix.todense(), atol=1e-6)
     np.testing.assert_allclose(U.T @ U, np.eye(U.shape[1]), atol=1e-6)
     np.testing.assert_allclose(V @ V.T, np.eye(V.shape[0]), atol=1e-6)
+
+
+def test_sparse_partial_unfold():
+    """partial_unfold works on sparse tensors and matches the dense result"""
+    import sparse
+    from tensorly.base import partial_unfold
+
+    dense = np.arange(24, dtype=float).reshape((2, 3, 2, 2))
+    dense[dense % 3 == 0] = 0
+    tensor = sparse.COO.from_numpy(dense)
+
+    with sparse_context():
+        for mode, skip_begin, skip_end in [(0, 1, 0), (1, 1, 0), (0, 2, 0), (0, 1, 1)]:
+            res = partial_unfold(tensor, mode, skip_begin, skip_end)
+            assert isinstance(res, sparse.COO)
+            np.testing.assert_array_equal(
+                res.todense(), partial_unfold(dense, mode, skip_begin, skip_end)
+            )

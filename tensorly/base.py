@@ -86,6 +86,9 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
         set skip_begin=1.
         This would, for each i in ``range(tensor.shape[0])``, unfold ``tensor[i, ...]``.
 
+        This function also works with sparse tensors (e.g. ``sparse.COO``) when using the
+        sparse backend from :mod:`tensorly.contrib.sparse`, in which case a sparse tensor is returned.
+
     Parameters
     ----------
     tensor : ndarray
