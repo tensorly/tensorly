@@ -518,3 +518,32 @@ def test_randomised_parafac(monkeypatch):
         rank=3,
         n_samples=100,
     )
+
+
+def test_parafac_does_not_modify_init():
+    """parafac must not modify `init` or `fixed_modes` (issue #594)"""
+    rng = tl.check_random_state(1234)
+    X1 = tl.tensor(rng.standard_normal((2, 3, 4, 5)))
+    X2 = tl.tensor(rng.standard_normal((2, 3, 4, 7)))
+    init = parafac(X1, rank=3, random_state=0)
+    shapes = [tuple(tl.shape(f)) for f in init[1]]
+    factors_before = [tl.copy(f) for f in init[1]]
+
+    fixed_modes = [0, 1, 2]
+    out = parafac(X2, rank=3, init=init, fixed_modes=fixed_modes, n_iter_max=5)
+    assert tuple(tl.shape(out[1][3])) == (7, 3)
+    assert [tuple(tl.shape(f)) for f in init[1]] == shapes
+    for f, f0 in zip(init[1], factors_before):
+        assert_array_equal(f, f0)
+    assert fixed_modes == [0, 1, 2]
+
+    # Non-unit weights take a different code path
+    init = CPTensor((tl.tensor([2.0, 3.0, 4.0]), [tl.copy(f) for f in factors_before]))
+    parafac(X2, rank=3, init=init, fixed_modes=[0, 1, 2], n_iter_max=5)
+    assert [tuple(tl.shape(f)) for f in init[1]] == shapes
+    for f, f0 in zip(init[1], factors_before):
+        assert_array_equal(f, f0)
+
+    # A fixed mode whose size does not match the tensor is an error
+    with pytest.raises(ValueError):
+        parafac(X2.transpose(3, 0, 1, 2), rank=3, init=init, fixed_modes=[0, 1])
