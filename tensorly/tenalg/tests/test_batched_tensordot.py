@@ -72,6 +72,14 @@ def test_batched_tensordot():
 def test_batched_tensordot_axis_order(
     tenalg_backend, dtype, batch_shape, layout, reverse
 ):
+    """Keep batch entries aligned when paired batch axes have different orders.
+
+    Regression for gh-637: the core implementation reshaped batch dimensions
+    in tensor-axis order after transposing them in the supplied batch order,
+    mixing values between independent batches even when the shape was correct.
+    NumPy einsum provides an independent reference for the axis pairing across
+    contraction layouts, reversed batch lists, and equal or unequal batch sizes.
+    """
     a, b = batch_shape
     if layout == "matmul":
         shape1, shape2 = (a, b, 3, 4), (b, a, 4, 5)
