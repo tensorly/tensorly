@@ -6,6 +6,7 @@ from .._cp import (
     parafac,
     initialize_cp,
     sample_khatri_rao,
+    _leverage_score_indices,
     randomised_parafac,
     CP,
     RandomizedCP,
@@ -479,7 +480,31 @@ def test_sample_khatri_rao():
         )
 
 
-def test_randomised_parafac(monkeypatch):
+def test_leverage_score_indices():
+    """The sampling probabilities are the product of the factor leverage scores"""
+    rng = tl.check_random_state(1234)
+    rank = 3
+    _, factors = random_cp((8, 9), rank, full=False, random_state=rng)
+    # A zero row has a leverage score of zero and should never be sampled
+    factors[0] = tl.index_update(
+        factors[0], tl.index[2, :], tl.zeros(rank, **tl.context(factors[0]))
+    )
+    n_samples = 200
+    indices_list, weights = _leverage_score_indices(factors, n_samples, rng)
+
+    probabilities = []
+    for factor in factors:
+        u, _, _ = np.linalg.svd(T.to_numpy(factor), full_matrices=False)
+        probabilities.append(np.sum(u**2, axis=1) / rank)
+
+    assert_(len(indices_list) == 2)
+    assert_(2 not in indices_list[0], "A row with zero leverage was sampled")
+    expected = probabilities[0][indices_list[0]] * probabilities[1][indices_list[1]]
+    assert_array_almost_equal(weights, 1 / np.sqrt(n_samples * expected), decimal=3)
+
+
+@pytest.mark.parametrize("sampling", ["leverage", "uniform"])
+def test_randomised_parafac(monkeypatch, sampling):
     """Test for randomised_parafac"""
     rng = tl.check_random_state(1234)
     t_shape = (10, 10, 10)
@@ -498,6 +523,7 @@ def test_randomised_parafac(monkeypatch):
         tol=0,
         verbose=0,
         random_state=rng,
+        sampling=sampling,
     )
 
     for i, f in enumerate(cp_tensor[1]):
@@ -514,10 +540,66 @@ def test_randomised_parafac(monkeypatch):
         monkeypatch,
         randomised_parafac,
         RandomizedCP,
-        ignore_args={"return_errors"},
+        decomposition_output_length=1,
         rank=3,
         n_samples=100,
     )
+
+
+@pytest.mark.parametrize("sampling", ["leverage", "uniform"])
+@pytest.mark.parametrize("init", ["svd", "random"])
+def test_randomised_parafac_rank_deficient(sampling, init):
+    """Fitting more components than the rank of the tensor must not fail (issue #531)"""
+    tensor = T.ones((2, 3, 4))
+    cp_tensor = randomised_parafac(
+        tensor, 2, 12, n_iter_max=20, init=init, random_state=1, sampling=sampling
+    )
+    error = float(T.norm(cp_to_tensor(cp_tensor) - tensor, 2) / T.norm(tensor, 2))
+    assert_(error < 1e-3, msg=f"reconstruction error of {error}")
+
+
+@pytest.mark.parametrize("n_samples_fit", [None, 4000])
+def test_randomised_parafac_error_estimate(n_samples_fit):
+    """The error passed to the callback approximates the exact relative error"""
+    rng = tl.check_random_state(1234)
+    tensor = random_cp((20, 20, 20), 3, full=True, random_state=rng)
+    tensor = tensor + 0.1 * T.tensor(rng.standard_normal((20, 20, 20)))
+    estimated, exact = [], []
+
+    def callback(cp_tensor, rec_error=None):
+        if rec_error is not None:
+            estimated.append(float(rec_error))
+            exact.append(
+                float(T.norm(cp_to_tensor(cp_tensor) - tensor, 2) / T.norm(tensor, 2))
+            )
+
+    randomised_parafac(
+        tensor,
+        3,
+        100,
+        n_iter_max=10,
+        tol=0,
+        max_stagnation=0,
+        random_state=rng,
+        callback=callback,
+        n_samples_fit=n_samples_fit,
+    )
+    assert_(len(estimated) == 10)
+    rtol = 1e-5 if n_samples_fit is None else 0.05
+    assert_(
+        np.max(np.abs(np.array(estimated) / np.array(exact) - 1)) < rtol,
+        msg=f"estimated errors {estimated} differ from exact errors {exact}",
+    )
+
+
+def test_randomised_parafac_invalid_arguments():
+    tensor = T.ones((2, 3, 4))
+    with pytest.raises(ValueError, match="n_samples"):
+        randomised_parafac(tensor, 2, 1)
+    with pytest.raises(ValueError, match="sampling"):
+        randomised_parafac(tensor, 2, 10, sampling="importance")
+    with pytest.raises(ValueError, match="n_samples_fit"):
+        randomised_parafac(tensor, 2, 10, n_samples_fit=0)
 
 
 def test_parafac_does_not_modify_init():
