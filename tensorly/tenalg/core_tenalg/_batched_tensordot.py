@@ -18,6 +18,8 @@ def tensordot(tensor1, tensor2, modes, batched_modes=()):
         * Users that want to contract both tensors on both modes should provide a tuple of two identical modes.
         _e.g. ``tensordot(t1, t2, ([m1, m2], [m1, m2]))`` contracts both t1 and t2 on both modes m1 and m2_
     batched_modes : int or tuple[int]
+        Paired batch modes must have matching sizes. The result keeps tensor1's
+        uncontracted modes in their original order.
 
     Returns
     -------
@@ -30,20 +32,18 @@ def tensordot(tensor1, tensor2, modes, batched_modes=()):
 
     contraction_shape = [s for (i, s) in enumerate(tl.shape(tensor1)) if i in modes1]
     contraction_dim = prod(contraction_shape)
-    batch_shape = [s for (i, s) in enumerate(tl.shape(tensor1)) if i in batch_modes1]
+    batch_shape = [tl.shape(tensor1)[i] for i in batch_modes1]
 
     # Prepare to reorganize the modes afterwards by moving bactch size back to their place
     # (while ommiting modes contracted over)
     final_modes = []
     n_batches = len(batch_modes1)
-    batch_counter = 0
     free_counter = 0
     for i in range(tl.ndim(tensor1)):
         if i in modes1:
             continue
         elif i in batch_modes1:
-            final_modes.append(batch_counter)
-            batch_counter += 1
+            final_modes.append(batch_modes1.index(i))
         else:
             final_modes.append(free_counter + n_batches)
             free_counter += 1
