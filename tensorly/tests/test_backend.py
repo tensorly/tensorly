@@ -169,18 +169,18 @@ def test_svd_time():
 
     SVD shouldn't be slow for tall and skinny matrices
     if n_eigenvec == min(matrix.shape)
-    """
-    M = tl.tensor(np.random.random_sample((4, 10000)))
-    t = time()
-    _ = tl.truncated_svd(M, 4)
-    t = time() - t
-    assert_(t <= 0.1, f"Partial_SVD took too long, maybe full_matrices set wrongly")
 
-    M = tl.tensor(np.random.random_sample((10000, 4)))
-    t = time()
-    _ = tl.truncated_svd(M, 4)
-    t = time() - t
-    assert_(t <= 0.1, f"Partial_SVD took too long, maybe full_matrices set wrongly")
+    The time limit is loose because shared CI runners are noisy; computing
+    the full 10000 x 10000 factor by mistake takes many seconds.
+    """
+    for shape in [(4, 10000), (10000, 4)]:
+        M = tl.tensor(np.random.random_sample(shape))
+        # Warm-up call so backend compilation/dispatch overhead is not timed
+        _ = tl.truncated_svd(M, 4)
+        t = time()
+        _ = tl.truncated_svd(M, 4)
+        t = time() - t
+        assert_(t <= 1.0, f"Partial_SVD took too long, maybe full_matrices set wrongly")
 
 
 def test_svd():

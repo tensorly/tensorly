@@ -13,9 +13,14 @@ def test_coupled_matrix_tensor_3d_factorization():
     K = 16
     M = 14
     R = 3
+    rng = tl.check_random_state(1234)
 
-    tensor_cp_true = random_cp((I, J, K), rank=R, normalise_factors=False)
-    matrix_cp_true = random_cp((I, M), rank=R, normalise_factors=False)
+    tensor_cp_true = random_cp(
+        (I, J, K), rank=R, normalise_factors=False, random_state=rng
+    )
+    matrix_cp_true = random_cp(
+        (I, M), rank=R, normalise_factors=False, random_state=rng
+    )
     matrix_cp_true.factors[0] = tensor_cp_true.factors[0]
 
     tensor_true = cp_to_tensor(tensor_cp_true)

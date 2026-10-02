@@ -25,14 +25,15 @@ def correlation_index(
     method : str, optional
         Method to obtain the CorrIndex by comparing the A matrices from two decompositions, by default 'stacked'.
         Possible options are:
-            - 'stacked' : The original method implemented in [1]. Here all A matrices from the same decomposition are
-                          vertically concatenated, building a big A matrix for each decomposition.
-            - 'max_score' : This computes the CorrIndex for each pair of A matrices (i.e. between A_1 in factors_1 and
-                            factors_2, between A_2 in factors_1 and factors_2, and so on). Then the max score is
-                            selected (the most conservative approach). In other words, it selects the max score among the
-                            CorrIndexes computed dimension-wise.
-            - 'min_score' : Similar to 'max_score', but the min score is selected (the least conservative approach).
-            - 'avg_score' : Similar to 'max_score', but the avg score is selected.
+
+        - 'stacked' : The original method implemented in [1]. Here all A matrices from the same decomposition are
+          vertically concatenated, building a big A matrix for each decomposition.
+        - 'max_score' : This computes the CorrIndex for each pair of A matrices (i.e. between A_1 in factors_1 and
+          factors_2, between A_2 in factors_1 and factors_2, and so on). Then the max score is
+          selected (the most conservative approach). In other words, it selects the max score among the
+          CorrIndexes computed dimension-wise.
+        - 'min_score' : Similar to 'max_score', but the min score is selected (the least conservative approach).
+        - 'avg_score' : Similar to 'max_score', but the avg score is selected.
 
     Returns
     -------
