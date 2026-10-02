@@ -101,7 +101,11 @@ def initialize_constrained_parafac(
 
     if init == "random":
         weights, factors = random_cp(
-            tl.shape(tensor), rank, normalise_factors=False, **tl.context(tensor)
+            tl.shape(tensor),
+            rank,
+            random_state=rng,
+            normalise_factors=False,
+            **tl.context(tensor),
         )
 
     elif init == "svd":
