@@ -13,6 +13,7 @@ from .svd import SVD_FUNS, svd_interface, truncated_svd
 
 
 class TenalgBackendManager(BackendManager):
+    _backend_base_class = TenalgBackend
     _functions = [
         "mode_dot",
         "multi_mode_dot",
