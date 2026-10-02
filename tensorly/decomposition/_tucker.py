@@ -22,6 +22,27 @@ from ..tenalg.svd import svd_interface
 # License: BSD 3 clause
 
 
+def _complete_factor(factor, n_columns, non_negative=False, random_state=None):
+    """Pad a factor to ``n_columns`` columns.
+
+    The SVD cannot return more vectors than the smaller dimension of the matrix, which
+    can be fewer than the requested Tucker rank. The extra columns are random and
+    orthogonal to the existing ones (or non-negative if ``non_negative``).
+    """
+    n_rows, n_existing = tl.shape(factor)
+    if n_existing >= n_columns:
+        return factor
+
+    rng = tl.check_random_state(random_state)
+    extra = tl.tensor(
+        rng.random_sample((n_rows, n_columns - n_existing)), **tl.context(factor)
+    )
+    if not non_negative:
+        extra = extra - tl.dot(factor, tl.dot(tl.transpose(tl.conj(factor)), extra))
+        extra = tl.qr(extra)[0]
+    return tl.concatenate([factor, extra], axis=1)
+
+
 def _is_tucker_factors_init(init):
     return isinstance(init, Iterable) and not isinstance(
         init, (str, bytes, tuple, TuckerTensor)
@@ -79,6 +100,7 @@ def initialize_tucker(
                 n_iter_mask_imputation=svd_mask_repeats,
                 random_state=random_state,
             )
+            U = _complete_factor(U, rank[index], non_negative, random_state)
 
             factors.append(U)
         # The initial core approximation is needed here for the masking step
@@ -231,7 +253,9 @@ def partial_tucker(
                 n_eigenvecs=rank[index],
                 random_state=random_state,
             )
-            factors[index] = eigenvecs
+            factors[index] = _complete_factor(
+                eigenvecs, rank[index], random_state=random_state
+            )
 
         core = multi_mode_dot(tensor, factors, modes=modes, transpose=True)
 
