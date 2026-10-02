@@ -94,8 +94,8 @@ def non_negative_parafac(
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
 
-    if fixed_modes is None:
-        fixed_modes = []
+    # Copy so that the caller's list is not modified (see remove() below)
+    fixed_modes = [] if fixed_modes is None else list(fixed_modes)
 
     if tl.ndim(tensor) - 1 in fixed_modes:
         warnings.warn(
@@ -283,8 +283,8 @@ def non_negative_parafac_hals(
     if sparsity_coefficients is None or isinstance(sparsity_coefficients, float):
         sparsity_coefficients = [sparsity_coefficients] * n_modes
 
-    if fixed_modes is None:
-        fixed_modes = []
+    # Copy so that the caller's list is never modified
+    fixed_modes = [] if fixed_modes is None else list(fixed_modes)
 
     if nn_modes == "all":
         nn_modes = set(range(n_modes))

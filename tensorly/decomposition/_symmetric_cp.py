@@ -14,7 +14,7 @@ def symmetric_power_iteration(tensor, n_repeat=10, n_iteration=10, verbose=False
         input tensor to decompose, must be symmetric of shape (size, )*order
     n_repeat : int, default is 10
         number of initializations to be tried
-    n_iterations : int, default is 10
+    n_iteration : int, default is 10
         number of power iterations
     verbose : bool
         level of verbosity
@@ -93,7 +93,7 @@ def symmetric_parafac_power_iteration(
         rank of the decomposition (number of rank-1 components)
     n_repeat : int, default is 10
         number of initializations to be tried
-    n_iterations : int, default is 10
+    n_iteration : int, default is 10
         number of power iterations
     verbose : bool
         level of verbosity
@@ -143,7 +143,7 @@ class SymmetricCP(DecompositionMixin):
         rank of the decomposition (number of rank-1 components)
     n_repeat : int, default is 10
         number of initializations to be tried
-    n_iterations : int, default is 10
+    n_iteration : int, default is 10
         number of power iterations
     verbose : bool
         level of verbosity

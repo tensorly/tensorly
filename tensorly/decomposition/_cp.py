@@ -80,6 +80,7 @@ def initialize_cp(
                 non_negative=non_negative,
                 mask=mask_unfold,
                 n_iter_mask_imputation=svd_mask_repeats,
+                random_state=rng,
             )
 
             # Put SVD initialization on the same scaling as the tensor in case normalize_factors=False
@@ -109,13 +110,15 @@ def initialize_cp(
 
             kt = CPTensor(init)
             weights, factors = kt
+            # Copy the factors so that the caller's init is never modified in place
+            factors = [tl.copy(f) for f in factors]
 
             if tl.all(weights == 1):
                 kt = CPTensor((None, factors))
             else:
-                weights_avg = tl.prod(weights) ** (1.0 / tl.shape(weights)[0])
-                for i in range(len(factors)):
-                    factors[i] = factors[i] * weights_avg
+                # Pull the weights in the last factor, which is never fixed, so
+                # that fixed factors are left untouched and the model is preserved
+                factors[-1] = factors[-1] * tl.reshape(weights, (1, -1))
                 kt = CPTensor((None, factors))
 
             return kt
@@ -353,8 +356,16 @@ def parafac(
     else:
         Id = 0
 
-    if fixed_modes is None:
-        fixed_modes = []
+    # Copy so that the caller's list is not modified (see remove() below)
+    fixed_modes = [] if fixed_modes is None else list(fixed_modes)
+
+    for mode in fixed_modes:
+        if tl.shape(factors[mode])[0] != tl.shape(tensor)[mode]:
+            if mode != tl.ndim(tensor) - 1:  # last mode is never actually fixed
+                raise ValueError(
+                    f"Mode {mode} is fixed but the initial factor has {tl.shape(factors[mode])[0]} rows "
+                    f"while the tensor has size {tl.shape(tensor)[mode]} along that mode."
+                )
 
     if fixed_modes == list(range(tl.ndim(tensor))):  # Check If all modes are fixed
         cp_tensor = CPTensor(
@@ -577,7 +588,7 @@ def sample_khatri_rao(
         if int, used to set the seed of the random number generator
         if numpy.random.RandomState, used to generate random_samples
 
-    returned_sampled_rows : bool, default is False
+    return_sampled_rows : bool, default is False
         if True, also returns a list of the rows sampled from the full
         khatri-rao product
 

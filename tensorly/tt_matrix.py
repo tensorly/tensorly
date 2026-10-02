@@ -15,20 +15,13 @@ def validate_tt_matrix_rank(tensorized_shape, rank="same"):
 
     Parameters
     ----------
-    tensor_shape : tupe
+    tensorized_shape : tuple
         shape of the tensorized matrix to decompose
     rank : {'same', float, tuple, int}, default is same
         way to determine the rank, by default 'same'
         if 'same': rank is computed to keep the number of parameters (at most) the same
         if float, computes a rank so as to keep rank percent of the original number of parameters
         if int or tuple, just returns rank
-    constant_rank : bool, default is False
-        * if True, the *same* rank will be chosen for each modes
-        * if False (default), the rank of each mode will be proportional to the corresponding tensor_shape
-
-        *used only if rank == 'same' or 0 < rank <= 1*
-
-    rounding = {'round', 'floor', 'ceil'}
 
     Returns
     -------
@@ -101,7 +94,7 @@ def tt_matrix_to_matrix(tt_matrix):
 
     Parameters
     ----------
-    factors: list of 4D-arrays
+    tt_matrix: list of 4D-arrays
               TT-Matrix factors (known as core) of shape (rank_k, left_dim_k, right_dim_k, rank_{k+1})
 
     Returns
@@ -121,7 +114,7 @@ def tt_matrix_to_unfolded(tt_matrix, mode):
 
     Parameters
     ----------
-    factors : list of 3D-arrays
+    tt_matrix : list of 3D-arrays
         TT-Matrix factors
     mode : int
         unfolding matrix to be computed along this mode
@@ -140,7 +133,7 @@ def tt_matrix_to_vec(tt_matrix):
 
     Parameters
     ----------
-    factors : list of 3D-arrays
+    tt_matrix : list of 3D-arrays
         TT factors
 
     Returns

@@ -13,7 +13,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     ----------
     tensor : tl.tensor
         tensor to unfold
-    factors : tl.tensor list
+    cp_tensor : tl.tensor list
         list of matrices of which to the khatri-rao product
     mode : int
         mode on which to unfold `tensor`
@@ -57,7 +57,7 @@ def unfolding_dot_khatri_rao_memory(tensor, cp_tensor, mode):
     ----------
     tensor : tl.tensor
         tensor to unfold
-    factors : tl.tensor list
+    cp_tensor : tl.tensor list
         list of matrices of which to the khatri-rao product
     mode : int
         mode on which to unfold `tensor`
