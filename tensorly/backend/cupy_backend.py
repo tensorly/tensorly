@@ -26,7 +26,7 @@ class CupyBackend(Backend, backend_name="cupy"):
         return {"dtype": tensor.dtype}
 
     @staticmethod
-    def tensor(data, dtype=cp.float32, **kwargs):
+    def tensor(data, dtype=None, **kwargs):
         return cp.array(data, dtype=dtype)
 
     @staticmethod
@@ -91,5 +91,3 @@ for name in (
 
 for name in ["svd", "qr", "eigh", "solve", "lstsq"]:
     CupyBackend.register_method(name, getattr(cp.linalg, name))
-
-CupyBackend.register_method("gamma", cp.random.gamma)

@@ -89,13 +89,11 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return tensor.dim()
 
     @staticmethod
-    def arange(start, stop=None, step=1.0, *args, **kwargs):
+    def arange(start, stop=None, step=1, *args, **kwargs):
         if stop is None:
-            return torch.arange(
-                start=0.0, end=float(start), step=float(step), *args, **kwargs
-            )
+            return torch.arange(start=0, end=start, step=step, *args, **kwargs)
         else:
-            return torch.arange(float(start), float(stop), float(step), *args, **kwargs)
+            return torch.arange(start, stop, step, *args, **kwargs)
 
     @staticmethod
     def clip(tensor, a_min=None, a_max=None, inplace=False):
@@ -103,10 +101,6 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
             return torch.clip(tensor, a_min, a_max, out=tensor)
         else:
             return torch.clip(tensor, a_min, a_max)
-
-    @staticmethod
-    def all(tensor):
-        return torch.sum(tensor != 0)
 
     def transpose(self, tensor, axes=None):
         axes = axes or list(range(self.ndim(tensor)))[::-1]
@@ -208,17 +202,8 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.sort(tensor, dim=axis).values
 
     @staticmethod
-    def update_index(tensor, index, values):
-        tensor.index_put_(index, values)
-
-    @staticmethod
     def lstsq(a, b, rcond=None, driver="gelsd"):
         return torch.linalg.lstsq(a, b, rcond=rcond, driver=driver)
-
-    @staticmethod
-    def eigh(tensor):
-        """Legacy only, deprecated from PyTorch 1.8.0"""
-        return torch.symeig(tensor, eigenvectors=True)
 
     @staticmethod
     def sign(tensor):

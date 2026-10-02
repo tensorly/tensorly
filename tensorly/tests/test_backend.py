@@ -308,6 +308,32 @@ def test_ndim():
     assert_equal(T.ndim(A2), 3)
 
 
+def test_arange():
+    # Integer arguments give an integer range, as in NumPy
+    A = T.arange(5)
+    assert_array_equal(A, T.tensor([0, 1, 2, 3, 4]))
+    assert not np.issubdtype(T.to_numpy(A).dtype, np.floating)
+
+    assert_array_equal(T.arange(2, 8, 2), T.tensor([2, 4, 6]))
+
+    A = T.arange(0.0, 1.0, 0.25)
+    assert np.issubdtype(T.to_numpy(A).dtype, np.floating)
+    assert_array_almost_equal(A, T.tensor([0.0, 0.25, 0.5, 0.75]))
+
+
+def test_gamma():
+    samples = T.gamma(2.0, scale=1.5, size=(4, 5), seed=0)
+    assert T.is_tensor(samples)
+    assert_equal(T.shape(samples), (4, 5))
+    assert np.all(T.to_numpy(samples) > 0)
+
+    # The same seed gives the same samples
+    assert_array_equal(samples, T.gamma(2.0, scale=1.5, size=(4, 5), seed=0))
+
+    samples = T.gamma(2.0, size=(3,), seed=0, dtype=T.float32)
+    assert T.to_numpy(samples).dtype == np.float32
+
+
 def test_norm():
     v = T.tensor([1.0, 2.0, 3.0])
     assert_equal(T.norm(v, 1), 6)
