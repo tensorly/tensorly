@@ -14,9 +14,9 @@ def tensordot(tensor1, tensor2, modes, batched_modes=()):
         modes on which to contract tensor1 and tensor2.
         NB: If two modes are provided:
         * The default behavior is to contract tensor1 on the first mode, and tensor2 on the second mode.
-        _e.g. ``tensordot(t1, t2, [m1, m2])`` contracts mode m1 of t1 with mode m2 of tensor t2_
+        *e.g.* ``tensordot(t1, t2, [m1, m2])`` contracts mode m1 of t1 with mode m2 of tensor t2
         * Users that want to contract both tensors on both modes should provide a tuple of two identical modes.
-        _e.g. ``tensordot(t1, t2, ([m1, m2], [m1, m2]))`` contracts both t1 and t2 on both modes m1 and m2_
+        *e.g.* ``tensordot(t1, t2, ([m1, m2], [m1, m2]))`` contracts both t1 and t2 on both modes m1 and m2
     batched_modes : int or tuple[int]
         Paired batch modes must have matching sizes. The result keeps tensor1's
         uncontracted modes in their original order.
