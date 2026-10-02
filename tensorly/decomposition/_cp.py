@@ -641,6 +641,44 @@ def sample_khatri_rao(
         return sampled_kr, indices_list
 
 
+def _leverage_score_indices(matrices, n_samples, random_state):
+    """Sample rows of the Khatri-Rao product of `matrices` using the product
+    of the leverage scores of each matrix as sampling probabilities
+    (Larsen and Kolda, 2022, see :func:`randomised_parafac`)
+
+    Parameters
+    ----------
+    matrices : ndarray list
+        list of matrices with the same number of columns
+    n_samples : int
+        number of rows to sample
+    random_state : np.random.RandomState
+
+    Returns
+    -------
+    indices_list : ndarray list
+        for each matrix, the indices of the sampled rows
+    weights : np.ndarray of shape (n_samples, )
+        weight to apply to each sampled row, ``1 / sqrt(n_samples * p)`` where
+        ``p`` is the probability of drawing that row
+    """
+    indices_list = []
+    probabilities = np.ones(n_samples)
+    for matrix in matrices:
+        # Leverage scores are the squared row norms of an orthonormal basis of the column space
+        q, _ = tl.qr(matrix)
+        scores = np.asarray(tl.to_numpy(tl.sum(tl.abs(q) ** 2, axis=1)), dtype=float)
+        if scores.sum() > 0:
+            p = scores / scores.sum()
+        else:
+            p = np.full(scores.shape[0], 1 / scores.shape[0])
+        indices = random_state.choice(scores.shape[0], size=n_samples, p=p)
+        indices_list.append(indices)
+        probabilities *= p[indices]
+
+    return indices_list, 1 / np.sqrt(n_samples * probabilities)
+
+
 def randomised_parafac(
     tensor,
     rank,
@@ -650,12 +688,23 @@ def randomised_parafac(
     svd="truncated_svd",
     tol=10e-9,
     max_stagnation=20,
-    return_errors=False,
     random_state=None,
     verbose=0,
     callback=None,
+    sampling="leverage",
+    n_samples_fit=2**14,
 ):
-    """Randomised CP decomposition via sampled ALS [3]_
+    """Randomised CP decomposition via sampled ALS
+
+    Each least squares problem of the ALS is solved using only `n_samples`
+    rows of the Khatri-Rao product, drawn according to the product of the
+    leverage scores of the factors [4]_ or uniformly at random. Uniform
+    sampling does not include the mixing step of [3]_, so it can fail to
+    capture rows that are important to the fit.
+
+    The reconstruction error used for the stopping criterion is estimated
+    from a fixed random subset of `n_samples_fit` entries of the tensor [3]_,
+    which avoids forming the full reconstruction at each iteration.
 
     Parameters
     ----------
@@ -663,7 +712,8 @@ def randomised_parafac(
     rank   : int
             number of components
     n_samples : int
-                number of samples per ALS step
+                number of samples per ALS step. Must be at least `rank`
+                and should in practice be well above it.
     n_iter_max : int
                  maximum number of iteration
     init : {'svd', 'random'}, optional
@@ -671,15 +721,25 @@ def randomised_parafac(
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     tol : float, optional
           tolerance: the algorithm stops when the variation in
-          the reconstruction error is less than the tolerance
-    max_stagnation: int, optional, default is 0
+          the (estimated) relative reconstruction error is less than the tolerance
+    max_stagnation: int, optional, default is 20
                     if not zero, the maximum allowed number
                     of iterations with no decrease in fit
     random_state : {None, int, np.random.RandomState}, default is None
-    return_errors : bool, default is False
-        if True, return a list of all errors
     verbose : int, optional, default is 0
         level of verbosity
+    callback : callable, optional
+        called with the current CPTensor after initialization, and with the
+        current CPTensor and (estimated) relative reconstruction error after
+        each iteration. If it returns True, the algorithm stops.
+    sampling : {'leverage', 'uniform'}, default is 'leverage'
+        how the rows of the Khatri-Rao product are sampled. 'leverage' samples
+        each row with probability proportional to the product of the leverage
+        scores of the factors, which is more robust than uniform sampling.
+    n_samples_fit : int or None, default is 2**14
+        number of entries of the tensor, drawn uniformly at random once, used to
+        estimate the reconstruction error. If None, or if the tensor has no more
+        entries than this, the exact error is computed.
 
     Returns
     -------
@@ -691,12 +751,25 @@ def randomised_parafac(
     ----------
     .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
            "A Practical Randomized CP Tensor Decomposition",
+           SIAM Journal on Matrix Analysis and Applications 39.2 (2018): 876-901.
+    .. [4] Brett W. Larsen and Tamara G. Kolda,
+           "Practical Leverage-Based Sampling for Low-Rank Tensor Decomposition",
+           SIAM Journal on Matrix Analysis and Applications 43.3 (2022): 1488-1517.
     """
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
-    if return_errors:
-        DeprecationWarning(
-            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
+    if n_samples < rank:
+        raise ValueError(
+            f"n_samples={n_samples} is smaller than rank={rank}: each sampled least squares "
+            "problem would be underdetermined. Use n_samples well above the rank."
+        )
+    if sampling not in ("uniform", "leverage"):
+        raise ValueError(
+            f'sampling should be "uniform" or "leverage", got sampling="{sampling}".'
+        )
+    if n_samples_fit is not None and n_samples_fit < 1:
+        raise ValueError(
+            f"n_samples_fit should be a positive integer or None, got {n_samples_fit}."
         )
 
     rng = tl.check_random_state(random_state)
@@ -710,16 +783,42 @@ def randomised_parafac(
 
     weights = tl.ones(rank, **tl.context(tensor))
 
-    if callback is not None:
-        rec_error = tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
+    # Estimate the error from the same random entries at every iteration [3]_
+    n_entries = int(np.prod(tl.shape(tensor)))
+    if n_samples_fit is not None and n_samples_fit < n_entries:
+        fit_indices = [
+            rng.randint(0, size, size=n_samples_fit, dtype=int)
+            for size in tl.shape(tensor)
+        ]
+        fit_entries = tensor[tuple(i.tolist() for i in fit_indices)]
+        fit_scaling = (n_entries / n_samples_fit) ** 0.5
+    else:
+        fit_indices = None
 
+    def relative_error():
+        if fit_indices is None:
+            return tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
+        kr_prod, _ = sample_khatri_rao(factors, n_samples_fit, indices_list=fit_indices)
+        residuals = fit_entries - tl.dot(kr_prod, weights)
+        return fit_scaling * tl.norm(residuals, 2) / norm_tensor
+
+    if callback is not None:
         callback(CPTensor((weights, factors)))
 
     for iteration in range(n_iter_max):
         for mode in range(n_dims):
-            kr_prod, indices_list = sample_khatri_rao(
-                factors, n_samples, skip_matrix=mode, random_state=rng
-            )
+            if sampling == "leverage":
+                other_factors = [f for i, f in enumerate(factors) if i != mode]
+                indices_list, row_weights = _leverage_score_indices(
+                    other_factors, n_samples, rng
+                )
+                kr_prod, _ = sample_khatri_rao(
+                    other_factors, n_samples, indices_list=indices_list
+                )
+            else:
+                kr_prod, indices_list = sample_khatri_rao(
+                    factors, n_samples, skip_matrix=mode, random_state=rng
+                )
             indices_list = [i.tolist() for i in indices_list]
             # Keep all the elements of the currently considered mode
             indices_list.insert(mode, slice(None, None, None))
@@ -729,15 +828,20 @@ def randomised_parafac(
             else:
                 sampled_unfolding = tl.transpose(tensor[indices_list])
 
-            pseudo_inverse = tl.dot(tl.transpose(kr_prod), kr_prod)
-            factor = tl.dot(tl.transpose(kr_prod), sampled_unfolding)
-            factor = tl.transpose(tl.solve(pseudo_inverse, factor))
-            factors[mode] = factor
+            if sampling == "leverage":
+                row_weights = tl.reshape(
+                    tl.tensor(row_weights, **tl.context(tensor)), (-1, 1)
+                )
+                kr_prod = kr_prod * row_weights
+                sampled_unfolding = sampled_unfolding * row_weights
+
+            # Least squares rather than the normal equations, which are singular
+            # whenever the sampled Khatri-Rao product is rank deficient
+            factor = tl.lstsq(kr_prod, sampled_unfolding)[0]
+            factors[mode] = tl.transpose(factor)
 
         if max_stagnation or tol or (callback is not None):
-            rec_error = (
-                tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
-            )
+            rec_error = relative_error()
 
         if callback is not None:
             retVal = callback(CPTensor((weights, factors)), rec_error)
@@ -767,10 +871,7 @@ def randomised_parafac(
                         print(f"converged in {iteration} iterations.")
                     break
 
-    if return_errors:
-        return CPTensor((weights, factors)), rec_errors
-    else:
-        return CPTensor((weights, factors))
+    return CPTensor((weights, factors))
 
 
 class CP(DecompositionMixin):
@@ -936,7 +1037,8 @@ class RandomizedCP(DecompositionMixin):
     rank   : int
             number of components
     n_samples : int
-                number of samples per ALS step
+                number of samples per ALS step. Must be at least `rank`
+                and should in practice be well above it.
     n_iter_max : int
                 maximum number of iteration
     init : {'svd', 'random'}, optional
@@ -945,12 +1047,18 @@ class RandomizedCP(DecompositionMixin):
     tol : float, optional
         tolerance: the algorithm stops when the variation in
         the reconstruction error is less than the tolerance
-    max_stagnation: int, optional, default is 0
+    max_stagnation: int, optional, default is 20
                     if not zero, the maximum allowed number
                     of iterations with no decrease in fit
     random_state : {None, int, np.random.RandomState}, default is None
-    verbose : int, optional
+    verbose : int, optional, default is 0
         level of verbosity
+    callback : callable, optional
+        see :func:`randomised_parafac`
+    sampling : {'leverage', 'uniform'}, default is 'leverage'
+        how the rows of the Khatri-Rao product are sampled, see :func:`randomised_parafac`
+    n_samples_fit : int or None, default is 2**14
+        number of entries used to estimate the reconstruction error, see :func:`randomised_parafac`
 
     Returns
     -------
@@ -962,6 +1070,10 @@ class RandomizedCP(DecompositionMixin):
     ----------
     .. [3] Casey Battaglino, Grey Ballard and Tamara G. Kolda,
        "A Practical Randomized CP Tensor Decomposition",
+       SIAM Journal on Matrix Analysis and Applications 39.2 (2018): 876-901.
+    .. [4] Brett W. Larsen and Tamara G. Kolda,
+       "Practical Leverage-Based Sampling for Low-Rank Tensor Decomposition",
+       SIAM Journal on Matrix Analysis and Applications 43.3 (2022): 1488-1517.
     """
 
     def __init__(
@@ -974,8 +1086,10 @@ class RandomizedCP(DecompositionMixin):
         tol=10e-9,
         max_stagnation=20,
         random_state=None,
-        verbose=1,
+        verbose=0,
         callback=None,
+        sampling="leverage",
+        n_samples_fit=2**14,
     ):
         self.rank = rank
         self.n_samples = n_samples
@@ -987,9 +1101,11 @@ class RandomizedCP(DecompositionMixin):
         self.random_state = random_state
         self.verbose = verbose
         self.callback = callback
+        self.sampling = sampling
+        self.n_samples_fit = n_samples_fit
 
     def fit_transform(self, tensor):
-        self.decomposition_, self.errors_ = randomised_parafac(
+        self.decomposition_ = randomised_parafac(
             tensor,
             rank=self.rank,
             n_samples=self.n_samples,
@@ -997,10 +1113,11 @@ class RandomizedCP(DecompositionMixin):
             init=self.init,
             svd=self.svd,
             tol=self.tol,
-            return_errors=True,
             max_stagnation=self.max_stagnation,
             random_state=self.random_state,
             verbose=self.verbose,
             callback=self.callback,
+            sampling=self.sampling,
+            n_samples_fit=self.n_samples_fit,
         )
         return self.decomposition_
