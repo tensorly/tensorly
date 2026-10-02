@@ -1130,7 +1130,7 @@ class Backend:
     @staticmethod
     def log(x):
         """Calculate the natural logarithm of all elements in the input array."""
-        raise
+        raise NotImplementedError
 
     @staticmethod
     def logsumexp(x, axis=None):

@@ -105,6 +105,3 @@ for name in (
 
 for name in ["solve", "qr", "svd", "eigh"]:
     JaxBackend.register_method(name, getattr(np.linalg, name))
-
-for name in ["gamma"]:
-    JaxBackend.register_method(name, getattr(jax.random, name))

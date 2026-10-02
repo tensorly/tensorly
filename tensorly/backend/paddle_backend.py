@@ -169,10 +169,6 @@ class PaddleBackend(Backend, backend_name="paddle"):
         else:
             return paddle.clip(tensor, a_min, a_max)
 
-    @staticmethod
-    def all(tensor: paddle.Tensor):
-        return paddle.sum(tensor != 0)
-
     def transpose(self, tensor: paddle.Tensor, axes: int | Sequence[int] | None = None):
         axes = axes or list(range(self.ndim(tensor)))[::-1]
         if not isinstance(axes, (tuple, list)):
@@ -185,7 +181,7 @@ class PaddleBackend(Backend, backend_name="paddle"):
 
     @staticmethod
     def norm(tensor: paddle.Tensor, order=None, axis=None):
-        if isinstance(order, str) and order in ["inf" or "-inf"]:
+        if isinstance(order, str) and order in ["inf", "-inf"]:
             order = float(order)
         return paddle.linalg.norm(tensor, order, axis)
 
@@ -227,10 +223,6 @@ class PaddleBackend(Backend, backend_name="paddle"):
             axis = -1
 
         return paddle.sort(tensor, axis=axis)
-
-    @staticmethod
-    def update_index(tensor: paddle.Tensor, index, values):
-        tensor.index_put_(index, values)
 
     @staticmethod
     def lstsq(a: paddle.Tensor, b: paddle.Tensor, rcond=None, driver="gelsd"):
