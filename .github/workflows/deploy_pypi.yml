@@ -3,11 +3,13 @@ name: Deploy 📦 to Test-Pypi and Pypi 🐍
 on:
   push:
     tags:
-    - '*'
+    - '[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: read
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -17,23 +19,16 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Install dependencies
+      - name: Check that the tag matches the package version
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install -r doc/requirements_doc.txt
-          pip install build
-      - name: Install package
-        run: |
-          python -m pip install -e .
-      - name: Make doc
-        run: |
-          cd doc
-          python minify.py
-          make html
-          cd ..
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' tensorly/__init__.py)
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match tensorly.__version__ '$version'"
+            exit 1
+          fi
       - name: Build a binary wheel and a source tarball
         run: |
+          python -m pip install --upgrade pip build
           python -m build
       - name: Store the distribution packages
         uses: actions/upload-artifact@v7
@@ -64,17 +59,16 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
+        skip-existing: true
 
   publish-to-pypi:
-    name: >-
-      Publish Python 🐍 distribution 📦 to PyPI
-    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
+    name: Publish Python 🐍 distribution 📦 to PyPI
     needs:
-    - build
+    - publish-to-testpypi
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/tensorly  # Replace <package-name> with your PyPI project name
+      url: https://pypi.org/p/tensorly
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
@@ -86,16 +80,22 @@ jobs:
         path: dist/
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-    - name: Push doc to stable if upload was successful
-      if: success()
+
+  update-stable-docs:
+    name: Push doc to stable
+    needs:
+    - publish-to-pypi
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Push doc to stable
       run: |
         # Add deploy key and clone through ssh
         eval "$(ssh-agent -s)"
         mkdir ~/.ssh
         echo "${{ secrets.DEPLOY_DOC_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -t rsa github.com
-        echo 'Documentation was successfully built, updating the website.'
+        ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
         # See https://github.community/t/github-actions-bot-email-address/17204/5
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "github-actions"
