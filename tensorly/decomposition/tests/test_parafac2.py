@@ -454,6 +454,50 @@ def test_parafac2_init_svd_warns_and_is_reproducible_for_high_rank():
         initialize_decomposition(tensor_equal, rank_equal, init="svd", random_state=123)
 
 
+@pytest.mark.parametrize("init", ["random", "svd"])
+def test_parafac2_slice_with_fewer_rows_than_rank(init):
+    """Slices may have fewer rows than the rank (only columns must exceed it)."""
+    rng = tl.check_random_state(1234)
+    rank = 4
+    slices = [tl.tensor(rng.random_sample((n, 6))) for n in (10, 2, 12)]
+
+    decomposition = parafac2(slices, rank, n_iter_max=5, init=init, random_state=0)
+
+    for projection, n in zip(decomposition.projections, (10, 2, 12)):
+        assert tl.shape(projection) == (n, rank)
+
+    # The short slice has orthonormal rows, as orthonormal columns are impossible
+    short = decomposition.projections[1]
+    assert_array_almost_equal(short @ tl.transpose(short), tl.eye(2))
+
+
+@pytest.mark.parametrize("linesearch", [False, True])
+def test_parafac2_randomized_svd_is_reproducible(linesearch):
+    """random_state must reach every SVD call, not only the initialization."""
+    rng = tl.check_random_state(1234)
+    rank = 3
+    slices = parafac2_to_slices(
+        random_parafac2(shapes=[(15, 8)] * 6, rank=rank, random_state=rng)
+    )
+    slices = [s + 0.1 * tl.tensor(rng.random_sample(tl.shape(s))) for s in slices]
+
+    kwargs = dict(
+        n_iter_max=10,
+        init="svd",
+        svd="randomized_svd",
+        linesearch=linesearch,
+        random_state=42,
+        tol=1e-100,
+    )
+    first = parafac2(slices, rank, **kwargs)
+    second = parafac2(slices, rank, **kwargs)
+
+    for f_1, f_2 in zip(first.factors, second.factors):
+        assert_array_almost_equal(f_1, f_2)
+    for p_1, p_2 in zip(first.projections, second.projections):
+        assert_array_almost_equal(p_1, p_2)
+
+
 def test_parafac2_to_tensor():
     rng = tl.check_random_state(1234)
     rank = 3

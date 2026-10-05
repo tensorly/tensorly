@@ -38,10 +38,14 @@ def random_parafac2(
     if not all(shape[1] == shapes[0][1] for shape in shapes):
         raise ValueError("All matrices must have equal number of columns.")
 
-    projection_matrices = [
-        T.qr(T.tensor(rns.random_sample((shape[0], rank)), **context))[0]
-        for shape in shapes
-    ]
+    projection_matrices = []
+    for shape in shapes:
+        random_matrix = T.tensor(rns.random_sample((shape[0], rank)), **context)
+        if shape[0] >= rank:
+            projection_matrices.append(T.qr(random_matrix)[0])
+        else:
+            # Fewer rows than the rank: the projection has orthonormal rows instead
+            projection_matrices.append(T.transpose(T.qr(T.transpose(random_matrix))[0]))
     weights, factors = random_cp(
         [len(shapes), rank, shapes[0][1]],
         rank=rank,
