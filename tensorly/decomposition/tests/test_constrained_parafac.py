@@ -455,3 +455,13 @@ def test_constrained_parafac_smoothness():
         T.max(T.abs(res - tensor)) < tol_max_abs,
         f"abs norm of reconstruction error = {T.max(T.abs(res - tensor))} higher than tolerance={tol_max_abs}",
     )
+
+
+def test_constrained_parafac_random_initialization_seed():
+    """An explicit seed makes random initialization reproducible."""
+    tensor = T.zeros((3, 4, 2))
+    first = initialize_constrained_parafac(tensor, 2, init="random", random_state=1234)
+    second = initialize_constrained_parafac(tensor, 2, init="random", random_state=1234)
+    assert_array_almost_equal(first.weights, second.weights)
+    for first_factor, second_factor in zip(first.factors, second.factors):
+        assert_array_almost_equal(first_factor, second_factor)
