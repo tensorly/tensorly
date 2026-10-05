@@ -32,6 +32,7 @@ class dynamically_dispatched_class_attribute:
 
 
 class BackendManager(types.ModuleType):
+    _backend_base_class = Backend
     _functions = [
         "moveaxis",
         "trace",
@@ -327,7 +328,7 @@ class BackendManager(types.ModuleType):
         local_threadsafe : bool, optional, default is False
             If False, set the backend as default for all threads
         """
-        if not isinstance(backend, Backend):
+        if not isinstance(backend, cls._backend_base_class):
             # Backend is a string
             if backend not in cls._loaded_backends:
                 backend = cls.load_backend(backend)
