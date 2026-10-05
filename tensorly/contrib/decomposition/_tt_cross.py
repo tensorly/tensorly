@@ -1,3 +1,4 @@
+from math import prod
 import tensorly as tl
 from ...tt_tensor import tt_to_tensor
 import numpy as np
@@ -36,6 +37,11 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
     -------
     factors : TT factors
               order-3 tensors of the TT decomposition
+
+    Raises
+    ------
+    ValueError
+        If a rank exceeds the number of distinct right-hand index tuples.
 
     Examples
     --------
@@ -120,6 +126,12 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
     col_idx = [None] * tensor_order
     for k_col_idx in range(tensor_order - 1):
+        n_columns = prod(tensor_shape[k_col_idx + 1 :])
+        if rank[k_col_idx + 1] > n_columns:
+            raise ValueError(
+                f"rank[{k_col_idx + 1}]={rank[k_col_idx + 1]} exceeds the "
+                f"number of available column indices ({n_columns})."
+            )
         col_idx[k_col_idx] = []
         for i in range(rank[k_col_idx + 1]):
             newidx = tuple(
