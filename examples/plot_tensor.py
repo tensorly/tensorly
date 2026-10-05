@@ -5,6 +5,7 @@ Basic tensor operations
 Example on how to use :mod:`tensorly` to perform basic tensor operations.
 
 """
+
 import numpy as np
 import tensorly as tl
 from tensorly.testing import assert_array_equal

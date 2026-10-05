@@ -22,7 +22,6 @@ import tensorly as tl
 from tensorly.decomposition import parafac2
 import tensorly.preprocessing as preprocessing
 
-
 ##############################################################################
 # Function to create synthetic data
 # ---------------------------------

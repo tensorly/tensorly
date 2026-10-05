@@ -50,7 +50,6 @@ import time
 from tensorly.metrics.regression import RMSE
 import matplotlib.pyplot as plt
 
-
 ##############################################################################
 # Create synthetic tensor
 # -----------------------

@@ -110,7 +110,7 @@ def assert_class_wrapper_correctly_passes_arguments(
     DecompositionClass,
     ignore_args=None,
     decomposition_output_length=2,
-    **extra_args
+    **extra_args,
 ):
     """Used to ensure that all arguments are passed correctly from the decomposition class to the decomposition function
 

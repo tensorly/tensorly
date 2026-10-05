@@ -2,9 +2,9 @@
 Non-negative PARAFAC Decomposition of IL-2 Response Data
 =========================================================
 
-Here we will provide an example of how to use non-negative PARAFAC tensor 
-decomposition (:func:`tensorly.decomposition.parafac`) to first reduce the dimensionality 
-of a tensor of experimental data, and then make insights about the underlying structure 
+Here we will provide an example of how to use non-negative PARAFAC tensor
+decomposition (:func:`tensorly.decomposition.parafac`) to first reduce the dimensionality
+of a tensor of experimental data, and then make insights about the underlying structure
 of that data.
 
 To do this, we will work with a tensor of experimentally measured cell signaling data.

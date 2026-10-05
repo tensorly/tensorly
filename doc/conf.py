@@ -74,7 +74,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = 'tensorly'
+project = "tensorly"
 year = datetime.now().year
 copyright = f"2016 - {year}, TensorLy Developers"
 author = "Jean Kossaifi"
@@ -85,7 +85,7 @@ author = "Jean Kossaifi"
 #
 # The short X.Y version.
 # version = '0.1'
-version = '.'.join(tensorly.__version__.split('.')[:2])
+version = ".".join(tensorly.__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = tensorly.__version__
 # release = ''
