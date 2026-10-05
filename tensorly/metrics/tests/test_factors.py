@@ -38,10 +38,12 @@ def _congruence_coefficient_slow(A, B, absolute_value):
 
 @pytest.mark.parametrize(
     ("I", "R", "absolute_value"),
-    itertools.product(
-        (1, 3, 5, 10, 100),
-        (1, 3, 5),
-        (True, False),
+    list(
+        itertools.product(
+            (1, 3, 5, 10, 100),
+            (1, 3, 5),
+            (True, False),
+        )
     ),
 )
 def test_congruence_coefficient(I, R, absolute_value):

@@ -1,4 +1,3 @@
-
 """
 Demonstration of PARAFAC2
 =========================
@@ -12,7 +11,6 @@ import matplotlib.pyplot as plt
 import tensorly as tl
 from tensorly.decomposition import parafac2
 from scipy.optimize import linear_sum_assignment
-
 
 ##############################################################################
 # Create synthetic tensor

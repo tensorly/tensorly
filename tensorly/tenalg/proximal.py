@@ -312,7 +312,7 @@ def smoothness_prox(tensor, regularizer):
         tl.diag(2 * regularizer * tl.ones(tl.shape(tensor)[0]) + 1)
         + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=-1)
         + tl.diag(-regularizer * tl.ones(tl.shape(tensor)[0] - 1), k=1),
-        **tl.context(tensor)
+        **tl.context(tensor),
     )
     return tl.solve(diag_matrix, tensor)
 
@@ -422,7 +422,7 @@ def unimodality_prox(tensor):
     values = tl.tensor(
         tl.to_numpy((tensor - monotone_decreasing >= 0))
         * tl.to_numpy((tensor - monotone_increasing >= 0)),
-        **tl.context(tensor)
+        **tl.context(tensor),
     )
 
     sum_inc = tl.where(

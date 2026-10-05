@@ -14,7 +14,6 @@ from tensorly.decomposition import parafac
 from tensorly.decomposition import tucker
 from math import ceil
 
-
 random_state = 12345
 
 image = face()
