@@ -289,7 +289,7 @@ def test_constrained_parafac_normalize():
     rank = 3
     init = "random"
     weights_init, factors_init = initialize_constrained_parafac(
-        T.zeros([6, 8, 4]), rank, normalize=True, init=init
+        T.zeros([6, 8, 4]), rank, normalize=True, init=init, random_state=rng
     )
     tensor = cp_to_tensor((weights_init, factors_init))
     for i in range(len(factors_init)):
@@ -306,9 +306,9 @@ def test_constrained_parafac_normalize():
         random_state=rng,
         return_errors=True,
     )
-    # Check if maximum values is 1
+    # The normalize constraint divides by the maximum absolute value
     for i in range(len(factors_init)):
-        assert_(T.max(res.factors[i]) == 1)
+        assert_array_almost_equal(T.max(T.abs(res.factors[i])), 1.0)
 
 
 def test_constrained_parafac_soft_sparsity():

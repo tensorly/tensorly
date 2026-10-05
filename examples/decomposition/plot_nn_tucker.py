@@ -160,4 +160,4 @@ each_iteration(error_mu, error_fista, error_as, "Error for each iteration")
 # Gillis, N., & Glineur, F. (2012). Accelerated multiplicative updates and
 # hierarchical ALS algorithms for nonnegative matrix factorization.
 # Neural computation, 24(4), 1085-1105.
-# `(Link) https://direct.mit.edu/neco/article/24/4/1085/7755/Accelerated-Multiplicative-Updates-and>`_
+# `(Link) <https://direct.mit.edu/neco/article/24/4/1085/7755/Accelerated-Multiplicative-Updates-and>`_
