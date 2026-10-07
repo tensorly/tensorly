@@ -356,7 +356,9 @@ def monotonicity_prox(tensor, decreasing=False):
     row, column = tl.shape(tensor_mon)
     cum_sum = tl.cumsum(tensor_mon, axis=0)
     for j in range(column):
-        assisted_tensor = tl.zeros([row, row])
+        # entries below the diagonal must not take part in the max below, so
+        # they are -inf instead of 0 (which would clip negative values)
+        assisted_tensor = tl.ones([row, row]) * -float("inf")
         for i in range(row):
             if i == 0:
                 assisted_tensor = tl.index_update(

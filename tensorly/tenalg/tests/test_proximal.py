@@ -99,6 +99,28 @@ def test_monotonicity():
     # Monotone decreasing
     tensor_monoton = monotonicity_prox(tensor, decreasing=True)
     assert_(np.all(np.diff(tensor_monoton, axis=0) <= 0))
+    # Negative values are not clipped to zero
+    tensor = tl.tensor(
+        [[-3.0, 3.0], [1.0, -4.0], [3.0, 2.0], [-1.0, -5.0], [0.0, -6.0]]
+    )
+    assert_array_almost_equal(
+        monotonicity_prox(tensor),
+        tl.tensor(
+            [[-3.0, -2.0], [0.75, -2.0], [0.75, -2.0], [0.75, -2.0], [0.75, -2.0]]
+        ),
+    )
+    assert_array_almost_equal(
+        monotonicity_prox(tensor, decreasing=True),
+        tl.tensor(
+            [
+                [1.0 / 3, 3.0],
+                [1.0 / 3, -1.0],
+                [1.0 / 3, -1.0],
+                [-0.5, -5.0],
+                [-0.5, -6.0],
+            ]
+        ),
+    )
 
 
 def test_unimodality():
