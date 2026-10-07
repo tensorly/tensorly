@@ -402,11 +402,6 @@ def constrained_parafac(
             tl.sqrt(tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)) / norm_tensor
         )
         rec_errors.append(rec_error)
-        constraint_error = 0
-        for mode in modes_list:
-            constraint_error += tl.norm(
-                factors[mode] - tl.transpose(factors_aux[mode])
-            ) / tl.norm(factors[mode])
         if tol_outer:
             if iteration >= 1:
                 rec_error_decrease = rec_errors[-2] - rec_errors[-1]
@@ -416,8 +411,6 @@ def constrained_parafac(
                         f"iteration {iteration}, reconstruction error: {rec_error}, decrease = {rec_error_decrease}"
                     )
 
-                if constraint_error < tol_outer:
-                    break
                 if cvg_criterion == "abs_rec_error":
                     stop_flag = tl.abs(rec_error_decrease) < tol_outer
                 elif cvg_criterion == "rec_error":
