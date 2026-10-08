@@ -72,7 +72,7 @@ def test_coupled_matrix_tensor_3d_factorization_with_mask():
         + tl.norm(matrix - cp_to_tensor(fitted_matrix)) ** 2
     )
     assert_(observed_error < 1e-3)
-    assert_(abs(errors[-1] - observed_error) < 1e-5)
+    assert_(tl.abs(errors[-1] - observed_error) < 1e-5)
 
     unmasked_tensor, unmasked_matrix, _ = coupled_matrix_tensor_3d_factorization(
         observed, matrix, rank=2, n_iter_max=200
