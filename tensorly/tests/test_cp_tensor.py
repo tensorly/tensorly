@@ -172,6 +172,22 @@ def test_cp_to_tensor():
         matrices.insert(i, U_i)
 
 
+def test_cp_to_tensor_with_vector_factors():
+    vectors = [tl.tensor([1.0, 2.0]), tl.tensor([3.0, 4.0, 5.0])]
+    expected = tl.tenalg.outer(vectors)
+    mask = tl.tensor([[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]])
+
+    assert_array_equal(cp_to_tensor((None, vectors)), expected)
+    assert_array_equal(cp_to_tensor((None, [vectors[0]])), vectors[0])
+    assert_array_equal(cp_to_tensor((tl.tensor([2.0]), vectors)), 2 * expected)
+    assert_array_equal(cp_to_tensor((None, vectors), mask=mask), expected * mask)
+    assert_array_equal(cp_to_tensor(CPTensor((None, vectors))), expected)
+    assert_array_equal(
+        cp_to_tensor((None, [tl.reshape(vectors[0], (-1, 1)), vectors[1]])),
+        expected,
+    )
+
+
 def test_cp_to_tensor_with_weights():
     A = tl.reshape(tl.arange(1, 5, dtype=float), (2, 2))
     B = tl.reshape(tl.arange(5, 9, dtype=float), (2, 2))
