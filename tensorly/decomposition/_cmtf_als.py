@@ -17,6 +17,7 @@ def coupled_matrix_tensor_3d_factorization(
     n_iter_max=100,
     tol=1e-6,
     normalize_factors=False,
+    mask=None,
 ):
     """
     Calculates a coupled matrix and tensor factorization of 3rd order tensor and matrix which are
@@ -49,6 +50,10 @@ def coupled_matrix_tensor_3d_factorization(
         matrix that is coupled with tensor in first mode: Y = [[A, V]]
     rank : int
         rank for CP decomposition of X
+    mask : tl.tensor, optional
+        Numeric 0/1 mask with the same shape as ``tensor_3d``. Missing entries
+        (zeros) in ``tensor_3d`` are imputed from the current factorization
+        during ALS. The matrix is assumed fully observed.
     tol : float, optional
         (Default: 1e-6) Relative reconstruction error tolerance. The
         algorithm is considered to have found the global minimum when the
@@ -63,6 +68,7 @@ def coupled_matrix_tensor_3d_factorization(
     rec_errors : list
         contains the reconstruction error of each iteration:
         error = 1 / 2 * | X - [[ lambda_; A, B, C ]] | ^ 2 + 1 / 2 * | Y - [[ gamma; A, V ]] | ^ 2
+        With ``mask``, only observed tensor entries contribute to this error.
 
     Examples
     --------
@@ -81,10 +87,20 @@ def coupled_matrix_tensor_3d_factorization(
     rank = validate_cp_rank(tl.shape(tensor_3d), rank=rank)
 
     # initialize values
-    tensor_cp = initialize_cp(tensor_3d, rank, init=init)
+    tensor_cp = initialize_cp(tensor_3d, rank, init=init, mask=mask)
     # the coupled factor should be initialized with the concatenated dataset
     coupled_unfold = tl.concatenate((tl.unfold(tensor_3d, 0), matrix), axis=1)
-    coupled_init = initialize_cp(coupled_unfold, rank, init=init)
+    if mask is not None:
+        coupled_mask = tl.concatenate(
+            (
+                tl.unfold(mask, 0),
+                tl.ones(tl.shape(matrix), **tl.context(matrix)),
+            ),
+            axis=1,
+        )
+    else:
+        coupled_mask = None
+    coupled_init = initialize_cp(coupled_unfold, rank, init=init, mask=coupled_mask)
     tensor_cp.factors[0] = coupled_init.factors[0]
 
     rec_errors = []
@@ -93,13 +109,17 @@ def coupled_matrix_tensor_3d_factorization(
     # note that the order of the khatri rao product is reversed since tl.unfold has another order
     # than assumed in paper
     for iteration in range(n_iter_max):
+        if mask is not None:
+            tensor_filled = tensor_3d * mask + cp_to_tensor(tensor_cp, mask=1 - mask)
+        else:
+            tensor_filled = tensor_3d
         V = tl.transpose(tl.lstsq(tensor_cp.factors[0], matrix)[0])
 
         # Loop over modes of the tensor
         # We want to solve for mode 0 last, since the coupled factor matrix is most influential and SVD gave us a good approximation
         for ii in reversed(range(tl.ndim(tensor_3d))):
             kr = khatri_rao(tensor_cp.factors, skip_matrix=ii)
-            unfolded = tl.unfold(tensor_3d, ii)
+            unfolded = tl.unfold(tensor_filled, ii)
 
             # If we are at the coupled mode, concat the matrix
             if ii == 0:
@@ -110,8 +130,11 @@ def coupled_matrix_tensor_3d_factorization(
                 tl.lstsq(kr, tl.transpose(unfolded))[0]
             )
 
+        tensor_residual = tensor_3d - cp_to_tensor(tensor_cp)
+        if mask is not None:
+            tensor_residual = tensor_residual * mask
         error_new = (
-            tl.norm(tensor_3d - cp_to_tensor(tensor_cp)) ** 2
+            tl.norm(tensor_residual) ** 2
             + tl.norm(matrix - cp_to_tensor((None, [tensor_cp.factors[0], V]))) ** 2
         )
 

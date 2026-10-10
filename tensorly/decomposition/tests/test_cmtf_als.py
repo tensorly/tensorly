@@ -52,3 +52,33 @@ def test_coupled_matrix_tensor_3d_factorization():
         < tol_max_abs,
         "abs norm of reconstruction error higher than tol",
     )
+
+
+def test_coupled_matrix_tensor_3d_factorization_with_mask():
+    rng = tl.check_random_state(7)
+    tensor_cp = random_cp((8, 6, 5), rank=2, random_state=rng)
+    matrix_cp = random_cp((8, 4), rank=2, random_state=rng)
+    matrix_cp.factors[0] = tensor_cp.factors[0]
+    tensor = cp_to_tensor(tensor_cp)
+    matrix = cp_to_tensor(matrix_cp)
+    mask = tl.tensor((rng.random_sample(tensor.shape) > 0.3).astype(float))
+    observed = tensor * mask
+
+    fitted_tensor, fitted_matrix, errors = coupled_matrix_tensor_3d_factorization(
+        observed, matrix, rank=2, mask=mask, n_iter_max=200
+    )
+    observed_error = (
+        tl.norm((tensor - cp_to_tensor(fitted_tensor)) * mask) ** 2
+        + tl.norm(matrix - cp_to_tensor(fitted_matrix)) ** 2
+    )
+    assert_(observed_error < 1e-3)
+    assert_(tl.abs(errors[-1] - observed_error) < 1e-5)
+
+    unmasked_tensor, unmasked_matrix, _ = coupled_matrix_tensor_3d_factorization(
+        observed, matrix, rank=2, n_iter_max=200
+    )
+    unmasked_observed_error = (
+        tl.norm((tensor - cp_to_tensor(unmasked_tensor)) * mask) ** 2
+        + tl.norm(matrix - cp_to_tensor(unmasked_matrix)) ** 2
+    )
+    assert_(observed_error < unmasked_observed_error / 100)
