@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from ...cp_tensor import cp_to_tensor, CPTensor
 from .._constrained_cp import (
     constrained_parafac,
@@ -12,6 +13,39 @@ from ...testing import (
     assert_class_wrapper_correctly_passes_arguments,
 )
 from ...random import random_cp
+
+
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+@pytest.mark.parametrize("device", [None, "cuda"])
+def test_constrained_parafac_preserves_context(dtype, device):
+    context = {"dtype": getattr(T, dtype)}
+    if device is not None:
+        if T.get_backend() != "pytorch":
+            pytest.skip("Explicit CUDA device selection requires the PyTorch backend")
+        import torch
+
+        if not torch.cuda.is_available():
+            pytest.skip("CUDA is not available")
+        context["device"] = device
+
+    tensor = T.tensor(
+        np.arange(1, 5)[:, None, None] * np.arange(1, 4)[None, :, None] * [1, 2],
+        **context,
+    )
+    decomposition = constrained_parafac(
+        tensor,
+        rank=1,
+        init="random",
+        random_state=0,
+        non_negative=True,
+        n_iter_max=4,
+        n_iter_max_inner=200,
+        tol_outer=0,
+    )
+    for factor in decomposition.factors:
+        assert T.context(factor) == T.context(tensor)
+        assert T.all(factor >= 0)
+    assert_array_almost_equal(cp_to_tensor(decomposition), tensor, decimal=4)
 
 
 def test_constrained_parafac_nonnegative(monkeypatch):

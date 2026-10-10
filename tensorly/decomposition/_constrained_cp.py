@@ -353,8 +353,10 @@ def constrained_parafac(
     dual_variables = []
     factors_aux = []
     for i in range(len(factors)):
-        dual_variables.append(tl.zeros(tl.shape(factors[i])))
-        factors_aux.append(tl.transpose(tl.zeros(tl.shape(factors[i]))))
+        dual_variables.append(tl.zeros(tl.shape(factors[i]), **tl.context(factors[i])))
+        factors_aux.append(
+            tl.transpose(tl.zeros(tl.shape(factors[i]), **tl.context(factors[i])))
+        )
 
     for iteration in range(n_iter_max):
         if verbose > 1:
