@@ -67,6 +67,9 @@ def test_validate_tr_rank():
     n_param = _tr_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)
 
+    # A small fraction of the parameters should still give a rank of at least 1
+    assert_equal(validate_tr_rank((3, 4, 5), rank=0.01), (1, 1, 1, 1))
+
     # Integer rank
     with assert_raises(ValueError):
         validate_tr_rank(tensor_shape, rank=(2, 3, 4, 2))
