@@ -242,6 +242,7 @@ for name in [
     "sign",
     "arange",
     "conj",
+    "real",
     "shape",
 ]:
     NumpySparseBackend.register_method(name, getattr(np, name))

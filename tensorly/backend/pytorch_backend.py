@@ -225,6 +225,7 @@ for name in (
         "is_tensor",
         "trace",
         "conj",
+        "real",
         "finfo",
         "log2",
         "digamma",

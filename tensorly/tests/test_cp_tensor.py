@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import tensorly as tl
 from ..tenalg import khatri_rao, mode_dot
@@ -25,6 +26,7 @@ from tensorly.testing import (
     assert_,
     assert_array_equal,
     assert_array_almost_equal,
+    assert_allclose,
 )
 
 
@@ -279,6 +281,45 @@ def test_cp_norm():
     true_res = tl.norm(rec, 2)
     res = cp_norm(cp_tensor)
     assert_(tl.abs(true_res - res) <= tol)
+
+
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+@pytest.mark.parametrize("complex_factors", [False, True])
+@pytest.mark.parametrize("weights", [[1j, 0], [1 + 2j, -2 + 0.5j], [1, -2], None])
+def test_cp_norm_complex_weights(dtype, complex_factors, weights):
+    dtype = getattr(tl, dtype)
+    factor_data = [
+        np.array([[1, 2], [3, -1]]),
+        np.array([[0.5, 4], [2, -3], [1, 2]]),
+    ]
+    if complex_factors:
+        factor_data[0] = factor_data[0] + 1j * np.array([[2, -1], [0.5, 3]])
+        factor_data[1] = factor_data[1] + 1j * np.array([[1, 0], [2, 1], [-1, 0.5]])
+    factors = [tl.tensor(factor, dtype=dtype) for factor in factor_data]
+    weights = None if weights is None else tl.tensor(weights, dtype=dtype)
+    dense = cp_to_tensor((weights, factors))
+    expected = tl.sqrt(tl.sum(tl.abs(dense) ** 2))
+
+    result = cp_norm((weights, factors))
+    assert_equal(tl.context(result)["dtype"], tl.context(expected)["dtype"])
+    assert_allclose(result, expected, rtol=1e-5, atol=1e-5)
+    assert_allclose(CPTensor((weights, factors)).norm(), expected, rtol=1e-5, atol=1e-5)
+
+
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+@pytest.mark.parametrize("weights", [[1, -2], None])
+def test_cp_norm_real_dtype(dtype, weights):
+    dtype = getattr(tl, dtype)
+    factors = [
+        tl.tensor([[1, 2], [3, -1]], dtype=dtype),
+        tl.tensor([[0.5, 4], [2, -3], [1, 2]], dtype=dtype),
+    ]
+    weights = None if weights is None else tl.tensor(weights, dtype=dtype)
+    expected = tl.norm(cp_to_tensor((weights, factors)))
+    result = cp_norm((weights, factors))
+    assert_equal(tl.context(result)["dtype"], dtype)
+    assert_allclose(result, expected, rtol=1e-5, atol=1e-5)
+    assert_allclose(CPTensor((weights, factors)).norm(), expected, rtol=1e-5, atol=1e-5)
 
 
 def testvalidate_cp_rank():
