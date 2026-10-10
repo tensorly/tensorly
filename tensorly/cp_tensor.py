@@ -276,7 +276,9 @@ def validate_cp_rank(tensor_shape, rank="same", rounding="round"):
         rank = float(1)
 
     if isinstance(rank, float):
-        rank = int(rounding_fun(np.prod(tensor_shape) * rank / np.sum(tensor_shape)))
+        rank = max(
+            int(rounding_fun(np.prod(tensor_shape) * rank / np.sum(tensor_shape))), 1
+        )
     return rank
 
 

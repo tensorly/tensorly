@@ -296,6 +296,9 @@ def testvalidate_cp_rank():
     n_param = _cp_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor)
 
+    # A small fraction of the parameters should still give a rank of at least 1
+    assert_equal(validate_cp_rank((3, 4, 5), rank=0.1), 1)
+
 
 def test_cp_lstsq_grad():
     """Validate the gradient calculation between a CP and dense tensor."""
