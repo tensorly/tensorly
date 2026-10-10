@@ -643,7 +643,9 @@ def cp_norm(cp_tensor):
 
     if weights is not None:
         # norm = T.dot(T.dot(weights, norm), weights)
-        norm = norm * (T.reshape(weights, (-1, 1)) * T.reshape(weights, (1, -1)))
+        norm = norm * (
+            T.reshape(weights, (-1, 1)) * T.conj(T.reshape(weights, (1, -1)))
+        )
 
     # We sum even if weights is not None
     return T.sqrt(T.sum(norm))
