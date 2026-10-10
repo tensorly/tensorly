@@ -209,6 +209,13 @@ def test_tucker_mode_dot():
     assert_equal(res.shape, true_res.shape)
     assert_array_almost_equal(true_res, res, decimal=5)
 
+    # Test tucker_mode_dot with vec, keeping the contracted mode
+    res = tucker_mode_dot(tucker_ten, vec, mode=2, keep_dim=True, copy=True)
+    res = tucker_to_tensor(res)
+    true_res = tl.reshape(mode_dot(full_tensor, vec, mode=2), shape[:2] + (1,))
+    assert_equal(res.shape, true_res.shape)
+    assert_array_almost_equal(true_res, res, decimal=5)
+
 
 def test_n_param_tucker():
     """Test for _tucker_n_param"""
