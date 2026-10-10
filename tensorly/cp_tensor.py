@@ -648,7 +648,7 @@ def cp_norm(cp_tensor):
         )
 
     # We sum even if weights is not None
-    return T.sqrt(T.sum(norm))
+    return T.sqrt(T.real(T.sum(norm)))
 
 
 def cp_permute_factors(ref_cp_tensor, tensors_to_permute):

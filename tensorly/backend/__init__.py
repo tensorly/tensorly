@@ -55,6 +55,7 @@ class BackendManager(types.ModuleType):
         "argmax",
         "stack",
         "conj",
+        "real",
         "diag",
         "log",
         "log2",

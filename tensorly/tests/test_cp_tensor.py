@@ -297,9 +297,28 @@ def test_cp_norm_complex_weights(dtype, complex_factors, weights):
         factor_data[1] = factor_data[1] + 1j * np.array([[1, 0], [2, 1], [-1, 0.5]])
     factors = [tl.tensor(factor, dtype=dtype) for factor in factor_data]
     weights = None if weights is None else tl.tensor(weights, dtype=dtype)
-    expected = tl.norm(cp_to_tensor((weights, factors)))
+    dense = cp_to_tensor((weights, factors))
+    expected = tl.sqrt(tl.sum(tl.abs(dense) ** 2))
 
-    assert_allclose(cp_norm((weights, factors)), expected, rtol=1e-5, atol=1e-5)
+    result = cp_norm((weights, factors))
+    assert_equal(tl.context(result)["dtype"], tl.context(expected)["dtype"])
+    assert_allclose(result, expected, rtol=1e-5, atol=1e-5)
+    assert_allclose(CPTensor((weights, factors)).norm(), expected, rtol=1e-5, atol=1e-5)
+
+
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+@pytest.mark.parametrize("weights", [[1, -2], None])
+def test_cp_norm_real_dtype(dtype, weights):
+    dtype = getattr(tl, dtype)
+    factors = [
+        tl.tensor([[1, 2], [3, -1]], dtype=dtype),
+        tl.tensor([[0.5, 4], [2, -3], [1, 2]], dtype=dtype),
+    ]
+    weights = None if weights is None else tl.tensor(weights, dtype=dtype)
+    expected = tl.norm(cp_to_tensor((weights, factors)))
+    result = cp_norm((weights, factors))
+    assert_equal(tl.context(result)["dtype"], dtype)
+    assert_allclose(result, expected, rtol=1e-5, atol=1e-5)
     assert_allclose(CPTensor((weights, factors)).norm(), expected, rtol=1e-5, atol=1e-5)
 
 
