@@ -268,6 +268,13 @@ def test_cp_mode_dot():
     assert_equal(res.shape, true_res.shape)
     assert_array_almost_equal(true_res, res)
 
+    # Test cp_mode_dot with vec, keeping the contracted mode
+    res = cp_mode_dot(cp_ten, vec, mode=2, keep_dim=True, copy=True)
+    res = tl.cp_to_tensor(res)
+    true_res = tl.reshape(mode_dot(full_tensor, vec, mode=2), shape[:2] + (1,))
+    assert_equal(res.shape, true_res.shape)
+    assert_array_almost_equal(true_res, res)
+
 
 def test_cp_norm():
     """Test for cp_norm"""
