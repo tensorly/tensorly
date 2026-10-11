@@ -18,9 +18,11 @@ jobs:
           - BACKEND: 'jax'
             python-version: '3.13'
             TENSORLY_TENALG_BACKEND: 'einsum'
+            TESTMON: true
           - BACKEND: 'tensorflow'
             python-version: '3.12'
             TENSORLY_TENALG_BACKEND: 'einsum'
+            TESTMON: true
 
     steps:
     - uses: actions/checkout@v5
@@ -60,12 +62,47 @@ jobs:
       run: |
         python -m pip install -e .
 
+    # pytest-testmon (jax and tensorflow only) records which code each test
+    # executes and, on branches other than main, re-runs only the affected tests.
+    # One database per backend and environment; main always runs everything and
+    # refreshes it. Installed package versions are part of the key, since testmon
+    # does not track them.
+    - name: Compute testmon cache key
+      if: matrix.TESTMON
+      id: testmon
+      run: |
+        echo "env=$(python -m pip freeze | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore testmon data
+      if: matrix.TESTMON
+      uses: actions/cache@v6
+      with:
+        path: .testmondata
+        key: testmon-${{matrix.BACKEND}}-${{matrix.python-version}}-${{steps.testmon.outputs.env}}-${{hashFiles('.github/workflows/test.yml')}}-${{github.sha}}
+        restore-keys: |
+          testmon-${{matrix.BACKEND}}-${{matrix.python-version}}-${{steps.testmon.outputs.env}}-${{hashFiles('.github/workflows/test.yml')}}-
+
     - name: Test with backend ${{matrix.BACKEND}} pytest and coverage
+      # Full run with coverage: every backend on main and tags, and numpy, pytorch
+      # and paddle everywhere.
+      if: ${{ !matrix.TESTMON || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') }}
       run: |
         TENSORLY_BACKEND=${{matrix.BACKEND}} TENSORLY_TENALG_BACKEND=${{matrix.TENSORLY_TENALG_BACKEND || 'core'}} pytest -vv --cov tensorly --cov-report xml --durations=10 tensorly
 
+    - name: Refresh testmon data with backend ${{matrix.BACKEND}}
+      # testmon cannot collect data while coverage is running, hence a second run.
+      if: ${{ matrix.TESTMON && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) }}
+      run: |
+        TENSORLY_BACKEND=${{matrix.BACKEND}} TENSORLY_TENALG_BACKEND=${{matrix.TENSORLY_TENALG_BACKEND || 'core'}} pytest -vv --testmon-noselect --durations=10 tensorly
+
+    - name: Test only affected tests with backend ${{matrix.BACKEND}}
+      if: ${{ matrix.TESTMON && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
+      run: |
+        TENSORLY_BACKEND=${{matrix.BACKEND}} TENSORLY_TENALG_BACKEND=${{matrix.TENSORLY_TENALG_BACKEND || 'core'}} pytest -vv --testmon --durations=10 tensorly
+
     - name: Check coverage with CodeCov
-      uses: codecov/codecov-action@v5
+      if: ${{ hashFiles('coverage.xml') != '' }}
+      uses: codecov/codecov-action@v7
       with:
-        file: ./coverage.xml
+        files: ./coverage.xml
         verbose: true
