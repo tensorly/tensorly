@@ -128,7 +128,7 @@ def admm(
     for iteration in range(n_iter_max):
         x_old = tl.copy(x)
         x_split = tl.solve(
-            tl.transpose(UtU + rho * tl.eye(tl.shape(UtU)[1])),
+            tl.transpose(UtU + rho * tl.eye(tl.shape(UtU)[1], **tl.context(UtU))),
             tl.transpose(UtM + rho * (x + dual_var)),
         )
         x = proximal_operator(
