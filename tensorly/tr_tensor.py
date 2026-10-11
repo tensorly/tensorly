@@ -191,7 +191,9 @@ def validate_tr_rank(tensor_shape, rank="same", rounding="round"):
         n_param_tensor = np.prod(tensor_shape) * rank
 
         # R_k I_k R_{k+1} = R^2 I_k
-        solution = int(rounding_fun(np.sqrt(n_param_tensor / np.sum(tensor_shape))))
+        solution = max(
+            int(rounding_fun(np.sqrt(n_param_tensor / np.sum(tensor_shape)))), 1
+        )
         rank = (solution,) * (n_dim + 1)
 
     else:

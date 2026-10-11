@@ -220,7 +220,7 @@ def validate_tt_rank(
         delta = np.sqrt(b**2 - 4 * a * c)
 
         # We get the non-negative solution
-        solution = int(rounding_fun((-b + delta) / (2 * a)))
+        solution = max(int(rounding_fun((-b + delta) / (2 * a))), 1)
         rank = rank = (1,) + (solution,) * (order - 1) + (1,)
 
     elif isinstance(rank, float):

@@ -147,6 +147,10 @@ def test_validate_tt_rank():
     n_param = _tt_n_param(tensor_shape, rank)
     assert_(n_param >= n_param_tensor * coef)
 
+    # A small fraction of the parameters should still give ranks of at least 1
+    rank = validate_tt_rank((3, 4, 5), rank=0.01, constant_rank=True)
+    assert_equal(tuple(rank), (1, 1, 1, 1))
+
 
 @pytest.mark.parametrize("n_pad", [1, 2])
 def test_pad_tt_rank(n_pad):
