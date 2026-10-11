@@ -71,6 +71,7 @@ from .backend import (
     eye,
     where,
     conj,
+    real,
     index,
     index_update,
     clip,

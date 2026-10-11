@@ -955,6 +955,11 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
+    def real(x):
+        """Return the real part of a tensor, element-wise."""
+        raise NotImplementedError
+
+    @staticmethod
     def sort(tensor, axis):
         """Return a sorted copy of an array
 

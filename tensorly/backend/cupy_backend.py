@@ -79,6 +79,7 @@ for name in (
         "stack",
         "sign",
         "conj",
+        "real",
         "diag",
         "tensordot",
         "log2",
