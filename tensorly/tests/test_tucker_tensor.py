@@ -304,3 +304,34 @@ def test_tucker_copy():
     assert_array_almost_equal(
         tucker_to_tensor((core, factors)), tucker_to_tensor(tucker_tensor)
     )
+
+
+def test_validate_tucker_rank_fixed_factor_budget():
+    shape = (5, 4, 2, 3, 49)
+    rank = validate_tucker_rank(shape, rank=0.5, rounding="floor", fixed_modes=[1, 4])
+    assert_equal(rank[1], shape[1])
+    assert_equal(rank[4], shape[4])
+    assert_(_tucker_n_param(shape, rank) <= np.prod(shape) * 0.5)
+
+
+def test_validate_tucker_rank_infeasible_fixed_budget():
+    shape = (5, 4, 2, 3, 49)
+    # Even unit ranks on every compressible mode exceed this budget.
+    rank = validate_tucker_rank(shape, rank=0.01, fixed_modes=[1, 4])
+    assert_equal(rank, [1, 4, 1, 1, 49])
+    assert_raises(ValueError, validate_tucker_rank, shape, rank=-0.5)
+
+
+def test_validate_tucker_rank_all_modes_fixed():
+    shape = (3, 4, 5)
+    rank = validate_tucker_rank(shape, rank=0.5, fixed_modes=[0, 1, 2])
+    assert_equal(rank, list(shape))
+
+
+def test_validate_tucker_rank_fixed_budget_with_unit_ranks():
+    shape = (2, 49, 7, 2, 4)
+    rank = validate_tucker_rank(shape, rank=0.5, rounding="floor", fixed_modes=[1, 4])
+    assert_equal(rank[1], shape[1])
+    assert_equal(rank[4], shape[4])
+    assert_(min(rank) >= 1)
+    assert_(_tucker_n_param(shape, rank) <= np.prod(shape) * 0.5)
