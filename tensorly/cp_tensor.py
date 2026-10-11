@@ -587,6 +587,8 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
     --------
     cp_multi_mode_dot : chaining several mode_dot in one call
     """
+    if not isinstance(cp_tensor, CPTensor):
+        cp_tensor = CPTensor(cp_tensor)
     shape, _ = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
     contract = False
