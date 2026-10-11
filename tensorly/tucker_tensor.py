@@ -204,7 +204,10 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
                 f"shapes {shape} and {matrix_or_vector.shape} not aligned for mode-{mode} multiplication: "
                 f"{shape[mode]} (mode = {mode}) != {matrix_or_vector.shape[0]} (vector size)"
             )
-        if not keep_dim:
+        if keep_dim:
+            # Keep the mode with size 1 by using the vector as a (1, i_k) matrix
+            matrix_or_vector = tl.reshape(matrix_or_vector, (1, -1))
+        else:
             contract = True  # Contract over that mode
     else:
         raise ValueError("Can only take n_mode_product with a vector or a matrix.")
@@ -214,7 +217,6 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
         core = tl.copy(core)
 
     if contract:
-        print("contracting mode")
         f = factors.pop(mode)
         core = mode_dot(core, tl.dot(matrix_or_vector, f), mode=mode)
     else:
