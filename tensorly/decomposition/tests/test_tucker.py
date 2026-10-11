@@ -77,6 +77,39 @@ def test_partial_tucker():
         assert_array_equal(factor1, factor2)
 
 
+@pytest.mark.parametrize("modes", [(0, 1), (1, 2), (0, 2), (2, 0)])
+def test_partial_tucker_random_initial_core_shape(modes):
+    """Random initialization keeps the axes that are not decomposed."""
+    tensor = tl.ones((4, 5, 6))
+    ranks = (2, 3)
+
+    core, factors = initialize_tucker(
+        tensor, ranks, modes, random_state=0, init="random"
+    )
+
+    shape = list(tensor.shape)
+    for mode, rank, factor in zip(modes, ranks, factors):
+        shape[mode] = rank
+        assert factor.shape == (tensor.shape[mode], rank)
+    assert core.shape == tuple(shape)
+    assert tl.context(core) == tl.context(tensor)
+
+
+@pytest.mark.parametrize("modes", [(0, 1), (1, 2), (0, 2)])
+def test_partial_tucker_random_all_observed(modes):
+    """An all-observed mask agrees with unmasked random initialization."""
+    tensor = tl.tensor(tl.check_random_state(0).random_sample((4, 5, 6)))
+    kwargs = dict(rank=(2, 3), modes=modes, init="random", random_state=1, n_iter_max=3)
+
+    mask = tl.ones(tensor.shape, **tl.context(tensor))
+    (core, factors), _ = partial_tucker(tensor, mask=mask, **kwargs)
+    (expected_core, expected_factors), _ = partial_tucker(tensor, **kwargs)
+
+    assert_array_equal(core, expected_core)
+    for factor, expected_factor in zip(factors, expected_factors):
+        assert_array_equal(factor, expected_factor)
+
+
 def test_tucker(monkeypatch):
     """Test for the Tucker decomposition"""
     rng = tl.check_random_state(1234)

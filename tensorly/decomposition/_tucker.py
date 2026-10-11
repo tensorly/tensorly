@@ -108,10 +108,13 @@ def initialize_tucker(
 
     elif init == "random":
         rng = tl.check_random_state(random_state)
+        core_shape = list(tl.shape(tensor))
+        for index, mode in enumerate(modes):
+            core_shape[mode] = rank[index]
         core = tl.tensor(
-            rng.random_sample([rank[index] for index in range(len(modes))]) + 0.01,
+            rng.random_sample(core_shape) + 0.01,
             **tl.context(tensor),
-        )  # Check this
+        )
         factors = [
             tl.tensor(
                 rng.random_sample((tensor.shape[mode], rank[index])),
