@@ -284,12 +284,13 @@ def test_score_vector_target(tensor_input, vector_fit_target):
 
 @pytest.mark.parametrize("tensor_features", [False, True])
 @pytest.mark.parametrize("all_constant", [False, True])
-def test_cp_plsr_constant_target_columns(tensor_features, all_constant):
+@pytest.mark.parametrize("constant_value", [5.0, 0.1])
+def test_cp_plsr_constant_target_columns(tensor_features, all_constant, constant_value):
     scores = tl.tensor(np.arange(-5.0, 6.0))
     X = tl.reshape(scores, (-1, 1)) * tl.tensor([[1.0, -2.0, 3.0]])
     if tensor_features:
         X = tl.reshape(X, (11, 3, 1)) * tl.tensor([[[1.0, 2.0]]])
-    constant = tl.ones((11,), **tl.context(X)) * 5
+    constant = tl.ones((11,), **tl.context(X)) * constant_value
     second = constant * 2 if all_constant else scores * 2
     Y = tl.stack([constant, second], axis=1)
     model = CP_PLSR(n_components=3 if all_constant else 1, random_state=1234).fit(X, Y)
