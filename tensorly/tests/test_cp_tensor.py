@@ -378,3 +378,29 @@ def test_cp_permute_factors():
     assert_array_almost_equal(permutation[1], col_order_2)
     assert_array_almost_equal(cp_to_tensor(cp_tensors[0]), cp_to_tensor(cp_tensor_2))
     assert_array_almost_equal(cp_to_tensor(cp_tensors[1]), cp_to_tensor(cp_tensor_3))
+
+
+def test_cp_norm_vector_factors():
+    vectors = [tl.tensor([1.0, -2.0]), tl.tensor([3.0, 4.0, -5.0])]
+    for columns in [(False, False), (True, False), (False, True), (True, True)]:
+        factors = [
+            tl.reshape(f, (-1, 1)) if column else f
+            for f, column in zip(vectors, columns)
+        ]
+        for weight in [None, 0.0, -2.0, 3.0]:
+            weights = None if weight is None else tl.tensor([weight])
+            expected = (
+                tl.norm(vectors[0])
+                * tl.norm(vectors[1])
+                * (1 if weight is None else abs(weight))
+            )
+            np.testing.assert_allclose(
+                tl.to_numpy(cp_norm((weights, factors))),
+                tl.to_numpy(expected),
+                rtol=1e-6,
+            )
+            np.testing.assert_allclose(
+                tl.to_numpy(CPTensor((weights, factors)).norm()),
+                tl.to_numpy(expected),
+                rtol=1e-6,
+            )

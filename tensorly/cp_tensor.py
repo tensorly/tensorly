@@ -645,11 +645,13 @@ def cp_norm(cp_tensor):
     You can see this using the fact that
     khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
     """
-    _ = _validate_cp_tensor(cp_tensor)
+    _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
 
-    norm = T.ones((factors[0].shape[1], factors[0].shape[1]), **T.context(factors[0]))
+    norm = T.ones((rank, rank), **T.context(factors[0]))
     for f in factors:
+        if rank == 1 and T.ndim(f) == 1:
+            f = T.reshape(f, (-1, 1))
         norm = norm * T.dot(T.transpose(f), T.conj(f))
 
     if weights is not None:
