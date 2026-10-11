@@ -60,6 +60,7 @@ for name in (
         "sign",
         "stack",
         "conj",
+        "real",
         "diag",
         "log",
         "log2",

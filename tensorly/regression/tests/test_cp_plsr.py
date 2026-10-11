@@ -260,3 +260,23 @@ def test_transform_same_factors():
 
     assert_allclose(X_scores, tpls.X_factors[0][rord, :])
     assert_allclose(Y_scores, tpls.Y_factors[0][rord, :])
+
+
+@pytest.mark.parametrize("tensor_input", [False, True])
+@pytest.mark.parametrize("vector_fit_target", [False, True])
+def test_score_vector_target(tensor_input, vector_fit_target):
+    """Vector and column targets compare the same paired residuals."""
+    values = np.random.RandomState(123).normal(size=(30, 4, 3))
+    targets = values[:, 0, 0] - 2 * values[:, 1, 2]
+    X = tl.tensor(values if tensor_input else values.reshape(30, -1))
+    Y = tl.tensor(targets)
+    column_Y = tl.reshape(Y, (-1, 1))
+    model = CP_PLSR(n_components=2).fit(X, Y if vector_fit_target else column_Y)
+    predictions = tl.to_numpy(model.predict(X)).reshape(-1)
+    expected = 1 - np.sum((predictions - targets) ** 2) / np.sum(
+        (targets - targets.mean()) ** 2
+    )
+
+    assert_allclose(model.score(X, Y), expected)
+    assert_allclose(model.score(X, Y), model.score(X, column_Y))
+    assert_allclose(Y, tl.tensor(targets))

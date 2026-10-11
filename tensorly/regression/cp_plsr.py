@@ -319,9 +319,11 @@ class CP_PLSR:
         X : ndarray
             tensor data of shape (n_samples, N1, ..., NS), same dimension as the X
             in self.fit() all except the first dimension
-        Y : 2D-array of shape (n_samples, n_predictions)
+        Y : array of shape (n_samples,) or (n_samples, n_predictions)
             the ground truth labels associated with each sample
         """
         from ..metrics.regression import R2_score
 
+        if T.ndim(Y) == 1:
+            Y = T.reshape(Y, (-1, 1))
         return R2_score(Y - self.Y_mean_, self.predict(X) - self.Y_mean_)

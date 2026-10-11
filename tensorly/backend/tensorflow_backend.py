@@ -174,6 +174,7 @@ for name in (
         "argmin",
         "argmax",
         "conj",
+        "real",
         "tensordot",
         "stack",
         "copy",

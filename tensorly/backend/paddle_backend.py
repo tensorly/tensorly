@@ -278,6 +278,11 @@ class PaddleBackend(Backend, backend_name="paddle"):
         """paddle.sign does not support complex numbers."""
         return paddle.sgn(tensor)
 
+    @staticmethod
+    def real(tensor: paddle.Tensor):
+        """paddle.real supports only complex tensors."""
+        return paddle.real(tensor) if paddle.is_complex(tensor) else tensor
+
 
 # Register the other functions
 for name in (

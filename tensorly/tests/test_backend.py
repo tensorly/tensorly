@@ -21,6 +21,26 @@ from tensorly.tenalg.svd import SVD_FUNS, svd_interface
 # Author: Jean Kossaifi
 
 
+@pytest.mark.parametrize("dtype", ["float32", "float64", "complex64", "complex128"])
+@pytest.mark.parametrize("scalar", [False, True])
+def test_real(dtype, scalar):
+    values = np.array([1.5, -2.0])
+    if dtype.startswith("complex"):
+        values = values + 1j * np.array([3.0, -4.0])
+    if scalar:
+        values = values[0]
+    tensor = tl.tensor(values, dtype=getattr(tl, dtype))
+    result = tl.real(tensor)
+    expected_dtype = getattr(
+        tl, {"complex64": "float32", "complex128": "float64"}.get(dtype, dtype)
+    )
+    assert_equal(tl.context(result)["dtype"], expected_dtype)
+    assert_equal(tl.shape(result), tl.shape(tensor))
+    assert_allclose(result, np.real(values))
+    assert_allclose(tl.to_numpy(tensor), values)
+    assert_allclose(T.real(tensor), result)
+
+
 def test_set_backend():
     torch = pytest.importorskip("torch")
     paddle = pytest.importorskip("paddle")
