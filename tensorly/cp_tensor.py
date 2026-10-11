@@ -355,8 +355,10 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
     -------
     CPTensor = (normalisation_weights, normalised_factors)
     """
-    _validate_cp_tensor(cp_tensor)
+    _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
+    if weights is None:
+        weights = T.ones(rank, **T.context(factors[0]))
 
     if func is None:
         func = T.mean
@@ -368,6 +370,13 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
 
         # Calculate the sign of the current factor in each component
         column_signs = T.sign(func(factors[jj], axis=0))
+        # A zero summary does not imply a zero component. Leave its sign
+        # unchanged rather than erasing it in both factors.
+        column_signs = T.where(
+            column_signs == 0,
+            T.ones(T.shape(column_signs), **T.context(column_signs)),
+            column_signs,
+        )
 
         # Update both the current and receiving factor
         factors[mode] = factors[mode] * column_signs[np.newaxis, :]
