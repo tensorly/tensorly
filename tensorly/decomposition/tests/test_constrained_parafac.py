@@ -14,6 +14,32 @@ from ...testing import (
 from ...random import random_cp
 
 
+def test_constrained_parafac_does_not_stop_when_only_admm_is_feasible():
+    """An exact ADMM split is not convergence of the outer CP optimization."""
+    rng = np.random.RandomState(623)
+    shape = (8, 7, 6)
+    tensor = cp_to_tensor(
+        random_cp(shape, rank=2, random_state=rng, normalise_factors=False)
+    )
+    tensor += T.tensor(0.001 * rng.random_sample(shape), **T.context(tensor))
+    init = random_cp(shape, rank=2, random_state=1, normalise_factors=False)
+
+    _, errors = constrained_parafac(
+        tensor,
+        rank=2,
+        init=init,
+        non_negative=True,
+        tol_outer=1e-8,
+        n_iter_max=12,
+        return_errors=True,
+    )
+
+    # The split is already feasible after two iterations, while the
+    # reconstruction error is still falling substantially.
+    assert len(errors) > 2
+    assert float(T.to_numpy(errors[-1])) < float(T.to_numpy(errors[1])) - 1e-3
+
+
 def test_constrained_parafac_nonnegative(monkeypatch):
     """Test for the CANDECOMP-PARAFAC decomposition with ADMM under nonnegativity constraints"""
     rng = T.check_random_state(1234)
