@@ -90,8 +90,8 @@ def test_partial_tucker_random_initial_core_shape(modes):
     shape = list(tensor.shape)
     for mode, rank, factor in zip(modes, ranks, factors):
         shape[mode] = rank
-        assert factor.shape == (tensor.shape[mode], rank)
-    assert core.shape == tuple(shape)
+        assert tl.shape(factor) == (tensor.shape[mode], rank)
+    assert tl.shape(core) == tuple(shape)
     assert tl.context(core) == tl.context(tensor)
 
 
