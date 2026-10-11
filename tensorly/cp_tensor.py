@@ -5,7 +5,7 @@ Core operations on CP tensors.
 from . import backend as T
 from .base import fold, tensor_to_vec
 from ._factorized_tensor import FactorizedTensor
-from .tenalg import khatri_rao, unfolding_dot_khatri_rao
+from .tenalg import khatri_rao, outer, unfolding_dot_khatri_rao
 from .metrics.factors import congruence_coefficient
 import numpy as np
 
@@ -449,6 +449,7 @@ def cp_to_tensor(cp_tensor, mask=None):
         factors is a list of factor matrices, all with the same number of columns
         i.e. for all matrix U in factor_matrices:
         U has shape ``(s_i, R)``, where R is fixed and s_i varies with i
+        For rank one, factors may also be vectors of shape ``(s_i,)``.
 
     mask : ndarray a mask to be applied to the final tensor. It should be
         broadcastable to the shape of the final tensor, that is
@@ -468,12 +469,22 @@ def cp_to_tensor(cp_tensor, mask=None):
     summing over r and updating an outer product of vectors.
 
     """
-    shape, _ = _validate_cp_tensor(cp_tensor)
+    shape, rank = _validate_cp_tensor(cp_tensor)
 
     if not shape:  # 0-order tensor
         return cp_tensor
 
     weights, factors = cp_tensor
+    if rank == 1 and any(T.ndim(factor) == 1 for factor in factors):
+        # The rank-one factors may be vectors, while the dot/Khatri-Rao path
+        # below expects matrices with an explicit rank dimension.
+        full_tensor = outer([T.reshape(factor, (-1,)) for factor in factors])
+        if weights is not None:
+            full_tensor = weights[0] * full_tensor
+        if mask is not None:
+            full_tensor = full_tensor * mask
+        return full_tensor
+
     if len(shape) == 1:  # just a vector
         return T.sum(weights * factors[0], axis=1)
 
@@ -636,11 +647,13 @@ def cp_norm(cp_tensor):
     You can see this using the fact that
     khatria-rao(A, B)^T x khatri-rao(A, B) = A^T x A  * B^T x B
     """
-    _ = _validate_cp_tensor(cp_tensor)
+    _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
 
-    norm = T.ones((factors[0].shape[1], factors[0].shape[1]), **T.context(factors[0]))
+    norm = T.ones((rank, rank), **T.context(factors[0]))
     for f in factors:
+        if rank == 1 and T.ndim(f) == 1:
+            f = T.reshape(f, (-1, 1))
         norm = norm * T.dot(T.transpose(f), T.conj(f))
 
     if weights is not None:

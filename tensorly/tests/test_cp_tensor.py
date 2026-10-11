@@ -174,6 +174,22 @@ def test_cp_to_tensor():
         matrices.insert(i, U_i)
 
 
+def test_cp_to_tensor_with_vector_factors():
+    vectors = [tl.tensor([1.0, 2.0]), tl.tensor([3.0, 4.0, 5.0])]
+    expected = tl.tenalg.outer(vectors)
+    mask = tl.tensor([[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]])
+
+    assert_array_equal(cp_to_tensor((None, vectors)), expected)
+    assert_array_equal(cp_to_tensor((None, [vectors[0]])), vectors[0])
+    assert_array_equal(cp_to_tensor((tl.tensor([2.0]), vectors)), 2 * expected)
+    assert_array_equal(cp_to_tensor((None, vectors), mask=mask), expected * mask)
+    assert_array_equal(cp_to_tensor(CPTensor((None, vectors))), expected)
+    assert_array_equal(
+        cp_to_tensor((None, [tl.reshape(vectors[0], (-1, 1)), vectors[1]])),
+        expected,
+    )
+
+
 def test_cp_to_tensor_with_weights():
     A = tl.reshape(tl.arange(1, 5, dtype=float), (2, 2))
     B = tl.reshape(tl.arange(5, 9, dtype=float), (2, 2))
@@ -406,3 +422,29 @@ def test_cp_permute_factors():
     assert_array_almost_equal(permutation[1], col_order_2)
     assert_array_almost_equal(cp_to_tensor(cp_tensors[0]), cp_to_tensor(cp_tensor_2))
     assert_array_almost_equal(cp_to_tensor(cp_tensors[1]), cp_to_tensor(cp_tensor_3))
+
+
+def test_cp_norm_vector_factors():
+    vectors = [tl.tensor([1.0, -2.0]), tl.tensor([3.0, 4.0, -5.0])]
+    for columns in [(False, False), (True, False), (False, True), (True, True)]:
+        factors = [
+            tl.reshape(f, (-1, 1)) if column else f
+            for f, column in zip(vectors, columns)
+        ]
+        for weight in [None, 0.0, -2.0, 3.0]:
+            weights = None if weight is None else tl.tensor([weight])
+            expected = (
+                tl.norm(vectors[0])
+                * tl.norm(vectors[1])
+                * (1 if weight is None else abs(weight))
+            )
+            np.testing.assert_allclose(
+                tl.to_numpy(cp_norm((weights, factors))),
+                tl.to_numpy(expected),
+                rtol=1e-6,
+            )
+            np.testing.assert_allclose(
+                tl.to_numpy(CPTensor((weights, factors)).norm()),
+                tl.to_numpy(expected),
+                rtol=1e-6,
+            )
