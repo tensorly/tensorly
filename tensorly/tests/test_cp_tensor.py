@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import pytest
 
 import tensorly as tl
 from ..tenalg import khatri_rao, mode_dot
