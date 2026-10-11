@@ -19,10 +19,13 @@ def higher_order_moment(tensor, order):
         if tensor is a matrix of size (n_samples, n_features),
         tensor of size (n_features, )*order
     """
-    batch = ord("a")
-    start = batch + 1
-    tensor_sym = [f"{chr(start+i)}" for i, _ in enumerate(tensor.shape)]
-    out_sym = tensor_sym[1:] * order
-    eq = "".join(tensor_sym) + "->" + "".join(out_sym)
+    batch = "a"
+    start = ord(batch) + 1
+    n_features = tl.ndim(tensor) - 1
+    feature_syms = [
+        "".join(chr(start + i * n_features + j) for j in range(n_features))
+        for i in range(order)
+    ]
+    eq = ",".join(batch + sym for sym in feature_syms) + "->" + "".join(feature_syms)
 
-    return tl.einsum(eq, tensor)
+    return tl.einsum(eq, *([tensor] * order)) / tl.shape(tensor)[0]
