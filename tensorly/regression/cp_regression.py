@@ -95,11 +95,16 @@ class CPRegressor:
             for i in range(len(W)):
                 if i < T.ndim(X) - 1:
                     X_unfolded = partial_unfold(X, i, skip_begin=1)
+                    # With one feature mode and scalar targets, there are
+                    # no other factors: their empty product is a row of ones.
+                    other_factors = (
+                        T.ones((1, self.weight_rank), **T.context(X))
+                        if len(W) == 1
+                        else khatri_rao(W, skip_matrix=i)
+                    )
                     phi = T.dot(
                         X_unfolded,
-                        T.reshape(
-                            khatri_rao(W, skip_matrix=i), (X_unfolded.shape[-1], -1)
-                        ),
+                        T.reshape(other_factors, (X_unfolded.shape[-1], -1)),
                     )
                     phi = T.transpose(
                         T.reshape(
