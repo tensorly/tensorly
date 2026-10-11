@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from ...cp_tensor import cp_to_tensor, CPTensor
 from .._constrained_cp import (
     constrained_parafac,
@@ -12,6 +13,39 @@ from ...testing import (
     assert_class_wrapper_correctly_passes_arguments,
 )
 from ...random import random_cp
+
+
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+@pytest.mark.parametrize("device", [None, "cuda"])
+def test_constrained_parafac_preserves_context(dtype, device):
+    context = {"dtype": getattr(T, dtype)}
+    if device is not None:
+        if T.get_backend() != "pytorch":
+            pytest.skip("Explicit CUDA device selection requires the PyTorch backend")
+        import torch
+
+        if not torch.cuda.is_available():
+            pytest.skip("CUDA is not available")
+        context["device"] = device
+
+    tensor = T.tensor(
+        np.arange(1, 5)[:, None, None] * np.arange(1, 4)[None, :, None] * [1, 2],
+        **context,
+    )
+    decomposition = constrained_parafac(
+        tensor,
+        rank=1,
+        init="random",
+        random_state=0,
+        non_negative=True,
+        n_iter_max=4,
+        n_iter_max_inner=200,
+        tol_outer=0,
+    )
+    for factor in decomposition.factors:
+        assert T.context(factor) == T.context(tensor)
+        assert T.all(factor >= 0)
+    assert_array_almost_equal(cp_to_tensor(decomposition), tensor, decimal=4)
 
 
 def test_constrained_parafac_does_not_stop_when_only_admm_is_feasible():
@@ -38,6 +72,17 @@ def test_constrained_parafac_does_not_stop_when_only_admm_is_feasible():
     # reconstruction error is still falling substantially.
     assert len(errors) > 2
     assert float(T.to_numpy(errors[-1])) < float(T.to_numpy(errors[1])) - 1e-3
+
+
+def test_constrained_parafac_l1_factor_collapse():
+    """An l1 penalty can shrink a factor to zero; the ADMM solve must not become singular."""
+    rng = np.random.RandomState(0)
+    tensor = T.tensor(rng.random_sample((6, 8, 10)))
+
+    factors = constrained_parafac(tensor, rank=3, l1_reg=0.05, random_state=0)[1]
+
+    for factor in factors:
+        assert np.all(np.isfinite(T.to_numpy(factor)))
 
 
 def test_constrained_parafac_nonnegative(monkeypatch):

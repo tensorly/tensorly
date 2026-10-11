@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import pytest
 
 import tensorly as tl
 from ..tenalg import khatri_rao, mode_dot
@@ -174,6 +175,22 @@ def test_cp_to_tensor():
         matrices.insert(i, U_i)
 
 
+def test_cp_to_tensor_with_vector_factors():
+    vectors = [tl.tensor([1.0, 2.0]), tl.tensor([3.0, 4.0, 5.0])]
+    expected = tl.tenalg.outer(vectors)
+    mask = tl.tensor([[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]])
+
+    assert_array_equal(cp_to_tensor((None, vectors)), expected)
+    assert_array_equal(cp_to_tensor((None, [vectors[0]])), vectors[0])
+    assert_array_equal(cp_to_tensor((tl.tensor([2.0]), vectors)), 2 * expected)
+    assert_array_equal(cp_to_tensor((None, vectors), mask=mask), expected * mask)
+    assert_array_equal(cp_to_tensor(CPTensor((None, vectors))), expected)
+    assert_array_equal(
+        cp_to_tensor((None, [tl.reshape(vectors[0], (-1, 1)), vectors[1]])),
+        expected,
+    )
+
+
 def test_cp_to_tensor_with_weights():
     A = tl.reshape(tl.arange(1, 5, dtype=float), (2, 2))
     B = tl.reshape(tl.arange(5, 9, dtype=float), (2, 2))
@@ -267,6 +284,13 @@ def test_cp_mode_dot():
     res = cp_mode_dot(cp_ten, vec, mode=2, copy=True)
     res = tl.cp_to_tensor(res)
     true_res = mode_dot(full_tensor, vec, mode=2)
+    assert_equal(res.shape, true_res.shape)
+    assert_array_almost_equal(true_res, res)
+
+    # Test cp_mode_dot with vec, keeping the contracted mode
+    res = cp_mode_dot(cp_ten, vec, mode=2, keep_dim=True, copy=True)
+    res = tl.cp_to_tensor(res)
+    true_res = tl.reshape(mode_dot(full_tensor, vec, mode=2), shape[:2] + (1,))
     assert_equal(res.shape, true_res.shape)
     assert_array_almost_equal(true_res, res)
 
@@ -406,3 +430,59 @@ def test_cp_permute_factors():
     assert_array_almost_equal(permutation[1], col_order_2)
     assert_array_almost_equal(cp_to_tensor(cp_tensors[0]), cp_to_tensor(cp_tensor_2))
     assert_array_almost_equal(cp_to_tensor(cp_tensors[1]), cp_to_tensor(cp_tensor_3))
+
+
+def test_cp_norm_vector_factors():
+    vectors = [tl.tensor([1.0, -2.0]), tl.tensor([3.0, 4.0, -5.0])]
+    for columns in [(False, False), (True, False), (False, True), (True, True)]:
+        factors = [
+            tl.reshape(f, (-1, 1)) if column else f
+            for f, column in zip(vectors, columns)
+        ]
+        for weight in [None, 0.0, -2.0, 3.0]:
+            weights = None if weight is None else tl.tensor([weight])
+            expected = (
+                tl.norm(vectors[0])
+                * tl.norm(vectors[1])
+                * (1 if weight is None else abs(weight))
+            )
+            np.testing.assert_allclose(
+                tl.to_numpy(cp_norm((weights, factors))),
+                tl.to_numpy(expected),
+                rtol=1e-6,
+            )
+            np.testing.assert_allclose(
+                tl.to_numpy(CPTensor((weights, factors)).norm()),
+                tl.to_numpy(expected),
+                rtol=1e-6,
+            )
+
+
+@pytest.mark.parametrize("copy", [False, True])
+@pytest.mark.parametrize("with_weights", [False, True])
+@pytest.mark.parametrize("operation", ["matrix", "vector", "keep_dim"])
+def test_cp_mode_dot_tuple_input(copy, with_weights, operation):
+    rng = tl.check_random_state(1234)
+    factors = [tl.tensor(rng.normal(size=(size, 2))) for size in (2, 3, 4)]
+    weights = tl.tensor([2.0, -1.0], **tl.context(factors[0])) if with_weights else None
+    cp = (weights, factors)
+    dense = cp_to_tensor(cp)
+    operand = tl.tensor(
+        (
+            [[1.0, 2.0, -1.0], [0.0, 1.0, 3.0]]
+            if operation == "matrix"
+            else [1.0, 2.0, -1.0]
+        ),
+        **tl.context(factors[0]),
+    )
+    result = cp_mode_dot(
+        cp, operand, mode=1, keep_dim=operation == "keep_dim", copy=copy
+    )
+    expected = mode_dot(dense, operand, mode=1)
+    if operation == "keep_dim":
+        expected = tl.reshape(expected, (2, 1, 4))
+    assert_(isinstance(result, CPTensor))
+    assert_equal(result.shape, tl.shape(expected))
+    assert_array_almost_equal(cp_to_tensor(result), expected)
+    if copy:
+        assert_array_almost_equal(cp_to_tensor(cp), dense)

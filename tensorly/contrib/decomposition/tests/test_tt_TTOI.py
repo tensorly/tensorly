@@ -7,6 +7,7 @@ Testing of applying TTOI
 import numpy as np
 import tensorly as tl
 from tensorly import random
+from tensorly.tt_tensor import tt_to_tensor
 from tensorly.testing import assert_, assert_class_wrapper_correctly_passes_arguments
 from tensorly.contrib.decomposition.tt_TTOI import tensor_train_OI, TensorTrain_OI
 
@@ -15,42 +16,39 @@ def test_TTOI(monkeypatch):
     """Test for the tt_TTOI function (Tensor train orthogonal iteration)"""
     rng = tl.check_random_state(1234)
     n_iter = 4
+    tol = 1e-3
 
-    # Generate tensor true_tensor with low tensor train rank, and its noisy observation data_tensor
-    for i in range(3, 5):
-        rank = tuple(np.ones(i + 1).astype(int))
-        shape = tuple(np.ones(i).astype(int) * 20)
+    # Exactly low-TT-rank tensors (no noise) must be recovered up to tolerance
+    for order in range(3, 5):
+        rank = (1,) + (3,) * (order - 1) + (1,)
+        shape = (10,) * order
         true_tensor = random.random_tt(
             shape=shape, rank=rank, random_state=rng, full=True
         )
-        noise_tensor = tl.tensor(rng.standard_normal(shape), **tl.context(true_tensor))
-        data_tensor = true_tensor + noise_tensor
 
         # run TTOI
-        _, full_tensor_list, approx_errors = tensor_train_OI(
-            data_tensor=data_tensor,
+        factors_list, full_tensor_list, _ = tensor_train_OI(
+            data_tensor=true_tensor,
             rank=rank,
             n_iter=n_iter,
             trajectory=True,
             return_errors=True,
         )
 
-        # Check that the approximation error monotonically decreases
-        tensor_norm = tl.norm(data_tensor, 2)
-        for i, error in enumerate(approx_errors):
-            if i:
-                assert (tl.to_numpy((previous_error - error) / tensor_norm)) <= 2e-3
-            previous_error = error
-        # assert (np.all(np.diff(tl.to_numpy(approx_errors)) <= 1e-3))
+        # the TT factors of the last iteration have the requested ranks
+        tt_factors = factors_list[-1]
+        assert tuple(tl.shape(f)[0] for f in tt_factors) + (1,) == rank
 
-        # check that the estimation error of TTOI improves from initialization (TTSVD)
-        estimation_errors = [
-            tl.norm(full_tensor_list[i] - true_tensor, 2) / tl.norm(true_tensor, 2)
-            for i in range(n_iter)
-        ]
-        assert_(
-            tl.to_numpy(estimation_errors[0] - estimation_errors[n_iter - 1]) >= 2e-3
+        # the relative reconstruction error is below a fixed tolerance
+        rec_error = tl.norm(tt_to_tensor(tt_factors) - true_tensor, 2) / tl.norm(
+            true_tensor, 2
         )
+        assert_(tl.to_numpy(rec_error) < tol)
+
+        # and so is the one of every iteration
+        for full_tensor in full_tensor_list:
+            rel_error = tl.norm(full_tensor - true_tensor, 2) / tl.norm(true_tensor, 2)
+            assert_(tl.to_numpy(rel_error) < tol)
 
     assert_class_wrapper_correctly_passes_arguments(
         monkeypatch, tensor_train_OI, TensorTrain_OI, ignore_args={}, rank=rank

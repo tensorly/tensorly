@@ -94,3 +94,29 @@ def test_multidim_CPRegressor():
         atol=tol,
         err_msg="CPRegressor did not converge to the correct weights",
     )
+
+
+def test_CPRegressor_single_feature_mode():
+    rng = T.check_random_state(1234)
+    X = T.tensor(rng.normal(size=(20, 3)))
+    y = T.dot(X, T.tensor([2.0, -1.0, 0.5], **T.context(X)))
+    X_test = T.tensor(rng.normal(size=(5, 3)))
+    for rank, regularization in [(1, 0.0), (1, 0.5), (3, 0.5)]:
+        estimator = CPRegressor(
+            weight_rank=rank,
+            reg_W=regularization,
+            random_state=1234,
+            n_iter_max=5,
+            verbose=0,
+        ).fit(X, y)
+        # With one factor, the effective weights are its column sum.
+        # Equal columns minimize the factor penalty for that sum.
+        expected_weights = T.solve(
+            T.dot(T.transpose(X), X)
+            + (regularization / rank) * T.eye(3, **T.context(X)),
+            T.dot(T.transpose(X), y),
+        )
+        assert_allclose(estimator.weight_tensor_, expected_weights, rtol=1e-4)
+        assert_allclose(
+            estimator.predict(X_test), T.dot(X_test, expected_weights), rtol=1e-4
+        )

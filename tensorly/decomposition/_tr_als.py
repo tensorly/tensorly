@@ -243,20 +243,17 @@ def tensor_ring_als_sampled(
     # Randomly initialize decomposition cores
     tr_decomp = tl.random.random_tr(shape, rank, random_state=rng, **tl.context(tensor))
 
-    # Compute initial sampling distributions
+    # Compute initial sampling distributions. These are kept on the host as NumPy
+    # arrays since they are only used for drawing samples and computing row weights.
     if uniform_sampling:
         sampling_probs = [
             np.ones(shape=shape[dim]) / shape[dim] for dim in range(n_dim)
-        ]
-        samp_prob_sqrt_inv = [
-            np.prod(np.sqrt([shape[n] for n in range(n_dim) if n != dim]))
-            for dim in range(n_dim)
         ]
     else:
         sampling_probs = [None]
         for dim in range(1, n_dim):
             lev_score_dist = leverage_score_dist(matricize(tr_decomp[dim], [1], [0, 2]))
-            sampling_probs.append(lev_score_dist)
+            sampling_probs.append(tl.to_numpy(lev_score_dist))
 
     # Run callback function if provided
     if callback:
@@ -267,45 +264,35 @@ def tensor_ring_als_sampled(
     rec_errors = []
     for iter in range(n_iter_max):
         for dim in range(n_dim):
-            # Randomly draw row indices
-            samples = [
-                rng.choice(
-                    range(shape[n]),
-                    size=(n_samples[dim]),
-                    p=tl.to_numpy(sampling_probs[n]),
-                )
-                for n in range(n_dim)
-                if n != dim
-            ]
-
-            # Combine repeated samples
-            samples_unq, samples_cnt = np.unique(samples, axis=1, return_counts=True)
-            samples_unq = samples_unq.tolist()
-            samples_unq.insert(dim, slice(None, None, None))
-            samples_unq = tuple(samples_unq)
-            samples_cnt = tl.tensor(samples_cnt, **tl.context(tensor))
+            # Randomly draw row indices. Repeated samples are intentionally not
+            # merged: this keeps the number of sampled rows (and thus all array
+            # shapes below) fixed across iterations, which avoids recompilation on
+            # backends that specialize on shapes (e.g. jax). Repeating a row is
+            # equivalent to merging it with a correspondingly larger weight.
+            other_dims = [n for n in range(n_dim) if n != dim]
+            samples = {
+                n: rng.choice(shape[n], size=n_samples[dim], p=sampling_probs[n])
+                for n in other_dims
+            }
 
             # Compute row rescaling factors (see discussion in Sec 4.1 in paper by
             # Larsen & Kolda (2022), DOI: 10.1137/21M1441754)
-            rescaling = tl.sqrt(samples_cnt / n_samples[dim])
-            if uniform_sampling:
-                rescaling *= samp_prob_sqrt_inv[dim]
-            else:
-                for n in range(n_dim):
-                    if n != dim:
-                        # Converting samples_unq[n] to a tl.tensor is necessary for indexing
-                        # to work with jax, which doesn't allow indexing with lists; see
-                        # https://github.com/google/jax/issues/4564. The dtype needs to be
-                        # explicitly set to an int type, otherwise tl.tensor does the
-                        # conversion to floating type which causes issues with the pytorch
-                        # backend.
-                        rescaling /= tl.sqrt(
-                            sampling_probs[n][tl.tensor(samples_unq[n], dtype=tl.int64)]
-                        )
+            rescaling_np = np.full(n_samples[dim], 1.0 / n_samples[dim])
+            for n in other_dims:
+                rescaling_np /= sampling_probs[n][samples[n]]
+            rescaling = tl.tensor(np.sqrt(rescaling_np), **tl.context(tensor))
+
+            # Indexing with lists is not supported by all backends (e.g. jax), and
+            # the dtype needs to be explicitly an int type, otherwise tl.tensor
+            # converts to floating type which causes issues with pytorch.
+            samples_idx = [
+                slice(None) if n == dim else tl.tensor(samples[n], dtype=tl.int64)
+                for n in range(n_dim)
+            ]
 
             # Sample core tensors
             sampled_cores = [
-                tr_decomp[i][:, samples_unq[i], :] for i in idx_ordering[dim]
+                tr_decomp[i][:, samples_idx[i], :] for i in idx_ordering[dim]
             ]
 
             # Construct sketched design matrix
@@ -321,7 +308,7 @@ def tensor_ring_als_sampled(
             sampled_design_mat = tl.einsum("i,ij->ij", rescaling, sampled_design_mat)
 
             # Construct sampled right-hand side
-            sampled_tensor_unf = tensor[samples_unq]
+            sampled_tensor_unf = tensor[tuple(samples_idx)]
             if dim == 0:
                 sampled_tensor_unf = tl.transpose(sampled_tensor_unf)
             sampled_tensor_unf = tl.einsum("i,ij->ij", rescaling, sampled_tensor_unf)
@@ -337,7 +324,9 @@ def tensor_ring_als_sampled(
 
             # Compute sampling distribution for updated core
             if not uniform_sampling:
-                sampling_probs[dim] = leverage_score_dist(tl.transpose(sol))
+                sampling_probs[dim] = tl.to_numpy(
+                    leverage_score_dist(tl.transpose(sol))
+                )
 
         # Compute relative error if necessary
         if tol > 0 or callback:
