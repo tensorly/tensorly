@@ -3,3 +3,4 @@ scipy
 pytest
 pytest-cov
 pytest-randomly
+pytest-testmon

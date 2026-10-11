@@ -74,3 +74,6 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# pytest-testmon
+.testmondata*
