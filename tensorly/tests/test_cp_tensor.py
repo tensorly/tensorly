@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import pytest
 
 import tensorly as tl
 from ..tenalg import khatri_rao, mode_dot
@@ -455,3 +456,33 @@ def test_cp_norm_vector_factors():
                 tl.to_numpy(expected),
                 rtol=1e-6,
             )
+
+
+@pytest.mark.parametrize("copy", [False, True])
+@pytest.mark.parametrize("with_weights", [False, True])
+@pytest.mark.parametrize("operation", ["matrix", "vector", "keep_dim"])
+def test_cp_mode_dot_tuple_input(copy, with_weights, operation):
+    rng = tl.check_random_state(1234)
+    factors = [tl.tensor(rng.normal(size=(size, 2))) for size in (2, 3, 4)]
+    weights = tl.tensor([2.0, -1.0], **tl.context(factors[0])) if with_weights else None
+    cp = (weights, factors)
+    dense = cp_to_tensor(cp)
+    operand = tl.tensor(
+        (
+            [[1.0, 2.0, -1.0], [0.0, 1.0, 3.0]]
+            if operation == "matrix"
+            else [1.0, 2.0, -1.0]
+        ),
+        **tl.context(factors[0]),
+    )
+    result = cp_mode_dot(
+        cp, operand, mode=1, keep_dim=operation == "keep_dim", copy=copy
+    )
+    expected = mode_dot(dense, operand, mode=1)
+    if operation == "keep_dim":
+        expected = tl.reshape(expected, (2, 1, 4))
+    assert_(isinstance(result, CPTensor))
+    assert_equal(result.shape, tl.shape(expected))
+    assert_array_almost_equal(cp_to_tensor(result), expected)
+    if copy:
+        assert_array_almost_equal(cp_to_tensor(cp), dense)
