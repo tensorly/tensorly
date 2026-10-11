@@ -125,6 +125,10 @@ def admm(
        Society: Series B, 68(1), 49-67.
     """
     rho = tl.trace(UtU) / tl.shape(x)[1]
+    if rho == 0:
+        # UtU is exactly zero when the other factors have been shrunk to zero (e.g. by an
+        # l1 penalty). Any positive rho keeps the x_split system non-singular.
+        rho = 1.0
     for iteration in range(n_iter_max):
         x_old = tl.copy(x)
         x_split = tl.solve(

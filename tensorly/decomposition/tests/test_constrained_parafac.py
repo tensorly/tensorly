@@ -74,6 +74,17 @@ def test_constrained_parafac_does_not_stop_when_only_admm_is_feasible():
     assert float(T.to_numpy(errors[-1])) < float(T.to_numpy(errors[1])) - 1e-3
 
 
+def test_constrained_parafac_l1_factor_collapse():
+    """An l1 penalty can shrink a factor to zero; the ADMM solve must not become singular."""
+    rng = np.random.RandomState(0)
+    tensor = T.tensor(rng.random_sample((6, 8, 10)))
+
+    factors = constrained_parafac(tensor, rank=3, l1_reg=0.05, random_state=0)[1]
+
+    for factor in factors:
+        assert np.all(np.isfinite(T.to_numpy(factor)))
+
+
 def test_constrained_parafac_nonnegative(monkeypatch):
     """Test for the CANDECOMP-PARAFAC decomposition with ADMM under nonnegativity constraints"""
     rng = T.check_random_state(1234)
