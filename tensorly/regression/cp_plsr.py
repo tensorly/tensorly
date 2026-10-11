@@ -118,7 +118,15 @@ class CP_PLSR:
         ## FITTING EACH COMPONENT
         for component in range(self.n_components):
             comp_X_factors = [ff[:, component] for ff in self.X_factors]
-            comp_Y_factors_0 = Y[:, 0]
+            # A constant target column is zero after centering and cannot
+            # initialize the covariance iteration. Use the first nonzero one.
+            for column in range(T.shape(Y)[1]):
+                comp_Y_factors_0 = Y[:, column]
+                if T.norm(comp_Y_factors_0) > 0:
+                    break
+            else:
+                # No target variation remains for further components.
+                break
             old_comp_Y_factors_0 = T.ones(T.shape(comp_Y_factors_0)) * T.inf
 
             for iter in range(self.n_iter_max):
