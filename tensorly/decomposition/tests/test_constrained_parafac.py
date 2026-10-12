@@ -458,7 +458,7 @@ def test_constrained_parafac_normalized_sparsity():
     # Check if factors are normalized and k-sparse
     for i in range(len(factors_init)):
         assert_array_almost_equal(T.norm(res.factors[i]), 1, decimal=6)
-        assert_(T.count_nonzero(res.factors[i]) == 5)
+        assert_(T.sum(res.factors[i] != 0) == 5)
 
 
 def test_constrained_parafac_hard_sparsity():
@@ -487,7 +487,7 @@ def test_constrained_parafac_hard_sparsity():
     )
     # Check if factors are normalized and k-sparse
     for i in range(len(factors_init)):
-        assert_(T.count_nonzero(res.factors[i]) == 5)
+        assert_(T.sum(res.factors[i] != 0) == 5)
 
 
 def test_constrained_parafac_smoothness():

@@ -53,7 +53,6 @@ backend_array = [
     "where",
     "reshape",
     "cumsum",
-    "count_nonzero",
     "eye",
     "sqrt",
     "abs",
@@ -450,18 +449,6 @@ class Backend:
             above it and a negative value below it.
         dtype : optional
             Data type of the output.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def count_nonzero(tensor):
-        """Returns number of non-zero elements in the tensor.
-        Parameters
-        ----------
-        tensor : tensor
-        Returns
-        -------
-        out : scalar
         """
         raise NotImplementedError
 
