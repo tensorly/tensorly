@@ -179,7 +179,7 @@ def tensor_train_OI(data_tensor, rank, n_iter=2, trajectory=False, return_errors
                 ),
                 n_eigenvecs=rank[n_dim - 1],
             )
-            V_tmp = tl.transpose(V_tmp)
+            V_tmp = tl.permute_dims(V_tmp, (1, 0))
             right_singular_vectors.append(
                 tl.reshape(V_tmp, (rank[n_dim], shape[n_dim - 1], rank[n_dim - 1]))
             )
@@ -202,7 +202,7 @@ def tensor_train_OI(data_tensor, rank, n_iter=2, trajectory=False, return_errors
                     n_eigenvecs=rank[n_dim - mode - 2],
                 )
                 right_singular_vectors.append(
-                    tl.transpose(
+                    tl.permute_dims(
                         tl.reshape(
                             V_tmp,
                             (
@@ -210,7 +210,8 @@ def tensor_train_OI(data_tensor, rank, n_iter=2, trajectory=False, return_errors
                                 shape[n_dim - mode - 2],
                                 rank[n_dim - mode - 1],
                             ),
-                        )
+                        ),
+                        (2, 1, 0),
                     )
                 )
             Residual_right = sequential_prod(
@@ -221,7 +222,9 @@ def tensor_train_OI(data_tensor, rank, n_iter=2, trajectory=False, return_errors
                 factors_list_tmp.append(Residual_right)
                 for mode in range(n_dim - 1):
                     factors_list_tmp.append(
-                        tl.transpose(right_singular_vectors[n_dim - mode - 2])
+                        tl.permute_dims(
+                            right_singular_vectors[n_dim - mode - 2], (2, 1, 0)
+                        )
                     )
                 full_tensor_tmp = tt_to_tensor(factors_list_tmp)
                 if return_errors:

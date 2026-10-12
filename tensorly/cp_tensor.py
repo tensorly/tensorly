@@ -493,7 +493,8 @@ def cp_to_tensor(cp_tensor, mask=None):
 
     if mask is None:
         full_tensor = T.dot(
-            factors[0] * weights, T.transpose(khatri_rao(factors, skip_matrix=0))
+            factors[0] * weights,
+            T.permute_dims(khatri_rao(factors, skip_matrix=0), (1, 0)),
         )
     else:
         full_tensor = T.sum(
@@ -533,10 +534,13 @@ def cp_to_unfolded(cp_tensor, mode):
 
     if weights is not None:
         return T.dot(
-            factors[mode] * weights, T.transpose(khatri_rao(factors, skip_matrix=mode))
+            factors[mode] * weights,
+            T.permute_dims(khatri_rao(factors, skip_matrix=mode), (1, 0)),
         )
     else:
-        return T.dot(factors[mode], T.transpose(khatri_rao(factors, skip_matrix=mode)))
+        return T.dot(
+            factors[mode], T.permute_dims(khatri_rao(factors, skip_matrix=mode), (1, 0))
+        )
 
 
 def cp_to_vec(cp_tensor):
@@ -659,7 +663,7 @@ def cp_norm(cp_tensor):
     for f in factors:
         if rank == 1 and T.ndim(f) == 1:
             f = T.reshape(f, (-1, 1))
-        norm = norm * T.dot(T.transpose(f), T.conj(f))
+        norm = norm * T.dot(T.permute_dims(f, (1, 0)), T.conj(f))
 
     if weights is not None:
         # norm = T.dot(T.dot(weights, norm), weights)

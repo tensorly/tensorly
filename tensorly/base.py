@@ -238,5 +238,5 @@ def matricize(tensor, row_modes, column_modes=None):
     column_size = prod(tl.shape(tensor)[i] for i in column_indices)
 
     return tl.reshape(
-        tl.transpose(tensor, row_indices + column_indices), (row_size, column_size)
+        tl.permute_dims(tensor, row_indices + column_indices), (row_size, column_size)
     )

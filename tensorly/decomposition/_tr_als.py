@@ -101,7 +101,7 @@ def tensor_ring_als(
                 + [i + 1 for i in range(n_dim - dim - 1)]
                 + [n_dim, 0]
             )
-            subchain_tensor = tl.transpose(subchain_tensor, tr_idx)
+            subchain_tensor = tl.permute_dims(subchain_tensor, tr_idx)
             design_mat = tl.reshape(subchain_tensor, (-1, rank[dim] * rank[dim + 1]))
 
             if ls_solve == "lstsq":
@@ -110,13 +110,13 @@ def tensor_ring_als(
 
             elif ls_solve == "normal_eq":
                 # Solve least squares problem via normal equations
-                design_mat_tr = tl.transpose(design_mat)
+                design_mat_tr = tl.permute_dims(design_mat, (1, 0))
                 gram_mat = tl.matmul(design_mat_tr, design_mat)
                 rhs_mat = tl.matmul(design_mat_tr, tensor_unf)
                 sol = tl.solve(gram_mat, rhs_mat)
 
             # Update core
-            tr_decomp[dim] = tl.transpose(
+            tr_decomp[dim] = tl.permute_dims(
                 tl.reshape(sol, (rank[dim], rank[dim + 1], shape[dim])),
                 [0, 2, 1],
             )
@@ -310,14 +310,14 @@ def tensor_ring_als_sampled(
             # Construct sampled right-hand side
             sampled_tensor_unf = tensor[tuple(samples_idx)]
             if dim == 0:
-                sampled_tensor_unf = tl.transpose(sampled_tensor_unf)
+                sampled_tensor_unf = tl.permute_dims(sampled_tensor_unf, (1, 0))
             sampled_tensor_unf = tl.einsum("i,ij->ij", rescaling, sampled_tensor_unf)
 
             # Solve sampled least squares problem directly
             sol = tl.lstsq(sampled_design_mat, sampled_tensor_unf)[0]
 
             # Update core
-            tr_decomp[dim] = tl.transpose(
+            tr_decomp[dim] = tl.permute_dims(
                 tl.reshape(sol, (rank[dim], rank[dim + 1], shape[dim])),
                 [0, 2, 1],
             )
@@ -325,7 +325,7 @@ def tensor_ring_als_sampled(
             # Compute sampling distribution for updated core
             if not uniform_sampling:
                 sampling_probs[dim] = tl.to_numpy(
-                    leverage_score_dist(tl.transpose(sol))
+                    leverage_score_dist(tl.permute_dims(sol, (1, 0)))
                 )
 
         # Compute relative error if necessary

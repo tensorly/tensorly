@@ -112,9 +112,9 @@ def test_CPRegressor_single_feature_mode():
         # With one factor, the effective weights are its column sum.
         # Equal columns minimize the factor penalty for that sum.
         expected_weights = T.solve(
-            T.dot(T.transpose(X), X)
+            T.dot(T.permute_dims(X, (1, 0)), X)
             + (regularization / rank) * T.eye(3, **T.context(X)),
-            T.dot(T.transpose(X), y),
+            T.dot(T.permute_dims(X, (1, 0)), y),
         )
         assert_allclose(estimator.weight_tensor_, expected_weights, rtol=1e-4)
         assert_allclose(

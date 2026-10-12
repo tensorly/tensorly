@@ -45,7 +45,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
             )
 
         if transpose:
-            matrix_or_vector = T.conj(T.transpose(matrix_or_vector))
+            matrix_or_vector = T.conj(T.permute_dims(matrix_or_vector, (1, 0)))
 
         new_shape[mode] = matrix_or_vector.shape[0]
         vec = False
@@ -125,7 +125,9 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             continue
 
         if transpose:
-            res = mode_dot(res, T.conj(T.transpose(matrix_or_vec)), mode - decrement)
+            res = mode_dot(
+                res, T.conj(T.permute_dims(matrix_or_vec, (1, 0))), mode - decrement
+            )
         else:
             res = mode_dot(res, matrix_or_vec, mode - decrement)
 

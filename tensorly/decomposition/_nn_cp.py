@@ -117,9 +117,9 @@ def non_negative_parafac(
             sub_indices = [i for i in range(len(factors)) if i != mode]
             for i, e in enumerate(sub_indices):
                 if i:
-                    accum *= tl.dot(tl.transpose(factors[e]), factors[e])
+                    accum *= tl.dot(tl.permute_dims(factors[e], (1, 0)), factors[e])
                 else:
-                    accum = tl.dot(tl.transpose(factors[e]), factors[e])
+                    accum = tl.dot(tl.permute_dims(factors[e], (1, 0)), factors[e])
             accum = tl.reshape(weights, (-1, 1)) * accum * tl.reshape(weights, (1, -1))
             if mask is not None:
                 tensor = tensor * mask + tl.cp_to_tensor(
@@ -128,9 +128,9 @@ def non_negative_parafac(
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
-            numerator = tl.clip(mttkrp, a_min=epsilon, a_max=None)
+            numerator = tl.clip(mttkrp, min=epsilon, max=None)
             denominator = tl.dot(factors[mode], accum)
-            denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
+            denominator = tl.clip(denominator, min=epsilon, max=None)
             factor = factors[mode] * numerator / denominator
 
             factors[mode] = factor
@@ -313,7 +313,7 @@ def non_negative_parafac_hals(
             for i, factor in enumerate(factors):
                 if i != mode:
                     pseudo_inverse = pseudo_inverse * tl.dot(
-                        tl.transpose(factor), factor
+                        tl.permute_dims(factor, (1, 0)), factor
                     )
 
             pseudo_inverse = (
@@ -332,17 +332,20 @@ def non_negative_parafac_hals(
                 # tensorflow), where hals_nnls's sequential row-wise
                 # index_update calls make a large n_iter_max extremely costly.
                 nn_factor = hals_nnls(
-                    tl.transpose(mttkrp),
+                    tl.permute_dims(mttkrp, (1, 0)),
                     pseudo_inverse,
-                    tl.transpose(factors[mode]),
+                    tl.permute_dims(factors[mode], (1, 0)),
                     n_iter_max=5,
                     sparsity_coefficient=sparsity_coefficients[mode],
                     exact=exact,
                 )
-                factors[mode] = tl.transpose(nn_factor)
+                factors[mode] = tl.permute_dims(nn_factor, (1, 0))
             else:
-                factor = tl.solve(tl.transpose(pseudo_inverse), tl.transpose(mttkrp))
-                factors[mode] = tl.transpose(factor)
+                factor = tl.solve(
+                    tl.permute_dims(pseudo_inverse, (1, 0)),
+                    tl.permute_dims(mttkrp, (1, 0)),
+                )
+                factors[mode] = tl.permute_dims(factor, (1, 0))
             if normalize_factors and mode != modes[-1]:
                 weights, factors = cp_normalize((weights, factors))
         if tol:

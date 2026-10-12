@@ -170,7 +170,7 @@ def test_cp_to_tensor():
     for i in range(len(rows)):
         unfolded = unfold(tensor, mode=i)
         U_i = matrices.pop(i)
-        reconstructed = tl.dot(U_i, tl.transpose(khatri_rao(matrices)))
+        reconstructed = tl.dot(U_i, tl.permute_dims(khatri_rao(matrices), (1, 0)))
         assert_array_almost_equal(reconstructed, unfolded)
         matrices.insert(i, U_i)
 
@@ -203,7 +203,7 @@ def test_cp_to_tensor_with_weights():
     weigths, factors = random_cp((5, 5, 5), rank=5, normalise_factors=True, full=False)
     true_res = tl.dot(
         tl.dot(factors[0], tl.diag(weigths)),
-        tl.transpose(tl.tenalg.khatri_rao(factors[1:])),
+        tl.permute_dims(tl.tenalg.khatri_rao(factors[1:]), (1, 0)),
     )
     true_res = tl.fold(true_res, 0, (5, 5, 5))
     res = cp_to_tensor((weigths, factors))

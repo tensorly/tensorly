@@ -149,7 +149,7 @@ def test_tucker_to_unfolded():
             tucker_to_unfolded((G, U), mode),
             tl.dot(
                 tl.dot(U[mode], unfold(G, mode)),
-                tl.transpose(kronecker(U, skip_matrix=mode)),
+                tl.permute_dims(kronecker(U, skip_matrix=mode), (1, 0)),
             ),
             decimal=5,
         )

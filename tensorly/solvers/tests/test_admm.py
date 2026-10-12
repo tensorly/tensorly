@@ -18,12 +18,17 @@ def test_admm():
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 10))
     b = tl.dot(a, true_res)
-    atb = tl.dot(tl.transpose(a), b)
-    ata = tl.dot(tl.transpose(a), a)
+    atb = tl.dot(tl.permute_dims(a, (1, 0)), b)
+    ata = tl.dot(tl.permute_dims(a, (1, 0)), a)
     dual = tl.zeros(tl.shape(atb))
     x_init = tl.zeros(tl.shape(atb))
-    x_admm, _, _ = admm(tl.transpose(atb), tl.transpose(ata), x=x_init, dual_var=dual)
-    assert_array_almost_equal(true_res, tl.transpose(x_admm), decimal=2)
+    x_admm, _, _ = admm(
+        tl.permute_dims(atb, (1, 0)),
+        tl.permute_dims(ata, (1, 0)),
+        x=x_init,
+        dual_var=dual,
+    )
+    assert_array_almost_equal(true_res, tl.permute_dims(x_admm, (1, 0)), decimal=2)
 
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
@@ -55,6 +60,8 @@ def test_admm_preserves_context(dtype, device):
         n_iter_max=200,
         tol=1e-8,
     )
-    assert_array_almost_equal(result, tl.clip(unconstrained, 0, None), decimal=4)
+    assert_array_almost_equal(
+        result, tl.clip(unconstrained, min=0, max=None), decimal=4
+    )
     for value in (result, split, dual):
         assert tl.context(value) == tl.context(gram)

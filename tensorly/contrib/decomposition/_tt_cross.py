@@ -206,7 +206,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
             # Compute cores
             try:
-                factor_new[k - 1] = tl.transpose(Q_skeleton)
+                factor_new[k - 1] = tl.permute_dims(Q_skeleton, (1, 0))
                 factor_new[k - 1] = tl.reshape(
                     factor_new[k - 1], (rank[k - 1], tensor_shape[k - 1], rank[k])
                 )
@@ -223,7 +223,7 @@ def tensor_train_cross(input_tensor, rank, tol=1e-4, n_iter_max=100, random_stat
 
         core = input_tensor[idx]
         core = tl.reshape(core, (tensor_shape[0], 1, rank[1]))
-        core = tl.transpose(core, (1, 0, 2))
+        core = tl.permute_dims(core, (1, 0, 2))
 
         factor_new[0] = core
 
@@ -300,10 +300,10 @@ def left_right_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     # shape the core as a 3-tensor_order cube
     if k == 0:
         core = tl.reshape(core, (tensor_shape[k], rank[k], rank[k + 1]))
-        core = tl.transpose(core, (1, 0, 2))
+        core = tl.permute_dims(core, (1, 0, 2))
     else:
         core = tl.reshape(core, (rank[k], rank[k + 1], tensor_shape[k]))
-        core = tl.transpose(core, (0, 2, 1))
+        core = tl.permute_dims(core, (0, 2, 1))
 
     # merge r_k and n_k, get a matrix
     core = tl.reshape(core, (rank[k] * tensor_shape[k], rank[k + 1]))
@@ -379,10 +379,10 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     core = input_tensor[idx]
     # shape the core as a 3-tensor_order cube
     core = tl.reshape(core, (rank[k - 1], rank[k], tensor_shape[k - 1]))
-    core = tl.transpose(core, (0, 2, 1))
+    core = tl.permute_dims(core, (0, 2, 1))
     # merge n_{k-1} and r_k, get a matrix
     core = tl.reshape(core, (rank[k - 1], tensor_shape[k - 1] * rank[k]))
-    core = tl.transpose(core)
+    core = tl.permute_dims(core, (1, 0))
 
     # Compute QR decomposition
     Q, R = tl.qr(core)
@@ -469,7 +469,7 @@ def maxvol(A):
 
         # Compute the projection of max_row to other rows
         # projection = <b, a>/|a|^2
-        projection = tl.dot(A_new, tl.transpose(max_row))
+        projection = tl.dot(A_new, max_row)
         projection = projection / (tl.sum(max_row**2))
 
         # Subtract the projection from A_new:  b <- b - a * projection

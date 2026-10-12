@@ -144,7 +144,7 @@ class CP_PLSR:
                 comp_X_factors[0] = multi_mode_dot(
                     X, comp_X_factors[1:], range(1, T.ndim(X))
                 )
-                comp_Y_factors_1 = T.dot(T.transpose(Y), comp_X_factors[0])
+                comp_Y_factors_1 = T.dot(T.permute_dims(Y, (1, 0)), comp_X_factors[0])
                 comp_Y_factors_1 /= T.norm(comp_Y_factors_1)
                 comp_Y_factors_0 = T.dot(Y, comp_Y_factors_1)
 
@@ -218,7 +218,10 @@ class CP_PLSR:
             )
 
         return (
-            T.dot(T.dot(X_projection, self.coef_), T.transpose(self.Y_factors[1]))
+            T.dot(
+                T.dot(X_projection, self.coef_),
+                T.permute_dims(self.Y_factors[1], (1, 0)),
+            )
             + self.Y_mean_
         )
 

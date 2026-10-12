@@ -35,4 +35,4 @@ def tt_matrix_to_tensor(tt_matrix):
         else:
             res = tensordot(res, factor, ([-1], [0]))
 
-    return tl.transpose(tl.reshape(res, full_shape), order)
+    return tl.permute_dims(tl.reshape(res, full_shape), order)

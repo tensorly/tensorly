@@ -82,7 +82,7 @@ In all cases, you manipulate tensors in the same way:
 
    tl.max(tensor)
    tl.mean(tensor)
-   tl.dot(tl.unfold(tensor, 0), tl.transpose(tl.unfold(tensor, 0)))
+   tl.dot(tl.unfold(tensor, 0), tl.permute_dims(tl.unfold(tensor, 0), (1, 0)))
 
 Note that you can also access the backend functions explicitely through `tensorly.backend`:
 

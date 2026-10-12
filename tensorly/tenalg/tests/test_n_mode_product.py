@@ -99,14 +99,14 @@ def test_multi_mode_dot():
     X = T.tensor(np.arange(12, dtype=float).reshape((3, 4)))
     U = T.tensor(np.random.random((3, 5)))
     res_1 = multi_mode_dot(X, [U], modes=[0], transpose=True)
-    res_2 = T.dot(T.transpose(U), X)
+    res_2 = T.dot(T.permute_dims(U, (1, 0)), X)
     assert_array_almost_equal(res_1, res_2)
 
     dims = [2, 3, 4, 5]
     X = T.tensor(np.random.randn(*dims))
     factors = [T.tensor(np.random.rand(dims[i], X.shape[i])) for i in range(T.ndim(X))]
     true_res = T.dot(
-        T.dot(factors[0], unfold(X, 0)), T.transpose(kronecker(factors[1:]))
+        T.dot(factors[0], unfold(X, 0)), T.permute_dims(kronecker(factors[1:]), (1, 0))
     )
     n_mode_res = multi_mode_dot(X, factors)
     assert_array_almost_equal(true_res, unfold(n_mode_res, 0), decimal=5)
@@ -114,7 +114,8 @@ def test_multi_mode_dot():
         indices = [j for j in range(T.ndim(X)) if j != i]
         sub_factors = [factors[j] for j in indices]
         true_res = T.dot(
-            T.dot(factors[i], unfold(X, i)), T.transpose(kronecker(sub_factors))
+            T.dot(factors[i], unfold(X, i)),
+            T.permute_dims(kronecker(sub_factors), (1, 0)),
         )
         res = unfold(n_mode_res, i)
         temp = multi_mode_dot(X, sub_factors, modes=indices)

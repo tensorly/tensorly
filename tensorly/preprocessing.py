@@ -105,7 +105,7 @@ def svd_compress_tensor_slices(
         # we need to transpose it, multiply in the singular values and then transpose
         # it again. This is equivalent to writing diag(s) @ Vh. If we skip the
         # transposes, we would get Vh @ diag(s), which is wrong.
-        score_matrices[i] = T.transpose(s * T.transpose(Vh))
+        score_matrices[i] = T.permute_dims(s * T.permute_dims(Vh, (1, 0)), (1, 0))
         loading_matrices[i] = U
 
     return score_matrices, loading_matrices

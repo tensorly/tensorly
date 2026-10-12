@@ -132,12 +132,16 @@ def initialize_decomposition(
 
         if concat_shape > shapes[0][1]:
             # If the concatenated matrix would be larger than the cross-product, use the latter
-            unfolded_mode_2 = tl.transpose(tensor_slices[0]) @ tensor_slices[0]
+            unfolded_mode_2 = (
+                tl.permute_dims(tensor_slices[0], (1, 0)) @ tensor_slices[0]
+            )
 
             for slice in tensor_slices[1:]:
-                unfolded_mode_2 += tl.matmul(tl.transpose(slice), slice)
+                unfolded_mode_2 += tl.matmul(tl.permute_dims(slice, (1, 0)), slice)
         else:
-            unfolded_mode_2 = tl.transpose(tl.concatenate(list(tensor_slices), axis=0))
+            unfolded_mode_2 = tl.permute_dims(
+                tl.concat(list(tensor_slices), axis=0), (1, 0)
+            )
 
         C = svd_interface(
             unfolded_mode_2, n_eigenvecs=n_svd, method=svd, random_state=random_state
@@ -151,7 +155,7 @@ def initialize_decomposition(
                 random_state=random_state,
                 **context,
             ).factors[2]
-            C = tl.concatenate([C, random_part], axis=1)
+            C = tl.concat([C, random_part], axis=1)
 
         B = tl.eye(rank, **context)
         projections = _compute_projections(tensor_slices, (A, B, C), svd, random_state)
@@ -177,8 +181,8 @@ def _compute_projections(tensor_slices, factors, svd, random_state=None):
     out = []
 
     for A, tensor_slice in zip(factors[0], tensor_slices):
-        lhs = T.dot(factors[1], T.transpose(A * factors[2]))
-        rhs = T.transpose(tensor_slice)
+        lhs = T.dot(factors[1], T.permute_dims(A * factors[2], (1, 0)))
+        rhs = T.permute_dims(tensor_slice, (1, 0))
         # A slice with fewer rows than the rank has at most that many singular vectors
         U, _, Vh = svd_interface(
             T.dot(lhs, rhs),
@@ -188,7 +192,7 @@ def _compute_projections(tensor_slices, factors, svd, random_state=None):
             random_state=random_state,
         )
 
-        out.append(T.transpose(T.dot(U, Vh)))
+        out.append(T.permute_dims(T.dot(U, Vh), (1, 0)))
 
     return out
 
@@ -197,7 +201,7 @@ def _project_tensor_slices(tensor_slices, projections):
     slices = []
 
     for t, p in zip(tensor_slices, projections):
-        slices.append(T.dot(T.transpose(p), t))
+        slices.append(T.dot(T.permute_dims(p, (1, 0)), t))
 
     return tl.stack(slices)
 
@@ -306,9 +310,9 @@ class _BroThesisLineSearch:
         # Clip if the mode should be non-negative
         if self.nn_modes:
             if 0 in self.nn_modes:
-                factors_ls[0] = tl.clip(factors_ls[0], 0)
+                factors_ls[0] = tl.clip(factors_ls[0], min=0)
             if 2 in self.nn_modes:
-                factors_ls[2] = tl.clip(factors_ls[2], 0)
+                factors_ls[2] = tl.clip(factors_ls[2], min=0)
 
         projections_ls = _compute_projections(
             tensor_slices, factors_ls, self.svd, self.random_state
@@ -396,19 +400,23 @@ def _parafac2_reconstruction_error(
 
         norm_cmf_sq = 0
         inner_product = 0
-        CtC = tl.dot(tl.transpose(C), C)
+        CtC = tl.dot(tl.permute_dims(C, (1, 0)), C)
 
         for i, t_slice in enumerate(tensor_slices):
             B_i = (projections[i] @ B) * A[i]
 
             if projected_tensor is None:
-                tmp = tl.dot(tl.transpose(B_i), t_slice)
+                tmp = tl.dot(tl.permute_dims(B_i, (1, 0)), t_slice)
             else:
-                tmp = tl.reshape(A[i], (-1, 1)) * tl.transpose(B) @ projected_tensor[i]
+                tmp = (
+                    tl.reshape(A[i], (-1, 1))
+                    * tl.permute_dims(B, (1, 0))
+                    @ projected_tensor[i]
+                )
 
             inner_product += tl.trace(tl.dot(tmp, C))
 
-            norm_cmf_sq += tl.sum((tl.transpose(B_i) @ B_i) * CtC)
+            norm_cmf_sq += tl.sum((tl.permute_dims(B_i, (1, 0)) @ B_i) * CtC)
 
         return tl.sqrt(norm_X_sq - 2 * inner_product + norm_cmf_sq)
 

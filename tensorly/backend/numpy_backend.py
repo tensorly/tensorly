@@ -30,8 +30,9 @@ class NumpyBackend(Backend, backend_name="numpy"):
         return tensor.ndim
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
-        return np.clip(tensor, a_min, a_max)
+    def sort(x, axis=-1, descending=False, stable=True):
+        out = np.sort(x, axis=axis)
+        return np.flip(out, axis=axis) if descending else out
 
     @staticmethod
     def logsumexp(tensor, axis=0):
@@ -44,14 +45,16 @@ for name in (
     + backend_array
     + [
         "nan",
+        "shape",
         "moveaxis",
         "trace",
         "copy",
-        "transpose",
+        "concat",
+        "permute_dims",
+        "clip",
         "arange",
         "flip",
         "kron",
-        "concatenate",
         "max",
         "mean",
         "sum",
@@ -66,9 +69,7 @@ for name in (
         "log2",
         "tensordot",
         "argsort",
-        "sort",
         "dot",
-        "shape",
     ]
 ):
     NumpyBackend.register_method(name, getattr(np, name))

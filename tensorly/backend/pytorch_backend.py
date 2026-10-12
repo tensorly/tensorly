@@ -19,8 +19,8 @@ from .core import (
     backend_array,
 )
 
-if Version(torch.__version__) < Version("1.9.0"):
-    raise RuntimeError("TensorLy only supports pytorch v1.9.0 and above.")
+if Version(torch.__version__) < Version("2.0.0"):
+    raise RuntimeError("TensorLy only supports pytorch v2.0.0 and above.")
 
 
 class PyTorchBackend(Backend, backend_name="pytorch"):
@@ -96,15 +96,15 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
             return torch.arange(start, stop, step, *args, **kwargs)
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None, inplace=False):
+    def clip(x, min=None, max=None, inplace=False):
         if inplace:
-            return torch.clip(tensor, a_min, a_max, out=tensor)
+            return torch.clip(x, min, max, out=x)
         else:
-            return torch.clip(tensor, a_min, a_max)
+            return torch.clip(x, min, max)
 
-    def transpose(self, tensor, axes=None):
-        axes = axes or list(range(self.ndim(tensor)))[::-1]
-        return tensor.permute(*axes)
+    @staticmethod
+    def permute_dims(x, axes):
+        return x.permute(*axes)
 
     @staticmethod
     def copy(tensor):
@@ -170,10 +170,6 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
             return torch.flip(tensor, dims=axis)
 
     @staticmethod
-    def concatenate(tensors, axis=0):
-        return torch.cat(tensors, dim=axis)
-
-    @staticmethod
     def argmin(input, axis=None):
         return torch.argmin(input, dim=axis)
 
@@ -194,12 +190,8 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.diag(tensor, diagonal=k)
 
     @staticmethod
-    def sort(tensor, axis):
-        if axis is None:
-            tensor = tensor.flatten()
-            axis = -1
-
-        return torch.sort(tensor, dim=axis).values
+    def sort(x, axis=-1, descending=False, stable=True):
+        return torch.sort(x, dim=axis, descending=descending, stable=stable).values
 
     @staticmethod
     def lstsq(a, b, rcond=None, driver="gelsd"):
@@ -229,6 +221,7 @@ for name in (
         "finfo",
         "log2",
         "digamma",
+        "concat",
     ]
 ):
     PyTorchBackend.register_method(name, getattr(torch, name))

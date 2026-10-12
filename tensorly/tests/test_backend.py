@@ -246,12 +246,16 @@ def test_svd():
             )
 
             # Check for orthogonality when relevant
-            left_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+            left_orthogonality_error = T.norm(
+                T.dot(T.permute_dims(fU, (1, 0)), fU) - T.eye(n)
+            )
             assert_(
                 left_orthogonality_error <= tol_orthogonality,
                 msg='Left eigenvecs not orthogonal for "{svd}" svd fun VS svd and backend="{tl.get_backend()}, for {n} eigenenvecs, and size {s}".',
             )
-            right_orthogonality_error = T.norm(T.dot(fV, T.transpose(fV)) - T.eye(n))
+            right_orthogonality_error = T.norm(
+                T.dot(fV, T.permute_dims(fV, (1, 0))) - T.eye(n)
+            )
             assert_(
                 right_orthogonality_error <= tol_orthogonality,
                 msg='Right eigenvecs not orthogonal for "{svd}" svd fun VS svd and backend="{tl.get_backend()}, for {n} eigenenvecs, and size {s}".',
@@ -279,9 +283,13 @@ def test_svd():
         # Test orthonormality when  max_dim > n_eigenvecs > matrix_rank
         matrix = tl.dot(tl.randn((4, 2), seed=1), tl.randn((2, 4), seed=12))
         U, S, V = tl.truncated_svd(matrix, n_eigenvecs=3, random_state=0)
-        left_orthogonality_error = T.norm(T.dot(T.transpose(U), U) - T.eye(3))
+        left_orthogonality_error = T.norm(
+            T.dot(T.permute_dims(U, (1, 0)), U) - T.eye(3)
+        )
         assert_(left_orthogonality_error <= tol_orthogonality)
-        right_orthogonality_error = T.norm(T.dot(V, T.transpose(V)) - T.eye(3))
+        right_orthogonality_error = T.norm(
+            T.dot(V, T.permute_dims(V, (1, 0))) - T.eye(3)
+        )
         assert_(right_orthogonality_error <= tol_orthogonality)
 
         # Test if truncated_svd returns the same result for the same setting
@@ -298,7 +306,9 @@ def test_randomized_range_finder():
     size = (7, 5)
     A = T.randn(size)
     Q = tl.tenalg.svd.randomized_range_finder(A, n_dims=min(size))
-    assert_array_almost_equal(A, tl.dot(tl.dot(Q, tl.transpose(T.conj(Q))), A))
+    assert_array_almost_equal(
+        A, tl.dot(tl.dot(Q, tl.permute_dims(T.conj(Q), (1, 0))), A)
+    )
 
 
 def test_shape():
@@ -388,8 +398,8 @@ def test_clip():
     X = T.tensor([0.0, -1.0, 1.0])
     X_low = T.tensor([0.0, 0.0, 1.0])
     X_high = T.tensor([0.0, -1.0, 0.0])
-    assert_array_equal(tl.clip(X, a_min=0.0), X_low)
-    assert_array_equal(tl.clip(X, a_max=0.0), X_high)
+    assert_array_equal(tl.clip(X, min=0.0), X_low)
+    assert_array_equal(tl.clip(X, max=0.0), X_high)
 
     # More extensive test with a larger random tensor
     rng = tl.check_random_state(0)
@@ -411,17 +421,17 @@ def test_clip():
     for min_val, max_val in limits:
         message = f"Tensor clipped incorrectly with min_val={min_val} and max_val={max_val}. Tensor bounds are ({tl.to_numpy(tl.min(tensor))}, {tl.to_numpy(tl.max(tensor))}"
         if min_val is not None:
-            assert tl.all(tl.clip(tensor, min_val, None) >= min_val), message
-            assert tl.all(tl.clip(tensor, min_val, max_val) >= min_val), message
+            assert tl.all(tl.clip(tensor, min=min_val, max=None) >= min_val), message
+            assert tl.all(tl.clip(tensor, min=min_val, max=max_val) >= min_val), message
         if max_val is not None:
-            assert tl.all(tl.clip(tensor, None, max_val) <= max_val), message
-            assert tl.all(tl.clip(tensor, min_val, max_val) <= max_val), message
+            assert tl.all(tl.clip(tensor, min=None, max=max_val) <= max_val), message
+            assert tl.all(tl.clip(tensor, min=min_val, max=max_val) <= max_val), message
 
 
 def test_clips_all_negative_tensor_correctly():
     # Regression test for bug found with the pytorch backend
     negative_valued_tensor = tl.zeros((10, 10)) - 0.1
-    clipped_tensor = tl.clip(negative_valued_tensor, 0)
+    clipped_tensor = tl.clip(negative_valued_tensor, min=0)
     assert tl.all(clipped_tensor == 0)
 
 

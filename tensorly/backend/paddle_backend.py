@@ -162,18 +162,16 @@ class PaddleBackend(Backend, backend_name="paddle"):
         return tensor.ndim
 
     @staticmethod
-    def clip(tensor: paddle.Tensor, a_min=None, a_max=None, inplace=False):
+    def clip(x: paddle.Tensor, min=None, max=None, inplace=False):
         if inplace:
-            paddle.clip_(tensor, a_min, a_max)
-            return tensor
+            paddle.clip_(x, min, max)
+            return x
         else:
-            return paddle.clip(tensor, a_min, a_max)
+            return paddle.clip(x, min, max)
 
-    def transpose(self, tensor: paddle.Tensor, axes: int | Sequence[int] | None = None):
-        axes = axes or list(range(self.ndim(tensor)))[::-1]
-        if not isinstance(axes, (tuple, list)):
-            axes = list(axes)
-        return tensor.transpose(axes)
+    @staticmethod
+    def permute_dims(x: paddle.Tensor, axes: Sequence[int]):
+        return x.transpose(list(axes))
 
     @staticmethod
     def copy(tensor: paddle.Tensor):
@@ -209,20 +207,16 @@ class PaddleBackend(Backend, backend_name="paddle"):
             return paddle.flip(tensor, axis=axis)
 
     @staticmethod
-    def concatenate(tensors: paddle.Tensor, axis=0):
-        return paddle.concat(tensors, axis=axis)
+    def concat(arrays: Sequence[paddle.Tensor], axis=0):
+        return paddle.concat(list(arrays), axis=axis)
 
     @staticmethod
     def diag(tensor: paddle.Tensor, k=0):
         return paddle.diag(tensor, offset=k)
 
     @staticmethod
-    def sort(tensor: paddle.Tensor, axis):
-        if axis is None:
-            tensor = tensor.flatten()
-            axis = -1
-
-        return paddle.sort(tensor, axis=axis)
+    def sort(x: paddle.Tensor, axis=-1, descending=False, stable=True):
+        return paddle.sort(x, axis=axis, descending=descending, stable=stable)
 
     @staticmethod
     def lstsq(a: paddle.Tensor, b: paddle.Tensor, rcond=None, driver="gelsd"):

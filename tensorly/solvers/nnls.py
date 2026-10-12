@@ -127,9 +127,9 @@ def hals_nnls(
     rank, _ = tl.shape(UtM)
     if V is None:
         V = tl.solve(UtU, UtM)
-        V = tl.clip(V, a_min=0, a_max=None)
+        V = tl.clip(V, min=0, max=None)
         # Scaling
-        scale = tl.sum(UtM * V) / tl.sum(UtU * tl.dot(V, tl.transpose(V)))
+        scale = tl.sum(UtM * V) / tl.sum(UtU * tl.dot(V, tl.permute_dims(V, (1, 0))))
         V = V * scale
 
     if exact:
@@ -148,7 +148,7 @@ def hals_nnls(
                 if ridge_coefficient is not None:
                     den += 2 * ridge_coefficient
 
-                newV = tl.clip(num / den, a_min=epsilon)
+                newV = tl.clip(num / den, min=epsilon)
                 rec_error += tl.norm(V - newV) ** 2
                 V = tl.index_update(V, tl.index[k, :], newV)
 
@@ -420,7 +420,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                 if tl.any(passive_set) != True or tl.min(support_vec[passive_set]) > 0:
                     break
         # set x to s
-        x_vec = tl.clip(support_vec, 0, tl.max(support_vec))
+        x_vec = tl.clip(support_vec, min=0, max=tl.max(support_vec))
 
         # gradient update
         x_gradient = Utm - tl.dot(UtU, x_vec)

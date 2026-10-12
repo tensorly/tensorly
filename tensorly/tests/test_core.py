@@ -229,7 +229,10 @@ def test_partial_unfold():
         unfolded = partial_unfold(tensor, mode=i, skip_end=1, skip_begin=0)
         unfolded_X = unfold(t, i)
         for j in range(n_samples):  # test for each sample
-            assert_array_equal(T.transpose(T.transpose(unfolded)[j]), unfolded_X + j)
+            assert_array_equal(
+                T.permute_dims(T.permute_dims(unfolded, (2, 1, 0))[j], (1, 0)),
+                unfolded_X + j,
+            )
 
     # Test for raveled tensor
     for i in range(T.ndim(X)):  # test for each mode
@@ -238,7 +241,7 @@ def test_partial_unfold():
         )
         unfolded_X = T.reshape(unfold(t, i), (-1,))
         for j in range(n_samples):  # test for each sample
-            assert_array_equal(T.transpose(unfolded)[j], unfolded_X + j)
+            assert_array_equal(T.permute_dims(unfolded, (1, 0))[j], unfolded_X + j)
 
 
 def test_partial_fold():
@@ -318,7 +321,7 @@ def test_partial_tensor_to_vec():
     vectorised = partial_tensor_to_vec(tensor, skip_end=1, skip_begin=0)
     vec_X = tensor_to_vec(T.tensor(X))
     for j in range(n_samples):  # test for each sample
-        assert_array_equal(T.transpose(vectorised)[j], vec_X + j)
+        assert_array_equal(T.permute_dims(vectorised, (1, 0))[j], vec_X + j)
 
     tensor = T.randn((2, 3, 4, 5))
     TT = partial_tensor_to_vec(tensor, skip_begin=0, skip_end=2)

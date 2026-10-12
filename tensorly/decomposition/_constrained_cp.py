@@ -125,7 +125,7 @@ def initialize_constrained_parafac(
                     rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
                     **tl.context(tensor),
                 )
-                U = tl.concatenate([U, random_part], axis=1)
+                U = tl.concat([U, random_part], axis=1)
 
             factors.append(U[:, :rank])
 
@@ -355,7 +355,9 @@ def constrained_parafac(
     for i in range(len(factors)):
         dual_variables.append(tl.zeros(tl.shape(factors[i]), **tl.context(factors[i])))
         factors_aux.append(
-            tl.transpose(tl.zeros(tl.shape(factors[i]), **tl.context(factors[i])))
+            tl.permute_dims(
+                tl.zeros(tl.shape(factors[i]), **tl.context(factors[i])), (1, 0)
+            )
         )
 
     for iteration in range(n_iter_max):
@@ -369,7 +371,7 @@ def constrained_parafac(
             for i, factor in enumerate(factors):
                 if i != mode:
                     pseudo_inverse = pseudo_inverse * tl.dot(
-                        tl.transpose(factor), factor
+                        tl.permute_dims(factor, (1, 0)), factor
                     )
 
             mttkrp = unfolding_dot_khatri_rao(tensor, (None, factors), mode)

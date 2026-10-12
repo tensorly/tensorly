@@ -468,7 +468,7 @@ def test_parafac2_slice_with_fewer_rows_than_rank(init):
 
     # The short slice has orthonormal rows, as orthonormal columns are impossible
     short = decomposition.projections[1]
-    assert_array_almost_equal(short @ tl.transpose(short), tl.eye(2))
+    assert_array_almost_equal(short @ tl.permute_dims(short, (1, 0)), tl.eye(2))
 
 
 @pytest.mark.parametrize("linesearch", [False, True])

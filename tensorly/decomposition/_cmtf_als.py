@@ -89,9 +89,9 @@ def coupled_matrix_tensor_3d_factorization(
     # initialize values
     tensor_cp = initialize_cp(tensor_3d, rank, init=init, mask=mask)
     # the coupled factor should be initialized with the concatenated dataset
-    coupled_unfold = tl.concatenate((tl.unfold(tensor_3d, 0), matrix), axis=1)
+    coupled_unfold = tl.concat((tl.unfold(tensor_3d, 0), matrix), axis=1)
     if mask is not None:
-        coupled_mask = tl.concatenate(
+        coupled_mask = tl.concat(
             (
                 tl.unfold(mask, 0),
                 tl.ones(tl.shape(matrix), **tl.context(matrix)),
@@ -113,7 +113,7 @@ def coupled_matrix_tensor_3d_factorization(
             tensor_filled = tensor_3d * mask + cp_to_tensor(tensor_cp, mask=1 - mask)
         else:
             tensor_filled = tensor_3d
-        V = tl.transpose(tl.lstsq(tensor_cp.factors[0], matrix)[0])
+        V = tl.permute_dims(tl.lstsq(tensor_cp.factors[0], matrix)[0], (1, 0))
 
         # Loop over modes of the tensor
         # We want to solve for mode 0 last, since the coupled factor matrix is most influential and SVD gave us a good approximation
@@ -123,11 +123,11 @@ def coupled_matrix_tensor_3d_factorization(
 
             # If we are at the coupled mode, concat the matrix
             if ii == 0:
-                kr = tl.concatenate((kr, V), axis=0)
-                unfolded = tl.concatenate((unfolded, matrix), axis=1)
+                kr = tl.concat((kr, V), axis=0)
+                unfolded = tl.concat((unfolded, matrix), axis=1)
 
-            tensor_cp.factors[ii] = tl.transpose(
-                tl.lstsq(kr, tl.transpose(unfolded))[0]
+            tensor_cp.factors[ii] = tl.permute_dims(
+                tl.lstsq(kr, tl.permute_dims(unfolded, (1, 0)))[0], (1, 0)
             )
 
         tensor_residual = tensor_3d - cp_to_tensor(tensor_cp)

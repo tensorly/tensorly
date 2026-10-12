@@ -94,8 +94,18 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
         return res
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
-        return tnp.clip(tensor, a_min, a_max)
+    def clip(x, min=None, max=None):
+        return tnp.clip(x, min, max)
+
+    @staticmethod
+    def permute_dims(x, axes):
+        return tf.transpose(x, perm=axes)
+
+    @staticmethod
+    def sort(x, axis=-1, descending=False, stable=True):
+        return tf.sort(
+            x, axis=axis, direction="DESCENDING" if descending else "ASCENDING"
+        )
 
     @staticmethod
     def qr(tensor, mode="reduced"):
@@ -152,6 +162,10 @@ for name in ["nan"]:
     TensorflowBackend.register_method(name, getattr(np, name))
 
 
+# Register tf functions
+TensorflowBackend.register_method("concat", tf.concat)
+
+
 # Register linalg functions
 for name in ["diag", "eigh", "trace"]:
     TensorflowBackend.register_method(name, getattr(tf.linalg, name))
@@ -168,7 +182,6 @@ for name in (
     + backend_array
     + [
         "log2",
-        "concatenate",
         "flip",
         "dot",
         "argmin",
@@ -185,11 +198,9 @@ for name in (
         "moveaxis",
         "ndim",
         "arange",
-        "sort",
         "argsort",
         "flip",
         "stack",
-        "transpose",
     ]
 ):
     TensorflowBackend.register_method(name, getattr(tnp, name))

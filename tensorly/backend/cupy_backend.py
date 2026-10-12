@@ -44,8 +44,21 @@ class CupyBackend(Backend, backend_name="cupy"):
         return tensor.ndim
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
-        return cp.clip(tensor, a_min, a_max)
+    def concat(arrays, axis=0):
+        return cp.concatenate(arrays, axis=axis)
+
+    @staticmethod
+    def permute_dims(x, axes):
+        return cp.transpose(x, axes)
+
+    @staticmethod
+    def clip(x, min=None, max=None):
+        return cp.clip(x, min, max)
+
+    @staticmethod
+    def sort(x, axis=-1, descending=False, stable=True):
+        out = cp.sort(x, axis=axis)
+        return cp.flip(out, axis=axis) if descending else out
 
     @staticmethod
     def logsumexp(tensor, axis=0):
@@ -64,13 +77,12 @@ for name in (
     + [
         "moveaxis",
         "nan",
-        "transpose",
+        "shape",
         "copy",
         "trace",
         "arange",
         "dot",
         "kron",
-        "concatenate",
         "max",
         "flip",
         "mean",
@@ -84,8 +96,6 @@ for name in (
         "tensordot",
         "log2",
         "argsort",
-        "sort",
-        "shape",
     ]
 ):
     CupyBackend.register_method(name, getattr(cp, name))

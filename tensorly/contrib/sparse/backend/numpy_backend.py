@@ -52,8 +52,8 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
         return _py_copy(tensor)
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
-        return np.clip(tensor, a_min, a_max)
+    def concat(arrays, axis=0):
+        return sparse.concatenate(arrays, axis=axis)
 
     @staticmethod
     def norm(tensor, order=2, axis=None):
@@ -227,8 +227,9 @@ for name in [
     "int32",
     "float64",
     "float32",
-    "transpose",
     "moveaxis",
+    "permute_dims",
+    "clip",
     "reshape",
     "ndim",
     "max",
@@ -249,7 +250,6 @@ for name in [
 
 for name in [
     "where",
-    "concatenate",
     "kron",
     "zeros",
     "zeros_like",

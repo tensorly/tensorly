@@ -106,7 +106,7 @@ class CPRegressor:
                         X_unfolded,
                         T.reshape(other_factors, (X_unfolded.shape[-1], -1)),
                     )
-                    phi = T.transpose(
+                    phi = T.permute_dims(
                         T.reshape(
                             phi, (X.shape[0], X.shape[i + 1], -1, self.weight_rank)
                         ),
@@ -114,11 +114,13 @@ class CPRegressor:
                     )
                     phi = T.reshape(phi, (-1, X.shape[i + 1] * self.weight_rank))
                     y_reshaped = T.reshape(y, (-1,))
-                    inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.eye(
-                        phi.shape[1], **T.context(X)
-                    )
+                    inv_term = T.dot(
+                        T.permute_dims(phi, (1, 0)), phi
+                    ) + self.reg_W * T.eye(phi.shape[1], **T.context(X))
                     W[i] = T.reshape(
-                        T.solve(inv_term, T.dot(T.transpose(phi), y_reshaped)),
+                        T.solve(
+                            inv_term, T.dot(T.permute_dims(phi, (1, 0)), y_reshaped)
+                        ),
                         (-1, self.weight_rank),
                     )
                 else:
@@ -134,11 +136,14 @@ class CPRegressor:
                         T.moveaxis(y, i - T.ndim(X) + 2, -1),
                         (-1, y.shape[i - T.ndim(X) + 2]),
                     )
-                    inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.eye(
-                        phi.shape[1], **T.context(X)
-                    )
-                    W[i] = T.transpose(
-                        T.solve(inv_term, T.dot(T.transpose(phi), y_reshaped))
+                    inv_term = T.dot(
+                        T.permute_dims(phi, (1, 0)), phi
+                    ) + self.reg_W * T.eye(phi.shape[1], **T.context(X))
+                    W[i] = T.permute_dims(
+                        T.solve(
+                            inv_term, T.dot(T.permute_dims(phi, (1, 0)), y_reshaped)
+                        ),
+                        (1, 0),
                     )
 
             weight_tensor_ = cp_to_tensor((weights, W))

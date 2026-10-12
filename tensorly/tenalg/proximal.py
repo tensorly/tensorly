@@ -262,7 +262,7 @@ def proximal_operator(
     if constraint is None:
         return tensor
     elif constraint == "non_negative":
-        return tl.clip(tensor, 0, tl.max(tensor))
+        return tl.clip(tensor, min=0, max=tl.max(tensor))
     elif constraint == "l1_reg":
         return soft_thresholding(tensor, parameter)
     elif constraint == "group_lasso":
@@ -545,7 +545,7 @@ def group_lasso_prox(tensor, regularizer):
         row_norms,
         tl.ones(tl.shape(row_norms), **tl.context(tensor)),
     )
-    shrinkage = tl.clip(1 - regularizer / safe_row_norms, 0, 1)
+    shrinkage = tl.clip(1 - regularizer / safe_row_norms, min=0, max=1)
     return tensor * tl.reshape(shrinkage, (-1, 1))
 
 
@@ -651,7 +651,7 @@ def simplex_prox(tensor, parameter):
         row = tl.shape(tensor)[0]
         col = 1
         tensor = tl.reshape(tensor, [row, col])
-    tensor_sort = tl.flip(tl.sort(tensor, axis=0), axis=0)
+    tensor_sort = tl.sort(tensor, axis=0, descending=True)
     # Broadcasting is used to divide rows by 1,2,3...
     cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(
         tl.ones([row, 1], **tl.context(tensor)), axis=0
@@ -664,9 +664,9 @@ def simplex_prox(tensor, parameter):
             difference, tl.index[i], cumsum_min_param_by_k[to_change[i], i]
         )
     if col > 1:
-        return tl.clip(tensor - difference, a_min=0)
+        return tl.clip(tensor - difference, min=0)
     else:
-        return tl.tensor_to_vec(tl.clip(tensor - difference, a_min=0))
+        return tl.tensor_to_vec(tl.clip(tensor - difference, min=0))
 
 
 def hard_thresholding(tensor, number_of_non_zero):
@@ -739,7 +739,7 @@ def soft_thresholding(tensor, threshold):
     --------
     svd_thresholding : SVD-thresholding operator
     """
-    return tl.sign(tensor) * tl.clip(tl.abs(tensor) - threshold, a_min=0)
+    return tl.sign(tensor) * tl.clip(tl.abs(tensor) - threshold, min=0)
 
 
 def svd_thresholding(matrix, threshold):

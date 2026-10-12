@@ -10,6 +10,11 @@ import math
 import numpy as np
 import scipy.special
 
+if tuple(int(v) for v in np.__version__.split(".")[:2]) < (2, 1):
+    raise RuntimeError(
+        f"TensorLy requires NumPy v2.1 or above (array API support), but got {np.__version__}."
+    )
+
 backend_types = [
     "int32",
     "int64",
@@ -305,12 +310,14 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def concatenate(tensors, axis=0):
+    def concat(arrays, axis=0):
         """Concatenate tensors along an axis.
+
+        Follows the array API standard (``concat``).
 
         Parameters
         ----------
-        tensors : list of tensor
+        arrays : list or tuple of tensor
             The tensors to concatenate. Non-empty tensors provided must have the
             same shape, except along the specified axis.
         axis : int, optional
@@ -340,12 +347,21 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def transpose(tensor):
+    def permute_dims(x, axes):
         """Permute the dimensions of a tensor.
+
+        Follows the array API standard (``permute_dims``).
 
         Parameters
         ----------
-        tensor : tensor
+        x : tensor
+        axes : tuple of int
+            Permutation of the dimensions of `x`. Must contain every axis
+            exactly once.
+
+        Returns
+        -------
+        tensor
         """
         raise NotImplementedError
 
@@ -520,22 +536,24 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
+    def clip(x, min=None, max=None):
         """Clip the values of a tensor to within an interval.
+
+        Follows the array API standard (``clip``).
 
         Given an interval, values outside the interval are clipped to the interval
         edges.  For example, if an interval of ``[0, 1]`` is specified, values
         smaller than 0 become 0, and values larger than 1 become 1.
 
-        Not more than one of `a_min` and `a_max` may be `None`.
+        Not more than one of `min` and `max` may be `None`.
 
         Parameters
         ----------
-        tensor : tl.tensor
+        x : tl.tensor
             The tensor.
-        a_min : scalar, optional
+        min : scalar, optional
             Minimum value. If `None`, clipping is not performed on lower bound.
-        a_max : scalar, optional
+        max : scalar, optional
             Maximum value. If `None`, clipping is not performed on upper bound.
 
         Returns
@@ -960,15 +978,22 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def sort(tensor, axis):
+    def sort(x, axis=-1, descending=False, stable=True):
         """Return a sorted copy of an array
+
+        Follows the array API standard (``sort``).
 
         Parameters
         ----------
-        tensor : tensor
+        x : tensor
             An N-D tensor
-        axis : int or None
-            Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
+        axis : int, optional
+            Axis along which to sort. The default is -1, which sorts along the last axis.
+        descending : bool, optional
+            Sort in descending order if True. Default is False.
+        stable : bool, optional
+            Whether the sort should preserve the relative order of equal elements.
+            Default is True.
 
         Returns
         -------
@@ -1052,7 +1077,7 @@ class Backend:
                 "Destination should verify 0 <= destination < tensor.ndim"
                 "Got %d" % destination
             )
-        return self.transpose(tensor, axes)
+        return self.permute_dims(tensor, tuple(axes))
 
     def kron(self, a, b):
         """Kronecker product of two tensors.

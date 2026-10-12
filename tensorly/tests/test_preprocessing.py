@@ -101,7 +101,7 @@ def test_svd_compression_compresses_uses_compression_threshold():
     """If compression threshold is set, small singular values are truncated"""
     rng = tl.check_random_state(1234)
     slice = tl.tensor(rng.standard_normal((10, 5)), dtype=tl.float64)
-    slice = tl.concatenate([slice, slice[:, -1:] + 1e-10], axis=1)
+    slice = tl.concat([slice, slice[:, -1:] + 1e-10], axis=1)
 
     compressed_slices, loadings = svd_compress_tensor_slices(
         [slice], compression_threshold=1e-5
@@ -121,7 +121,7 @@ def test_svd_compression_gives_orthogonal_scores():
     compressed_slices, _loadings = svd_compress_tensor_slices(tensor_slices)
     for compressed_slice in compressed_slices:
         gramian = tl.to_numpy(
-            tl.matmul(compressed_slice, tl.transpose(compressed_slice))
+            tl.matmul(compressed_slice, tl.permute_dims(compressed_slice, (1, 0)))
         )
         diagonal_entries = np.diag(gramian)
 
@@ -138,5 +138,5 @@ def test_svd_compression_gives_orthonormal_loadings():
     _compressed_slices, loadings = svd_compress_tensor_slices(tensor_slices)
 
     for loading_matrix in loadings:
-        gramian = tl.matmul(tl.transpose(loading_matrix), loading_matrix)
+        gramian = tl.matmul(tl.permute_dims(loading_matrix, (1, 0)), loading_matrix)
         assert_allclose(gramian, tl.eye(tl.shape(gramian)[0]), atol=1e-10)

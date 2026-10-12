@@ -40,7 +40,7 @@ def tensor_ring(
     # Change order
     if mode:
         order = tuple(range(mode, n_dim)) + tuple(range(mode))
-        input_tensor = tl.transpose(input_tensor, order)
+        input_tensor = tl.permute_dims(input_tensor, order)
         rank = rank[mode:] + rank[:mode]
 
     tensor_size = input_tensor.shape
@@ -66,14 +66,14 @@ def tensor_ring(
 
     # Get first TR factor
     factor = tl.reshape(U, (tensor_size[0], rank[0], rank[1]))
-    factors[0] = tl.transpose(factor, (1, 0, 2))
+    factors[0] = tl.permute_dims(factor, (1, 0, 2))
     if verbose is True:
         print("TR factor " + str(mode) + " computed with shape " + str(factor.shape))
 
     # Get new unfolding matrix for the remaining factors
     unfolding = tl.reshape(S, (-1, 1)) * V
     unfolding = tl.reshape(unfolding, (rank[0], rank[1], -1))
-    unfolding = tl.transpose(unfolding, (1, 2, 0))
+    unfolding = tl.permute_dims(unfolding, (1, 2, 0))
 
     # Getting the TR factors up to n_dim - 1
     for k in range(1, n_dim - 1):
