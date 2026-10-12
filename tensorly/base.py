@@ -76,7 +76,7 @@ def fold(unfolded_tensor, mode, shape):
     full_shape = list(shape)
     mode_dim = full_shape.pop(mode)
     full_shape.insert(0, mode_dim)
-    return tl.moveaxis(tl.reshape(unfolded_tensor, full_shape), 0, mode)
+    return tl.moveaxis(tl.reshape(unfolded_tensor, tuple(full_shape)), 0, mode)
 
 
 def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False):
@@ -118,7 +118,9 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
     if skip_end:
         new_shape += [tensor.shape[-i] for i in range(skip_end, 0, -1)]
 
-    return tl.reshape(tl.moveaxis(tensor, mode + skip_begin, skip_begin), new_shape)
+    return tl.reshape(
+        tl.moveaxis(tensor, mode + skip_begin, skip_begin), tuple(new_shape)
+    )
 
 
 def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
@@ -146,7 +148,7 @@ def partial_fold(unfolded, mode, shape, skip_begin=1, skip_end=0):
     mode_dim = transposed_shape.pop(skip_begin + mode)
     transposed_shape.insert(skip_begin, mode_dim)
     return tl.moveaxis(
-        tl.reshape(unfolded, transposed_shape), skip_begin, skip_begin + mode
+        tl.reshape(unfolded, tuple(transposed_shape)), skip_begin, skip_begin + mode
     )
 
 
@@ -238,5 +240,6 @@ def matricize(tensor, row_modes, column_modes=None):
     column_size = prod(tl.shape(tensor)[i] for i in column_indices)
 
     return tl.reshape(
-        tl.permute_dims(tensor, row_indices + column_indices), (row_size, column_size)
+        tl.permute_dims(tensor, tuple(row_indices + column_indices)),
+        (row_size, column_size),
     )

@@ -33,9 +33,9 @@ def leverage_score_dist(matrix):
     U, S, _ = tl.svd(matrix, full_matrices=False)
     mat_dtype = tl.context(matrix)["dtype"]
     rank_cutoff = tl.max(S) * max(matrix.shape) * tl.eps(mat_dtype)
-    num_rank = (
-        int(tl.max(tl.where(S > rank_cutoff)[0])) + 1
-    )  # int(...) needed for mxnet
+    # The singular values are sorted in decreasing order, so the numerical rank is
+    # the number of singular values above the cutoff
+    num_rank = int(tl.sum(S > rank_cutoff))
     lev_score_dist = tl.sum(U[:, :num_rank] ** 2, axis=1) / tl.tensor(
         num_rank, dtype=mat_dtype
     )

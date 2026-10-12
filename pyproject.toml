@@ -30,4 +30,4 @@ version = {attr = "tensorly.__version__"}
 include = ["tensorly*"]
 
 [tool.setuptools.package-data]
-tensorly = ["datasets/data/*.npy"]
+tensorly = ["datasets/data/*.npy", "backend/*.pyi"]

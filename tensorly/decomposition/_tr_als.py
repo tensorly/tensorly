@@ -101,7 +101,7 @@ def tensor_ring_als(
                 + [i + 1 for i in range(n_dim - dim - 1)]
                 + [n_dim, 0]
             )
-            subchain_tensor = tl.permute_dims(subchain_tensor, tr_idx)
+            subchain_tensor = tl.permute_dims(subchain_tensor, tuple(tr_idx))
             design_mat = tl.reshape(subchain_tensor, (-1, rank[dim] * rank[dim + 1]))
 
             if ls_solve == "lstsq":
@@ -118,7 +118,7 @@ def tensor_ring_als(
             # Update core
             tr_decomp[dim] = tl.permute_dims(
                 tl.reshape(sol, (rank[dim], rank[dim + 1], shape[dim])),
-                [0, 2, 1],
+                (0, 2, 1),
             )
 
         # Compute relative error if necessary
@@ -319,7 +319,7 @@ def tensor_ring_als_sampled(
             # Update core
             tr_decomp[dim] = tl.permute_dims(
                 tl.reshape(sol, (rank[dim], rank[dim + 1], shape[dim])),
-                [0, 2, 1],
+                (0, 2, 1),
             )
 
             # Compute sampling distribution for updated core

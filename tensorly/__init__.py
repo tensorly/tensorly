@@ -1,6 +1,7 @@
 __version__ = "0.10.0"
 
 import sys
+from typing import TYPE_CHECKING
 
 from .base import unfold, fold
 from .base import tensor_to_vec, vec_to_tensor
@@ -110,16 +111,10 @@ from .backend import (
     asin,
     acos,
     atan,
-    arcsin,
-    arccos,
-    arctan,
     sinh,
     sort,
     cosh,
     tanh,
-    arcsinh,
-    arccosh,
-    arctanh,
     asinh,
     acosh,
     atanh,
@@ -152,7 +147,12 @@ def __dir__():
     # return _get_backend_dir() + static_items
 
 
-__getattr__ = backend.__getattribute__
+if TYPE_CHECKING:
+    # The backend functions are provided at runtime through `__getattr__`, which
+    # type checkers cannot see: declare them through the type stub of the backend.
+    from .backend import *  # noqa: F401,F403
+else:
+    __getattr__ = backend.__getattribute__
 
 
 # override_module_dispatch(__name__,

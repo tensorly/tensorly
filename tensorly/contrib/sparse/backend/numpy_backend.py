@@ -76,7 +76,8 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
             return NumpySparseBackend.tensor(result)
         return result
 
-    def matmul(self, x1, x2):
+    @staticmethod
+    def matmul(x1, x2):
         if is_sparse(x1) or is_sparse(x2):
             return sparse.matmul(x1, x2)
         return np.matmul(x1, x2)

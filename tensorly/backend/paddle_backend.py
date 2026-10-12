@@ -184,14 +184,6 @@ class PaddleBackend(Backend, backend_name="paddle"):
         return paddle.linalg.norm(tensor, order, axis)
 
     @staticmethod
-    def tensordot(a: paddle.Tensor, b: paddle.Tensor, axes=2, **kwargs):
-        return paddle.tensordot(a, b, axes=axes, **kwargs)
-
-    @staticmethod
-    def sum(tensor: paddle.Tensor, axis=None, keepdims=False):
-        return paddle.sum(tensor, axis=axis, keepdim=keepdims)
-
-    @staticmethod
     def flip(tensor: paddle.Tensor, axis=None):
         if axis is None:
             return paddle.flip(tensor, axis=[i for i in range(tensor.ndim)])
@@ -205,6 +197,55 @@ class PaddleBackend(Backend, backend_name="paddle"):
     @staticmethod
     def diag(tensor: paddle.Tensor, k=0):
         return paddle.diag(tensor, offset=k)
+
+    @staticmethod
+    def max(x: paddle.Tensor, /, *, axis=None, keepdims=False):
+        return paddle.max(x, axis=axis, keepdim=keepdims)
+
+    @staticmethod
+    def min(x: paddle.Tensor, /, *, axis=None, keepdims=False):
+        return paddle.min(x, axis=axis, keepdim=keepdims)
+
+    @staticmethod
+    def mean(x: paddle.Tensor, /, *, axis=None, keepdims=False):
+        return paddle.mean(x, axis=axis, keepdim=keepdims)
+
+    @staticmethod
+    def sum(x: paddle.Tensor, /, *, axis=None, keepdims=False):
+        return paddle.sum(x, axis=axis, keepdim=keepdims)
+
+    @staticmethod
+    def prod(x: paddle.Tensor, /, *, axis=None, keepdims=False):
+        return paddle.prod(x, axis=axis, keepdim=keepdims)
+
+    @staticmethod
+    def all(x: paddle.Tensor, /, *, axis=None, keepdims=False):
+        return paddle.all(x, axis=axis, keepdim=keepdims)
+
+    @staticmethod
+    def any(x: paddle.Tensor, /, *, axis=None, keepdims=False):
+        return paddle.any(x, axis=axis, keepdim=keepdims)
+
+    @staticmethod
+    def tensordot(x1: paddle.Tensor, x2: paddle.Tensor, /, *, axes=2):
+        return paddle.tensordot(x1, x2, axes=axes)
+
+    @staticmethod
+    def eye(n_rows: int, n_cols: int | None = None, /, *, k=0, dtype=None):
+        n_cols = n_rows if n_cols is None else n_cols
+        if k == 0:
+            return paddle.eye(n_rows, n_cols, dtype=dtype)
+        rows = paddle.arange(n_rows)[:, None]
+        cols = paddle.arange(n_cols)[None, :]
+        return paddle.cast(cols - rows == k, dtype or paddle.get_default_dtype())
+
+    @staticmethod
+    def trace(x: paddle.Tensor, /, *, offset=0):
+        return paddle.trace(x, offset=offset, axis1=-2, axis2=-1)
+
+    @staticmethod
+    def argsort(x: paddle.Tensor, axis=-1, descending=False, stable=True):
+        return paddle.argsort(x, axis=axis, descending=descending, stable=stable)
 
     @staticmethod
     def sort(x: paddle.Tensor, axis=-1, descending=False, stable=True):
@@ -278,21 +319,19 @@ for name in (
     + [
         "nan",
         "is_tensor",
-        "trace",
         "conj",
         "finfo",
         "log2",
         "digamma",
         "arange",
-        "mean",
         "argmin",
         "argmax",
-        "argsort",
         "stack",
         "logsumexp",
-        "max",
     ]
 ):
+    if name in PaddleBackend.__dict__:
+        continue  # implemented in the class above
     if name in ["pi", "e", "inf", "nan"]:
         PaddleBackend.register_method(name, getattr(np, name))
     elif name in ["arctanh", "arccosh", "arcsinh", "arctan", "arccos", "arcsin"]:

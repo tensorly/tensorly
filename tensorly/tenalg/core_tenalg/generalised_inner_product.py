@@ -50,4 +50,4 @@ def inner(tensor1, tensor2, n_modes=None):
     inner_product = T.matmul(
         T.reshape(tensor1, (-1, common_size)), T.reshape(tensor2, (common_size, -1))
     )
-    return T.reshape(inner_product, output_shape)
+    return T.reshape(inner_product, tuple(output_shape))

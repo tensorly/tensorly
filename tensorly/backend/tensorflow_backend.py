@@ -102,6 +102,19 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
         return tf.transpose(x, perm=axes)
 
     @staticmethod
+    def argsort(x, axis=-1, descending=False, stable=True):
+        return tf.argsort(
+            x,
+            axis=axis,
+            direction="DESCENDING" if descending else "ASCENDING",
+            stable=stable,
+        )
+
+    @staticmethod
+    def trace(x, /, *, offset=0):
+        return tf.reduce_sum(tf.linalg.diag_part(x, k=offset), axis=-1)
+
+    @staticmethod
     def sort(x, axis=-1, descending=False, stable=True):
         return tf.sort(
             x, axis=axis, direction="DESCENDING" if descending else "ASCENDING"
@@ -167,7 +180,7 @@ TensorflowBackend.register_method("concat", tf.concat)
 
 
 # Register linalg functions
-for name in ["diag", "eigh", "trace"]:
+for name in ["diag", "eigh"]:
     TensorflowBackend.register_method(name, getattr(tf.linalg, name))
 
 
@@ -197,7 +210,6 @@ for name in (
         "moveaxis",
         "ndim",
         "arange",
-        "argsort",
         "flip",
         "stack",
     ]

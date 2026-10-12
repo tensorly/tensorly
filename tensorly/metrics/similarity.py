@@ -115,8 +115,8 @@ def _compute_correlation_index(x1: list, x2: list, tol: float = 5e-16) -> float:
     # correlation index scoring
     n_elements = tl.shape(c_prod_mtx)[1] + tl.shape(c_prod_mtx)[0]
     score = (1 / (n_elements)) * (
-        tl.sum(tl.abs(tl.max(c_prod_mtx, 1) - 1))
-        + tl.sum(tl.abs(tl.max(c_prod_mtx, 0) - 1))
+        tl.sum(tl.abs(tl.max(c_prod_mtx, axis=1) - 1))
+        + tl.sum(tl.abs(tl.max(c_prod_mtx, axis=0) - 1))
     )
     if score < tol:
         score = 0

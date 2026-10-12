@@ -345,7 +345,7 @@ def monotonicity_prox(tensor, decreasing=False):
             "The Proximity Operator Repository. User's guide"
     """
     if tl.ndim(tensor) == 1:
-        tensor = tl.reshape(tensor, [tl.shape(tensor)[0], 1])
+        tensor = tl.reshape(tensor, (tl.shape(tensor)[0], 1))
     elif tl.ndim(tensor) > 2:
         raise ValueError(
             "Monotonicity prox doesn't support an input which has more than 2 dimensions."
@@ -650,7 +650,7 @@ def simplex_prox(tensor, parameter):
     else:
         row = tl.shape(tensor)[0]
         col = 1
-        tensor = tl.reshape(tensor, [row, col])
+        tensor = tl.reshape(tensor, (row, col))
     tensor_sort = tl.sort(tensor, axis=0, descending=True)
     # Broadcasting is used to divide rows by 1,2,3...
     cumsum_min_param_by_k = (tl.cumsum(tensor_sort, axis=0) - parameter) / tl.cumsum(

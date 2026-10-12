@@ -23,6 +23,23 @@ if Version(torch.__version__) < Version("2.0.0"):
     raise RuntimeError("TensorLy only supports pytorch v2.0.0 and above.")
 
 
+def _all_dims(x, axis):
+    return tuple(range(x.ndim)) if axis is None else axis
+
+
+def _reduce_axes(fn, x, axis, keepdims):
+    """Apply a single-axis reduction `fn` over one, several or all axes."""
+    if x.ndim == 0:
+        return fn(x)
+    if axis is None:
+        axis = range(x.ndim)
+    elif isinstance(axis, int):
+        axis = (axis,)
+    for ax in sorted((a % x.ndim for a in axis), reverse=True):
+        x = fn(x, dim=ax, keepdim=keepdims)
+    return x
+
+
 class PyTorchBackend(Backend, backend_name="pytorch"):
     @staticmethod
     def context(tensor):
@@ -128,30 +145,6 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.norm(tensor, **kwds)
 
     @staticmethod
-    def tensordot(a, b, axes=2, **kwargs):
-        return torch.tensordot(a, b, dims=axes, **kwargs)
-
-    @staticmethod
-    def mean(tensor, axis=None):
-        if axis is None:
-            return torch.mean(tensor)
-        else:
-            return torch.mean(tensor, dim=axis)
-
-    @staticmethod
-    def sum(tensor, axis=None, keepdims=False):
-        if axis is None:
-            axis = tuple(range(tensor.ndim))
-        return torch.sum(tensor, dim=axis, keepdim=keepdims)
-
-    @staticmethod
-    def max(tensor, axis=None):
-        if axis is None:
-            return torch.max(tensor)
-        else:
-            return torch.max(tensor, dim=axis)[0]
-
-    @staticmethod
     def flip(tensor, axis=None):
         if isinstance(axis, int):
             axis = [axis]
@@ -166,10 +159,6 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.argmin(input, dim=axis)
 
     @staticmethod
-    def argsort(input, axis=None):
-        return torch.argsort(input, dim=axis)
-
-    @staticmethod
     def argmax(input, axis=None):
         return torch.argmax(input, dim=axis)
 
@@ -180,6 +169,64 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
     @staticmethod
     def diag(tensor, k=0):
         return torch.diag(tensor, diagonal=k)
+
+    @staticmethod
+    def max(x, /, *, axis=None, keepdims=False):
+        return torch.amax(x, dim=_all_dims(x, axis), keepdim=keepdims)
+
+    @staticmethod
+    def min(x, /, *, axis=None, keepdims=False):
+        return torch.amin(x, dim=_all_dims(x, axis), keepdim=keepdims)
+
+    @staticmethod
+    def mean(x, /, *, axis=None, keepdims=False):
+        return torch.mean(x, dim=_all_dims(x, axis), keepdim=keepdims)
+
+    @staticmethod
+    def sum(x, /, *, axis=None, keepdims=False):
+        return torch.sum(x, dim=_all_dims(x, axis), keepdim=keepdims)
+
+    @staticmethod
+    def prod(x, /, *, axis=None, keepdims=False):
+        return _reduce_axes(torch.prod, x, axis, keepdims)
+
+    @staticmethod
+    def all(x, /, *, axis=None, keepdims=False):
+        return _reduce_axes(torch.all, x, axis, keepdims)
+
+    @staticmethod
+    def any(x, /, *, axis=None, keepdims=False):
+        return _reduce_axes(torch.any, x, axis, keepdims)
+
+    @staticmethod
+    def tensordot(x1, x2, /, *, axes=2):
+        return torch.tensordot(x1, x2, dims=axes)
+
+    @staticmethod
+    def eye(
+        n_rows, n_cols=None, /, *, k=0, dtype=None, device=None, requires_grad=False
+    ):
+        n_cols = n_rows if n_cols is None else n_cols
+        if k == 0:
+            return torch.eye(
+                n_rows,
+                n_cols,
+                dtype=dtype,
+                device=device,
+                requires_grad=requires_grad,
+            )
+        rows = torch.arange(n_rows, device=device)[:, None]
+        cols = torch.arange(n_cols, device=device)[None, :]
+        out = (cols - rows == k).to(dtype or torch.get_default_dtype())
+        return out.requires_grad_(requires_grad)
+
+    @staticmethod
+    def trace(x, /, *, offset=0):
+        return torch.diagonal(x, offset=offset, dim1=-2, dim2=-1).sum(-1)
+
+    @staticmethod
+    def argsort(x, axis=-1, descending=False, stable=True):
+        return torch.argsort(x, dim=axis, descending=descending, stable=stable)
 
     @staticmethod
     def sort(x, axis=-1, descending=False, stable=True):
@@ -207,7 +254,6 @@ for name in (
     + [
         "nan",
         "is_tensor",
-        "trace",
         "conj",
         "real",
         "finfo",
@@ -216,6 +262,8 @@ for name in (
         "concat",
     ]
 ):
+    if name in PyTorchBackend.__dict__:
+        continue  # implemented in the class above
     PyTorchBackend.register_method(name, getattr(torch, name))
 
 

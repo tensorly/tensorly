@@ -66,6 +66,6 @@ def tensordot(tensor1, tensor2, modes, batched_modes=()):
     final_modes += [i for i in range(res.ndim) if i not in final_modes]
 
     if final_modes:
-        res = tl.permute_dims(res, final_modes)
+        res = tl.permute_dims(res, tuple(final_modes))
 
     return res

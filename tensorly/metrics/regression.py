@@ -85,10 +85,10 @@ def covariance(y_true, y_pred, axis=None):
         # TODO: write a function to do this..
         shape = list(T.shape(y_true))
         shape[axis] = 1
-        centered_true = T.reshape(centered_true, shape)
+        centered_true = T.reshape(centered_true, tuple(shape))
         shape = list(T.shape(y_pred))
         shape[axis] = 1
-        centered_pred = T.reshape(centered_pred, shape)
+        centered_pred = T.reshape(centered_pred, tuple(shape))
 
     return T.mean((y_true - centered_true) * (y_pred - centered_pred), axis=axis)
 

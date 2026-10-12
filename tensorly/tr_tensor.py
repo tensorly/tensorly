@@ -45,7 +45,7 @@ def tr_to_tensor(factors):
     factor = tl.moveaxis(factors[-1], -1, 1)
     factor = tl.reshape(factor, (-1, full_shape[-1]))
     full_tensor = tl.matmul(full_tensor, factor)
-    return tl.reshape(full_tensor, full_shape)
+    return tl.reshape(full_tensor, tuple(full_shape))
 
 
 def tr_to_unfolded(factors, mode):

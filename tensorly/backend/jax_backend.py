@@ -77,11 +77,11 @@ for name in (
         "permute_dims",
         "clip",
         "sort",
+        "argsort",
         "shape",
         "moveaxis",
         "arange",
         "flip",
-        "trace",
         "kron",
         "max",
         "mean",
@@ -95,10 +95,9 @@ for name in (
         "diag",
         "log2",
         "tensordot",
-        "argsort",
     ]
 ):
     JaxBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "svd", "eigh"]:
+for name in ["solve", "qr", "svd", "eigh", "trace"]:
     JaxBackend.register_method(name, getattr(np.linalg, name))
