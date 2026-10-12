@@ -83,11 +83,12 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     ----------
     tensor : ndarray
 
-    matrix_or_vec_list : list of matrices or vectors of length ``tensor.ndim``
+    matrix_or_vec_list : list of matrices or vectors
 
     skip : None or int, optional, default is None
-        If not None, index of a matrix to skip.
-        Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
+        If not None, index in `matrix_or_vec_list` of a matrix or vector to skip.
+        This refers to the original list, before sorting by mode.
+        `modes`, if provided, must have the same length as `matrix_or_vec_list`.
 
     modes : None or int list, optional, default is None
 
@@ -119,8 +120,10 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
     # Order of mode dots doesn't matter for different modes
     # Sorting by mode shouldn't change order for equal modes
-    factors_modes = sorted(zip(matrix_or_vec_list, modes), key=lambda x: x[1])
-    for i, (matrix_or_vec, mode) in enumerate(factors_modes):
+    factors_modes = sorted(
+        enumerate(zip(matrix_or_vec_list, modes)), key=lambda x: x[1][1]
+    )
+    for i, (matrix_or_vec, mode) in factors_modes:
         if (skip is not None) and (i == skip):
             continue
 
