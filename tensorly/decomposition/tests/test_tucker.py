@@ -18,6 +18,7 @@ from ...testing import (
     assert_equal,
     assert_,
     assert_array_equal,
+    assert_array_almost_equal,
     assert_class_wrapper_correctly_passes_arguments,
 )
 
@@ -75,6 +76,22 @@ def test_partial_tucker():
     assert_array_equal(core1, core2)
     for factor1, factor2 in zip(factors1, factors2):
         assert_array_equal(factor1, factor2)
+
+
+@pytest.mark.parametrize("tenalg_backend", ["core", "einsum"])
+@pytest.mark.parametrize("modes", [(0, 2), (2, 0)])
+def test_partial_tucker_reordered_modes(tenalg_backend, modes):
+    tensor = random_tucker((3, 4, 5), rank=(2, 4, 2), random_state=0, full=True)
+    with tl.tenalg.backend_context(tenalg_backend):
+        (core, factors), _ = partial_tucker(
+            tensor, rank=(2, 2), modes=modes, init="svd", n_iter_max=3, tol=0
+        )
+        reconstructed = multi_mode_dot(core, factors, modes=modes)
+
+    assert_equal(tl.shape(core), (2, 4, 2))
+    for factor, mode in zip(factors, modes):
+        assert_equal(tl.shape(factor), (tl.shape(tensor)[mode], 2))
+    assert_array_almost_equal(reconstructed, tensor)
 
 
 def test_tucker(monkeypatch):

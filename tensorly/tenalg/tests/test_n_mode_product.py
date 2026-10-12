@@ -1,6 +1,7 @@
 import itertools
 
 import numpy as np
+import pytest
 
 from ... import backend as T
 from ...testing import (
@@ -12,7 +13,7 @@ from ...testing import (
 from ...base import fold, unfold
 
 
-from .. import kronecker
+from .. import backend_context, kronecker
 from .. import mode_dot, multi_mode_dot
 
 
@@ -151,3 +152,76 @@ def test_multi_mode_dot():
         res = multi_mode_dot(X, [vecs[i] for i in modes], modes=modes)
         assert_equal(T.shape(res), ())
         assert_array_almost_equal(res, 1)
+
+
+@pytest.mark.parametrize("tenalg_backend", ["core", "einsum"])
+@pytest.mark.parametrize("modes", [None, (0, 1, 2), (2, 0, 1), (2, 1, 0)])
+@pytest.mark.parametrize("skip", [None, 0, 1, 2])
+@pytest.mark.parametrize("transpose", [False, True])
+def test_multi_mode_dot_skip_original_factor(tenalg_backend, modes, skip, transpose):
+    values = np.arange(24, dtype=float).reshape(2, 3, 4) / 16
+    factors = [
+        (np.arange(4, dtype=float).reshape(2, 2) + 1) / 4,
+        (np.arange(3, dtype=float) + 1) / 4,
+        (np.arange(16, dtype=float).reshape(4, 4) + 1) / 8,
+    ]
+    ordered_modes = (0, 1, 2) if modes is None else modes
+    skipped_mode = None if skip is None else ordered_modes[skip]
+    expected = {
+        None: np.einsum("abc,da,b,ec->de", values, *factors),
+        0: np.einsum("abc,b,dc->ad", values, factors[1], factors[2]),
+        1: np.einsum("abc,da,ec->dbe", values, factors[0], factors[2]),
+        2: np.einsum("abc,da,b->dc", values, factors[0], factors[1]),
+    }[skipped_mode]
+    ordered_factors = [
+        factors[mode].T if transpose else factors[mode] for mode in ordered_modes
+    ]
+    tensor = T.tensor(values, dtype=T.float64)
+    tensor_factors = [T.tensor(factor, dtype=T.float64) for factor in ordered_factors]
+
+    with backend_context(tenalg_backend):
+        actual = multi_mode_dot(
+            tensor, tensor_factors, modes=modes, skip=skip, transpose=transpose
+        )
+
+    assert_equal(T.shape(actual), expected.shape)
+    assert_array_almost_equal(actual, expected)
+    assert_array_equal(tensor, values)
+    for factor, original in zip(tensor_factors, ordered_factors):
+        assert_array_equal(factor, original)
+
+
+@pytest.mark.parametrize("tenalg_backend", ["core", "einsum"])
+@pytest.mark.parametrize("skip", [0, 1])
+@pytest.mark.parametrize("transpose", [False, True])
+def test_multi_mode_dot_skip_partial_modes(tenalg_backend, skip, transpose):
+    values = np.arange(24, dtype=float).reshape(2, 3, 4) / 16
+    factors = [
+        (np.arange(20, dtype=float).reshape(5, 4) + 1) / 8,
+        (np.arange(12, dtype=float).reshape(6, 2) + 1) / 4,
+    ]
+    if skip == 0:
+        expected = np.einsum("abc,da->dbc", values, factors[1])
+    else:
+        expected = np.einsum("abc,dc->abd", values, factors[0])
+    tensor = T.tensor(values, dtype=T.float64)
+    tensor_factors = [
+        T.tensor(factor.T if transpose else factor, dtype=T.float64)
+        for factor in factors
+    ]
+
+    with backend_context(tenalg_backend):
+        actual = multi_mode_dot(
+            tensor, tensor_factors, modes=(2, 0), skip=skip, transpose=transpose
+        )
+
+    assert_equal(T.shape(actual), expected.shape)
+    assert_array_almost_equal(actual, expected)
+
+
+@pytest.mark.parametrize("tenalg_backend", ["core", "einsum"])
+def test_multi_mode_dot_skip_only_factor(tenalg_backend):
+    tensor = T.tensor(np.arange(24, dtype=float).reshape(2, 3, 4))
+    with backend_context(tenalg_backend):
+        actual = multi_mode_dot(tensor, [T.ones((5, 4))], modes=[2], skip=0)
+    assert_array_equal(actual, tensor)
