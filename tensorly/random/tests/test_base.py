@@ -53,7 +53,7 @@ def test_random_cp():
         for j in range(rank):
             for k in range(j):
                 # (See issue #40)
-                dot_product = T.dot(factor[:, j], factor[:, k])
+                dot_product = T.matmul(factor[:, j], factor[:, k])
                 try:
                     T.shape(dot_product)
                 except:
@@ -101,7 +101,7 @@ def test_random_tucker():
     )
     for factor in factors:
         assert_array_almost_equal(
-            T.dot(T.permute_dims(factor, (1, 0)), factor),
+            T.matmul(T.permute_dims(factor, (1, 0)), factor),
             T.tensor(np.eye(factor.shape[1])),
         )
     tensor = tucker_to_tensor((core, factors))

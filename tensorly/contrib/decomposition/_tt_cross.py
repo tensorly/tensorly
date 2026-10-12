@@ -389,7 +389,7 @@ def right_left_ttcross_step(input_tensor, k, rank, row_idx, col_idx):
     # Maxvol
     J, Q_inv = maxvol(Q)
     Q_inv = tl.tensor(Q_inv)
-    Q_skeleton = tl.dot(Q, Q_inv)
+    Q_skeleton = tl.matmul(Q, Q_inv)
 
     # Retrive indices in folded tensor
     new_idx = [
@@ -469,7 +469,7 @@ def maxvol(A):
 
         # Compute the projection of max_row to other rows
         # projection = <b, a>/|a|^2
-        projection = tl.dot(A_new, max_row)
+        projection = tl.matmul(A_new, max_row)
         projection = projection / (tl.sum(max_row**2))
 
         # Subtract the projection from A_new:  b <- b - a * projection

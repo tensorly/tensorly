@@ -756,35 +756,21 @@ class Backend:
             return self.sum(self.abs(tensor) ** order, axis=axis) ** (1 / order)
 
     @staticmethod
-    def dot(a, b):
-        """Dot product of two tensors.
-
-        Parameters
-        ----------
-        a, b : tensor
-            The tensors to compute the dot product of.
-
-        Returns
-        -------
-        tensor
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def matmul(a, b):
+    def matmul(x1, x2):
         """Matrix multiplication of tensors representing (batches of) matrices
 
+        Follows the array API standard (``matmul``).
+
         Parameters
         ----------
-        a : tl.tensor
-            [description]
-        b : tl.tensor
-            tensors representing the matrices to contract
+        x1 : tl.tensor
+        x2 : tl.tensor
+            tensors representing the matrices to multiply
 
         Returns
         -------
-        a @ b
-            matrix product of a and b
+        x1 @ x2
+            matrix product of x1 and x2
 
         Notes
         -----

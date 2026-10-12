@@ -17,9 +17,9 @@ def test_admm():
     """Test for admm operator. A linear system Ax=b with known A, b and known ground truth x is solved with ADMM, which outputs an estimate x_admm. This test checks if x_admm is almost the true x."""
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 10))
-    b = tl.dot(a, true_res)
-    atb = tl.dot(tl.permute_dims(a, (1, 0)), b)
-    ata = tl.dot(tl.permute_dims(a, (1, 0)), a)
+    b = tl.matmul(a, true_res)
+    atb = tl.matmul(tl.permute_dims(a, (1, 0)), b)
+    ata = tl.matmul(tl.permute_dims(a, (1, 0)), a)
     dual = tl.zeros(tl.shape(atb))
     x_init = tl.zeros(tl.shape(atb))
     x_admm, _, _ = admm(
@@ -48,7 +48,7 @@ def test_admm_preserves_context(dtype, device):
     # unconstrained coordinate independently at zero.
     gram = tl.tensor([[1, 0, 0], [0, 4, 0], [0, 0, 9]], **context)
     unconstrained = tl.tensor([[-1, 2, 3], [4, -5, 6]], **context)
-    rhs = tl.dot(unconstrained, gram)
+    rhs = tl.matmul(unconstrained, gram)
     result, split, dual = admm(
         rhs,
         gram,

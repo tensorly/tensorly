@@ -184,14 +184,6 @@ class PaddleBackend(Backend, backend_name="paddle"):
         return paddle.linalg.norm(tensor, order, axis)
 
     @staticmethod
-    def dot(a: paddle.Tensor, b: paddle.Tensor):
-        if a.ndim > 2 and b.ndim > 2:
-            return paddle.tensordot(a, b, axes=([-1], [-2]))
-        if not a.ndim or not b.ndim:
-            return a * b
-        return paddle.matmul(a, b)
-
-    @staticmethod
     def tensordot(a: paddle.Tensor, b: paddle.Tensor, axes=2, **kwargs):
         return paddle.tensordot(a, b, axes=axes, **kwargs)
 

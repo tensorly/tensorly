@@ -68,7 +68,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
             f"Provided array of dimension {T.ndim(matrix_or_vector)} not in [1, 2]."
         )
 
-    res = T.dot(matrix_or_vector, unfold(tensor, mode))
+    res = T.matmul(matrix_or_vector, unfold(tensor, mode))
 
     if vec:  # We contracted with a vector, leading to a vector
         return vec_to_tensor(res, shape=new_shape)

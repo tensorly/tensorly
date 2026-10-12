@@ -422,7 +422,7 @@ def parafac(
             pseudo_inverse = tl.ones((rank, rank), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse * tl.dot(
+                    pseudo_inverse = pseudo_inverse * tl.matmul(
                         tl.conj(tl.permute_dims(factor, (1, 0))), factor
                     )
             pseudo_inverse += Id
@@ -803,7 +803,7 @@ def randomised_parafac(
         if fit_indices is None:
             return tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
         kr_prod, _ = sample_khatri_rao(factors, n_samples_fit, indices_list=fit_indices)
-        residuals = fit_entries - tl.dot(kr_prod, weights)
+        residuals = fit_entries - tl.matmul(kr_prod, weights)
         return fit_scaling * tl.norm(residuals, 2) / norm_tensor
 
     if callback is not None:

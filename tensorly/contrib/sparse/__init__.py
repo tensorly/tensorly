@@ -30,7 +30,7 @@ from .backend import (
     abs,
     sqrt,
     norm,
-    dot,
+    matmul,
     kron,
     kr,
     solve,

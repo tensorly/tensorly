@@ -24,7 +24,7 @@ def test_unfolding_dot_khatri_rao():
         # Version forming explicitely the khatri-rao product
         unfolded = unfold(tensor, mode)
         kr_factors = khatri_rao(factors, weights=weights, skip_matrix=mode)
-        true_res = tl.dot(unfolded, kr_factors)
+        true_res = tl.matmul(unfolded, kr_factors)
 
         # Efficient sparse-safe version
         res = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)

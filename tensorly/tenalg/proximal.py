@@ -761,7 +761,7 @@ def svd_thresholding(matrix, threshold):
     procrustes : procrustes operator
     """
     U, s, V = tl.truncated_svd(matrix, n_eigenvecs=min(matrix.shape))
-    return tl.dot(U, tl.reshape(soft_thresholding(s, threshold), (-1, 1)) * V)
+    return tl.matmul(U, tl.reshape(soft_thresholding(s, threshold), (-1, 1)) * V)
 
 
 def procrustes(matrix):
@@ -783,4 +783,4 @@ def procrustes(matrix):
     svd_thresholding : SVD-thresholding operator
     """
     U, _, V = tl.truncated_svd(matrix, n_eigenvecs=min(matrix.shape))
-    return tl.dot(U, V)
+    return tl.matmul(U, V)

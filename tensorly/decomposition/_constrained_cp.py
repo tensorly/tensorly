@@ -370,7 +370,7 @@ def constrained_parafac(
             pseudo_inverse = tl.tensor(np.ones((rank, rank)), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse * tl.dot(
+                    pseudo_inverse = pseudo_inverse * tl.matmul(
                         tl.permute_dims(factor, (1, 0)), factor
                     )
 

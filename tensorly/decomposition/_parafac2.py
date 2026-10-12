@@ -181,18 +181,18 @@ def _compute_projections(tensor_slices, factors, svd, random_state=None):
     out = []
 
     for A, tensor_slice in zip(factors[0], tensor_slices):
-        lhs = T.dot(factors[1], T.permute_dims(A * factors[2], (1, 0)))
+        lhs = T.matmul(factors[1], T.permute_dims(A * factors[2], (1, 0)))
         rhs = T.permute_dims(tensor_slice, (1, 0))
         # A slice with fewer rows than the rank has at most that many singular vectors
         U, _, Vh = svd_interface(
-            T.dot(lhs, rhs),
+            T.matmul(lhs, rhs),
             n_eigenvecs=min(rank, tl.shape(tensor_slice)[0]),
             method=svd,
             flip_sign=False,
             random_state=random_state,
         )
 
-        out.append(T.permute_dims(T.dot(U, Vh), (1, 0)))
+        out.append(T.permute_dims(T.matmul(U, Vh), (1, 0)))
 
     return out
 
@@ -201,7 +201,7 @@ def _project_tensor_slices(tensor_slices, projections):
     slices = []
 
     for t, p in zip(tensor_slices, projections):
-        slices.append(T.dot(T.permute_dims(p, (1, 0)), t))
+        slices.append(T.matmul(T.permute_dims(p, (1, 0)), t))
 
     return tl.stack(slices)
 
@@ -400,13 +400,13 @@ def _parafac2_reconstruction_error(
 
         norm_cmf_sq = 0
         inner_product = 0
-        CtC = tl.dot(tl.permute_dims(C, (1, 0)), C)
+        CtC = tl.matmul(tl.permute_dims(C, (1, 0)), C)
 
         for i, t_slice in enumerate(tensor_slices):
             B_i = (projections[i] @ B) * A[i]
 
             if projected_tensor is None:
-                tmp = tl.dot(tl.permute_dims(B_i, (1, 0)), t_slice)
+                tmp = tl.matmul(tl.permute_dims(B_i, (1, 0)), t_slice)
             else:
                 tmp = (
                     tl.reshape(A[i], (-1, 1))
@@ -414,7 +414,7 @@ def _parafac2_reconstruction_error(
                     @ projected_tensor[i]
                 )
 
-            inner_product += tl.trace(tl.dot(tmp, C))
+            inner_product += tl.trace(tl.matmul(tmp, C))
 
             norm_cmf_sq += tl.sum((tl.permute_dims(B_i, (1, 0)) @ B_i) * CtC)
 

@@ -129,7 +129,7 @@ def hals_nnls(
         V = tl.solve(UtU, UtM)
         V = tl.clip(V, min=0, max=None)
         # Scaling
-        scale = tl.sum(UtM * V) / tl.sum(UtU * tl.dot(V, tl.permute_dims(V, (1, 0))))
+        scale = tl.sum(UtM * V) / tl.sum(UtU * tl.matmul(V, tl.permute_dims(V, (1, 0))))
         V = V * scale
 
     if exact:
@@ -140,7 +140,7 @@ def hals_nnls(
         rec_error = 0
         for k in range(rank):
             if UtU[k, k]:
-                num = UtM[k, :] - tl.dot(UtU[k, :], V) + UtU[k, k] * V[k, :]
+                num = UtM[k, :] - tl.matmul(UtU[k, :], V) + UtU[k, k] * V[k, :]
                 den = UtU[k, k]
 
                 if sparsity_coefficient is not None:
@@ -256,7 +256,10 @@ def fista(
             )
         else:
             x_gradient = (
-                -UtM + tl.dot(UtU, x_update) + sparsity_coef + 2 * ridge_coef * x_update
+                -UtM
+                + tl.matmul(UtU, x_update)
+                + sparsity_coef
+                + 2 * ridge_coef * x_update
             )
 
         x_new = x_update - lr * x_gradient
@@ -334,7 +337,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
     else:
         x_vec = tl.base.tensor_to_vec(x)
 
-    x_gradient = Utm - tl.dot(UtU, x_vec)
+    x_gradient = Utm - tl.matmul(UtU, x_vec)
     passive_set = x_vec > 0
     active_set = x_vec <= 0
     support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
@@ -423,7 +426,7 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
         x_vec = tl.clip(support_vec, min=0, max=tl.max(support_vec))
 
         # gradient update
-        x_gradient = Utm - tl.dot(UtU, x_vec)
+        x_gradient = Utm - tl.matmul(UtU, x_vec)
 
         if tl.any(active_set) != True or tl.max(x_gradient[active_set]) <= tol:
             break

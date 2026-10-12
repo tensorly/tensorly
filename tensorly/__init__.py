@@ -87,7 +87,6 @@ from .backend import (
     abs,
     sqrt,
     norm,
-    dot,
     kron,
     einsum,
     solve,

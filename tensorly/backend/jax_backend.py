@@ -96,7 +96,6 @@ for name in (
         "log2",
         "tensordot",
         "argsort",
-        "dot",
     ]
 ):
     JaxBackend.register_method(name, getattr(np, name))

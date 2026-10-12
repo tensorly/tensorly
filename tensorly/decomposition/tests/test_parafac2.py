@@ -75,8 +75,8 @@ def test_parafac2(monkeypatch, normalize_factors, init, linesearch):
     for i, (true_proj, rec_proj) in enumerate(
         zip(random_parafac2_tensor.projections, rec.projections)
     ):
-        true_Bi = tl.dot(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
-        rec_Bi = tl.dot(rec_proj, rec.factors[1]) * rec_A_sign[i]
+        true_Bi = tl.matmul(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
+        rec_Bi = tl.matmul(rec_proj, rec.factors[1]) * rec_A_sign[i]
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)
 
@@ -257,8 +257,8 @@ def test_parafac2_nn(linesearch):
     for i, (true_proj, rec_proj) in enumerate(
         zip(random_parafac2_tensor.projections, rec.projections)
     ):
-        true_Bi = tl.dot(true_proj, random_parafac2_tensor.factors[1])
-        rec_Bi = tl.dot(rec_proj, rec.factors[1])
+        true_Bi = tl.matmul(true_proj, random_parafac2_tensor.factors[1])
+        rec_Bi = tl.matmul(rec_proj, rec.factors[1])
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)
 
@@ -380,7 +380,7 @@ def test_parafac2_init_valid():
     )
     tensor = parafac2_to_tensor(random_parafac2_tensor)
     weights, (A, B, C), projections = random_parafac2_tensor
-    B = tl.dot(projections[0], B)
+    B = tl.matmul(projections[0], B)
 
     for init_method in ["random", "svd", random_parafac2_tensor, (weights, (A, B, C))]:
         init = initialize_decomposition(tensor, rank, init=init_method)
@@ -513,7 +513,7 @@ def test_parafac2_to_tensor():
     constructed_tensor = parafac2_to_tensor((weights, factors, projections))
 
     for i in range(I):
-        Bi = tl.dot(projections[i], factors[1])
+        Bi = tl.matmul(projections[i], factors[1])
         manual_tensor = tl.einsum("r,jr,kr", factors[0][i], Bi, factors[2])
         assert_(tl.max(tl.abs(constructed_tensor[i, :, :] - manual_tensor)) < 1e-6)
 
@@ -631,7 +631,7 @@ def test_parafac2_em(linesearch):
     for i, (true_proj, rec_proj) in enumerate(
         zip(random_parafac2_tensor.projections, rec.projections)
     ):
-        true_Bi = tl.dot(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
-        rec_Bi = tl.dot(rec_proj, rec.factors[1]) * rec_A_sign[i]
+        true_Bi = tl.matmul(true_proj, random_parafac2_tensor.factors[1]) * A_sign[i]
+        rec_Bi = tl.matmul(rec_proj, rec.factors[1]) * rec_A_sign[i]
         Bi_corr = congruence_coefficient(true_Bi, rec_Bi)[0]
         assert_(Bi_corr > 0.98)

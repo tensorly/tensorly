@@ -12,7 +12,7 @@ def _tucker_congruence(A, B):
     As = A / tl.norm(A, axis=0)
     Bs = B / tl.norm(B, axis=0)
 
-    return tl.dot(tl.permute_dims(As, (1, 0)), Bs)
+    return tl.matmul(tl.permute_dims(As, (1, 0)), Bs)
 
 
 def _congruence_coefficient_slow(A, B, absolute_value):

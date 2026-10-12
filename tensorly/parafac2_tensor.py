@@ -137,12 +137,12 @@ def _validate_parafac2_tensor(parafac2_tensor):
 
         if current_mode_size >= rank:
             # Orthonormal columns
-            inner_product = T.dot(T.permute_dims(projection, (1, 0)), projection)
+            inner_product = T.matmul(T.permute_dims(projection, (1, 0)), projection)
             expected = "P.T@P = I"
         else:
             # Fewer rows than the rank: orthonormal columns are impossible, so
             # the projection has orthonormal rows instead
-            inner_product = T.dot(projection, T.permute_dims(projection, (1, 0)))
+            inner_product = T.matmul(projection, T.permute_dims(projection, (1, 0)))
             expected = "P@P.T = I"
         identity = T.eye(T.shape(inner_product)[0], **T.context(inner_product))
         if T.max(T.abs(inner_product - identity)) > 1e-5:
@@ -248,7 +248,7 @@ def apply_parafac2_projections(parafac2_tensor):
     _validate_parafac2_tensor(parafac2_tensor)
     weights, factors, projections = parafac2_tensor
 
-    evolving_factor = [T.dot(projection, factors[1]) for projection in projections]
+    evolving_factor = [T.matmul(projection, factors[1]) for projection in projections]
 
     return weights, (factors[0], evolving_factor, factors[2])
 
@@ -311,8 +311,8 @@ def parafac2_to_slice(parafac2_tensor, slice_idx, validate=True):
 
     Ct = T.permute_dims(C, (1, 0))
 
-    B_i = T.dot(projections[slice_idx], B)
-    return T.dot(B_i * a, Ct)
+    B_i = T.matmul(projections[slice_idx], B)
+    return T.matmul(B_i * a, Ct)
 
 
 def parafac2_to_slices(parafac2_tensor, validate=True):

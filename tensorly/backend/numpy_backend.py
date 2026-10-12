@@ -69,7 +69,6 @@ for name in (
         "log2",
         "tensordot",
         "argsort",
-        "dot",
     ]
 ):
     NumpyBackend.register_method(name, getattr(np, name))

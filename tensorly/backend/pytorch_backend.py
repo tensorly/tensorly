@@ -128,14 +128,6 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.norm(tensor, **kwds)
 
     @staticmethod
-    def dot(a, b):
-        if a.ndim > 2 and b.ndim > 2:
-            return torch.tensordot(a, b, dims=([-1], [-2]))
-        if not a.ndim or not b.ndim:
-            return a * b
-        return torch.matmul(a, b)
-
-    @staticmethod
     def tensordot(a, b, axes=2, **kwargs):
         return torch.tensordot(a, b, dims=axes, **kwargs)
 

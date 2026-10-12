@@ -159,13 +159,13 @@ def randomized_range_finder(A, n_dims, n_iter=2, random_state=None):
     rng = tl.check_random_state(random_state)
     dim_1, dim_2 = tl.shape(A)
     Q = tl.tensor(rng.normal(size=(dim_2, n_dims)), **tl.context(A))
-    Q, _ = tl.qr(tl.dot(A, Q))
+    Q, _ = tl.qr(tl.matmul(A, Q))
 
     # Perform power iterations when spectrum decays slowly
     A_H = tl.conj(tl.permute_dims(A, (1, 0)))
     for i in range(n_iter):
-        Q, _ = tl.qr(tl.dot(A_H, Q))
-        Q, _ = tl.qr(tl.dot(A, Q))
+        Q, _ = tl.qr(tl.matmul(A_H, Q))
+        Q, _ = tl.qr(tl.matmul(A, Q))
 
     return Q
 
@@ -264,13 +264,13 @@ def symeig_svd(matrix, n_eigenvecs=None, **kwargs):
     dim_1, dim_2 = tl.shape(matrix)
 
     if dim_1 > dim_2:
-        S, U = tl.eigh(tl.dot(matrix, tl.permute_dims(matrix, (1, 0))))
+        S, U = tl.eigh(tl.matmul(matrix, tl.permute_dims(matrix, (1, 0))))
         S = tl.sqrt(tl.clip(S, min=tl.eps(S.dtype)))
-        V = tl.dot(tl.permute_dims(matrix, (1, 0)), U / tl.reshape(S, (1, -1)))
+        V = tl.matmul(tl.permute_dims(matrix, (1, 0)), U / tl.reshape(S, (1, -1)))
     else:
-        S, V = tl.eigh(tl.dot(tl.permute_dims(matrix, (1, 0)), matrix))
+        S, V = tl.eigh(tl.matmul(tl.permute_dims(matrix, (1, 0)), matrix))
         S = tl.sqrt(tl.clip(S, min=tl.eps(S.dtype)))
-        U = tl.dot(matrix, V) / tl.reshape(S, (1, -1))
+        U = tl.matmul(matrix, V) / tl.reshape(S, (1, -1))
 
     U, S, V = (
         tl.flip(U, axis=1),
@@ -339,17 +339,17 @@ def randomized_svd(
             matrix_T, n_dims=n_dims, n_iter=n_iter, random_state=random_state
         )
         Q_H = tl.conj(tl.permute_dims(Q, (1, 0)))
-        matrix_reduced = tl.permute_dims(tl.dot(Q_H, matrix_T), (1, 0))
+        matrix_reduced = tl.permute_dims(tl.matmul(Q_H, matrix_T), (1, 0))
         U, S, V = truncated_svd(matrix_reduced, n_eigenvecs=n_eigenvecs)
-        V = tl.dot(V, tl.permute_dims(Q, (1, 0)))
+        V = tl.matmul(V, tl.permute_dims(Q, (1, 0)))
     else:
         Q = randomized_range_finder(
             matrix, n_dims=n_dims, n_iter=n_iter, random_state=random_state
         )
         Q_H = tl.conj(tl.permute_dims(Q, (1, 0)))
-        matrix_reduced = tl.dot(Q_H, matrix)
+        matrix_reduced = tl.matmul(Q_H, matrix)
         U, S, V = truncated_svd(matrix_reduced, n_eigenvecs=n_eigenvecs)
-        U = tl.dot(Q, U)
+        U = tl.matmul(Q, U)
 
     return U, S, V
 

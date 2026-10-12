@@ -81,7 +81,6 @@ for name in (
         "copy",
         "trace",
         "arange",
-        "dot",
         "kron",
         "max",
         "flip",

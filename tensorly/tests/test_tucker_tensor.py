@@ -147,8 +147,8 @@ def test_tucker_to_unfolded():
         )
         assert_array_almost_equal(
             tucker_to_unfolded((G, U), mode),
-            tl.dot(
-                tl.dot(U[mode], unfold(G, mode)),
+            tl.matmul(
+                tl.matmul(U[mode], unfold(G, mode)),
                 tl.permute_dims(kronecker(U, skip_matrix=mode), (1, 0)),
             ),
             decimal=5,
@@ -168,7 +168,7 @@ def test_tucker_to_vec():
     vec = tensor_to_vec(tucker_to_tensor((G, U)))
     assert_array_almost_equal(tucker_to_vec((G, U)), vec)
     assert_array_almost_equal(
-        tucker_to_vec((G, U)), tl.dot(kronecker(U), tensor_to_vec(G)), decimal=5
+        tucker_to_vec((G, U)), tl.matmul(kronecker(U), tensor_to_vec(G)), decimal=5
     )
 
 

@@ -189,4 +189,4 @@ def test_apply_parafac2_projections():
 
     assert_array_equal(new_weights, weights)
     for i, Bi in enumerate(projected_factors[1]):
-        assert_array_almost_equal(tl.dot(projections[i], factors[1]), Bi)
+        assert_array_almost_equal(tl.matmul(projections[i], factors[1]), Bi)

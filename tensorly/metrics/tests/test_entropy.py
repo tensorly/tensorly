@@ -12,7 +12,7 @@ def test_vonneumann_entropy_pure_state():
     """
     state = tl.randn((8, 1))
     state = state / tl.norm(state)
-    mat_pure = tl.dot(state, tl.permute_dims(state, (1, 0)))
+    mat_pure = tl.matmul(state, tl.permute_dims(state, (1, 0)))
     tl_vne = vonneumann_entropy(mat_pure)
     assert_array_almost_equal(tl_vne, 0, decimal=3)
 
@@ -24,7 +24,7 @@ def test_tt_vonneumann_entropy_pure_state():
     state = tl.randn((8, 1))
     state = state / tl.norm(state)
     mat_pure = tl.reshape(
-        tl.dot(state, tl.permute_dims(state, (1, 0))), (2, 2, 2, 2, 2, 2)
+        tl.matmul(state, tl.permute_dims(state, (1, 0))), (2, 2, 2, 2, 2, 2)
     )
     mat_pure = tensor_train(mat_pure, rank=(1, 3, 2, 1, 2, 3, 1))
     tl_vne = tt_vonneumann_entropy(mat_pure)
@@ -37,7 +37,7 @@ def test_cp_vonneumann_entropy_pure_state():
     """
     state = tl.randn((8, 1))
     state = state / tl.norm(state)
-    mat_pure = tl.dot(state, tl.permute_dims(state, (1, 0)))
+    mat_pure = tl.matmul(state, tl.permute_dims(state, (1, 0)))
     mat = parafac(mat_pure, rank=1, normalize_factors=True)
     tl_vne = cp_vonneumann_entropy(mat)
     assert_array_almost_equal(tl_vne, 0, decimal=3)
@@ -79,8 +79,8 @@ def test_vonneumann_entropy_mixed_state():
     state2 = state2 / tl.norm(state2)
     mat_mixed = tl.tensor(
         (
-            tl.dot(tl.permute_dims(state1, (1, 0)), state1)
-            + tl.dot(tl.permute_dims(state2, (1, 0)), state2)
+            tl.matmul(tl.permute_dims(state1, (1, 0)), state1)
+            + tl.matmul(tl.permute_dims(state2, (1, 0)), state2)
         )
         / 2.0
     )
@@ -128,8 +128,8 @@ def test_tt_vonneumann_entropy_mixed_state():
     state2 = state2 / tl.norm(state2)
     mat_mixed = tl.tensor(
         (
-            tl.dot(tl.permute_dims(state1, (1, 0)), state1)
-            + tl.dot(tl.permute_dims(state2, (1, 0)), state2)
+            tl.matmul(tl.permute_dims(state1, (1, 0)), state1)
+            + tl.matmul(tl.permute_dims(state2, (1, 0)), state2)
         )
         / 2.0
     )
@@ -178,8 +178,8 @@ def test_cp_vonneumann_entropy_mixed_state():
     state2 = state2 / tl.norm(state2)
     mat_mixed = tl.tensor(
         (
-            tl.dot(tl.permute_dims(state1, (1, 0)), state1)
-            + tl.dot(tl.permute_dims(state2, (1, 0)), state2)
+            tl.matmul(tl.permute_dims(state1, (1, 0)), state1)
+            + tl.matmul(tl.permute_dims(state2, (1, 0)), state2)
         )
         / 2.0
     )

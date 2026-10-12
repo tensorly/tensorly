@@ -117,9 +117,9 @@ def non_negative_parafac(
             sub_indices = [i for i in range(len(factors)) if i != mode]
             for i, e in enumerate(sub_indices):
                 if i:
-                    accum *= tl.dot(tl.permute_dims(factors[e], (1, 0)), factors[e])
+                    accum *= tl.matmul(tl.permute_dims(factors[e], (1, 0)), factors[e])
                 else:
-                    accum = tl.dot(tl.permute_dims(factors[e], (1, 0)), factors[e])
+                    accum = tl.matmul(tl.permute_dims(factors[e], (1, 0)), factors[e])
             accum = tl.reshape(weights, (-1, 1)) * accum * tl.reshape(weights, (1, -1))
             if mask is not None:
                 tensor = tensor * mask + tl.cp_to_tensor(
@@ -129,7 +129,7 @@ def non_negative_parafac(
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
             numerator = tl.clip(mttkrp, min=epsilon, max=None)
-            denominator = tl.dot(factors[mode], accum)
+            denominator = tl.matmul(factors[mode], accum)
             denominator = tl.clip(denominator, min=epsilon, max=None)
             factor = factors[mode] * numerator / denominator
 
@@ -312,7 +312,7 @@ def non_negative_parafac_hals(
             pseudo_inverse = tl.ones((rank, rank), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse * tl.dot(
+                    pseudo_inverse = pseudo_inverse * tl.matmul(
                         tl.permute_dims(factor, (1, 0)), factor
                     )
 

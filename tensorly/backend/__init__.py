@@ -59,7 +59,6 @@ class BackendManager(types.ModuleType):
         "diag",
         "log",
         "log2",
-        "dot",
         "tensordot",
         "exp",
         "clip",

@@ -29,7 +29,9 @@ def test_TuckerRegressor():
     regression_weights[2:-2, 2:-2, 2] = -1
     regression_weights = T.tensor(regression_weights)
 
-    y = T.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(regression_weights))
+    y = T.matmul(
+        partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(regression_weights)
+    )
     X_train = X[:1000, :, :]
     X_test = X[1000:, :, :]
     y_train = y[:1000]

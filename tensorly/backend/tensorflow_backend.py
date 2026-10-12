@@ -183,7 +183,6 @@ for name in (
     + [
         "log2",
         "flip",
-        "dot",
         "argmin",
         "argmax",
         "conj",
