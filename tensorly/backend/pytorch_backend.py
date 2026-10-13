@@ -202,7 +202,10 @@ class PyTorchBackend(Backend, backend_name="pytorch"):
         return torch.sort(tensor, dim=axis).values
 
     @staticmethod
-    def lstsq(a, b, rcond=None, driver="gelsd"):
+    def lstsq(a, b, rcond=None, driver=None):
+        """Keep the CPU SVD driver and use CUDA's full-rank driver."""
+        if driver is None:
+            driver = "gels" if a.is_cuda else "gelsd"
         return torch.linalg.lstsq(a, b, rcond=rcond, driver=driver)
 
     @staticmethod

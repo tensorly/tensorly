@@ -523,6 +523,22 @@ def test_lstsq():
     assert_array_almost_equal(T.dot(a, x_lstsq), b, decimal=5)
 
 
+def test_cuda_lstsq():
+    if tl.get_backend() != "pytorch":
+        pytest.skip("CUDA least squares is tested with PyTorch")
+    import torch
+
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA is unavailable")
+    a = tl.tensor([[1.0, 2.0], [3.0, 1.0], [1.0, 1.0]], dtype=tl.float64)
+    b = tl.tensor([[2.0], [1.0], [4.0]], dtype=tl.float64)
+    expected, residual, *_ = T.lstsq(a, b)
+    actual, actual_residual, *_ = T.lstsq(a.cuda(), b.cuda())
+    assert tl.context(actual)["device"].type == "cuda"
+    assert_array_almost_equal(actual.cpu(), expected)
+    assert_array_almost_equal(actual_residual.cpu(), residual)
+
+
 def test_qr():
     M = 8
     N = 5
