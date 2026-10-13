@@ -21,22 +21,28 @@ RANDOM_SEED = 215
 
 
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
-def test_cuda_convergence_context(dtype):
-    """CUDA fits use the input context for the convergence buffer."""
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_fit_context(dtype, device):
+    """Fitting preserves the input context and agrees with CPU projections."""
     if tl.get_backend() != "pytorch":
-        pytest.skip("CUDA context is tested with the PyTorch backend")
+        pytest.skip("Device context is tested with the PyTorch backend")
     import torch
 
-    if not torch.cuda.is_available():
+    if device == "cuda" and not torch.cuda.is_available():
         pytest.skip("CUDA is unavailable")
     rng = np.random.RandomState(12)
     x = tl.tensor(rng.normal(size=(24, 6, 4)), dtype=getattr(tl, dtype))
     y = tl.mean(x, axis=1)[:, :2]
     expected = CP_PLSR(2).fit(x, y).predict(x)
-    actual = CP_PLSR(2).fit(x.cuda(), y.cuda()).predict(x.cuda())
-    assert tl.context(actual)["device"].type == "cuda"
+    x_device, y_device = x.to(device), y.to(device)
+    original = tl.copy(x_device)
+    model = CP_PLSR(2).fit(x_device, y_device)
+    actual = model.predict(x_device)
+    assert tl.context(actual)["device"].type == device
     assert tl.context(actual)["dtype"] == tl.context(x)["dtype"]
     assert_allclose(actual.cpu(), expected, rtol=1e-4, atol=1e-5)
+    assert_allclose(model.transform(x_device), model.X_factors[0], rtol=1e-4, atol=1e-5)
+    assert_allclose(x_device, original)
 
 
 # Supporting Functions
