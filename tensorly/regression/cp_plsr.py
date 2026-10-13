@@ -175,16 +175,9 @@ class CP_PLSR:
                 self.X_factors[0][:, : component + 1],
                 T.reshape(comp_Y_factors_0, (-1, 1)),
             )[0]
-            B = T.concatenate(
-                [
-                    B,
-                    T.zeros((self.n_components - component - 1, 1), **T.context(B)),
-                ],
-                axis=0,
-            )
             self.coef_ = T.index_update(
                 self.coef_,
-                T.index[:, component],
+                T.index[: component + 1, component],
                 T.reshape(B, (-1,)),
             )
 
@@ -192,7 +185,7 @@ class CP_PLSR:
             X -= outer(comp_X_factors)
             Y -= T.dot(
                 T.dot(
-                    self.X_factors[0],
+                    self.X_factors[0][:, : component + 1],
                     T.reshape(B, (-1, 1)),
                 ),
                 T.reshape(comp_Y_factors_1, (1, -1)),
