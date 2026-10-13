@@ -85,11 +85,11 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     tensor : ndarray
 
     matrix_or_vec_list : list of matrices or vectors
+        Provide one factor per tensor mode when `modes` is None.
+        Otherwise, its length must match `modes` and be at most ``tensor.ndim``.
 
     skip : None or int, optional, default is None
         If not None, index in `matrix_or_vec_list` of a matrix or vector to skip.
-        This refers to the original list, before sorting by mode.
-        `modes`, if provided, must have the same length as `matrix_or_vec_list`.
 
     modes : None or int list, optional, default is None
 
@@ -103,6 +103,9 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
     Notes
     -----
+    Factors are sorted internally by mode, but `skip` refers to the original
+    order of `matrix_or_vec_list`.
+
     If no modes are specified, just assumes there is one matrix or vector per mode and returns:
 
     :math:`\\text{tensor  }\\times_0 \\text{ matrix or vec list[0] }\\times_1 \\cdots \\times_n \\text{ matrix or vec list[n] }`

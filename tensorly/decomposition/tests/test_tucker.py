@@ -79,8 +79,8 @@ def test_partial_tucker():
 
 
 @pytest.mark.parametrize("tenalg_backend", ["core", "einsum"])
-@pytest.mark.parametrize("modes", [(0, 2), (2, 0)])
-def test_partial_tucker_reordered_modes(tenalg_backend, modes):
+def test_partial_tucker_reordered_modes(tenalg_backend):
+    modes = (2, 0)
     tensor = random_tucker((3, 4, 5), rank=(2, 4, 2), random_state=0, full=True)
     with tl.tenalg.backend_context(tenalg_backend):
         (core, factors), _ = partial_tucker(

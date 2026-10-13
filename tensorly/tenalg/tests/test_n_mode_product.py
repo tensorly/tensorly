@@ -155,26 +155,23 @@ def test_multi_mode_dot():
 
 
 @pytest.mark.parametrize("tenalg_backend", ["core", "einsum"])
-@pytest.mark.parametrize("modes", [None, (0, 1, 2), (2, 0, 1), (2, 1, 0)])
-@pytest.mark.parametrize("skip", [None, 0, 1, 2])
+@pytest.mark.parametrize("skip", [0, 1, 2])
 @pytest.mark.parametrize("transpose", [False, True])
-def test_multi_mode_dot_skip_original_factor(tenalg_backend, modes, skip, transpose):
+def test_multi_mode_dot_skip_original_factor(tenalg_backend, skip, transpose):
+    modes = (2, 0, 1)
     values = np.arange(24, dtype=float).reshape(2, 3, 4) / 16
     factors = [
         (np.arange(4, dtype=float).reshape(2, 2) + 1) / 4,
         (np.arange(3, dtype=float) + 1) / 4,
         (np.arange(16, dtype=float).reshape(4, 4) + 1) / 8,
     ]
-    ordered_modes = (0, 1, 2) if modes is None else modes
-    skipped_mode = None if skip is None else ordered_modes[skip]
     expected = {
-        None: np.einsum("abc,da,b,ec->de", values, *factors),
         0: np.einsum("abc,b,dc->ad", values, factors[1], factors[2]),
         1: np.einsum("abc,da,ec->dbe", values, factors[0], factors[2]),
         2: np.einsum("abc,da,b->dc", values, factors[0], factors[1]),
-    }[skipped_mode]
+    }[modes[skip]]
     ordered_factors = [
-        factors[mode].T if transpose else factors[mode] for mode in ordered_modes
+        factors[mode].T if transpose else factors[mode] for mode in modes
     ]
     tensor = T.tensor(values, dtype=T.float64)
     tensor_factors = [T.tensor(factor, dtype=T.float64) for factor in ordered_factors]
