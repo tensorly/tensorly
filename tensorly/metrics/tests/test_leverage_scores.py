@@ -58,3 +58,22 @@ def test_complex_leverage_score_dist(matrix, dtype):
     assert_array_almost_equal(result, expected, decimal=5)
     assert_array_almost_equal(tensor, original)
     tl.check_random_state(1234).choice(len(result), size=10, p=result)
+
+
+def test_float32_leverage_score_dist():
+    matrix = np.asarray([[1, 2], [0, 1], [1, 0]], dtype=np.float32)
+    tensor = tl.tensor(matrix, dtype=tl.float32)
+    original = tl.copy(tensor)
+
+    distribution = leverage_score_dist(tensor)
+
+    expected = np.diag(matrix @ np.linalg.pinv(matrix))
+    expected = expected / np.linalg.matrix_rank(matrix)
+    result = tl.to_numpy(distribution)
+    assert_equal(tl.context(distribution)["dtype"], tl.float64)
+    assert_equal(np.all(np.isfinite(result)), True)
+    assert_equal(np.all(result >= 0), True)
+    assert_array_almost_equal(result.sum(), 1.0)
+    assert_array_almost_equal(result, expected, decimal=5)
+    assert_array_almost_equal(tensor, original)
+    tl.check_random_state(1234).choice(len(result), size=10, p=result)

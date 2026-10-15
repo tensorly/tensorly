@@ -40,6 +40,6 @@ def leverage_score_dist(matrix):
 
     if tl.context(lev_score_dist)["dtype"] != tl.float64:
         lev_score_dist = tl.tensor(lev_score_dist, dtype=tl.float64)
-        lev_score_dist /= tl.sum(lev_score_dist)
+        lev_score_dist = lev_score_dist / tl.sum(lev_score_dist)
 
     return lev_score_dist
