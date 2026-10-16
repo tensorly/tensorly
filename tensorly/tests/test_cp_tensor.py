@@ -506,3 +506,29 @@ def test_cp_flip_sign_zero_summary(mode, with_weights, custom_summary):
     for i, factor in enumerate(result.factors):
         if i != mode:
             assert_(tl.all(tl.mean(factor, axis=0) >= 0))
+
+
+@pytest.mark.parametrize("copy", [False, True])
+@pytest.mark.parametrize("mode", [0, -1])
+@pytest.mark.parametrize("weighted", [False, True])
+def test_cp_mode_dot_contracts_only_mode(copy, mode, weighted):
+    """The last vector contraction returns the dense scalar and preserves the input."""
+    factor = tl.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    weights = tl.tensor([2.0, 3.0]) if weighted else None
+    vector = tl.tensor([1.0, 2.0, -1.0])
+    cp = CPTensor((weights, [factor]))
+    expected = 16.0 if weighted else 6.0
+    for as_object in [False, True]:
+        result = (
+            cp.mode_dot(vector, mode, copy=copy)
+            if as_object
+            else cp_mode_dot(cp, vector, mode, copy=copy)
+        )
+        assert tl.shape(result) == ()
+        assert_array_almost_equal(result, expected)
+        assert cp.shape == (3,)
+        assert len(cp.factors) == 1
+        assert_array_equal(cp.factors[0], factor)
+    kept = cp_mode_dot(cp, vector, mode, keep_dim=True, copy=True)
+    assert kept.shape == (1,)
+    assert_array_almost_equal(kept.to_tensor(), [expected])
