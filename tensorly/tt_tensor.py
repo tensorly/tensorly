@@ -271,7 +271,7 @@ def validate_tt_rank(
     else:
         validated_rank = [1]
         for i, s in enumerate(tensor_shape[:-1]):
-            n_row = int(rank[i] * s)
+            n_row = int(validated_rank[i] * s)
             n_column = np.prod(tensor_shape[(i + 1) :])  # n_column of unfolding
             validated_rank.append(min(n_row, n_column, rank[i + 1]))
         validated_rank.append(1)
