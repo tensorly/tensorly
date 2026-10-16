@@ -101,3 +101,52 @@ def test_congruence_rejects_zero_column_with_small_norms(which):
     pair[which] = zero_column
     with pytest.raises(ValueError, match="nonzero l2 norm"):
         congruence_coefficient(*pair)
+
+
+def _complex_orthonormal_columns(n_columns, dtype):
+    if n_columns < 3:
+        matrix = np.array([[1, 1], [1j, -1j]]) / np.sqrt(2)
+        matrix = matrix[:, :n_columns]
+    else:
+        indices = np.arange(n_columns)
+        matrix = np.exp(2j * np.pi * np.outer(indices, indices) / n_columns)
+        matrix = matrix / np.sqrt(n_columns)
+    return tl.tensor(matrix, dtype=getattr(tl, dtype))
+
+
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+@pytest.mark.parametrize("n_columns", [1, 2, 3])
+@pytest.mark.parametrize("as_list", [False, True])
+@pytest.mark.parametrize("permuted", [False, True])
+def test_complex_congruence_coefficient(dtype, n_columns, as_list, permuted):
+    matrix = _complex_orthonormal_columns(n_columns, dtype)
+    order = np.roll(np.arange(n_columns), 1) if permuted else np.arange(n_columns)
+    phases = (
+        np.exp(1j * np.arange(1, n_columns + 1) * 0.37)
+        if permuted
+        else np.ones(n_columns)
+    )
+    other = matrix[:, order] * tl.tensor(phases, **tl.context(matrix))
+    left = [matrix, 2 * matrix] if as_list else matrix
+    right = [other, 3 * other] if as_list else other
+    score, permutation = congruence_coefficient(left, right)
+    assert score == pytest.approx(1.0, rel=1e-6, abs=1e-6)
+    assert permutation == np.argsort(order).tolist()
+
+
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+@pytest.mark.parametrize("as_list", [False, True])
+def test_cp_permute_complex_factors(dtype, as_list):
+    matrix = _complex_orthonormal_columns(2, dtype)
+    weights = tl.tensor([1.0, 2.0], **tl.context(matrix))
+    reference = tl.cp_tensor.CPTensor((weights, [matrix, tl.copy(matrix)]))
+    other = reference.cp_copy()
+    order = tl.tensor([1, 0], dtype=tl.int64)
+    for mode in range(2):
+        other.factors[mode] = other.factors[mode][:, order]
+    other.weights = other.weights[order]
+    before = other.to_tensor()
+    actual, permutations = cp_permute_factors(reference, [other] if as_list else other)
+    assert tl.to_numpy(permutations[0]).tolist() == [1, 0]
+    assert np.allclose(tl.to_numpy(actual.weights), tl.to_numpy(weights))
+    assert np.allclose(tl.to_numpy(actual.to_tensor()), tl.to_numpy(before))
