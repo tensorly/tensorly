@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import tensorly as tl
 from tensorly.random import random_tensor
@@ -50,3 +51,23 @@ def test_correlation_index():
     # test scaling invariance
     score_scaled = correlation_index(factors_1, factors_scaled)
     assert_array_almost_equal(score_scaled, 0)
+
+
+@pytest.mark.parametrize("method", ["max_score", "min_score", "avg_score"])
+@pytest.mark.parametrize("changed_factors", [0, 1, 2])
+def test_correlation_index_per_factor_scores(method, changed_factors):
+    reference = tl.tensor([[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]], dtype=tl.float64)
+    changed = tl.tensor([[1.0, 1.0], [0.0, 1.0], [0.0, 0.0]], dtype=tl.float64)
+    factors_1 = [reference, reference]
+    factors_2 = [changed] * changed_factors + [reference] * (2 - changed_factors)
+
+    # A changed factor has one column at a 45-degree angle to the reference.
+    changed_score = (1.0 - 1.0 / np.sqrt(2.0)) / 2.0
+    expected = {
+        "max_score": changed_score if changed_factors else 0.0,
+        "min_score": changed_score if changed_factors == 2 else 0.0,
+        "avg_score": changed_score * changed_factors / 2.0,
+    }[method]
+
+    score = correlation_index(factors_1, factors_2, method=method)
+    assert_array_almost_equal(score, expected)

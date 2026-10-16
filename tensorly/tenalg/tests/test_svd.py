@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 from ...testing import assert_
 from ..svd import svd_interface
 import tensorly as tl
@@ -94,3 +95,23 @@ def test_svd_interface_default_n_eigenvecs(shape, method):
     assert tl.shape(U) == (shape[0], k)
     assert tl.shape(S) == (k,)
     assert tl.shape(V) == (k, shape[1])
+
+
+@pytest.mark.parametrize("shape", [(9, 5), (5, 9), (5, 5)])
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+def test_symeig_svd_complex(shape, dtype):
+    rng = np.random.RandomState(1234)
+    matrix = rng.normal(size=shape) + 1j * rng.normal(size=shape)
+    matrix = matrix.astype(dtype)
+    X = tl.tensor(matrix, dtype=getattr(tl.backend, dtype))
+    U, S, V = svd_interface(X, method="symeig_svd", flip_sign=False)
+    U, S, V = [tl.to_numpy(value) for value in (U, S, V)]
+    # Forming a Gram matrix squares the condition number; allow its
+    # single-precision roundoff in the derived singular vectors.
+    tolerance = 5e-5 if dtype == "complex64" else 1e-12
+    np.testing.assert_allclose(
+        S, np.linalg.svd(matrix, compute_uv=False), rtol=tolerance
+    )
+    np.testing.assert_allclose((U * S) @ V, matrix, rtol=tolerance, atol=tolerance)
+    np.testing.assert_allclose(U.conj().T @ U, np.eye(min(shape)), atol=tolerance)
+    np.testing.assert_allclose(V @ V.conj().T, np.eye(min(shape)), atol=tolerance)

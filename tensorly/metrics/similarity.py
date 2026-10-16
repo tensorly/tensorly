@@ -73,9 +73,9 @@ def correlation_index(
     X_1 = [x1 / cn1 for x1, cn1 in zip(X_1, col_norm_1)]
     X_2 = [x2 / cn2 for x2, cn2 in zip(X_2, col_norm_2)]
 
-    corr_idxs = [
-        _compute_correlation_index(x1, x2, tol=tol) for x1, x2 in zip(X_1, X_2)
-    ]
+    corr_idxs = tl.stack(
+        [_compute_correlation_index(x1, x2, tol=tol) for x1, x2 in zip(X_1, X_2)]
+    )
 
     if method == "stacked":
         score = corr_idxs[0]
@@ -119,5 +119,5 @@ def _compute_correlation_index(x1: list, x2: list, tol: float = 5e-16) -> float:
         + tl.sum(tl.abs(tl.max(c_prod_mtx, axis=0) - 1))
     )
     if score < tol:
-        score = 0
+        score = tl.zeros_like(score)
     return score

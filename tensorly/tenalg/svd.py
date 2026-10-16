@@ -263,19 +263,22 @@ def symeig_svd(matrix, n_eigenvecs=None, **kwargs):
 
     dim_1, dim_2 = tl.shape(matrix)
 
+    matrix_H = tl.conj(tl.transpose(matrix))
     if dim_1 > dim_2:
-        S, U = tl.eigh(tl.matmul(matrix, tl.permute_dims(matrix, (1, 0))))
-        S = tl.sqrt(tl.clip(S, min=tl.eps(S.dtype)))
-        V = tl.matmul(tl.permute_dims(matrix, (1, 0)), U / tl.reshape(S, (1, -1)))
+        S, U = tl.eigh(tl.dot(matrix, matrix_H))
+        S = tl.real(S)
+        S = tl.sqrt(tl.clip(S, tl.eps(S.dtype)))
+        V = tl.dot(matrix_H, U / tl.reshape(S, (1, -1)))
     else:
-        S, V = tl.eigh(tl.matmul(tl.permute_dims(matrix, (1, 0)), matrix))
-        S = tl.sqrt(tl.clip(S, min=tl.eps(S.dtype)))
-        U = tl.matmul(matrix, V) / tl.reshape(S, (1, -1))
+        S, V = tl.eigh(tl.dot(matrix_H, matrix))
+        S = tl.real(S)
+        S = tl.sqrt(tl.clip(S, tl.eps(S.dtype)))
+        U = tl.dot(matrix, V) / tl.reshape(S, (1, -1))
 
     U, S, V = (
         tl.flip(U, axis=1),
         tl.flip(S),
-        tl.flip(tl.permute_dims(V, (1, 0)), axis=0),
+        tl.flip(tl.conj(tl.transpose(V)), axis=0),
     )
     return U[:, :n_eigenvecs], S[:n_eigenvecs], V[:n_eigenvecs, :]
 
