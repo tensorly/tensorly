@@ -1,10 +1,47 @@
 import numpy as np
+import pytest
 
 from ..tucker_regression import TuckerRegressor
 from ...base import tensor_to_vec, partial_tensor_to_vec
 from ...metrics.regression import RMSE
 from ... import backend as T
-from ...testing import assert_
+from ...testing import assert_, assert_allclose
+
+
+@pytest.mark.parametrize("rank,regularization", [(1, 0.0), (1, 0.2), (2, 0.2)])
+def test_single_mode_tucker_regression(rank, regularization):
+    """A feature matrix agrees with independent dense alternating ridge fits."""
+    rng = np.random.RandomState(19)
+    values = rng.normal(size=(32, 5))
+    targets = values @ rng.normal(size=5)
+    seed = 31
+    core = np.random.RandomState(seed).normal(size=rank)
+    for _ in range(4):
+        design = np.kron(values, core.reshape(1, -1))
+        factors = np.linalg.solve(
+            design.T @ design + regularization * np.eye(5 * rank),
+            design.T @ targets,
+        ).reshape(5, rank)
+        design = values @ factors
+        core = np.linalg.solve(
+            design.T @ design + regularization * np.eye(rank),
+            design.T @ targets,
+        )
+    expected = factors @ core
+    X, y = T.tensor(values), T.tensor(targets)
+    before_X, before_y = T.copy(X), T.copy(y)
+    estimator = TuckerRegressor(
+        [rank],
+        reg_W=regularization,
+        n_iter_max=4,
+        tol=0,
+        random_state=seed,
+        verbose=False,
+    ).fit(X, y)
+    assert_allclose(estimator.weight_tensor_, expected, rtol=1e-5, atol=1e-6)
+    assert_allclose(estimator.predict(X), values @ expected, rtol=1e-5, atol=1e-6)
+    assert_allclose(X, before_X, rtol=0, atol=0)
+    assert_allclose(y, before_y, rtol=0, atol=0)
 
 
 def test_TuckerRegressor():
