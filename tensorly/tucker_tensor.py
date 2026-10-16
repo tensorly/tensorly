@@ -218,9 +218,9 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
 
     if contract:
         f = factors.pop(mode)
-        core = mode_dot(core, tl.dot(matrix_or_vector, f), mode=mode)
+        core = mode_dot(core, tl.matmul(matrix_or_vector, f), mode=mode)
     else:
-        factors[mode] = tl.dot(matrix_or_vector, factors[mode])
+        factors[mode] = tl.matmul(matrix_or_vector, factors[mode])
 
     return TuckerTensor((core, factors))
 

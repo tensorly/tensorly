@@ -22,9 +22,9 @@ def test_hals_nnls():
     We test that the estimated x_hals is almost equal to the ground truth x."""
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 1))
-    b = tl.dot(a, true_res)
-    atb = tl.dot(tl.transpose(a), b)
-    ata = tl.dot(tl.transpose(a), a)
+    b = tl.matmul(a, true_res)
+    atb = tl.matmul(tl.permute_dims(a, (1, 0)), b)
+    ata = tl.matmul(tl.permute_dims(a, (1, 0)), a)
     x_hals = hals_nnls(atb, ata)
     assert_array_almost_equal(true_res, x_hals, decimal=2)
 
@@ -34,9 +34,9 @@ def test_fista():
     We test that the estimated x_fista is almost equal to the ground truth x."""
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 1))
-    b = tl.dot(a, true_res)
-    atb = tl.dot(tl.transpose(a), b)
-    ata = tl.dot(tl.transpose(a), a)
+    b = tl.matmul(a, true_res)
+    atb = tl.matmul(tl.permute_dims(a, (1, 0)), b)
+    ata = tl.matmul(tl.permute_dims(a, (1, 0)), a)
     x_fista = fista(atb, ata, tol=10e-16, n_iter_max=5000)
     assert_array_almost_equal(true_res, x_fista, decimal=2)
 
@@ -47,9 +47,9 @@ def test_active_set_nnls():
     We test that the estimated x_as is almost equal to the ground truth x"""
     a = tl.tensor(np.random.rand(20, 10))
     true_res = tl.tensor(np.random.rand(10, 1))
-    b = tl.dot(a, true_res)
-    atb = tl.dot(tl.transpose(a), b)
-    ata = tl.dot(tl.transpose(a), a)
+    b = tl.matmul(a, true_res)
+    atb = tl.matmul(tl.permute_dims(a, (1, 0)), b)
+    ata = tl.matmul(tl.permute_dims(a, (1, 0)), a)
     x_as = active_set_nnls(tensor_to_vec(atb), ata)
     x_as = tl.reshape(x_as, tl.shape(atb))
     assert_array_almost_equal(true_res, x_as, decimal=2)

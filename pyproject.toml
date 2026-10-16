@@ -11,7 +11,7 @@ authors = [{name = "Jean Kossaifi", email = "jean.kossaifi@gmail.com"}]
 license = "BSD-3-Clause"
 license-files = ["LICENSE.txt", "AUTHORS.rst"]
 requires-python = ">=3.11"
-dependencies = ["numpy", "scipy"]
+dependencies = ["numpy>=2.1", "scipy"]
 classifiers = [
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
@@ -30,4 +30,4 @@ version = {attr = "tensorly.__version__"}
 include = ["tensorly*"]
 
 [tool.setuptools.package-data]
-tensorly = ["datasets/data/*.npy"]
+tensorly = ["datasets/data/*.npy", "backend/*.pyi"]

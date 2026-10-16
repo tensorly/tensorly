@@ -194,10 +194,12 @@ def test_svd_thresholding():
     """Test for singular_value_thresholding operator"""
     U = tl.tensor([[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])
     singular_values = tl.tensor([0.4, 2.1, -2.0])
-    tensor = tl.dot(U, tl.reshape(singular_values, (-1, 1)) * tl.transpose(U))
+    tensor = tl.matmul(
+        U, tl.reshape(singular_values, (-1, 1)) * tl.permute_dims(U, (1, 0))
+    )
     shrinked_singular_values = tl.tensor([0, 1.6, -1.5])
-    true_res = tl.dot(
-        U, tl.reshape(shrinked_singular_values, (-1, 1)) * tl.transpose(U)
+    true_res = tl.matmul(
+        U, tl.reshape(shrinked_singular_values, (-1, 1)) * tl.permute_dims(U, (1, 0))
     )
     res = svd_thresholding(tensor, 0.5)
     assert_array_almost_equal(true_res, res)
@@ -207,7 +209,7 @@ def test_procrustes():
     """Test for procrustes operator"""
     U = tl.tensor(np.random.rand(20, 10))
     S, _, V = truncated_svd(U, n_eigenvecs=min(U.shape))
-    true_res = tl.dot(S, V)
+    true_res = tl.matmul(S, V)
     res = procrustes(U)
     assert_array_almost_equal(true_res, res)
 

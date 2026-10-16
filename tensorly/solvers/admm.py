@@ -132,11 +132,13 @@ def admm(
     for iteration in range(n_iter_max):
         x_old = tl.copy(x)
         x_split = tl.solve(
-            tl.transpose(UtU + rho * tl.eye(tl.shape(UtU)[1], **tl.context(UtU))),
-            tl.transpose(UtM + rho * (x + dual_var)),
+            tl.permute_dims(
+                UtU + rho * tl.eye(tl.shape(UtU)[1], **tl.context(UtU)), (1, 0)
+            ),
+            tl.permute_dims(UtM + rho * (x + dual_var), (1, 0)),
         )
         x = proximal_operator(
-            tl.transpose(x_split) - dual_var,
+            tl.permute_dims(x_split, (1, 0)) - dual_var,
             non_negative=non_negative,
             l1_reg=l1_reg,
             group_lasso=group_lasso,
@@ -154,11 +156,14 @@ def admm(
             order=order,
         )
         if n_const is None:
-            x = tl.transpose(tl.solve(tl.transpose(UtU), tl.transpose(UtM)))
+            x = tl.permute_dims(
+                tl.solve(tl.permute_dims(UtU, (1, 0)), tl.permute_dims(UtM, (1, 0))),
+                (1, 0),
+            )
             return x, x_split, dual_var
-        dual_var = dual_var + x - tl.transpose(x_split)
+        dual_var = dual_var + x - tl.permute_dims(x_split, (1, 0))
 
-        dual_residual = x - tl.transpose(x_split)
+        dual_residual = x - tl.permute_dims(x_split, (1, 0))
         primal_residual = x - x_old
 
         if tl.norm(dual_residual) < tol * tl.norm(x) and tl.norm(

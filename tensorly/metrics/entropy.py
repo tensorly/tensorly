@@ -31,7 +31,7 @@ def vonneumann_entropy(tensor):
     except:
         # All density matrices are Hermitian, here real. Hermitianize matrix if rounding/transformation
         # errors have occured.
-        tensor = (tensor + tl.transpose(tensor)) / 2
+        tensor = (tensor + tl.permute_dims(tensor, (1, 0))) / 2
         eig_vals = T.eigh(tensor)[0]
     eps = tl.eps(eig_vals.dtype)
     eig_vals = eig_vals[eig_vals > eps]

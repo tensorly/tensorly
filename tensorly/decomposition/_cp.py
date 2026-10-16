@@ -94,7 +94,7 @@ def initialize_cp(
                     rng.random_sample((U.shape[0], rank - tl.shape(tensor)[mode])),
                     **tl.context(tensor),
                 )
-                U = tl.concatenate([U, random_part], axis=1)
+                U = tl.concat([U, random_part], axis=1)
 
             factors.append(U[:, :rank])
 
@@ -155,7 +155,7 @@ def sparsify_tensor(tensor, card):
     """
     if card >= np.prod(tensor.shape):
         return tensor
-    bound = tl.sort(tl.abs(tensor), axis=None)[-card]
+    bound = tl.sort(tl.reshape(tl.abs(tensor), (-1,)))[-card]
 
     return tl.where(
         tl.abs(tensor) < bound, tl.zeros(tensor.shape, **tl.context(tensor)), tensor
@@ -422,8 +422,8 @@ def parafac(
             pseudo_inverse = tl.ones((rank, rank), **tl.context(tensor))
             for i, factor in enumerate(factors):
                 if i != mode:
-                    pseudo_inverse = pseudo_inverse * tl.dot(
-                        tl.conj(tl.transpose(factor)), factor
+                    pseudo_inverse = pseudo_inverse * tl.matmul(
+                        tl.conj(tl.permute_dims(factor, (1, 0))), factor
                     )
             pseudo_inverse += Id
             pseudo_inverse = (
@@ -433,8 +433,12 @@ def parafac(
             )
             mttkrp = unfolding_dot_khatri_rao(tensor, (weights, factors), mode)
 
-            factor = tl.transpose(
-                tl.solve(tl.conj(tl.transpose(pseudo_inverse)), tl.transpose(mttkrp))
+            factor = tl.permute_dims(
+                tl.solve(
+                    tl.conj(tl.permute_dims(pseudo_inverse, (1, 0))),
+                    tl.permute_dims(mttkrp, (1, 0)),
+                ),
+                (1, 0),
             )
             factors[mode] = factor
 
@@ -799,7 +803,7 @@ def randomised_parafac(
         if fit_indices is None:
             return tl.norm(tensor - cp_to_tensor((weights, factors)), 2) / norm_tensor
         kr_prod, _ = sample_khatri_rao(factors, n_samples_fit, indices_list=fit_indices)
-        residuals = fit_entries - tl.dot(kr_prod, weights)
+        residuals = fit_entries - tl.matmul(kr_prod, weights)
         return fit_scaling * tl.norm(residuals, 2) / norm_tensor
 
     if callback is not None:
@@ -826,7 +830,7 @@ def randomised_parafac(
             if mode:
                 sampled_unfolding = tensor[indices_list]
             else:
-                sampled_unfolding = tl.transpose(tensor[indices_list])
+                sampled_unfolding = tl.permute_dims(tensor[indices_list], (1, 0))
 
             if sampling == "leverage":
                 row_weights = tl.reshape(
@@ -838,7 +842,7 @@ def randomised_parafac(
             # Least squares rather than the normal equations, which are singular
             # whenever the sampled Khatri-Rao product is rank deficient
             factor = tl.lstsq(kr_prod, sampled_unfolding)[0]
-            factors[mode] = tl.transpose(factor)
+            factors[mode] = tl.permute_dims(factor, (1, 0))
 
         if max_stagnation or tol or (callback is not None):
             rec_error = relative_error()

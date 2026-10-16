@@ -1,6 +1,7 @@
-numpy
+numpy>=2.1
 scipy
 pytest
 pytest-cov
 pytest-randomly
 pytest-testmon
+mypy

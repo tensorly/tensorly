@@ -39,7 +39,7 @@ for i, pattern in enumerate(patterns):
     weight_img = tl.tensor(weight_img)
 
     # Generate the labels
-    y = tl.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(weight_img))
+    y = tl.matmul(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(weight_img))
 
     # Plot the original weights
     ax = fig.add_subplot(n_rows, n_columns, i * n_columns + 1)

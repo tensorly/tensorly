@@ -45,7 +45,9 @@ def random_parafac2(
             projection_matrices.append(T.qr(random_matrix)[0])
         else:
             # Fewer rows than the rank: the projection has orthonormal rows instead
-            projection_matrices.append(T.transpose(T.qr(T.transpose(random_matrix))[0]))
+            projection_matrices.append(
+                T.permute_dims(T.qr(T.permute_dims(random_matrix, (1, 0)))[0], (1, 0))
+            )
     weights, factors = random_cp(
         [len(shapes), rank, shapes[0][1]],
         rank=rank,

@@ -53,7 +53,7 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
                 f"{tensor.shape[mode]} (mode {mode}) != {matrix_or_vector.shape[dim]} (dim 1 of matrix)"
             )
         if transpose:
-            matrix_or_vector = tl.conj(tl.transpose(matrix_or_vector))
+            matrix_or_vector = tl.conj(tl.permute_dims(matrix_or_vector, (1, 0)))
         matrix_or_vector_modes = [chr(start + tensor_order + 1), tensor_modes[mode]]
 
     elif tl.ndim(matrix_or_vector) == 1:  # Tensor times vector
@@ -144,7 +144,9 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
 
         elif tl.ndim(matrix_or_vec) == 2:
             if transpose:
-                matrix_or_vec_list.append(tl.conj(tl.transpose(matrix_or_vec)))
+                matrix_or_vec_list.append(
+                    tl.conj(tl.permute_dims(matrix_or_vec, (1, 0)))
+                )
                 # mat_symbol = f'{tensor_modes[mode]}{chr(counter)}'
             else:
                 matrix_or_vec_list.append(matrix_or_vec)

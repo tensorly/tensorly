@@ -21,7 +21,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     Returns
     -------
     mttkrp
-        dot(unfold(tensor, mode), khatri-rao(factors))
+        matmul(unfold(tensor, mode), khatri-rao(factors))
 
     Notes
     -----
@@ -46,7 +46,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     """
     weights, factors = cp_tensor
     kr_factors = khatri_rao(factors, weights=weights, skip_matrix=mode)
-    mttkrp = T.dot(unfold(tensor, mode), T.conj(kr_factors))
+    mttkrp = T.matmul(unfold(tensor, mode), T.conj(kr_factors))
     return mttkrp
 
 
@@ -65,7 +65,7 @@ def unfolding_dot_khatri_rao_memory(tensor, cp_tensor, mode):
     Returns
     -------
     mttkrp
-        dot(unfold(tensor, mode), khatri-rao(factors))
+        matmul(unfold(tensor, mode), khatri-rao(factors))
 
     Notes
     -----

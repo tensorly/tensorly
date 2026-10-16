@@ -628,7 +628,9 @@ def test_parafac_does_not_modify_init():
 
     # A fixed mode whose size does not match the tensor is an error
     with pytest.raises(ValueError):
-        parafac(tl.transpose(X2, (3, 0, 1, 2)), rank=3, init=init, fixed_modes=[0, 1])
+        parafac(
+            tl.permute_dims(X2, (3, 0, 1, 2)), rank=3, init=init, fixed_modes=[0, 1]
+        )
 
 
 @pytest.mark.parametrize(

@@ -54,8 +54,8 @@ def correlation_index(
 
     if method == "stacked":
         # vertically stack loading matrices -- shape sum(tensor.shape)xR)
-        X_1 = [tl.concatenate(factors_1, 0)]
-        X_2 = [tl.concatenate(factors_2, 0)]
+        X_1 = [tl.concat(factors_1, axis=0)]
+        X_2 = [tl.concat(factors_2, axis=0)]
     else:
         X_1 = factors_1
         X_2 = factors_2
@@ -110,13 +110,13 @@ def _compute_correlation_index(x1: list, x2: list, tol: float = 5e-16) -> float:
          CorrIndex metric [0,1]; lower score indicates higher similarity between matrices
     """
     # generate the correlation index input
-    c_prod_mtx = tl.abs(tl.matmul(tl.conj(tl.transpose(x1)), x2))
+    c_prod_mtx = tl.abs(tl.matmul(tl.conj(tl.permute_dims(x1, (1, 0))), x2))
 
     # correlation index scoring
     n_elements = tl.shape(c_prod_mtx)[1] + tl.shape(c_prod_mtx)[0]
     score = (1 / (n_elements)) * (
-        tl.sum(tl.abs(tl.max(c_prod_mtx, 1) - 1))
-        + tl.sum(tl.abs(tl.max(c_prod_mtx, 0) - 1))
+        tl.sum(tl.abs(tl.max(c_prod_mtx, axis=1) - 1))
+        + tl.sum(tl.abs(tl.max(c_prod_mtx, axis=0) - 1))
     )
     if score < tol:
         score = tl.zeros_like(score)

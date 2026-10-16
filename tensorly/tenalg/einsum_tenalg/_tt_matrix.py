@@ -35,4 +35,4 @@ def tt_matrix_to_tensor(tt_matrix):
 
     res = tl.einsum(eq, *tt_matrix)
 
-    return tl.transpose(res, order)
+    return tl.permute_dims(res, tuple(order))

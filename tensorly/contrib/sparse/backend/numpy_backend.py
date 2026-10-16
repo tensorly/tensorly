@@ -52,8 +52,8 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
         return _py_copy(tensor)
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
-        return np.clip(tensor, a_min, a_max)
+    def concat(arrays, axis=0):
+        return sparse.concatenate(arrays, axis=axis)
 
     @staticmethod
     def norm(tensor, order=2, axis=None):
@@ -76,10 +76,11 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
             return NumpySparseBackend.tensor(result)
         return result
 
-    def dot(self, x, y):
-        if is_sparse(x) or is_sparse(y):
-            return sparse.dot(x, y)
-        return np.dot(x, y)
+    @staticmethod
+    def matmul(x1, x2):
+        if is_sparse(x1) or is_sparse(x2):
+            return sparse.matmul(x1, x2)
+        return np.matmul(x1, x2)
 
     @staticmethod
     def einsum(subscripts, *operands):
@@ -227,8 +228,9 @@ for name in [
     "int32",
     "float64",
     "float32",
-    "transpose",
     "moveaxis",
+    "permute_dims",
+    "clip",
     "reshape",
     "ndim",
     "max",
@@ -249,7 +251,6 @@ for name in [
 
 for name in [
     "where",
-    "concatenate",
     "kron",
     "zeros",
     "zeros_like",

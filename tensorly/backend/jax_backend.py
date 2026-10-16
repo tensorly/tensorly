@@ -23,8 +23,8 @@ from .core import (
     backend_array,
 )
 
-if Version(jax.__version__) < Version("0.3.0"):
-    raise RuntimeError("TensorLy only supports JAX v0.3.0 and above.")
+if Version(jax.__version__) < Version("0.4.31"):
+    raise RuntimeError("TensorLy only supports JAX v0.4.31 and above.")
 
 
 class JaxBackend(Backend, backend_name="jax"):
@@ -51,10 +51,6 @@ class JaxBackend(Backend, backend_name="jax"):
         # return copy.copy(tensor)
 
     @staticmethod
-    def ndim(tensor):
-        return tensor.ndim
-
-    @staticmethod
     def lstsq(a, b, rcond=None):
         return np.linalg.lstsq(a, b, rcond=rcond, numpy_resid=True)
 
@@ -67,8 +63,8 @@ class JaxBackend(Backend, backend_name="jax"):
         return tensor.at[indices].set(values)
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
-        return np.clip(tensor, a_min, a_max)
+    def ndim(tensor):
+        return tensor.ndim
 
 
 for name in (
@@ -77,13 +73,16 @@ for name in (
     + backend_array
     + [
         "nan",
+        "concat",
+        "permute_dims",
+        "clip",
+        "sort",
+        "argsort",
+        "shape",
         "moveaxis",
-        "transpose",
         "arange",
         "flip",
-        "trace",
         "kron",
-        "concatenate",
         "max",
         "mean",
         "sum",
@@ -96,13 +95,9 @@ for name in (
         "diag",
         "log2",
         "tensordot",
-        "argsort",
-        "sort",
-        "dot",
-        "shape",
     ]
 ):
     JaxBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "svd", "eigh"]:
+for name in ["solve", "qr", "svd", "eigh", "trace"]:
     JaxBackend.register_method(name, getattr(np.linalg, name))

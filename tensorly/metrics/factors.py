@@ -54,7 +54,7 @@ def congruence_coefficient(matrix1, matrix2, absolute_value=True):
             raise ValueError("Columns of all matrices should have nonzero l2 norm")
         mat1 = mat1 / T.norm(mat1, axis=0)
         mat2 = mat2 / T.norm(mat2, axis=0)
-        all_congruences_list.append(T.dot(T.transpose(mat1), mat2))
+        all_congruences_list.append(T.matmul(T.permute_dims(mat1, (1, 0)), mat2))
         if absolute_value:
             all_congruences_list[-1] = T.abs(all_congruences_list[-1])
         all_congruences_list[-1] = T.to_numpy(all_congruences_list[-1])

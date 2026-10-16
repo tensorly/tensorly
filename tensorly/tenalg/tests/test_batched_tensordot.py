@@ -50,7 +50,7 @@ def test_batched_tensordot():
     res = tensordot(tensor, tensor2, ((0, 3), (1, 3)), batched_modes=(1, 2))
     # Check for each sample of the batch-size individually
     for i in range(2):
-        true_res = tl.tensordot(tensor[:, i], tensor2[:, :, i], ((0, 2), (1, 2)))
+        true_res = tl.tensordot(tensor[:, i], tensor2[:, :, i], axes=((0, 2), (1, 2)))
         assert_array_almost_equal(res[i], true_res, decimal=5)
 
     # Test for actual tensordot

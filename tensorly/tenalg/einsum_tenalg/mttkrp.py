@@ -18,7 +18,7 @@ def unfolding_dot_khatri_rao(tensor, cp_tensor, mode):
     Returns
     -------
     mttkrp
-        dot(unfold(tensor, mode), khatri-rao(factors))
+        matmul(unfold(tensor, mode), khatri-rao(factors))
     """
     weights, factors = cp_tensor
     ndims = tl.ndim(tensor)

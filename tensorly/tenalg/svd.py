@@ -41,7 +41,7 @@ def svd_flip(U, V, u_based_decision=True):
         # Multiply by conjugate of signs to make max-amplitude values real and positive
         U = U * tl.conj(signs)
         if tl.shape(V)[0] > tl.shape(U)[1]:
-            signs = tl.concatenate(
+            signs = tl.concat(
                 (signs, tl.ones(tl.shape(V)[0] - tl.shape(U)[1], **tl.context(V)))
             )
         V = V * signs[: tl.shape(V)[0]][:, None]
@@ -57,7 +57,7 @@ def svd_flip(U, V, u_based_decision=True):
         # Multiply by conjugate of signs to make max-amplitude values real and positive
         V = V * tl.conj(signs[:, None])
         if tl.shape(U)[1] > tl.shape(V)[0]:
-            signs = tl.concatenate(
+            signs = tl.concat(
                 (signs, tl.ones(tl.shape(U)[1] - tl.shape(V)[0], **tl.context(V)))
             )
         U = U * signs[: tl.shape(U)[1]]
@@ -94,8 +94,8 @@ def make_svd_non_negative(tensor, U, S, V, nntype=True):
         x, y = U[:, j], V[j, :]
 
         # extract positive and negative parts of column vectors
-        x_p, y_p = tl.clip(x, a_min=0.0), tl.clip(y, a_min=0.0)
-        x_n, y_n = tl.abs(tl.clip(x, a_max=0.0)), tl.abs(tl.clip(y, a_max=0.0))
+        x_p, y_p = tl.clip(x, min=0.0), tl.clip(y, min=0.0)
+        x_n, y_n = tl.abs(tl.clip(x, max=0.0)), tl.abs(tl.clip(y, max=0.0))
 
         # and their norms
         x_p_nrm, y_p_nrm = tl.norm(x_p), tl.norm(y_p)
@@ -159,13 +159,13 @@ def randomized_range_finder(A, n_dims, n_iter=2, random_state=None):
     rng = tl.check_random_state(random_state)
     dim_1, dim_2 = tl.shape(A)
     Q = tl.tensor(rng.normal(size=(dim_2, n_dims)), **tl.context(A))
-    Q, _ = tl.qr(tl.dot(A, Q))
+    Q, _ = tl.qr(tl.matmul(A, Q))
 
     # Perform power iterations when spectrum decays slowly
-    A_H = tl.conj(tl.transpose(A))
+    A_H = tl.conj(tl.permute_dims(A, (1, 0)))
     for i in range(n_iter):
-        Q, _ = tl.qr(tl.dot(A_H, Q))
-        Q, _ = tl.qr(tl.dot(A, Q))
+        Q, _ = tl.qr(tl.matmul(A_H, Q))
+        Q, _ = tl.qr(tl.matmul(A, Q))
 
     return Q
 
@@ -337,22 +337,22 @@ def randomized_svd(
         and n_eigenvecs < min(min_dim, n_dims)
     ):
         # transpose matrix to keep the reduced matrix shape minimal
-        matrix_T = tl.transpose(matrix)
+        matrix_T = tl.permute_dims(matrix, (1, 0))
         Q = randomized_range_finder(
             matrix_T, n_dims=n_dims, n_iter=n_iter, random_state=random_state
         )
-        Q_H = tl.conj(tl.transpose(Q))
-        matrix_reduced = tl.transpose(tl.dot(Q_H, matrix_T))
+        Q_H = tl.conj(tl.permute_dims(Q, (1, 0)))
+        matrix_reduced = tl.permute_dims(tl.matmul(Q_H, matrix_T), (1, 0))
         U, S, V = truncated_svd(matrix_reduced, n_eigenvecs=n_eigenvecs)
-        V = tl.dot(V, tl.transpose(Q))
+        V = tl.matmul(V, tl.permute_dims(Q, (1, 0)))
     else:
         Q = randomized_range_finder(
             matrix, n_dims=n_dims, n_iter=n_iter, random_state=random_state
         )
-        Q_H = tl.conj(tl.transpose(Q))
-        matrix_reduced = tl.dot(Q_H, matrix)
+        Q_H = tl.conj(tl.permute_dims(Q, (1, 0)))
+        matrix_reduced = tl.matmul(Q_H, matrix)
         U, S, V = truncated_svd(matrix_reduced, n_eigenvecs=n_eigenvecs)
-        U = tl.dot(Q, U)
+        U = tl.matmul(Q, U)
 
     return U, S, V
 

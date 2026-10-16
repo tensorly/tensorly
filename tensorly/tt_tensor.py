@@ -83,10 +83,10 @@ def tt_to_tensor(factors):
     for factor in factors[1:]:
         rank_prev, _, rank_next = factor.shape
         factor = tl.reshape(factor, (rank_prev, -1))
-        full_tensor = tl.dot(full_tensor, factor)
+        full_tensor = tl.matmul(full_tensor, factor)
         full_tensor = tl.reshape(full_tensor, (-1, rank_next))
 
-    return tl.reshape(full_tensor, full_shape)
+    return tl.reshape(full_tensor, tuple(full_shape))
 
 
 def tt_to_unfolded(factors, mode):

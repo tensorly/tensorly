@@ -14,7 +14,7 @@ def test_inner():
 
     # For one common mode, equivalent to dot product
     res = inner(tensor_1, tensor_2, n_modes=1)
-    true_res = T.dot(tensor_1, tensor_2)
+    true_res = T.matmul(tensor_1, tensor_2)
     assert_array_almost_equal(res, true_res)
 
     # For no common mode, equivalent to inner product

@@ -144,9 +144,11 @@ class CP_PLSR:
                 comp_X_factors[0] = multi_mode_dot(
                     X, comp_X_factors[1:], range(1, T.ndim(X))
                 )
-                comp_Y_factors_1 = T.dot(T.transpose(Y), comp_X_factors[0])
+                comp_Y_factors_1 = T.matmul(
+                    T.permute_dims(Y, (1, 0)), comp_X_factors[0]
+                )
                 comp_Y_factors_1 /= T.norm(comp_Y_factors_1)
-                comp_Y_factors_0 = T.dot(Y, comp_Y_factors_1)
+                comp_Y_factors_0 = T.matmul(Y, comp_Y_factors_1)
 
                 if T.norm(old_comp_Y_factors_0 - comp_Y_factors_0) < self.tol:
                     if self.verbose:
@@ -177,8 +179,8 @@ class CP_PLSR:
 
             # Deflation
             X -= outer(comp_X_factors)
-            Y -= T.dot(
-                T.dot(
+            Y -= T.matmul(
+                T.matmul(
                     self.X_factors[0],
                     T.reshape(B, (-1, 1)),
                 ),
@@ -218,7 +220,10 @@ class CP_PLSR:
             )
 
         return (
-            T.dot(T.dot(X_projection, self.coef_), T.transpose(self.Y_factors[1]))
+            T.matmul(
+                T.matmul(X_projection, self.coef_),
+                T.permute_dims(self.Y_factors[1], (1, 0)),
+            )
             + self.Y_mean_
         )
 
@@ -278,11 +283,11 @@ class CP_PLSR:
                 Y_scores = T.index_update(
                     Y_scores,
                     T.index[:, component],
-                    T.dot(Y, self.Y_factors[1][:, component]),
+                    T.matmul(Y, self.Y_factors[1][:, component]),
                 )
 
-                Y -= T.dot(
-                    T.dot(
+                Y -= T.matmul(
+                    T.matmul(
                         X_scores,
                         T.reshape(self.coef_[:, component], (-1, 1)),
                     ),

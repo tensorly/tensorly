@@ -94,27 +94,30 @@ class TuckerRegressor:
             # Optimise modes of W
             for i in range(len(W)):
                 phi = partial_tensor_to_vec(
-                    T.dot(
+                    T.matmul(
                         partial_unfold(X, i),
-                        T.dot(kronecker(W, skip_matrix=i), T.transpose(unfold(G, i))),
+                        T.matmul(
+                            kronecker(W, skip_matrix=i),
+                            T.permute_dims(unfold(G, i), (1, 0)),
+                        ),
                     )
                 )
                 # Regress phi on y: we could call a package here, e.g. scikit-learn
-                inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(
-                    np.eye(phi.shape[1]), **T.context(X)
-                )
+                inv_term = T.matmul(
+                    T.permute_dims(phi, (1, 0)), phi
+                ) + self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X))
                 W_i = vec_to_tensor(
-                    T.solve(inv_term, T.dot(T.transpose(phi), y)),
+                    T.solve(inv_term, T.matmul(T.permute_dims(phi, (1, 0)), y)),
                     (X.shape[i + 1], G.shape[i]),
                 )
                 W[i] = W_i
 
-            phi = T.dot(partial_tensor_to_vec(X), kronecker(W))
+            phi = T.matmul(partial_tensor_to_vec(X), kronecker(W))
             G = vec_to_tensor(
                 T.solve(
-                    T.dot(T.transpose(phi), phi)
+                    T.matmul(T.permute_dims(phi, (1, 0)), phi)
                     + self.reg_W * T.tensor(np.eye(phi.shape[1]), **T.context(X)),
-                    T.dot(T.transpose(phi), y),
+                    T.matmul(T.permute_dims(phi, (1, 0)), y),
                 ),
                 G.shape,
             )
@@ -147,4 +150,4 @@ class TuckerRegressor:
         X : ndarray
             tensor data of shape (n_samples, N1, ..., NS)
         """
-        return T.dot(partial_tensor_to_vec(X), self.vec_W_)
+        return T.matmul(partial_tensor_to_vec(X), self.vec_W_)

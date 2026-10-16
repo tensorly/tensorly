@@ -28,7 +28,9 @@ def test_CPRegressor():
     regression_weights[2:-2, 2:-2, 2] = -1
     regression_weights = T.tensor(regression_weights)
 
-    y = T.dot(partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(regression_weights))
+    y = T.matmul(
+        partial_tensor_to_vec(X, skip_begin=1), tensor_to_vec(regression_weights)
+    )
     X_train = X[:1000, :, :]
     X_test = X[1000:, :, :]
     y_train = y[:1000]
@@ -68,7 +70,7 @@ def test_multidim_CPRegressor():
     )
     X = T.randn((1200, 12, 5, 4), seed=rng)
     y = T.reshape(
-        T.dot(partial_tensor_to_vec(X), T.reshape(regression_weights, (-1, 4 * 3))),
+        T.matmul(partial_tensor_to_vec(X), T.reshape(regression_weights, (-1, 4 * 3))),
         (-1, 4, 3),
     )
     X_train = X[:1000]
@@ -99,7 +101,7 @@ def test_multidim_CPRegressor():
 def test_CPRegressor_single_feature_mode():
     rng = T.check_random_state(1234)
     X = T.tensor(rng.normal(size=(20, 3)))
-    y = T.dot(X, T.tensor([2.0, -1.0, 0.5], **T.context(X)))
+    y = T.matmul(X, T.tensor([2.0, -1.0, 0.5], **T.context(X)))
     X_test = T.tensor(rng.normal(size=(5, 3)))
     for rank, regularization in [(1, 0.0), (1, 0.5), (3, 0.5)]:
         estimator = CPRegressor(
@@ -112,11 +114,11 @@ def test_CPRegressor_single_feature_mode():
         # With one factor, the effective weights are its column sum.
         # Equal columns minimize the factor penalty for that sum.
         expected_weights = T.solve(
-            T.dot(T.transpose(X), X)
+            T.matmul(T.permute_dims(X, (1, 0)), X)
             + (regularization / rank) * T.eye(3, **T.context(X)),
-            T.dot(T.transpose(X), y),
+            T.matmul(T.permute_dims(X, (1, 0)), y),
         )
         assert_allclose(estimator.weight_tensor_, expected_weights, rtol=1e-4)
         assert_allclose(
-            estimator.predict(X_test), T.dot(X_test, expected_weights), rtol=1e-4
+            estimator.predict(X_test), T.matmul(X_test, expected_weights), rtol=1e-4
         )

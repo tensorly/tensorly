@@ -132,7 +132,7 @@ def tensor_train_matrix(
         ]
     )
     new_shape = list([a * b for (a, b) in zip(in_shape, out_shape)])
-    tensor = tl.reshape(tl.transpose(tensor, new_idx), new_shape)
+    tensor = tl.reshape(tl.permute_dims(tensor, tuple(new_idx)), tuple(new_shape))
 
     factors = tensor_train(
         tensor, rank, svd=svd, verbose=verbose, random_state=random_state

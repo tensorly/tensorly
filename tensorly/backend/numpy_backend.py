@@ -30,8 +30,19 @@ class NumpyBackend(Backend, backend_name="numpy"):
         return tensor.ndim
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
-        return np.clip(tensor, a_min, a_max)
+    def argsort(x, axis=-1, descending=False, stable=True):
+        kind = "stable" if stable else None
+        if not descending:
+            return np.argsort(x, axis=axis, kind=kind)
+        # Sort the reversed input in ascending order, then reverse the result and
+        # map the indices back, so that ties keep their original relative order.
+        flipped = np.argsort(np.flip(x, axis=axis), axis=axis, kind=kind)
+        return x.shape[axis] - 1 - np.flip(flipped, axis=axis)
+
+    @staticmethod
+    def sort(x, axis=-1, descending=False, stable=True):
+        out = np.sort(x, axis=axis)
+        return np.flip(out, axis=axis) if descending else out
 
     @staticmethod
     def logsumexp(tensor, axis=0):
@@ -44,14 +55,15 @@ for name in (
     + backend_array
     + [
         "nan",
+        "shape",
         "moveaxis",
-        "trace",
         "copy",
-        "transpose",
+        "concat",
+        "permute_dims",
+        "clip",
         "arange",
         "flip",
         "kron",
-        "concatenate",
         "max",
         "mean",
         "sum",
@@ -65,15 +77,11 @@ for name in (
         "log",
         "log2",
         "tensordot",
-        "argsort",
-        "sort",
-        "dot",
-        "shape",
     ]
 ):
     NumpyBackend.register_method(name, getattr(np, name))
 
-for name in ["solve", "qr", "svd", "eigh", "lstsq"]:
+for name in ["solve", "qr", "svd", "eigh", "lstsq", "trace"]:
     NumpyBackend.register_method(name, getattr(np.linalg, name))
 
 for name in ["digamma"]:

@@ -237,7 +237,7 @@ def test_svd():
             true_rec_error = np.sum((matrix - np.dot(U, S.reshape((-1, 1)) * V)) ** 2)
             # Reconstruction error with the backend's SVD
             rec_error = T.sum(
-                (matrix_backend - T.dot(fU, T.reshape(fS, (-1, 1)) * fV)) ** 2
+                (matrix_backend - T.matmul(fU, T.reshape(fS, (-1, 1)) * fV)) ** 2
             )
             # Check that the two are similar
             assert_(
@@ -246,12 +246,16 @@ def test_svd():
             )
 
             # Check for orthogonality when relevant
-            left_orthogonality_error = T.norm(T.dot(T.transpose(fU), fU) - T.eye(n))
+            left_orthogonality_error = T.norm(
+                T.matmul(T.permute_dims(fU, (1, 0)), fU) - T.eye(n)
+            )
             assert_(
                 left_orthogonality_error <= tol_orthogonality,
                 msg='Left eigenvecs not orthogonal for "{svd}" svd fun VS svd and backend="{tl.get_backend()}, for {n} eigenenvecs, and size {s}".',
             )
-            right_orthogonality_error = T.norm(T.dot(fV, T.transpose(fV)) - T.eye(n))
+            right_orthogonality_error = T.norm(
+                T.matmul(fV, T.permute_dims(fV, (1, 0))) - T.eye(n)
+            )
             assert_(
                 right_orthogonality_error <= tol_orthogonality,
                 msg='Right eigenvecs not orthogonal for "{svd}" svd fun VS svd and backend="{tl.get_backend()}, for {n} eigenenvecs, and size {s}".',
@@ -264,9 +268,11 @@ def test_svd():
 
         # Test for singular matrices (some eigenvals will be zero)
         # Rank at most 5
-        matrix = tl.dot(tl.randn((20, 5), seed=12), tl.randn((5, 20), seed=23))
+        matrix = tl.matmul(tl.randn((20, 5), seed=12), tl.randn((5, 20), seed=23))
         U, S, V = tl.truncated_svd(matrix, n_eigenvecs=6, random_state=0)
-        true_rec_error = tl.sum((matrix - tl.dot(U, tl.reshape(S, (-1, 1)) * V)) ** 2)
+        true_rec_error = tl.sum(
+            (matrix - tl.matmul(U, tl.reshape(S, (-1, 1)) * V)) ** 2
+        )
         assert_(true_rec_error <= tol)
         assert_(
             np.isfinite(T.to_numpy(U)).all(), msg="Left singular vectors are not finite"
@@ -277,11 +283,15 @@ def test_svd():
         )
 
         # Test orthonormality when  max_dim > n_eigenvecs > matrix_rank
-        matrix = tl.dot(tl.randn((4, 2), seed=1), tl.randn((2, 4), seed=12))
+        matrix = tl.matmul(tl.randn((4, 2), seed=1), tl.randn((2, 4), seed=12))
         U, S, V = tl.truncated_svd(matrix, n_eigenvecs=3, random_state=0)
-        left_orthogonality_error = T.norm(T.dot(T.transpose(U), U) - T.eye(3))
+        left_orthogonality_error = T.norm(
+            T.matmul(T.permute_dims(U, (1, 0)), U) - T.eye(3)
+        )
         assert_(left_orthogonality_error <= tol_orthogonality)
-        right_orthogonality_error = T.norm(T.dot(V, T.transpose(V)) - T.eye(3))
+        right_orthogonality_error = T.norm(
+            T.matmul(V, T.permute_dims(V, (1, 0))) - T.eye(3)
+        )
         assert_(right_orthogonality_error <= tol_orthogonality)
 
         # Test if truncated_svd returns the same result for the same setting
@@ -298,7 +308,9 @@ def test_randomized_range_finder():
     size = (7, 5)
     A = T.randn(size)
     Q = tl.tenalg.svd.randomized_range_finder(A, n_dims=min(size))
-    assert_array_almost_equal(A, tl.dot(tl.dot(Q, tl.transpose(T.conj(Q))), A))
+    assert_array_almost_equal(
+        A, tl.matmul(tl.matmul(Q, tl.permute_dims(T.conj(Q), (1, 0))), A)
+    )
 
 
 def test_shape():
@@ -388,8 +400,8 @@ def test_clip():
     X = T.tensor([0.0, -1.0, 1.0])
     X_low = T.tensor([0.0, 0.0, 1.0])
     X_high = T.tensor([0.0, -1.0, 0.0])
-    assert_array_equal(tl.clip(X, a_min=0.0), X_low)
-    assert_array_equal(tl.clip(X, a_max=0.0), X_high)
+    assert_array_equal(tl.clip(X, min=0.0), X_low)
+    assert_array_equal(tl.clip(X, max=0.0), X_high)
 
     # More extensive test with a larger random tensor
     rng = tl.check_random_state(0)
@@ -411,17 +423,17 @@ def test_clip():
     for min_val, max_val in limits:
         message = f"Tensor clipped incorrectly with min_val={min_val} and max_val={max_val}. Tensor bounds are ({tl.to_numpy(tl.min(tensor))}, {tl.to_numpy(tl.max(tensor))}"
         if min_val is not None:
-            assert tl.all(tl.clip(tensor, min_val, None) >= min_val), message
-            assert tl.all(tl.clip(tensor, min_val, max_val) >= min_val), message
+            assert tl.all(tl.clip(tensor, min=min_val, max=None) >= min_val), message
+            assert tl.all(tl.clip(tensor, min=min_val, max=max_val) >= min_val), message
         if max_val is not None:
-            assert tl.all(tl.clip(tensor, None, max_val) <= max_val), message
-            assert tl.all(tl.clip(tensor, min_val, max_val) <= max_val), message
+            assert tl.all(tl.clip(tensor, min=None, max=max_val) <= max_val), message
+            assert tl.all(tl.clip(tensor, min=min_val, max=max_val) <= max_val), message
 
 
 def test_clips_all_negative_tensor_correctly():
     # Regression test for bug found with the pytorch backend
     negative_valued_tensor = tl.zeros((10, 10)) - 0.1
-    clipped_tensor = tl.clip(negative_valued_tensor, 0)
+    clipped_tensor = tl.clip(negative_valued_tensor, min=0)
     assert tl.all(clipped_tensor == 0)
 
 
@@ -482,6 +494,13 @@ def test_where():
 
 
 def test_matmul():
+    # 1-dim x 1-dim gives a 0-dim result (the inner product)
+    a = tl.randn((4,))
+    b = tl.randn((4,))
+    res = tl.matmul(a, b)
+    assert_equal(tuple(res.shape), ())
+    assert_array_almost_equal(res, tl.sum(a * b))
+
     # 1-dim x n-dim
     a = tl.randn((4,))
     b = tl.randn((2, 3, 4, 5))
@@ -509,18 +528,18 @@ def test_lstsq():
     assert_equal(x.shape, (n, k))
 
     # test residuals
-    assert_array_almost_equal(T.norm(T.dot(a, x) - b, axis=0) ** 2, res)
+    assert_array_almost_equal(T.norm(T.matmul(a, x) - b, axis=0) ** 2, res)
     rank = 2
-    a = T.dot(T.randn((m, rank)), T.randn((rank, n)))
+    a = T.matmul(T.randn((m, rank)), T.randn((rank, n)))
     _, res, *_ = T.lstsq(a, b)
     assert_array_almost_equal(tl.tensor([]), res)
 
     # test least squares solution
     a = T.randn((m, n))
     x = T.randn((n,))
-    b = T.dot(a, x)
+    b = T.matmul(a, x)
     x_lstsq, *_ = T.lstsq(a, b)
-    assert_array_almost_equal(T.dot(a, x_lstsq), b, decimal=5)
+    assert_array_almost_equal(T.matmul(a, x_lstsq), b, decimal=5)
 
 
 def test_qr():
@@ -537,10 +556,10 @@ def test_qr():
     assert_array_almost_equal(Q_column_norms, T.ones(N))
     for i in range(N):
         for j in range(i):
-            dot_product = T.to_numpy(T.dot(Q[:, i], Q[:, j]))
+            dot_product = T.to_numpy(T.matmul(Q[:, i], Q[:, j]))
             assert dot_product < 1e-6, "Columns of Q not orthogonal"
 
-    A_reconstructed = T.dot(Q, R)
+    A_reconstructed = T.matmul(Q, R)
     assert_array_almost_equal(A, A_reconstructed)
 
 

@@ -10,6 +10,11 @@ import math
 import numpy as np
 import scipy.special
 
+if tuple(int(v) for v in np.__version__.split(".")[:2]) < (2, 1):
+    raise RuntimeError(
+        f"TensorLy requires NumPy v2.1 or above (array API support), but got {np.__version__}."
+    )
+
 backend_types = [
     "int32",
     "int64",
@@ -48,7 +53,6 @@ backend_array = [
     "where",
     "reshape",
     "cumsum",
-    "count_nonzero",
     "eye",
     "sqrt",
     "abs",
@@ -305,12 +309,14 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def concatenate(tensors, axis=0):
+    def concat(arrays, axis=0):
         """Concatenate tensors along an axis.
+
+        Follows the array API standard (``concat``).
 
         Parameters
         ----------
-        tensors : list of tensor
+        arrays : list or tuple of tensor
             The tensors to concatenate. Non-empty tensors provided must have the
             same shape, except along the specified axis.
         axis : int, optional
@@ -323,15 +329,17 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def reshape(tensor, newshape):
+    def reshape(x, shape):
         """Gives a new shape to a tensor without changing its data.
+
+        Follows the array API standard (``reshape``).
 
         Parameters
         ----------
-        tensor : tl.tensor
-        newshape : int or tuple of ints
-            The new shape should be compatible with the original shape. If an
-            integer, then the result will be a 1-D tensor of that length.
+        x : tl.tensor
+        shape : tuple of ints
+            The new shape should be compatible with the original shape. One
+            dimension may be -1, in which case it is inferred.
 
         Returns
         -------
@@ -340,12 +348,21 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def transpose(tensor):
+    def permute_dims(x, axes):
         """Permute the dimensions of a tensor.
+
+        Follows the array API standard (``permute_dims``).
 
         Parameters
         ----------
-        tensor : tensor
+        x : tensor
+        axes : tuple of int
+            Permutation of the dimensions of `x`. Must contain every axis
+            exactly once.
+
+        Returns
+        -------
+        tensor
         """
         raise NotImplementedError
 
@@ -416,35 +433,37 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def eye(N):
+    def eye(n_rows, n_cols=None, /, *, k=0, dtype=None):
         """Return a 2-D tensor with ones on the diagonal and zeros elsewhere.
 
+        Follows the array API standard (``eye``).
+
         Parameters
         ----------
-        N : int
+        n_rows : int
             Number of rows in the output.
+        n_cols : int, optional
+            Number of columns in the output. Defaults to `n_rows`.
+        k : int, optional
+            Index of the diagonal: 0 is the main diagonal, a positive value is
+            above it and a negative value below it.
+        dtype : optional
+            Data type of the output.
         """
         raise NotImplementedError
 
     @staticmethod
-    def count_nonzero(tensor):
-        """Returns number of non-zero elements in the tensor.
-        Parameters
-        ----------
-        tensor : tensor
-        Returns
-        -------
-        out : scalar
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def trace(tensor):
+    def trace(x, /, *, offset=0):
         """Returns sum of the elements on the diagonal of the tensor.
 
+        Follows the array API standard (``linalg.trace``): the trace is taken
+        over the last two axes of `x`.
+
         Parameters
         ----------
-        tensor : tensor
+        x : tensor
+        offset : int, optional
+            Offset of the diagonal from the main diagonal. Default is 0.
 
         Returns
         -------
@@ -484,15 +503,21 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def any(tensor, axis=None, keepdims=False, **kwargs):
+    def any(x, /, *, axis=None, keepdims=False):
         """Test whether any array element along a given axis evaluates to True.
+
+        Follows the array API standard (``any``).
 
         Parameters
         ----------
-        tensor : tensor
+        x : tensor
+        axis : int or tuple of int, optional
+            Axis or axes along which to compute the result. If None (default), the
+            reduction is over all axes.
+        keepdims : bool, optional
+            If True, the reduced axes are kept as dimensions of size one.
+            Default is False.
             input tensor to check for non-zero values
-        axis : int or None, default is None
-            optional, indicates an axis along which to check for non-zero values
         keepdims : bool, default is False
 
         Returns
@@ -520,22 +545,24 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def clip(tensor, a_min=None, a_max=None):
+    def clip(x, min=None, max=None):
         """Clip the values of a tensor to within an interval.
+
+        Follows the array API standard (``clip``).
 
         Given an interval, values outside the interval are clipped to the interval
         edges.  For example, if an interval of ``[0, 1]`` is specified, values
         smaller than 0 become 0, and values larger than 1 become 1.
 
-        Not more than one of `a_min` and `a_max` may be `None`.
+        Not more than one of `min` and `max` may be `None`.
 
         Parameters
         ----------
-        tensor : tl.tensor
+        x : tl.tensor
             The tensor.
-        a_min : scalar, optional
+        min : scalar, optional
             Minimum value. If `None`, clipping is not performed on lower bound.
-        a_max : scalar, optional
+        max : scalar, optional
             Maximum value. If `None`, clipping is not performed on upper bound.
 
         Returns
@@ -545,14 +572,20 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def max(tensor, axis=None):
+    def max(x, /, *, axis=None, keepdims=False):
         """The max value in a tensor.
+
+        Follows the array API standard (``max``).
 
         Parameters
         ----------
-        tensor : tensor
-        axis : int or None, default is None
-            optional, indicates an axis along which to check for non-zero values
+        x : tensor
+        axis : int or tuple of int, optional
+            Axis or axes along which to compute the result. If None (default), the
+            reduction is over all axes.
+        keepdims : bool, optional
+            If True, the reduced axes are kept as dimensions of size one.
+            Default is False.
 
         Returns
         -------
@@ -562,14 +595,20 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def min(tensor, axis=None):
+    def min(x, /, *, axis=None, keepdims=False):
         """The min value in a tensor.
+
+        Follows the array API standard (``min``).
 
         Parameters
         ----------
-        tensor : tensor
-        axis : int or None, default is None
-            optional, indicates an axis along which to check for non-zero values
+        x : tensor
+        axis : int or tuple of int, optional
+            Axis or axes along which to compute the result. If None (default), the
+            reduction is over all axes.
+        keepdims : bool, optional
+            If True, the reduced axes are kept as dimensions of size one.
+            Default is False.
 
         Returns
         -------
@@ -607,12 +646,20 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def all(tensor):
+    def all(x, /, *, axis=None, keepdims=False):
         """Returns if all array elements in a tensor are True.
+
+        Follows the array API standard (``all``).
 
         Parameters
         ----------
-        tensor : tensor
+        x : tensor
+        axis : int or tuple of int, optional
+            Axis or axes along which to compute the result. If None (default), the
+            reduction is over all axes.
+        keepdims : bool, optional
+            If True, the reduced axes are kept as dimensions of size one.
+            Default is False.
 
         Returns
         -------
@@ -621,14 +668,20 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def mean(tensor, axis=None):
+    def mean(x, /, *, axis=None, keepdims=False):
         """Compute the mean of a tensor, optionally along an axis.
 
+        Follows the array API standard (``mean``).
+
         Parameters
         ----------
-        tensor : tensor
-        axis : int, optional
-            If provided, the mean is computed along this axis.
+        x : tensor
+        axis : int or tuple of int, optional
+            Axis or axes along which to compute the result. If None (default), the
+            reduction is over all axes.
+        keepdims : bool, optional
+            If True, the reduced axes are kept as dimensions of size one.
+            Default is False.
 
         Returns
         -------
@@ -637,14 +690,20 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def sum(tensor, axis=None):
+    def sum(x, /, *, axis=None, keepdims=False):
         """Compute the sum of a tensor, optionally along an axis.
 
+        Follows the array API standard (``sum``).
+
         Parameters
         ----------
-        tensor : tensor
-        axis : int, optional
-            If provided, the sum is computed along this axis.
+        x : tensor
+        axis : int or tuple of int, optional
+            Axis or axes along which to compute the result. If None (default), the
+            reduction is over all axes.
+        keepdims : bool, optional
+            If True, the reduced axes are kept as dimensions of size one.
+            Default is False.
 
         Returns
         -------
@@ -653,14 +712,20 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def prod(tensor, axis=None):
+    def prod(x, /, *, axis=None, keepdims=False):
         """Compute the product of a tensor, optionally along an axis.
+
+        Follows the array API standard (``prod``).
 
         Parameters
         ----------
-        tensor : tensor
-        axis : int, optional
-            If provided, the product is computed along this axis.
+        x : tensor
+        axis : int or tuple of int, optional
+            Axis or axes along which to compute the result. If None (default), the
+            reduction is over all axes.
+        keepdims : bool, optional
+            If True, the reduced axes are kept as dimensions of size one.
+            Default is False.
 
         Returns
         -------
@@ -738,35 +803,21 @@ class Backend:
             return self.sum(self.abs(tensor) ** order, axis=axis) ** (1 / order)
 
     @staticmethod
-    def dot(a, b):
-        """Dot product of two tensors.
-
-        Parameters
-        ----------
-        a, b : tensor
-            The tensors to compute the dot product of.
-
-        Returns
-        -------
-        tensor
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def matmul(a, b):
+    def matmul(x1, x2):
         """Matrix multiplication of tensors representing (batches of) matrices
 
+        Follows the array API standard (``matmul``).
+
         Parameters
         ----------
-        a : tl.tensor
-            [description]
-        b : tl.tensor
-            tensors representing the matrices to contract
+        x1 : tl.tensor
+        x2 : tl.tensor
+            tensors representing the matrices to multiply
 
         Returns
         -------
-        a @ b
-            matrix product of a and b
+        x1 @ x2
+            matrix product of x1 and x2
 
         Notes
         -----
@@ -805,24 +856,26 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def tensordot(a, b, axes=2):
+    def tensordot(x1, x2, /, *, axes=2):
         """
         Compute tensor dot product along specified axes.
-        Given two tensors, `a` and `b`, and an array_like object containing
+
+        Follows the array API standard (``tensordot``).
+        Given two tensors, `x1` and `x2`, and an array_like object containing
         two array_like objects, ``(a_axes, b_axes)``, sum the products of
-        `a`'s and `b`'s elements (components) over the axes specified by
-        ``a_axes`` and ``b_axes``. The third argument can be a single non-negative
+        `x1`'s and `x2`'s elements (components) over the axes specified by
+        ``a_axes`` and ``b_axes``. The `axes` argument can be a single non-negative
         integer_like scalar, ``N``; if it is such, then the last ``N`` dimensions
-        of `a` and the first ``N`` dimensions of `b` are summed over.
+        of `x1` and the first ``N`` dimensions of `x2` are summed over.
 
         Parameters
         ----------
-        a, b : array_like
+        x1, x2 : array_like
             Tensors to "dot".
         axes : int or (2,) array_like
             * integer_like
-            If an int N, sum over the last N axes of `a` and the first N axes
-            of `b` in order. The sizes of the corresponding axes must match.
+            If an int N, sum over the last N axes of `x1` and the first N axes
+            of `x2` in order. The sizes of the corresponding axes must match.
             * (2,) array_like
             Or, a list of axes to be summed over, first sequence applying to `a`,
             second to `b`. Both elements array_like must be of the same length.
@@ -960,15 +1013,22 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def sort(tensor, axis):
+    def sort(x, axis=-1, descending=False, stable=True):
         """Return a sorted copy of an array
+
+        Follows the array API standard (``sort``).
 
         Parameters
         ----------
-        tensor : tensor
+        x : tensor
             An N-D tensor
-        axis : int or None
-            Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
+        axis : int, optional
+            Axis along which to sort. The default is -1, which sorts along the last axis.
+        descending : bool, optional
+            Sort in descending order if True. Default is False.
+        stable : bool, optional
+            Whether the sort should preserve the relative order of equal elements.
+            Default is True.
 
         Returns
         -------
@@ -978,19 +1038,26 @@ class Backend:
         raise NotImplementedError
 
     @staticmethod
-    def argsort(tensor, axis):
-        """Returns arguments of a sorted array
+    def argsort(x, axis=-1, descending=False, stable=True):
+        """Returns the indices that sort an array along an axis
+
+        Follows the array API standard (``argsort``).
 
         Parameters
         ----------
-        tensor : tensor
+        x : tensor
             An N-D tensor
-        axis : int or None
-            Axis along which to sort. If None, the array is flattened before sorting. The default is -1, which sorts along the last axis.
+        axis : int, optional
+            Axis along which to sort. The default is -1, which sorts along the last axis.
+        descending : bool, optional
+            Sort in descending order if True. Default is False.
+        stable : bool, optional
+            Whether the sort should preserve the relative order of equal elements.
+            Default is True.
 
         Returns
         -------
-        list of scalar values
+        tensor of int
         """
         raise NotImplementedError
 
@@ -1052,7 +1119,7 @@ class Backend:
                 "Destination should verify 0 <= destination < tensor.ndim"
                 "Got %d" % destination
             )
-        return self.transpose(tensor, axes)
+        return self.permute_dims(tensor, tuple(axes))
 
     def kron(self, a, b):
         """Kronecker product of two tensors.

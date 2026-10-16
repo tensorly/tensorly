@@ -38,9 +38,11 @@ def _complete_factor(factor, n_columns, non_negative=False, random_state=None):
         rng.random_sample((n_rows, n_columns - n_existing)), **tl.context(factor)
     )
     if not non_negative:
-        extra = extra - tl.dot(factor, tl.dot(tl.transpose(tl.conj(factor)), extra))
+        extra = extra - tl.matmul(
+            factor, tl.matmul(tl.permute_dims(tl.conj(factor), (1, 0)), extra)
+        )
         extra = tl.qr(extra)[0]
-    return tl.concatenate([factor, extra], axis=1)
+    return tl.concat([factor, extra], axis=1)
 
 
 def _is_tucker_factors_init(init):
@@ -483,22 +485,28 @@ def non_negative_tucker(
     for iteration in range(n_iter_max):
         for mode in range(tl.ndim(tensor)):
             B = tucker_to_tensor((nn_core, nn_factors), skip_factor=mode)
-            B = tl.transpose(unfold(B, mode))
+            B = tl.permute_dims(unfold(B, mode), (1, 0))
 
-            numerator = tl.dot(unfold(tensor, mode), B)
-            numerator = tl.clip(numerator, a_min=epsilon, a_max=None)
-            denominator = tl.dot(nn_factors[mode], tl.dot(tl.transpose(B), B))
-            denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
+            numerator = tl.matmul(unfold(tensor, mode), B)
+            numerator = tl.clip(numerator, min=epsilon, max=None)
+            denominator = tl.matmul(
+                nn_factors[mode], tl.matmul(tl.permute_dims(B, (1, 0)), B)
+            )
+            denominator = tl.clip(denominator, min=epsilon, max=None)
             nn_factors[mode] *= numerator / denominator
 
         numerator = tucker_to_tensor((tensor, nn_factors), transpose_factors=True)
-        numerator = tl.clip(numerator, a_min=epsilon, a_max=None)
+        numerator = tl.clip(numerator, min=epsilon, max=None)
         for i, f in enumerate(nn_factors):
             if i:
-                denominator = mode_dot(denominator, tl.dot(tl.transpose(f), f), i)
+                denominator = mode_dot(
+                    denominator, tl.matmul(tl.permute_dims(f, (1, 0)), f), i
+                )
             else:
-                denominator = mode_dot(nn_core, tl.dot(tl.transpose(f), f), i)
-        denominator = tl.clip(denominator, a_min=epsilon, a_max=None)
+                denominator = mode_dot(
+                    nn_core, tl.matmul(tl.permute_dims(f, (1, 0)), f), i
+                )
+        denominator = tl.clip(denominator, min=epsilon, max=None)
         nn_core *= numerator / denominator
 
         rec_error = (
@@ -682,17 +690,22 @@ def non_negative_tucker_hals(
             pseudo_inverse = nn_factors.copy()
             for i, factor in enumerate(nn_factors):
                 if i != mode:
-                    pseudo_inverse[i] = tl.dot(tl.conj(tl.transpose(factor)), factor)
+                    pseudo_inverse[i] = tl.matmul(
+                        tl.conj(tl.permute_dims(factor, (1, 0))), factor
+                    )
             # UtU
             core_cross = multi_mode_dot(nn_core, pseudo_inverse, skip=mode)
-            UtU = tl.dot(unfold(core_cross, mode), tl.transpose(unfold(nn_core, mode)))
+            UtU = tl.matmul(
+                unfold(core_cross, mode), tl.permute_dims(unfold(nn_core, mode), (1, 0))
+            )
 
             # UtM
             tensor_cross = multi_mode_dot(tensor, nn_factors, skip=mode, transpose=True)
-            MtU = tl.dot(
-                unfold(tensor_cross, mode), tl.transpose(unfold(nn_core, mode))
+            MtU = tl.matmul(
+                unfold(tensor_cross, mode),
+                tl.permute_dims(unfold(nn_core, mode), (1, 0)),
             )
-            UtM = tl.transpose(MtU)
+            UtM = tl.permute_dims(MtU, (1, 0))
 
             # Call the hals resolution with nnls, optimizing the current mode.
             # A handful of inner sweeps is enough: each outer iteration
@@ -704,15 +717,17 @@ def non_negative_tucker_hals(
             nn_factor = hals_nnls(
                 UtM,
                 UtU,
-                tl.transpose(nn_factors[mode]),
+                tl.permute_dims(nn_factors[mode], (1, 0)),
                 n_iter_max=5,
                 sparsity_coefficient=sparsity_coefficients[mode],
                 exact=exact,
             )
-            nn_factors[mode] = tl.transpose(nn_factor)
+            nn_factors[mode] = tl.permute_dims(nn_factor, (1, 0))
         # updating core
         if algorithm == "fista":
-            pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
+            pseudo_inverse[-1] = tl.matmul(
+                tl.permute_dims(nn_factors[-1], (1, 0)), nn_factors[-1]
+            )
             core_estimation = multi_mode_dot(tensor, nn_factors, transpose=True)
             learning_rate = 1
 
@@ -727,10 +742,14 @@ def non_negative_tucker_hals(
                 lr=learning_rate,
             )
         if algorithm == "active_set":
-            pseudo_inverse[-1] = tl.dot(tl.transpose(nn_factors[-1]), nn_factors[-1])
+            pseudo_inverse[-1] = tl.matmul(
+                tl.permute_dims(nn_factors[-1], (1, 0)), nn_factors[-1]
+            )
             core_estimation_vec = tl.base.tensor_to_vec(
                 tl.tenalg.mode_dot(
-                    tensor_cross, tl.transpose(nn_factors[modes[-1]]), modes[-1]
+                    tensor_cross,
+                    tl.permute_dims(nn_factors[modes[-1]], (1, 0)),
+                    modes[-1],
                 )
             )
             pseudo_inverse_kr = tl.tenalg.kronecker(pseudo_inverse)

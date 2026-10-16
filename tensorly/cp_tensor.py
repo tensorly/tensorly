@@ -492,8 +492,9 @@ def cp_to_tensor(cp_tensor, mask=None):
         weights = 1
 
     if mask is None:
-        full_tensor = T.dot(
-            factors[0] * weights, T.transpose(khatri_rao(factors, skip_matrix=0))
+        full_tensor = T.matmul(
+            factors[0] * weights,
+            T.permute_dims(khatri_rao(factors, skip_matrix=0), (1, 0)),
         )
     else:
         full_tensor = T.sum(
@@ -532,11 +533,14 @@ def cp_to_unfolded(cp_tensor, mode):
     weights, factors = cp_tensor
 
     if weights is not None:
-        return T.dot(
-            factors[mode] * weights, T.transpose(khatri_rao(factors, skip_matrix=mode))
+        return T.matmul(
+            factors[mode] * weights,
+            T.permute_dims(khatri_rao(factors, skip_matrix=mode), (1, 0)),
         )
     else:
-        return T.dot(factors[mode], T.transpose(khatri_rao(factors, skip_matrix=mode)))
+        return T.matmul(
+            factors[mode], T.permute_dims(khatri_rao(factors, skip_matrix=mode), (1, 0))
+        )
 
 
 def cp_to_vec(cp_tensor):
@@ -621,11 +625,11 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
 
     if contract:
         factor = factors.pop(mode)
-        factor = T.dot(matrix_or_vector, factor)
+        factor = T.matmul(matrix_or_vector, factor)
         mode = max(mode - 1, 0)
         factors[mode] *= factor
     else:
-        factors[mode] = T.dot(matrix_or_vector, factors[mode])
+        factors[mode] = T.matmul(matrix_or_vector, factors[mode])
 
     if copy:
         return CPTensor((weights, factors))
@@ -659,10 +663,10 @@ def cp_norm(cp_tensor):
     for f in factors:
         if rank == 1 and T.ndim(f) == 1:
             f = T.reshape(f, (-1, 1))
-        norm = norm * T.dot(T.transpose(f), T.conj(f))
+        norm = norm * T.matmul(T.permute_dims(f, (1, 0)), T.conj(f))
 
     if weights is not None:
-        # norm = T.dot(T.dot(weights, norm), weights)
+        # norm = T.matmul(T.matmul(weights, norm), weights)
         norm = norm * (
             T.reshape(weights, (-1, 1)) * T.conj(T.reshape(weights, (1, -1)))
         )
