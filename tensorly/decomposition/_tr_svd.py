@@ -41,7 +41,7 @@ def tensor_ring(
     if mode:
         order = tuple(range(mode, n_dim)) + tuple(range(mode))
         input_tensor = tl.transpose(input_tensor, order)
-        rank = rank[mode:] + rank[:mode]
+        rank = rank[mode:-1] + rank[: mode + 1]
 
     tensor_size = input_tensor.shape
 
