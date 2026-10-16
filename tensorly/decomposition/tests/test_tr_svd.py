@@ -68,3 +68,26 @@ def test_tensor_ring_mode():
 
     with assert_raises(ValueError):
         tensor_ring(tensor, rank=(12, 2, 10, 3, 6, 12), mode=1)
+
+
+@pytest.mark.parametrize("mode", range(4))
+def test_tensor_ring_mode_preserves_nonuniform_ranks(mode):
+    """The closing bond must not shift the ranks when the first mode changes."""
+    shape = (6, 7, 8, 9)
+    rank = (1, 2, 3, 2, 1)
+    tensor = tl.tensor(tl.check_random_state(0).random_sample(shape))
+
+    result = tensor_ring(tensor, rank, mode=mode)
+
+    assert result.shape == shape
+    assert result.rank == rank
+
+
+def test_tensor_ring_last_mode_full_rank_reconstruction():
+    """Starting at the last mode preserves an exactly representable tensor."""
+    tensor = tl.tensor(tl.check_random_state(0).random_sample((4, 5, 6)))
+
+    result = tensor_ring(tensor, rank=(1, 4, 6, 1), mode=2)
+
+    assert result.rank == (1, 4, 6, 1)
+    assert_array_almost_equal(result.to_tensor(), tensor, decimal=5)

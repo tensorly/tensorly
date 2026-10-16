@@ -128,7 +128,9 @@ class CP_PLSR:
             else:
                 # No target variation remains for further components.
                 break
-            old_comp_Y_factors_0 = T.ones(T.shape(comp_Y_factors_0)) * T.inf
+            old_comp_Y_factors_0 = (
+                T.ones(T.shape(comp_Y_factors_0), **T.context(comp_Y_factors_0)) * T.inf
+            )
 
             for iter in range(self.n_iter_max):
                 Z = T.tensordot(X, comp_Y_factors_0, axes=((0,), (0,)))
@@ -177,10 +179,14 @@ class CP_PLSR:
                 self.Y_factors[1], T.index[:, component], comp_Y_factors_1
             )
 
-            B = T.lstsq(self.X_factors[0], T.reshape(comp_Y_factors_0, (-1, 1)))[0]
+            # Future score columns are zero and need not enter the regression.
+            B = T.lstsq(
+                self.X_factors[0][:, : component + 1],
+                T.reshape(comp_Y_factors_0, (-1, 1)),
+            )[0]
             self.coef_ = T.index_update(
                 self.coef_,
-                T.index[:, component],
+                T.index[: component + 1, component],
                 T.reshape(B, (-1,)),
             )
 
@@ -188,7 +194,7 @@ class CP_PLSR:
             X -= outer(comp_X_factors)
             Y -= T.dot(
                 T.dot(
-                    self.X_factors[0],
+                    self.X_factors[0][:, : component + 1],
                     T.reshape(B, (-1, 1)),
                 ),
                 T.reshape(comp_Y_factors_1, (1, -1)),

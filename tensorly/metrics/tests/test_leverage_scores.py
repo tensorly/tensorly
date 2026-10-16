@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import tensorly as tl
 
 from ..leverage_scores import leverage_score_dist
@@ -26,3 +27,53 @@ def test_leverage_score_dist(no_row, no_col, rank):
     # Assert that lev_score_dist matches true leverage score distribution
     true_lev_score_dist = tl.sum(U**2, axis=1) / rank
     assert_array_almost_equal(lev_score_dist, true_lev_score_dist)
+
+
+@pytest.mark.parametrize(
+    "dtype", [] if tl.get_backend() == "paddle" else ["complex64", "complex128"]
+)  # Paddle v3.0 SVD does not support complex inputs.
+@pytest.mark.parametrize(
+    "matrix",
+    [
+        [[1j, 0], [0, 1]],
+        [[1j, 1], [2, -1j], [1 + 1j, 2j]],
+        [[1j, 1, 2], [2, -1j, 1 + 1j]],
+        [[1j, 2j], [1, 2], [2j, 4j]],
+    ],
+    ids=["imaginary-diagonal", "tall", "wide", "rank-deficient"],
+)
+def test_complex_leverage_score_dist(matrix, dtype):
+    matrix = np.asarray(matrix, dtype=dtype)
+    tensor = tl.tensor(matrix, dtype=getattr(tl.backend, dtype))
+    original = tl.copy(tensor)
+    distribution = leverage_score_dist(tensor)
+    # The diagonal of the orthogonal projector contains unnormalized scores.
+    expected = np.diag(matrix @ np.linalg.pinv(matrix)).real
+    expected = expected / np.linalg.matrix_rank(matrix)
+    result = tl.to_numpy(distribution)
+    assert_equal(tl.context(distribution)["dtype"], tl.float64)
+    assert_equal(np.all(np.isfinite(result)), True)
+    assert_equal(np.all(result >= 0), True)
+    assert_array_almost_equal(result.sum(), 1.0)
+    assert_array_almost_equal(result, expected, decimal=5)
+    assert_array_almost_equal(tensor, original)
+    tl.check_random_state(1234).choice(len(result), size=10, p=result)
+
+
+def test_float32_leverage_score_dist():
+    matrix = np.asarray([[1, 2], [0, 1], [1, 0]], dtype=np.float32)
+    tensor = tl.tensor(matrix, dtype=tl.float32)
+    original = tl.copy(tensor)
+
+    distribution = leverage_score_dist(tensor)
+
+    expected = np.diag(matrix @ np.linalg.pinv(matrix))
+    expected = expected / np.linalg.matrix_rank(matrix)
+    result = tl.to_numpy(distribution)
+    assert_equal(tl.context(distribution)["dtype"], tl.float64)
+    assert_equal(np.all(np.isfinite(result)), True)
+    assert_equal(np.all(result >= 0), True)
+    assert_array_almost_equal(result.sum(), 1.0)
+    assert_array_almost_equal(result, expected, decimal=5)
+    assert_array_almost_equal(tensor, original)
+    tl.check_random_state(1234).choice(len(result), size=10, p=result)

@@ -1,5 +1,7 @@
 import itertools
 
+import numpy as np
+
 import pytest
 import tensorly as tl
 
@@ -74,3 +76,28 @@ def test_congruence_coefficient(I, R, absolute_value):
     _, permutation = cp_permute_factors(cp_tensor_1, cp_tensor_2)
 
     assert permutation[0].tolist() == col_order_2
+
+
+@pytest.mark.parametrize("dtype, scale", [("float32", 1e-6), ("float64", 1e-6)])
+def test_congruence_nonzero_norm_product_underflow(dtype, scale):
+    matrix = tl.tensor(
+        np.random.RandomState(42).normal(size=(8, 64)), dtype=getattr(tl.backend, dtype)
+    )
+    matrix = matrix * scale
+    reversed_matrix = matrix[:, list(range(63, -1, -1))]
+    score, permutation = congruence_coefficient(matrix, reversed_matrix)
+    assert float(score) == pytest.approx(1, abs=1e-6)
+    assert permutation == list(range(63, -1, -1))
+
+
+@pytest.mark.parametrize("which", [0, 1])
+def test_congruence_rejects_zero_column_with_small_norms(which):
+    matrix = (
+        tl.tensor(np.random.RandomState(42).normal(size=(8, 64)), dtype=tl.float32)
+        * 1e-6
+    )
+    zero_column = tl.index_update(matrix, tl.index[:, 0], 0)
+    pair = [matrix, matrix]
+    pair[which] = zero_column
+    with pytest.raises(ValueError, match="nonzero l2 norm"):
+        congruence_coefficient(*pair)
