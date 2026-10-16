@@ -36,12 +36,10 @@ def leverage_score_dist(matrix):
     num_rank = (
         int(tl.max(tl.where(S > rank_cutoff)[0])) + 1
     )  # int(...) needed for mxnet
-    lev_score_dist = tl.sum(U[:, :num_rank] ** 2, axis=1) / tl.tensor(
-        num_rank, dtype=mat_dtype
-    )
+    lev_score_dist = tl.sum(tl.abs(U[:, :num_rank]) ** 2, axis=1) / num_rank
 
     if tl.context(lev_score_dist)["dtype"] != tl.float64:
         lev_score_dist = tl.tensor(lev_score_dist, dtype=tl.float64)
-        lev_score_dist /= tl.sum(lev_score_dist)
+        lev_score_dist = lev_score_dist / tl.sum(lev_score_dist)
 
     return lev_score_dist
