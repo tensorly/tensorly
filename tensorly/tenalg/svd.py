@@ -103,6 +103,10 @@ def make_svd_non_negative(tensor, U, S, V, nntype=True):
 
         m_p, m_n = x_p_nrm * y_p_nrm, x_n_nrm * y_n_nrm
 
+        # A null direction has no nonnegative rank-one contribution.
+        if m_p == 0 and m_n == 0:
+            continue
+
         # choose update
         if m_p > m_n:
             u = x_p / x_p_nrm
