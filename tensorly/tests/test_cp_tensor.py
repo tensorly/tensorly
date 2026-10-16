@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import pytest
 
 import tensorly as tl
 from ..tenalg import khatri_rao, mode_dot
@@ -486,3 +485,24 @@ def test_cp_mode_dot_tuple_input(copy, with_weights, operation):
     assert_array_almost_equal(cp_to_tensor(result), expected)
     if copy:
         assert_array_almost_equal(cp_to_tensor(cp), dense)
+
+
+@pytest.mark.parametrize("mode", [0, 1, 2])
+@pytest.mark.parametrize("with_weights", [False, True])
+@pytest.mark.parametrize("custom_summary", [False, True])
+def test_cp_flip_sign_zero_summary(mode, with_weights, custom_summary):
+    factors = [
+        tl.tensor([[1.0, 2.0], [3.0, -2.0]]),
+        tl.tensor([[1.0, 1.0], [-1.0, 2.0]]),
+        tl.tensor([[2.0, 1.0], [0.0, -3.0]]),
+    ]
+    weights = tl.tensor([2.0, -3.0]) if with_weights else None
+    cp = (weights, factors)
+    expected = cp_to_tensor(cp)
+    summary = tl.sum if custom_summary else None
+    result = cp_flip_sign(cp, mode=mode, func=summary)
+    assert_array_almost_equal(cp_to_tensor(result), expected)
+    assert_(tl.all(result.weights >= 0))
+    for i, factor in enumerate(result.factors):
+        if i != mode:
+            assert_(tl.all(tl.mean(factor, axis=0) >= 0))
