@@ -342,7 +342,7 @@ def pad_tt_rank(factor_list, n_padding=1, pad_boundaries=False):
         n_padding_left = n_padding_right = n_padding
         if (i == 0) and not pad_boundaries:
             n_padding_left = 0
-        elif (i == n_factors - 1) and not pad_boundaries:
+        if (i == n_factors - 1) and not pad_boundaries:
             n_padding_right = 0
 
         r1, *s, r2 = tl.shape(factor)
