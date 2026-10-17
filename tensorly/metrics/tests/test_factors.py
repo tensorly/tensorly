@@ -103,6 +103,19 @@ def test_congruence_rejects_zero_column_with_small_norms(which):
         congruence_coefficient(*pair)
 
 
+@pytest.fixture
+def complex_norm_supported(dtype):
+    if tl.get_backend() == "paddle":
+        probe = tl.tensor([1 + 1j], dtype=getattr(tl, dtype))
+        try:
+            tl.norm(probe, axis=0)
+        except RuntimeError as error:
+            message = str(error)
+            if "p_norm" in message and "not registered" in message:
+                pytest.skip("This Paddle build has no complex p_norm kernel")
+            raise
+
+
 def _complex_orthonormal_columns(n_columns, dtype):
     if n_columns < 3:
         matrix = np.array([[1, 1], [1j, -1j]]) / np.sqrt(2)
@@ -118,7 +131,9 @@ def _complex_orthonormal_columns(n_columns, dtype):
 @pytest.mark.parametrize("n_columns", [1, 2, 3])
 @pytest.mark.parametrize("as_list", [False, True])
 @pytest.mark.parametrize("permuted", [False, True])
-def test_complex_congruence_coefficient(dtype, n_columns, as_list, permuted):
+def test_complex_congruence_coefficient(
+    dtype, n_columns, as_list, permuted, complex_norm_supported
+):
     matrix = _complex_orthonormal_columns(n_columns, dtype)
     order = np.roll(np.arange(n_columns), 1) if permuted else np.arange(n_columns)
     phases = (
@@ -136,7 +151,7 @@ def test_complex_congruence_coefficient(dtype, n_columns, as_list, permuted):
 
 @pytest.mark.parametrize("dtype", ["complex64", "complex128"])
 @pytest.mark.parametrize("as_list", [False, True])
-def test_cp_permute_complex_factors(dtype, as_list):
+def test_cp_permute_complex_factors(dtype, as_list, complex_norm_supported):
     matrix = _complex_orthonormal_columns(2, dtype)
     weights = tl.tensor([1.0, 2.0], **tl.context(matrix))
     reference = tl.cp_tensor.CPTensor((weights, [matrix, tl.copy(matrix)]))
