@@ -271,7 +271,7 @@ def validate_tt_rank(
     else:
         validated_rank = [1]
         for i, s in enumerate(tensor_shape[:-1]):
-            n_row = int(rank[i] * s)
+            n_row = int(validated_rank[i] * s)
             n_column = np.prod(tensor_shape[(i + 1) :])  # n_column of unfolding
             validated_rank.append(min(n_row, n_column, rank[i + 1]))
         validated_rank.append(1)
@@ -342,7 +342,7 @@ def pad_tt_rank(factor_list, n_padding=1, pad_boundaries=False):
         n_padding_left = n_padding_right = n_padding
         if (i == 0) and not pad_boundaries:
             n_padding_left = 0
-        elif (i == n_factors - 1) and not pad_boundaries:
+        if (i == n_factors - 1) and not pad_boundaries:
             n_padding_right = 0
 
         r1, *s, r2 = tl.shape(factor)
