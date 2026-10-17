@@ -98,10 +98,13 @@ class CPTensor(FactorizedTensor):
 
         Returns
         -------
-        CPTensor = (core, factors)
+        CPTensor or tensor scalar
             `mode`-mode product of `tensor` by `matrix_or_vector`
             * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
             * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
+
+        Contracting the only mode with ``keep_dim=False`` returns a scalar
+        without modifying the input CP tensor.
 
         See also
         --------
@@ -587,10 +590,13 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
 
     Returns
     -------
-    CPTensor = (core, factors)
+    CPTensor or tensor scalar
         `mode`-mode product of `tensor` by `matrix_or_vector`
         * of shape :math:`(i_1, ..., i_{k-1}, J, i_{k+1}, ..., i_N)` if matrix_or_vector is a matrix
         * of shape :math:`(i_1, ..., i_{k-1}, i_{k+1}, ..., i_N)` if matrix_or_vector is a vector
+
+    Contracting the only mode with ``keep_dim=False`` returns a scalar
+    without modifying the input CP tensor.
 
     See also
     --------
@@ -629,6 +635,8 @@ def cp_mode_dot(cp_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
         weights = T.copy(weights)
 
     if contract:
+        if len(factors) == 1:
+            return T.sum(weights * T.dot(matrix_or_vector, factors[0]))
         factor = factors.pop(mode)
         factor = T.dot(matrix_or_vector, factor)
         mode = max(mode - 1, 0)
