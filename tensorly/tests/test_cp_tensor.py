@@ -532,4 +532,4 @@ def test_cp_mode_dot_contracts_only_mode(copy, mode, weighted):
         assert_array_equal(cp.factors[0], factor)
     kept = cp_mode_dot(cp, vector, mode, keep_dim=True, copy=True)
     assert kept.shape == (1,)
-    assert_array_almost_equal(kept.to_tensor(), [expected])
+    assert_array_almost_equal(kept.to_tensor(), tl.reshape(expected, (1,)))
