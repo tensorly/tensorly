@@ -19,7 +19,7 @@ from ..cp_tensor import (
     cp_permute_factors,
 )
 from ..base import unfold, tensor_to_vec
-from tensorly.random import random_cp
+from tensorly.random import random_cp, random_tensor
 from tensorly.testing import (
     assert_equal,
     assert_raises,
@@ -513,11 +513,12 @@ def test_cp_flip_sign_zero_summary(mode, with_weights, custom_summary):
 @pytest.mark.parametrize("weighted", [False, True])
 def test_cp_mode_dot_contracts_only_mode(copy, mode, weighted):
     """The last vector contraction returns the dense scalar and preserves the input."""
-    factor = tl.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-    weights = tl.tensor([2.0, 3.0]) if weighted else None
-    vector = tl.tensor([1.0, 2.0, -1.0])
-    cp = CPTensor((weights, [factor]))
-    expected = 16.0 if weighted else 6.0
+    cp = random_cp(shape=(3,), rank=2, random_state=1234)
+    if not weighted:
+        cp = CPTensor((None, cp.factors))
+    factor = tl.copy(cp.factors[0])
+    vector = random_tensor((3,), random_state=4321)
+    expected = tl.dot(cp.to_tensor(), vector)
     for as_object in [False, True]:
         result = (
             cp.mode_dot(vector, mode, copy=copy)
