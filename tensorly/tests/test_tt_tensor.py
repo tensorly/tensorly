@@ -152,6 +152,36 @@ def test_validate_tt_rank():
     assert_equal(tuple(rank), (1, 1, 1, 1))
 
 
+@pytest.mark.parametrize(
+    "shape,requested,expected",
+    [
+        ((2, 2, 16), 100, (1, 2, 4, 1)),
+        ((2, 2, 16), (1, 100, 100, 1), (1, 2, 4, 1)),
+        ((2, 2, 3, 12), 100, (1, 2, 4, 12, 1)),
+        ((2, 2, 3, 12), (1, 100, 3, 100, 1), (1, 2, 3, 9, 1)),
+        ((2, 2, 16), (1, 1, 2, 1), (1, 1, 2, 1)),
+    ],
+)
+def test_validate_tt_rank_without_overparametrization(shape, requested, expected):
+    rank = validate_tt_rank(shape, requested, allow_overparametrization=False)
+    assert_equal(tuple(rank), expected)
+
+    # Match the ranks actually retained by a left-to-right TT-SVD sweep.
+    rng = tl.check_random_state(1234)
+    tensor = tl.tensor(rng.random_sample(shape))
+    decomposition = tensor_train(tensor, requested)
+    assert_equal(tuple(rank), decomposition.rank)
+
+
+def test_validate_tt_rank_keeps_overparametrization_by_default():
+    requested = (1, 100, 100, 1)
+    assert_equal(tuple(validate_tt_rank((2, 2, 16), requested)), requested)
+    assert_equal(
+        tuple(validate_tt_rank((2, 2, 16), requested, allow_overparametrization=True)),
+        requested,
+    )
+
+
 @pytest.mark.parametrize("n_pad", [1, 2])
 def test_pad_tt_rank(n_pad):
     """Test for pad_tt_rank"""
@@ -187,3 +217,23 @@ def test_pad_tt_rank(n_pad):
     rec_padded = padded_ttm.to_tensor()
     assert_array_almost_equal(rec, rec_padded, decimal=4)
     assert_(padded_ttm.rank == (1, *[i + n_pad for i in rank[1:-1]], 1))
+
+
+@pytest.mark.parametrize("n_padding", [0, 1, 3])
+@pytest.mark.parametrize("matrix", [False, True])
+@pytest.mark.parametrize("as_tensor", [False, True])
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+def test_pad_tt_rank_single_core(n_padding, matrix, as_tensor, dtype):
+    shape = (1, 3, 4, 1) if matrix else (1, 5, 1)
+    values = np.arange(np.prod(shape), dtype=np.float64).reshape(shape)
+    factor = tl.tensor(values, dtype=getattr(tl, dtype))
+    tensor_type = tl.tt_matrix.TTMatrix if matrix else tl.tt_tensor.TTTensor
+    original = tensor_type([factor])
+    factors = original if as_tensor else original.factors
+    padded_factors = pad_tt_rank(factors, n_padding=n_padding, pad_boundaries=False)
+    padded = tensor_type(padded_factors)
+    assert_equal(padded.rank, (1, 1))
+    assert_equal(tl.shape(padded_factors[0]), shape)
+    assert_equal(tl.context(padded_factors[0]), tl.context(factor))
+    assert_array_almost_equal(padded.to_tensor(), original.to_tensor())
+    assert_array_almost_equal(factor, tl.tensor(values, **tl.context(factor)))
