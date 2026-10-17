@@ -152,6 +152,36 @@ def test_validate_tt_rank():
     assert_equal(tuple(rank), (1, 1, 1, 1))
 
 
+@pytest.mark.parametrize(
+    "shape,requested,expected",
+    [
+        ((2, 2, 16), 100, (1, 2, 4, 1)),
+        ((2, 2, 16), (1, 100, 100, 1), (1, 2, 4, 1)),
+        ((2, 2, 3, 12), 100, (1, 2, 4, 12, 1)),
+        ((2, 2, 3, 12), (1, 100, 3, 100, 1), (1, 2, 3, 9, 1)),
+        ((2, 2, 16), (1, 1, 2, 1), (1, 1, 2, 1)),
+    ],
+)
+def test_validate_tt_rank_without_overparametrization(shape, requested, expected):
+    rank = validate_tt_rank(shape, requested, allow_overparametrization=False)
+    assert_equal(tuple(rank), expected)
+
+    # Match the ranks actually retained by a left-to-right TT-SVD sweep.
+    rng = tl.check_random_state(1234)
+    tensor = tl.tensor(rng.random_sample(shape))
+    decomposition = tensor_train(tensor, requested)
+    assert_equal(tuple(rank), decomposition.rank)
+
+
+def test_validate_tt_rank_keeps_overparametrization_by_default():
+    requested = (1, 100, 100, 1)
+    assert_equal(tuple(validate_tt_rank((2, 2, 16), requested)), requested)
+    assert_equal(
+        tuple(validate_tt_rank((2, 2, 16), requested, allow_overparametrization=True)),
+        requested,
+    )
+
+
 @pytest.mark.parametrize("n_pad", [1, 2])
 def test_pad_tt_rank(n_pad):
     """Test for pad_tt_rank"""
