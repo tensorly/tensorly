@@ -19,7 +19,7 @@ from ..cp_tensor import (
     cp_permute_factors,
 )
 from ..base import unfold, tensor_to_vec
-from tensorly.random import random_cp
+from tensorly.random import random_cp, random_tensor
 from tensorly.testing import (
     assert_equal,
     assert_raises,
@@ -506,3 +506,30 @@ def test_cp_flip_sign_zero_summary(mode, with_weights, custom_summary):
     for i, factor in enumerate(result.factors):
         if i != mode:
             assert_(tl.all(tl.mean(factor, axis=0) >= 0))
+
+
+@pytest.mark.parametrize("copy", [False, True])
+@pytest.mark.parametrize("mode", [0, -1])
+@pytest.mark.parametrize("weighted", [False, True])
+def test_cp_mode_dot_contracts_only_mode(copy, mode, weighted):
+    """The last vector contraction returns the dense scalar and preserves the input."""
+    cp = random_cp(shape=(3,), rank=2, random_state=1234)
+    if not weighted:
+        cp = CPTensor((None, cp.factors))
+    factor = tl.copy(cp.factors[0])
+    vector = random_tensor((3,), random_state=4321)
+    expected = tl.dot(cp.to_tensor(), vector)
+    for as_object in [False, True]:
+        result = (
+            cp.mode_dot(vector, mode, copy=copy)
+            if as_object
+            else cp_mode_dot(cp, vector, mode, copy=copy)
+        )
+        assert tl.shape(result) == ()
+        assert_array_almost_equal(result, expected)
+        assert cp.shape == (3,)
+        assert len(cp.factors) == 1
+        assert_array_equal(cp.factors[0], factor)
+    kept = cp_mode_dot(cp, vector, mode, keep_dim=True, copy=True)
+    assert kept.shape == (1,)
+    assert_array_almost_equal(kept.to_tensor(), tl.reshape(expected, (1,)))
