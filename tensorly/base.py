@@ -42,7 +42,7 @@ def unfold(tensor, mode):
     Parameters
     ----------
     tensor : ndarray
-    mode : int, default is 0
+    mode : int
            indexing starts at 0, therefore mode is in ``range(0, tensor.ndim)``
 
     Returns
