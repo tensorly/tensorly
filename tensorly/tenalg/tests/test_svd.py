@@ -115,3 +115,38 @@ def test_symeig_svd_complex(shape, dtype):
     np.testing.assert_allclose((U * S) @ V, matrix, rtol=tolerance, atol=tolerance)
     np.testing.assert_allclose(U.conj().T @ U, np.eye(min(shape)), atol=tolerance)
     np.testing.assert_allclose(V @ V.conj().T, np.eye(min(shape)), atol=tolerance)
+
+
+@pytest.mark.parametrize("shape", [(3, 3), (3, 4), (4, 3)])
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+@pytest.mark.parametrize("non_negative", ["nndsvd", "nndsvda"])
+def test_nonnegative_svd_zero_direction(shape, dtype, non_negative):
+    """Rank-deficient nonnegative inputs have finite NNDSVD initial factors."""
+    matrix = np.zeros(shape)
+    matrix[0, 0], matrix[1, 1] = 3, 2
+    X = tl.tensor(matrix, dtype=getattr(tl.backend, dtype))
+    U, _, V = svd_interface(
+        X, method="symeig_svd", n_eigenvecs=3, non_negative=non_negative
+    )
+    expected_U, expected_V = np.zeros((shape[0], 3)), np.zeros((3, shape[1]))
+    for i, value in enumerate([3, 2]):
+        expected_U[i, i] = expected_V[i, i] = np.sqrt(value)
+    if non_negative == "nndsvda":
+        expected_U[expected_U == 0] = matrix.mean()
+        expected_V[expected_V == 0] = matrix.mean()
+    np.testing.assert_allclose(tl.to_numpy(U), expected_U, rtol=1e-6, atol=1e-6)
+    np.testing.assert_allclose(tl.to_numpy(V), expected_V, rtol=1e-6, atol=1e-6)
+
+
+@pytest.mark.parametrize("shape", [(3, 3), (3, 4), (4, 3)])
+def test_nonnegative_parafac_rank_deficient_svd_init(shape):
+    """Native nonnegative CP fitting stays finite when SVD initialization has null directions."""
+    from tensorly.decomposition import non_negative_parafac
+
+    matrix = np.zeros(shape)
+    matrix[0, 0], matrix[1, 1] = 3, 2
+    X = tl.tensor(matrix)
+    factors = non_negative_parafac(
+        X, rank=3, svd="symeig_svd", n_iter_max=3, random_state=0
+    )
+    assert np.isfinite(tl.to_numpy(tl.cp_to_tensor(factors))).all()
