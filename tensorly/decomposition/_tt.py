@@ -70,8 +70,7 @@ def tensor_train(
         unfolding = tl.reshape(S, (-1, 1)) * V
 
     # Getting the last factor
-    prev_rank, last_dim = unfolding.shape
-    factors[-1] = tl.reshape(unfolding, (prev_rank, last_dim, 1))
+    factors[-1] = tl.reshape(unfolding, (rank[-2], tensor_size[-1], 1))
 
     if verbose is True:
         print(

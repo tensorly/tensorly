@@ -5,9 +5,31 @@ from ...tt_matrix import tt_matrix_to_tensor
 from ...random import random_tt
 from ...testing import (
     assert_,
+    assert_array_equal,
     assert_array_almost_equal,
     assert_class_wrapper_correctly_passes_arguments,
 )
+
+
+@pytest.mark.parametrize("rank", [3, (1, 1)])
+@pytest.mark.parametrize("dtype", ["float32", "float64"])
+@pytest.mark.parametrize("as_estimator", [False, True])
+def test_tensor_train_vector(rank, dtype, as_estimator):
+    tensor = tl.tensor([0.5, -2, 3.5, 0, 4.25], dtype=getattr(tl, dtype))
+    original = tl.copy(tensor)
+
+    if as_estimator:
+        decomposition = tl.decomposition.TensorTrain(rank=rank).fit_transform(tensor)
+    else:
+        decomposition = tl.decomposition.tensor_train(tensor, rank=rank)
+
+    assert decomposition.shape == (5,)
+    assert decomposition.rank == (1, 1)
+    assert len(decomposition) == 1
+    assert tl.shape(decomposition[0]) == (1, 5, 1)
+    assert tl.context(decomposition[0]) == tl.context(tensor)
+    assert_array_equal(decomposition.to_tensor(), original)
+    assert_array_equal(tensor, original)
 
 
 @pytest.mark.parametrize("random_state", [1, 1234])
