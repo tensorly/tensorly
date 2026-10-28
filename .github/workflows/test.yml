@@ -65,13 +65,15 @@ jobs:
     # pytest-testmon (jax and tensorflow only) records which code each test
     # executes and, on branches other than main, re-runs only the affected tests.
     # One database per backend and environment; main always runs everything and
-    # refreshes it. Installed package versions are part of the key, since testmon
-    # does not track them.
+    # refreshes it. Installed package versions (minus the editable tensorly line,
+    # which carries the commit) are part of the key; the last restore-key falls back
+    # to any data for the backend, since testmon re-runs everything itself when the
+    # installed packages changed.
     - name: Compute testmon cache key
       if: matrix.TESTMON
       id: testmon
       run: |
-        echo "env=$(python -m pip freeze | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+        echo "env=$(python -m pip freeze --exclude-editable | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
 
     - name: Restore testmon data
       if: matrix.TESTMON
@@ -81,6 +83,7 @@ jobs:
         key: testmon-${{matrix.BACKEND}}-${{matrix.python-version}}-${{steps.testmon.outputs.env}}-${{hashFiles('.github/workflows/test.yml')}}-${{github.sha}}
         restore-keys: |
           testmon-${{matrix.BACKEND}}-${{matrix.python-version}}-${{steps.testmon.outputs.env}}-${{hashFiles('.github/workflows/test.yml')}}-
+          testmon-${{matrix.BACKEND}}-${{matrix.python-version}}-
 
     - name: Test with backend ${{matrix.BACKEND}} pytest and coverage
       # Full run with coverage: every backend on main and tags, and numpy, pytorch
