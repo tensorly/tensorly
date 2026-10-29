@@ -101,4 +101,4 @@ def unfolding_dot_khatri_rao_memory(tensor, cp_tensor, mode):
     if weights is None:
         return T.stack(mttkrp_parts, axis=1)
     else:
-        return T.stack(mttkrp_parts, axis=1) * T.reshape(weights, (1, -1))
+        return T.stack(mttkrp_parts, axis=1) * T.reshape(T.conj(weights), (1, -1))
