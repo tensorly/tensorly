@@ -21,11 +21,12 @@ def higher_order_moment(tensor, order):
     """
     batch = "a"
     start = ord(batch) + 1
-    n_features = tl.ndim(tensor) - 1
-    feature_syms = [
-        "".join(chr(start + i * n_features + j) for j in range(n_features))
+    n_feature_dims = tl.ndim(tensor) - 1
+    feature_indices = [
+        "".join(chr(start + i * n_feature_dims + j) for j in range(n_feature_dims))
         for i in range(order)
     ]
-    eq = ",".join(batch + sym for sym in feature_syms) + "->" + "".join(feature_syms)
+    equation = ",".join(batch + indices for indices in feature_indices)
+    equation += "->" + "".join(feature_indices)
 
     return tl.einsum(eq, *([tensor] * order)) / tl.shape(tensor)[0]
