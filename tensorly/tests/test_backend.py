@@ -383,6 +383,53 @@ def test_norm():
     assert_array_equal(row_norms_oo, T.tensor([1, 3, 5]))
 
 
+@pytest.mark.parametrize("dtype", ["float32", "float64", "complex64", "complex128"])
+@pytest.mark.parametrize(
+    "layout", ["C", "F", "transpose", "strided", "scalar", "zero_dim", "empty"]
+)
+@pytest.mark.parametrize("axis", [None, ()])
+def test_numpy_global_euclidean_norm(dtype, layout, axis):
+    values = np.arange(24, dtype=np.float64).reshape(2, 3, 4) - 12
+    if dtype.startswith("complex"):
+        values = values + 1j * (values + 3)
+    values = values.astype(dtype)
+    if layout == "F":
+        values = np.asfortranarray(values)
+    elif layout == "transpose":
+        values = values.transpose(2, 0, 1)
+    elif layout == "strided":
+        values = values[:, ::2, ::-1]
+    elif layout == "scalar":
+        values = values[0, 0, 0]
+    elif layout == "zero_dim":
+        values = values[:1, :1, :1].reshape(())
+    elif layout == "empty":
+        values = values[:0]
+    original = values.copy()
+    expected = np.sqrt(np.sum(np.abs(values.astype(np.complex128)) ** 2))
+
+    with tl.backend_context("numpy"):
+        result = tl.norm(values, order=2, axis=axis)
+
+    np.testing.assert_allclose(result, expected, rtol=1e-6)
+    if values.ndim:
+        assert_equal(result.dtype, values.real.dtype)
+    np.testing.assert_array_equal(values, original)
+
+
+def test_numpy_norm_array_like_and_axes():
+    with tl.backend_context("numpy"):
+        assert_equal(tl.norm([3.0, 4.0]), 5.0)
+        assert_equal(tl.norm(np.array([3, 4])), 5.0)
+        assert_equal(tl.norm(np.array([True, True, False])), np.sqrt(2))
+        assert_equal(tl.norm(np.ma.array([3.0, 4.0], mask=[False, True])), 3.0)
+        values = np.arange(24, dtype=np.float64).reshape(2, 3, 4)
+        # A tuple denotes an elementwise reduction, not a matrix spectral norm.
+        assert_allclose(
+            tl.norm(values, axis=(0, 2)), np.sqrt(np.sum(values**2, axis=(0, 2)))
+        )
+
+
 def test_clip():
     # Test that clip can work with single arguments
     X = T.tensor([0.0, -1.0, 1.0])
