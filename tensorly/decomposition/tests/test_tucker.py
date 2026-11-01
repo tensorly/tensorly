@@ -358,3 +358,43 @@ def test_non_negative_tucker_hals_active_set(init):
     assert_(tl.shape(core) == (rank,) * tl.ndim(tensor))
     for i, f in enumerate(factors):
         assert_(tl.shape(f) == (tl.shape(tensor)[i], rank))
+
+
+@pytest.mark.parametrize("init", ["svd", "random", "explicit"])
+@pytest.mark.parametrize("fixed_modes", [[0], [1], [0, 1], []])
+@pytest.mark.parametrize("rank", [[2, 2, 2], [2, 3, 4]])
+def test_non_negative_tucker_hals_fixed_modes(init, fixed_modes, rank):
+    """Initialize every factor, but only update the factors that are not fixed."""
+    shape = (4, 5, 6)
+    tensor = tl.tensor(tl.check_random_state(1234).random_sample(shape))
+    initial_core, initial_factors = initialize_tucker(
+        tensor,
+        rank,
+        modes=list(range(tl.ndim(tensor))),
+        init="random" if init == "explicit" else init,
+        random_state=0,
+        non_negative=True,
+    )
+    fixed_factors = {mode: tl.copy(initial_factors[mode]) for mode in fixed_modes}
+    if init == "explicit":
+        init = (initial_core, initial_factors)
+
+    core, factors = non_negative_tucker_hals(
+        tensor,
+        rank=rank,
+        init=init,
+        fixed_modes=fixed_modes.copy(),
+        random_state=0,
+        n_iter_max=3,
+        normalize_factors=False,
+    )
+
+    assert_equal(tl.shape(core), tuple(rank))
+    assert_equal(len(factors), len(shape))
+    assert_(tl.all(core >= 0))
+    for mode, factor in enumerate(factors):
+        assert_equal(tl.shape(factor), (shape[mode], rank[mode]))
+        assert_(tl.all(factor >= 0))
+    for mode, initial_factor in fixed_factors.items():
+        assert_array_equal(factors[mode], initial_factor)
+    assert_equal(tl.shape(tucker_to_tensor((core, factors))), shape)
