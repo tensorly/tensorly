@@ -66,9 +66,11 @@ def cp_vonneumann_entropy(tensor):
     Returns
     -------
     cp_von_neumann_entropy : order-0 tensor
-    """
-    eig_vals = tl.cp_normalize(tensor).weights
-    eps = tl.eps(eig_vals.dtype)
-    eig_vals = eig_vals[eig_vals > eps]
 
-    return -T.sum(T.log2(eig_vals) * eig_vals)
+    Notes
+    -----
+    Reconstructs the full tensor before computing the dense density matrix
+    spectrum. Memory usage therefore grows with the size of the full tensor,
+    not just its CP factors.
+    """
+    return vonneumann_entropy(tl.cp_to_tensor(tensor))
