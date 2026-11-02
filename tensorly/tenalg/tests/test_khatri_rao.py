@@ -137,3 +137,11 @@ def test_khatri_rao():
 
     # Test with one matrix only: khatri-rao of one matrix = that matrix
     assert_array_equal(khatri_rao([U[0]]), U[0])
+
+
+def test_single_matrix_weights_and_mask():
+    matrix = T.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    weights = T.tensor([2.0, 0.0, -1.0])
+    mask = T.tensor([0.0, 2.0])
+    expected = T.tensor([[0.0, 0.0, 0.0], [16.0, 0.0, -12.0]])
+    assert_array_equal(khatri_rao([matrix], weights=weights, mask=mask), expected)
