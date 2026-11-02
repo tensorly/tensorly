@@ -533,3 +533,23 @@ def test_cp_mode_dot_contracts_only_mode(copy, mode, weighted):
     kept = cp_mode_dot(cp, vector, mode, keep_dim=True, copy=True)
     assert kept.shape == (1,)
     assert_array_almost_equal(kept.to_tensor(), tl.reshape(expected, (1,)))
+
+
+@pytest.mark.parametrize("tenalg_backend", ["core", "einsum"])
+def test_cp_lstsq_grad_weighted_matrix(tenalg_backend):
+    weights = tl.tensor([2.0, -0.7], dtype=tl.float64)
+    left = tl.tensor([[1.0, 2.0], [3.0, 4.0]], dtype=tl.float64)
+    right = tl.tensor([[0.1, 0.4], [0.2, 0.5], [0.3, 0.6]], dtype=tl.float64)
+    target = tl.reshape(tl.arange(6, dtype=tl.float64), (2, 3)) / 5
+    residual = tl.dot(left * weights, tl.transpose(right)) - target
+    expected = [
+        tl.dot(residual, right) * weights,
+        tl.dot(tl.transpose(residual), left) * weights,
+    ]
+    with tl.tenalg.backend_context(tenalg_backend):
+        gradient, loss = cp_lstsq_grad(
+            (weights, [left, right]), target, return_loss=True
+        )
+    for actual, reference in zip(gradient.factors, expected):
+        assert_allclose(actual, reference)
+    assert_allclose(loss, 0.5 * tl.sum(residual**2))

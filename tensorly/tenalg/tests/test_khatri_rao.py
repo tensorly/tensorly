@@ -1,4 +1,6 @@
 import numpy as np
+import pytest
+import tensorly as tl
 
 from ... import backend as T
 from .. import khatri_rao
@@ -137,3 +139,28 @@ def test_khatri_rao():
 
     # Test with one matrix only: khatri-rao of one matrix = that matrix
     assert_array_equal(khatri_rao([U[0]]), U[0])
+
+
+@pytest.mark.parametrize("tenalg_backend", ["core", "einsum"])
+@pytest.mark.parametrize("skip_matrix", [None, 1])
+@pytest.mark.parametrize(
+    "weighted,masked", [(False, False), (True, False), (False, True), (True, True)]
+)
+def test_single_matrix_weights_and_mask(tenalg_backend, skip_matrix, weighted, masked):
+    matrix = T.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+    weights = T.tensor([2.0, 0.0, -1.0]) if weighted else None
+    mask = T.tensor([1.0, 0.0, 2.0]) if masked else None
+    matrices = [matrix] if skip_matrix is None else [matrix, T.ones((2, 3))]
+    expected = matrix
+    if weighted:
+        expected = expected * T.reshape(weights, (1, -1))
+    if masked:
+        expected = expected * T.reshape(mask, (-1, 1))
+    with tl.tenalg.backend_context(tenalg_backend):
+        result = khatri_rao(
+            matrices, weights=weights, skip_matrix=skip_matrix, mask=mask
+        )
+    assert_array_equal(result, expected)
+    assert_array_equal(
+        matrix, T.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]])
+    )

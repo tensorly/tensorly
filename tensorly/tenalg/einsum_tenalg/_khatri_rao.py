@@ -64,9 +64,14 @@ def khatri_rao(matrices, weights=None, skip_matrix=None, mask=None):
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
 
-    # Khatri-rao of only one matrix: just return that matrix
+    # A single factor still needs its optional column weights and row mask.
     if len(matrices) == 1:
-        return matrices[0]
+        result = matrices[0]
+        if weights is not None:
+            result = result * T.reshape(weights, (1, -1))
+        if mask is not None:
+            result = result * T.reshape(mask, (-1, 1))
+        return result
 
     if T.ndim(matrices[0]) == 2:
         n_columns = matrices[0].shape[1]
