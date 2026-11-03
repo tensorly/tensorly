@@ -93,10 +93,15 @@ class TuckerRegressor:
         for iteration in range(self.n_iter_max):
             # Optimise modes of W
             for i in range(len(W)):
+                factor_product = (
+                    kronecker(W, skip_matrix=i)
+                    if len(W) > 1
+                    else T.ones((1, 1), **T.context(X))
+                )
                 phi = partial_tensor_to_vec(
                     T.dot(
                         partial_unfold(X, i),
-                        T.dot(kronecker(W, skip_matrix=i), T.transpose(unfold(G, i))),
+                        T.dot(factor_product, T.transpose(unfold(G, i))),
                     )
                 )
                 # Regress phi on y: we could call a package here, e.g. scikit-learn
