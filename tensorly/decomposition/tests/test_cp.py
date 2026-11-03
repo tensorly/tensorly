@@ -651,3 +651,143 @@ def test_fixed_modes_not_rescaled_by_init_weights(func):
             assert_array_almost_equal(out.factors[mode], factors_before[mode])
         for f, f0 in zip(init.factors, factors_before):
             assert_array_equal(f, f0)
+
+
+@pytest.mark.parametrize(
+    "fixed_modes,weights",
+    [
+        ([2], [1.0, 1.0]),
+        ([0, 2], [1.0, 1.0]),
+        ([2], [2.0, 5.0]),
+        ([0, 2], [2.0, 5.0]),
+        ([0, 2], [0.0, 5.0]),
+    ],
+)
+@pytest.mark.parametrize("linesearch", [False, True])
+@pytest.mark.parametrize("orthogonalise", [False, True])
+def test_parafac_fixed_final_mode(fixed_modes, weights, linesearch, orthogonalise):
+    """Fixing the final factor preserves it and the fast reconstruction error."""
+    rng = tl.check_random_state(1234)
+    shape = (4, 5, 6)
+    init = random_cp(
+        shape, 2, normalise_factors=False, random_state=rng, dtype=tl.float64
+    )
+    init.weights = tl.tensor(weights, **tl.context(init.weights))
+    tensor = tl.tensor(rng.standard_normal(shape), dtype=tl.float64)
+    factors_before = [tl.copy(f) for f in init.factors]
+    weights_before = tl.copy(init.weights)
+    fixed_before = list(fixed_modes)
+    callback_errors = []
+    exact_errors = []
+
+    def callback(cp_tensor, error):
+        for mode in fixed_modes:
+            assert_array_equal(cp_tensor.factors[mode], factors_before[mode])
+        callback_errors.append(float(error))
+        exact_errors.append(
+            float(tl.norm(tensor - cp_to_tensor(cp_tensor)) / tl.norm(tensor))
+        )
+
+    out, errors = parafac(
+        tensor,
+        2,
+        init=init,
+        fixed_modes=fixed_modes,
+        n_iter_max=10,
+        tol=0,
+        return_errors=True,
+        linesearch=linesearch,
+        orthogonalise=orthogonalise,
+        callback=callback,
+    )
+
+    assert_array_almost_equal(errors[-1], exact_errors[-1])
+    assert_array_almost_equal(callback_errors[0], exact_errors[0])
+    assert_(exact_errors[-1] < exact_errors[0])
+    if not linesearch:
+        assert_array_almost_equal(callback_errors, exact_errors)
+    for mode in fixed_modes:
+        assert_array_equal(out.factors[mode], factors_before[mode])
+    for factor, before in zip(init.factors, factors_before):
+        assert_array_equal(factor, before)
+    assert_array_equal(init.weights, weights_before)
+    assert fixed_modes == fixed_before
+
+
+def test_parafac_fixed_final_mode_mask():
+    """The final mode can stay fixed when fitting only observed entries."""
+    rng = tl.check_random_state(1234)
+    shape = (4, 5, 6)
+    init = random_cp(
+        shape, 2, normalise_factors=False, random_state=rng, dtype=tl.float64
+    )
+    tensor = tl.tensor(rng.standard_normal(shape), dtype=tl.float64)
+    mask = tl.tensor(rng.random_sample(shape) > 0.2, **tl.context(tensor))
+    out, errors = parafac(
+        tensor,
+        2,
+        init=init,
+        fixed_modes=[2],
+        mask=mask,
+        n_iter_max=10,
+        tol=0,
+        return_errors=True,
+    )
+    reconstruction = cp_to_tensor(out)
+    expected_error = tl.norm((tensor - reconstruction) * mask) / tl.norm(
+        tensor * mask + reconstruction * (1 - mask)
+    )
+    assert_array_almost_equal(errors[-1], expected_error)
+    assert_array_equal(out.factors[2], init.factors[2])
+
+
+@pytest.mark.parametrize("fixed_modes", [[0, 1, 2], [2, 0, 1]])
+@pytest.mark.parametrize("return_errors", [False, True])
+def test_parafac_all_modes_fixed_preserves_initialization(fixed_modes, return_errors):
+    """An entirely fixed model retains its factors and non-unit weights."""
+    init = random_cp(
+        (4, 5, 6), 2, normalise_factors=False, random_state=1234, dtype=tl.float64
+    )
+    init.weights = tl.tensor([0.0, 5.0], **tl.context(init.weights))
+    tensor = cp_to_tensor(init)
+    out = parafac(
+        tensor, 2, init=init, fixed_modes=fixed_modes, return_errors=return_errors
+    )
+    if return_errors:
+        out, errors = out
+        assert errors == []
+
+    assert_array_equal(out.weights, init.weights)
+    for factor, before in zip(out.factors, init.factors):
+        assert_array_equal(factor, before)
+    assert_array_almost_equal(cp_to_tensor(out), tensor)
+
+
+def test_cp_fixed_final_mode():
+    """The class interface supports fixing the final factor."""
+    init = random_cp((4, 5, 6), 2, normalise_factors=False, random_state=1234)
+    tensor = random_cp((4, 5, 6), 2, full=True, random_state=4321)
+    out = CP(2, init=init, fixed_modes=[2], n_iter_max=2).fit_transform(tensor)
+    assert_array_equal(out.factors[2], init.factors[2])
+    out = CP(2, init=init, fixed_modes=[2, 0, 1]).fit_transform(tensor)
+    for factor, before in zip(out.factors, init.factors):
+        assert_array_equal(factor, before)
+
+    with pytest.raises(ValueError, match="Mode 2 is fixed"):
+        parafac(tensor[:, :, :-1], 2, init=init, fixed_modes=[2])
+
+
+def test_parafac_fixed_final_mode_normalized():
+    """Normalization preserves the directions of fixed factor columns."""
+    init = random_cp((4, 5, 6), 2, normalise_factors=False, random_state=1234)
+    tensor = random_cp((4, 5, 6), 2, full=True, random_state=4321)
+    out = parafac(
+        tensor,
+        2,
+        init=init,
+        fixed_modes=[2],
+        n_iter_max=3,
+        normalize_factors=True,
+    )
+    expected = init.factors[2] / tl.norm(init.factors[2], axis=0)
+    assert_array_almost_equal(out.factors[2], expected)
