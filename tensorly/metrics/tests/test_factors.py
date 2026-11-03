@@ -101,3 +101,35 @@ def test_congruence_rejects_zero_column_with_small_norms(which):
     pair[which] = zero_column
     with pytest.raises(ValueError, match="nonzero l2 norm"):
         congruence_coefficient(*pair)
+
+
+@pytest.fixture
+def complex_norm_supported(dtype):
+    """Skip Paddle builds without the requested complex norm kernel."""
+    if tl.get_backend() == "paddle":
+        probe = tl.tensor([1 + 1j], dtype=getattr(tl, dtype))
+        try:
+            tl.norm(probe, axis=0)
+        except RuntimeError as error:
+            message = str(error)
+            if "p_norm" in message and "not registered" in message:
+                pytest.skip("This Paddle build has no complex p_norm kernel")
+            raise
+
+
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+def test_complex_self_congruence(dtype, complex_norm_supported):
+    """A complex unit vector has congruence one with itself."""
+    vector = tl.tensor(np.array([[1], [1j]]) / np.sqrt(2), dtype=getattr(tl, dtype))
+    score, _ = congruence_coefficient(vector, vector)
+    assert score == pytest.approx(1.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+def test_complex_column_permutation(dtype, complex_norm_supported):
+    """Hermitian products recover swapped orthogonal complex columns."""
+    matrix = tl.tensor(
+        np.array([[1, 1], [1j, -1j]]) / np.sqrt(2), dtype=getattr(tl, dtype)
+    )
+    _, permutation = congruence_coefficient(matrix, matrix[:, [1, 0]])
+    assert permutation == [1, 0]
