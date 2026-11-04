@@ -323,6 +323,17 @@ def test_constrained_parafac_monotonicity():
         assert_(np.all(np.diff(T.to_numpy(factor), axis=0) >= 0))
 
 
+def test_constrained_parafac_rank_one_simplex():
+    rng = T.check_random_state(1234)
+    tensor = T.tensor(rng.random_sample((4, 5, 3)))
+    _, factors = constrained_parafac(
+        tensor, rank=1, simplex=1.0, n_iter_max=5, random_state=rng
+    )
+    for factor, size in zip(factors, (4, 5, 3)):
+        assert_(T.shape(factor) == (size, 1))
+        assert_array_almost_equal(T.sum(factor, axis=0), T.ones(1), decimal=3)
+
+
 def test_constrained_parafac_simplex():
     """Test for the CANDECOMP-PARAFAC decomposition with ADMM simplex constraint"""
     rng = T.check_random_state(1234)
