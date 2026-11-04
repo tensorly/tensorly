@@ -89,6 +89,44 @@ def test_cp_flip_sign():
     assert_array_almost_equal(cp_to_tensor((weights, factors)), cp_to_tensor(cp_tensor))
 
 
+def test_cp_flip_sign_does_not_modify_input():
+    rng = tl.check_random_state(1234)
+    factors = [tl.tensor(rng.random_sample((s, 3)) - 0.5) for s in (3, 4, 5)]
+    weights = tl.tensor([1.5, -2.0, -0.5])
+    cp_tensor = CPTensor((weights, factors))
+    expected = cp_to_tensor(cp_tensor)
+    factors_copy = [tl.copy(f) for f in factors]
+
+    flipped = cp_flip_sign(cp_tensor)
+
+    for factor, factor_copy in zip(cp_tensor.factors, factors_copy):
+        assert_array_equal(factor, factor_copy)
+    assert_array_almost_equal(cp_to_tensor(cp_tensor), expected)
+    assert_array_almost_equal(cp_to_tensor(flipped), expected)
+
+
+@pytest.mark.parametrize("mode", [0, 1, 2])
+def test_cp_flip_sign_complex(mode):
+    rng = tl.check_random_state(1234)
+    shape, rank = (3, 4, 5), 3
+    factors = [
+        tl.tensor(rng.standard_normal((s, rank)) + 1j * rng.standard_normal((s, rank)))
+        for s in shape
+    ]
+    weights = tl.tensor(rng.standard_normal(rank) + 1j * rng.standard_normal(rank))
+    expected = cp_to_tensor((weights, factors))
+
+    weights, factors = cp_flip_sign((weights, factors), mode=mode)
+
+    assert_array_almost_equal(cp_to_tensor((weights, factors)), expected)
+    for i, factor in enumerate(factors):
+        if i == mode:
+            continue
+        summary = tl.to_numpy(tl.mean(factor, axis=0))
+        assert_array_almost_equal(summary.imag, np.zeros(rank))
+        assert_(np.all(summary.real > 0))
+
+
 def test_validate_cp_tensor():
     rng = tl.check_random_state(12345)
     true_shape = (3, 4, 5)
