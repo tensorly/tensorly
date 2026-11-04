@@ -142,6 +142,43 @@ def test_unimodality():
             )
 
 
+def test_unimodality_keeps_unimodal_columns():
+    columns = [[1.5, 2.0, 1.8, 1.3], [0.0, 1.0, 3.0, 2.0], [4.0, 3.0, 1.0, 0.5]]
+    tensor = tl.tensor(np.array(columns).T)
+    assert_array_almost_equal(unimodality_prox(tensor), tensor)
+
+
+def _brute_force_unimodal_cost(y):
+    # For every peak position, fit the prefix (non-decreasing) and the suffix
+    # (non-increasing) separately and keep the best unimodal fit.
+    best = np.inf
+    for peak in range(len(y)):
+        left = tl.to_numpy(monotonicity_prox(tl.tensor(y[: peak + 1])))[:, 0]
+        if peak + 1 < len(y):
+            right = tl.to_numpy(
+                monotonicity_prox(tl.tensor(y[peak + 1 :]), decreasing=True)
+            )[:, 0]
+            if right[0] > left[-1]:
+                continue
+        else:
+            right = np.zeros(0)
+        best = min(best, np.sum((np.concatenate([left, right]) - y) ** 2))
+    return best
+
+
+def test_unimodality_is_least_squares_projection():
+    rng = tl.check_random_state(1234)
+    tensor = rng.standard_normal((7, 20))
+    tensor_unimodal = tl.to_numpy(unimodality_prox(tl.tensor(tensor)))
+    for i in range(tensor.shape[1]):
+        column = tensor_unimodal[:, i]
+        peak = int(np.argmax(column))
+        assert_(np.all(np.diff(column[: peak + 1]) >= -1e-12))
+        assert_(np.all(np.diff(column[peak:]) <= 1e-12))
+        cost = np.sum((column - tensor[:, i]) ** 2)
+        assert_(cost <= _brute_force_unimodal_cost(tensor[:, i]) + 1e-10)
+
+
 def test_l2_prox():
     """Test for l2 prox operator"""
     tensor = tl.tensor([2.0, 4.0, 4.0])
