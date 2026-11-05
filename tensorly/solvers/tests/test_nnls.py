@@ -57,13 +57,14 @@ def test_active_set_nnls():
 
 @pytest.mark.parametrize("tensor_equation", [False, True])
 def test_fista_does_not_stop_when_coordinate_updates_cancel(tensor_equation):
-    gram = tl.tensor([[1.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 4.0]])
-    target = tl.tensor([[1.0], [7.0], [6.0]])
-    initial = tl.tensor([[3.0], [2.0], [2.0]])
-    expected = tl.tensor([[1.0], [3.5], [1.5]])
+    context = {"dtype": tl.float64}
+    gram = tl.tensor([[1.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 4.0]], **context)
+    target = tl.tensor([[1.0], [7.0], [6.0]], **context)
+    initial = tl.tensor([[3.0], [2.0], [2.0]], **context)
+    expected = tl.tensor([[1.0], [3.5], [1.5]], **context)
     kwargs = {}
     if tensor_equation:
-        gram = [gram, tl.ones((1, 1))]
+        gram = [gram, tl.ones((1, 1), **context)]
         kwargs["lr"] = 0.25
 
     result = fista(target, gram, x=initial, **kwargs)
