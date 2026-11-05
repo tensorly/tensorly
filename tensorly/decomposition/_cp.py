@@ -423,8 +423,8 @@ def parafac(
                     )
             if l2_reg:
                 # Update only the diagonal, without allocating a rank-by-rank identity.
-                diagonal = tl.reshape(pseudo_inverse, (-1,))[:: rank + 1]
-                pseudo_inverse = tl.fill_diagonal(pseudo_inverse, diagonal + l2_reg)
+                diagonal = tl.reshape(pseudo_inverse, (-1,))[:: rank + 1] + l2_reg
+                pseudo_inverse = tl.fill_diagonal(pseudo_inverse, diagonal)
             pseudo_inverse = (
                 tl.reshape(weights, (-1, 1))
                 * pseudo_inverse
