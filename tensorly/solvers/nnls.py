@@ -265,9 +265,7 @@ def fista(
         momentum = (1 + sqrt(1 + 4 * momentum_old**2)) / 2
         x_update = x_new + ((momentum_old - 1) / momentum) * (x_new - x)
         momentum_old = momentum
-        norm = tl.abs(
-            tl.sum(x - x_new)
-        )  # for tracking loss decrease, l2 has square overflow issues
+        norm = tl.sum(tl.abs(x - x_new))  # l1 norm avoids squaring large updates
         x = tl.copy(x_new)
         if iteration == 0:
             norm_0 = norm

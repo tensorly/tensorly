@@ -53,3 +53,20 @@ def test_active_set_nnls():
     x_as = active_set_nnls(tensor_to_vec(atb), ata)
     x_as = tl.reshape(x_as, tl.shape(atb))
     assert_array_almost_equal(true_res, x_as, decimal=2)
+
+
+@pytest.mark.parametrize("tensor_equation", [False, True])
+def test_fista_does_not_stop_when_coordinate_updates_cancel(tensor_equation):
+    gram = tl.tensor([[1.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 4.0]])
+    target = tl.tensor([[1.0], [7.0], [6.0]])
+    initial = tl.tensor([[3.0], [2.0], [2.0]])
+    expected = tl.tensor([[1.0], [3.5], [1.5]])
+    kwargs = {}
+    if tensor_equation:
+        gram = [gram, tl.ones((1, 1))]
+        kwargs["lr"] = 0.25
+
+    result = fista(target, gram, x=initial, **kwargs)
+
+    # The second update has opposite nonzero entries summing to zero.
+    assert_array_almost_equal(result, expected, decimal=5)
