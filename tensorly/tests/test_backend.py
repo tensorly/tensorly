@@ -721,3 +721,37 @@ def test_dtype_tensor_init_paddle():
             array_py = array.tolist()
             tensor = T.tensor(array_py, dtype=dtype)
             assert tensor.dtype == dtype
+
+
+@pytest.mark.parametrize("shape", [(3, 3), (2, 4), (4, 2), (1, 1)])
+@pytest.mark.parametrize("vector", [False, True])
+@pytest.mark.parametrize("transpose", [False, True])
+def test_fill_diagonal(shape, vector, transpose):
+    original = np.arange(np.prod(shape), dtype=float).reshape(shape)
+    values = np.arange(min(shape), dtype=float) if vector else 2.5
+    expected = original.copy()
+    np.fill_diagonal(expected, values)
+    tensor = tl.transpose(tl.tensor(original.T)) if transpose else tl.tensor(original)
+    values = tl.tensor(values) if vector else values
+    result = tl.fill_diagonal(tensor, values)
+    assert_array_equal(result, expected)
+    assert_equal(tl.context(result), tl.context(tensor))
+    assert_array_equal(T.fill_diagonal(tl.tensor(original), values), expected)
+
+
+def test_fill_diagonal_requires_matrix():
+    with pytest.raises(ValueError, match="two-dimensional"):
+        tl.fill_diagonal(tl.ones(3), 0)
+
+
+def test_fill_diagonal_tensorflow_gradient():
+    if tl.get_backend() != "tensorflow":
+        pytest.skip("TensorFlow-specific gradient control")
+    import tensorflow as tf
+
+    tensor = tf.Variable([[1.0, 2.0], [3.0, 4.0]])
+    with tf.GradientTape() as tape:
+        values = tf.linalg.diag_part(tensor) + 0.1
+        result = tl.fill_diagonal(tensor, values)
+        loss = tf.reduce_sum(result**2)
+    assert_array_almost_equal(tape.gradient(loss, tensor), [[2.2, 4.0], [6.0, 8.2]])

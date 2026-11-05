@@ -351,10 +351,6 @@ def parafac(
 
     rec_errors = []
     norm_tensor = tl.norm(tensor, 2)
-    if l2_reg:
-        Id = tl.eye(rank, **tl.context(tensor)) * l2_reg
-    else:
-        Id = 0
 
     # Copy so that the caller's list is not modified (see remove() below)
     fixed_modes = [] if fixed_modes is None else list(fixed_modes)
@@ -425,7 +421,10 @@ def parafac(
                     pseudo_inverse = pseudo_inverse * tl.dot(
                         tl.conj(tl.transpose(factor)), factor
                     )
-            pseudo_inverse += Id
+            if l2_reg:
+                # Update only the diagonal, without allocating a rank-by-rank identity.
+                diagonal = tl.reshape(pseudo_inverse, (-1,))[:: rank + 1]
+                pseudo_inverse = tl.fill_diagonal(pseudo_inverse, diagonal + l2_reg)
             pseudo_inverse = (
                 tl.reshape(weights, (-1, 1))
                 * pseudo_inverse
