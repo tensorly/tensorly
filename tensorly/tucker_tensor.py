@@ -110,7 +110,7 @@ def tucker_to_unfolded(
     ----------
     tucker_tensor : tl.TuckerTensor or (core, factors)
         core tensor and list of factor matrices
-    mode : None or int list, optional, default is None
+    mode : int, optional, default is 0
     skip_factor : None or int, optional, default is None
         if not None, index of a matrix to skip
         Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
