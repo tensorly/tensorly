@@ -202,7 +202,7 @@ def fista(
     n_iter_max : int
         Maximum number of iteration
         Default: 100
-    non_negative : bool, default is False
+    non_negative : bool, default is True
                    if True, result will be non-negative
     lr : float
         learning rate
