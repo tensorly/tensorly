@@ -664,7 +664,7 @@ def non_negative_tucker_hals(
     nn_core, nn_factors = initialize_tucker(
         tensor,
         rank,
-        modes,
+        list(range(n_modes)),
         init=init,
         svd=svd,
         random_state=random_state,
