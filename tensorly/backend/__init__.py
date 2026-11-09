@@ -78,6 +78,7 @@ class BackendManager(types.ModuleType):
         "sort",
         "eigh",
         "index_update",
+        "fill_diagonal",
         "context",
         "tensor",
         "norm",

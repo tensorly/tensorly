@@ -9,6 +9,7 @@ from .backend import (
     ndim,
     to_numpy,
     copy,
+    fill_diagonal,
     concatenate,
     reshape,
     moveaxis,

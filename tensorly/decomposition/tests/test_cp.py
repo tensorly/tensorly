@@ -651,3 +651,34 @@ def test_fixed_modes_not_rescaled_by_init_weights(func):
             assert_array_almost_equal(out.factors[mode], factors_before[mode])
         for f, f0 in zip(init.factors, factors_before):
             assert_array_equal(f, f0)
+
+
+@pytest.mark.parametrize("l2_reg", [0, 0.1, 2.0])
+def test_parafac_ridge_without_identity(monkeypatch, l2_reg):
+    """Ridge ALS updates match direct normal equations without a rank-square identity."""
+    rng = np.random.RandomState(4321)
+    shape, rank = (5, 4, 3), 3
+    tensor = rng.normal(size=shape)
+    factors = [rng.normal(size=(size, rank)) for size in shape]
+    expected = [factor.copy() for factor in factors]
+    for mode in range(len(shape)):
+        others = [factor for i, factor in enumerate(expected) if i != mode]
+        design = np.einsum("ir,jr->ijr", *others).reshape(-1, rank)
+        gram = design.T @ design + l2_reg * np.eye(rank)
+        mttkrp = np.moveaxis(tensor, mode, 0).reshape(shape[mode], -1) @ design
+        expected[mode] = np.linalg.solve(gram.T, mttkrp.T).T
+
+    def forbidden_eye(*args, **kwargs):
+        raise AssertionError("CP ridge regularization allocated an identity matrix")
+
+    monkeypatch.setattr(tl, "eye", forbidden_eye)
+    result = parafac(
+        tl.tensor(tensor),
+        rank,
+        init=(tl.ones(rank), [tl.tensor(factor) for factor in factors]),
+        l2_reg=l2_reg,
+        n_iter_max=1,
+        tol=0,
+    )
+    for actual, reference in zip(result.factors, expected):
+        assert_array_almost_equal(actual, reference, decimal=5)
