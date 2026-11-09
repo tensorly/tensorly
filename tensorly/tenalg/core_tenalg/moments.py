@@ -22,6 +22,6 @@ def higher_order_moment(tensor, order):
     """
     moment = tensor
     for _ in range(order - 1):
-        moment = batched_outer(moment, tensor)
+        moment = batched_outer([moment, tensor])
 
     return tl.mean(moment, axis=0)
