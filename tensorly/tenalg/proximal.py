@@ -647,7 +647,8 @@ def simplex_prox(tensor, parameter):
             Mathematical programming 6.1 (1974): 62-88.
     """
     # Making it work for 1-dimensional tensors as well
-    if tl.ndim(tensor) > 1:
+    is_vector = tl.ndim(tensor) == 1
+    if not is_vector:
         row, col = tl.shape(tensor)
     else:
         row = tl.shape(tensor)[0]
@@ -665,10 +666,10 @@ def simplex_prox(tensor, parameter):
         difference = tl.index_update(
             difference, tl.index[i], cumsum_min_param_by_k[to_change[i], i]
         )
-    if col > 1:
-        return tl.clip(tensor - difference, a_min=0)
-    else:
+    # Return the same shape as the input, also for a single-column matrix
+    if is_vector:
         return tl.tensor_to_vec(tl.clip(tensor - difference, a_min=0))
+    return tl.clip(tensor - difference, a_min=0)
 
 
 def hard_thresholding(tensor, number_of_non_zero):

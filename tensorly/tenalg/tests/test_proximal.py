@@ -81,6 +81,12 @@ def test_simplex():
     true_res = tl.tensor([[0.23, 0.25, 0], [0.33, 0.75, 0.55], [0.43, 0, 0.45]])
     assert_array_almost_equal(true_res, res, decimal=2)
 
+    # A single-column matrix keeps its shape
+    tensor = tl.tensor([[0.4], [0.5], [0.6]])
+    res = simplex_prox(tensor, 1)
+    assert_(tl.shape(res) == (3, 1))
+    assert_array_almost_equal(tl.tensor([[0.23], [0.33], [0.43]]), res, decimal=2)
+
 
 def test_normalized_sparsity():
     """Test for normalized_sparsity operator"""
