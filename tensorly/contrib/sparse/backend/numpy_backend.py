@@ -11,6 +11,24 @@ from . import register_sparse_backend
 from ....backend.core import Backend
 
 _MIN_SPARSE_VERSION = Version("0.4.1+10.g81eccee")
+_REQUIRED_SPARSE_FUNCTIONS = [
+    "where",
+    "concatenate",
+    "kron",
+    "zeros",
+    "zeros_like",
+    "eye",
+    "ones",
+    "stack",
+]
+_missing = [name for name in _REQUIRED_SPARSE_FUNCTIONS if not hasattr(sparse, name)]
+if _missing or not hasattr(sparse, "__version__"):
+    raise ImportError(
+        "NumPy sparse backend requires the PyData `sparse` package, but the "
+        f"`sparse` module imported from {getattr(sparse, '__file__', None)!r} is "
+        f"missing {_missing or '__version__'}. Check for a different package or a "
+        "local file named `sparse` shadowing it."
+    )
 if Version(sparse.__version__) < _MIN_SPARSE_VERSION:
     raise ImportError(
         f"NumPy sparse backend requires `sparse` version >= {_MIN_SPARSE_VERSION!r}"
@@ -54,6 +72,24 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
     @staticmethod
     def clip(tensor, a_min=None, a_max=None):
         return np.clip(tensor, a_min, a_max)
+
+    @staticmethod
+    def argmax(tensor, axis=None):
+        # `np.argmax` on a COO array returns a sparse array; indices are
+        # needed as plain integers (e.g. for sign flipping in the SVD).
+        result = np.argmax(tensor, axis=axis)
+        return result.todense() if is_sparse(result) else result
+
+    @staticmethod
+    def index_update(tensor, indices, values):
+        # COO arrays are immutable, so rebuild from a dense copy. This is
+        # intended for small arrays such as factor matrices.
+        if not is_sparse(tensor):
+            tensor[indices] = values
+            return tensor
+        dense = tensor.todense()
+        dense[indices] = values.todense() if is_sparse(values) else values
+        return sparse.COO.from_numpy(dense)
 
     @staticmethod
     def norm(tensor, order=2, axis=None):
@@ -247,14 +283,5 @@ for name in [
 ]:
     NumpySparseBackend.register_method(name, getattr(np, name))
 
-for name in [
-    "where",
-    "concatenate",
-    "kron",
-    "zeros",
-    "zeros_like",
-    "eye",
-    "ones",
-    "stack",
-]:
+for name in _REQUIRED_SPARSE_FUNCTIONS:
     NumpySparseBackend.register_method(name, getattr(sparse, name))
