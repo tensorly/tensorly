@@ -33,6 +33,20 @@ class NumpyBackend(Backend, backend_name="numpy"):
     def clip(tensor, a_min=None, a_max=None):
         return np.clip(tensor, a_min, a_max)
 
+    def norm(self, tensor, order=2, axis=None):
+        if (
+            order == 2
+            and (axis is None or axis == ())
+            and type(tensor) is np.ndarray
+            and tensor.ndim > 0
+            and tensor.dtype.kind in "fc"
+        ):
+            # With no ord/axis, NumPy computes the flattened Euclidean norm
+            # without the tensor-sized abs/square temporaries of the default.
+            # Keep subclasses, scalars and integer arithmetic on their usual path.
+            return np.linalg.norm(tensor)
+        return super().norm(tensor, order=order, axis=axis)
+
     @staticmethod
     def logsumexp(tensor, axis=0):
         return scipy.special.logsumexp(tensor, axis=axis)
