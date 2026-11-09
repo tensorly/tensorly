@@ -360,6 +360,8 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
     """
     _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
+    # Work on a new list so that the input CP tensor is left unchanged
+    factors = list(factors)
     if weights is None:
         weights = T.ones(rank, **T.context(factors[0]))
 
@@ -381,9 +383,12 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
             column_signs,
         )
 
-        # Update both the current and receiving factor
+        # Update both the current and receiving factor. For complex factors the
+        # "sign" is a unit phase s: dividing the current factor by s (multiplying
+        # by conj(s)) makes its summary real and positive, and multiplying the
+        # receiving factor by s leaves the reconstructed tensor unchanged.
         factors[mode] = factors[mode] * column_signs[np.newaxis, :]
-        factors[jj] = factors[jj] * column_signs[np.newaxis, :]
+        factors[jj] = factors[jj] * T.conj(column_signs)[np.newaxis, :]
 
     # Check the weight signs
     weight_signs = T.sign(weights)
