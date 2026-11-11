@@ -36,6 +36,9 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
     """
     # the mode along which to fold might decrease if we take product with a vector
     tensor_order = tl.ndim(tensor)
+    if mode < 0:
+        # Normalise negative modes so that they match the enumeration below
+        mode += tensor_order
     start = ord("a")
     tensor_modes = "".join(chr(start + i) for i in range(tensor_order))
     result_modes = [
