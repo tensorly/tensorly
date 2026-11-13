@@ -1,5 +1,6 @@
 from ... import backend as T
 import numpy as np
+from string import ascii_letters
 
 # Author: Jean Kossaifi
 
@@ -48,12 +49,11 @@ def kronecker(matrices, skip_matrix=None, reverse=False):
     else:
         order = 1
 
-    start = ord("a")
     n_matrices = len(matrices)
     rows, columns = zip(*[T.shape(m) for m in matrices])
     output_size = (np.prod(rows), np.prod(columns))
-    row_idx = [chr(start + i) for i in range(n_matrices)]
-    column_idx = [chr(start + n_matrices + i) for i in range(n_matrices)]
+    row_idx = list(ascii_letters[:n_matrices])
+    column_idx = list(ascii_letters[n_matrices : 2 * n_matrices])
 
     # Indices of each matrix
     equation = ",".join(f"{i}{j}" for (i, j) in zip(row_idx, column_idx))

@@ -9,6 +9,15 @@ import tensorly as tl
 # Author: Jean Kossaifi
 
 
+def test_kronecker_many_factors():
+    matrices = [T.tensor([[1.0]], dtype=tl.float32) for _ in range(14)]
+    matrices[0] = T.tensor([[1.0, 2.0], [3.0, 4.0]], dtype=tl.float32)
+    matrices[-1] = T.tensor([[0.5, 1.5]], dtype=tl.float32)
+    expected = T.tensor([[0.5, 1.5, 1.0, 3.0], [1.5, 4.5, 2.0, 6.0]], dtype=tl.float32)
+
+    assert_array_equal(kronecker(matrices), expected)
+
+
 def test_kronecker():
     """Test for kronecker product"""
     # Mathematical test
