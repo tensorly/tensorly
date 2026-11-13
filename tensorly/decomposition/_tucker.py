@@ -781,9 +781,6 @@ class Tucker(DecompositionMixin):
     rank : None, int or int list
         size of the core tensor, ``(len(ranks) == tensor.ndim)``
         if int, the same rank is used for all modes
-    non_negative : bool, default is False
-        if True, uses a non-negative Tucker via iterative multiplicative updates
-        otherwise, uses a Higher-Order Orthogonal Iteration.
     fixed_factors : int list or None, default is None
         if not None, list of modes for which to keep the factors fixed.
         Only valid if a Tucker tensor is provided as init.
@@ -795,7 +792,6 @@ class Tucker(DecompositionMixin):
         and computation time of each iteration or not
         Default: False
     svd : str, default is 'truncated_svd'
-        ignore if non_negative is True
         function to use to compute the SVD,
         acceptable values in tensorly.SVD_FUNS
     tol : float, optional
@@ -884,14 +880,10 @@ class Tucker_NN(DecompositionMixin):
     rank : None, int or int list
         size of the core tensor, ``(len(ranks) == tensor.ndim)``
         if int, the same rank is used for all modes
-    non_negative : bool, default is False
-        if True, uses a non-negative Tucker via iterative multiplicative updates
-        otherwise, uses a Higher-Order Orthogonal Iteration.
     n_iter_max : int
                 maximum number of iteration
     init : {'svd', 'random'}, optional
     svd : str, default is 'truncated_svd'
-        ignore if non_negative is True
         function to use to compute the SVD,
         acceptable values in tensorly.SVD_FUNS
     tol : float, optional
