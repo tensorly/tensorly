@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import tensorly as T
 from ..base import fold, unfold
@@ -451,3 +452,127 @@ def test_matricize():
 
 
 test_matricize()
+
+
+@pytest.mark.parametrize(
+    "shape,mode,expected_shape",
+    [
+        ((0, 3, 4), 0, (0, 12)),
+        ((2, 0, 4), 1, (0, 8)),
+        ((2, 3, 0), 2, (0, 6)),
+        ((0,), 0, (0, 1)),
+        ((2, 0, 4), 0, (2, 0)),
+        ((2, 1, 4), 1, (1, 8)),
+        ((2, 3, 4), 1, (3, 8)),
+    ],
+)
+def test_unfold_empty_shape(shape, mode, expected_shape):
+    tensor = T.zeros(shape)
+    unfolded = unfold(tensor, mode)
+    assert T.shape(unfolded) == expected_shape
+    assert_array_equal(unfolded, T.zeros(expected_shape))
+    assert_array_equal(fold(unfolded, mode, shape), tensor)
+
+
+@pytest.mark.parametrize("ravel_tensors", [False, True])
+@pytest.mark.parametrize(
+    "shape,mode,skip_begin,skip_end,unfolded_shape,vector_shape",
+    [
+        ((0, 2, 3), 0, 1, 0, (0, 2, 3), (0, 6)),
+        ((2, 3, 0), 1, 0, 1, (3, 2, 0), (6, 0)),
+        ((2, 0, 3), 0, 1, 0, (2, 0, 3), (2, 0)),
+        ((2, 0, 3, 4, 5), 1, 2, 1, (2, 0, 4, 3, 5), (2, 0, 12, 5)),
+        ((0, 2, 3, 0), 0, 1, 1, (0, 2, 3, 0), (0, 6, 0)),
+        ((2, 3, 0, 4), 0, 1, 1, (2, 3, 0, 4), (2, 0, 4)),
+        ((2, 0, 3), 0, 1, 1, (2, 0, 1, 3), (2, 0, 3)),
+        ((2, 1, 3), 0, 1, 1, (2, 1, 1, 3), (2, 1, 3)),
+    ],
+)
+def test_partial_unfold_empty_shape(
+    shape, mode, skip_begin, skip_end, unfolded_shape, vector_shape, ravel_tensors
+):
+    tensor = T.zeros(shape)
+    result = partial_unfold(
+        tensor,
+        mode,
+        skip_begin=skip_begin,
+        skip_end=skip_end,
+        ravel_tensors=ravel_tensors,
+    )
+    expected_shape = vector_shape if ravel_tensors else unfolded_shape
+    assert T.shape(result) == expected_shape
+    assert_array_equal(result, T.zeros(expected_shape))
+    reconstructed = partial_fold(
+        result, mode, shape, skip_begin=skip_begin, skip_end=skip_end
+    )
+    assert_array_equal(reconstructed, tensor)
+
+
+@pytest.mark.parametrize(
+    "shape,skip_begin,skip_end,expected_shape",
+    [
+        ((0, 2, 3), 1, 0, (0, 6)),
+        ((2, 3, 0), 0, 1, (6, 0)),
+        ((0, 2, 3, 0), 1, 1, (0, 6, 0)),
+        ((2, 0, 3, 4, 5), 2, 1, (2, 0, 12, 5)),
+        ((2, 3, 0, 4), 1, 1, (2, 0, 4)),
+        ((2, 3, 4), 1, 0, (2, 12)),
+    ],
+)
+def test_partial_vectorize_empty_shape(shape, skip_begin, skip_end, expected_shape):
+    tensor = T.zeros(shape)
+    vectorized = partial_tensor_to_vec(tensor, skip_begin=skip_begin, skip_end=skip_end)
+    assert T.shape(vectorized) == expected_shape
+    reconstructed = partial_vec_to_tensor(
+        vectorized, shape, skip_begin=skip_begin, skip_end=skip_end
+    )
+    assert_array_equal(reconstructed, tensor)
+    assert T.shape(tensor_to_vec(tensor)) == (int(np.prod(shape)),)
+
+
+@pytest.mark.parametrize("skip_begin,skip_end,mode", [(1, 1, 1), (0, 1, 2)])
+def test_partial_unfold_noncontiguous_control(skip_begin, skip_end, mode):
+    array = np.arange(120).reshape(2, 3, 4, 5).transpose(0, 2, 1, 3)
+    tensor = T.transpose(T.reshape(T.arange(120), (2, 3, 4, 5)), (0, 2, 1, 3))
+    active_shape = array.shape[skip_begin : array.ndim - skip_end]
+    remaining = active_shape[:mode] + active_shape[mode + 1 :]
+    shape = (
+        array.shape[:skip_begin]
+        + (active_shape[mode], int(np.prod(remaining)))
+        + array.shape[-skip_end:]
+    )
+    expected = np.moveaxis(array, mode + skip_begin, skip_begin).reshape(shape)
+    actual = partial_unfold(tensor, mode, skip_begin=skip_begin, skip_end=skip_end)
+    assert_array_equal(actual, T.tensor(expected))
+    assert_array_equal(
+        partial_fold(
+            actual, mode, T.shape(tensor), skip_begin=skip_begin, skip_end=skip_end
+        ),
+        tensor,
+    )
+
+
+def test_unfold_unknown_shape_keeps_inference(monkeypatch):
+    # Shape-dispatch unit control; this does not execute a TensorFlow graph.
+    from .. import base
+
+    class ShapeOnly:
+        shape = (None, 0, 3)
+
+    monkeypatch.setattr(base.tl, "moveaxis", lambda tensor, source, target: tensor)
+    monkeypatch.setattr(base.tl, "reshape", lambda tensor, shape: tuple(shape))
+    assert base.unfold(ShapeOnly(), 1) == (0, -1)
+
+
+@pytest.mark.parametrize("ravel_tensors", [False, True])
+def test_partial_unfold_unknown_shape_keeps_inference(monkeypatch, ravel_tensors):
+    # Shape-dispatch unit control; this does not execute a TensorFlow graph.
+    from .. import base
+
+    class ShapeOnly:
+        shape = (0, None, 3)
+
+    monkeypatch.setattr(base.tl, "moveaxis", lambda tensor, source, target: tensor)
+    monkeypatch.setattr(base.tl, "reshape", lambda tensor, shape: tuple(shape))
+    expected = (0, -1) if ravel_tensors else (0, None, -1)
+    assert base.partial_unfold(ShapeOnly(), 0, ravel_tensors=ravel_tensors) == expected
