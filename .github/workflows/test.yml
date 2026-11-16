@@ -6,6 +6,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      PADDLE_VERSION: '3.0.0b1'
+
     strategy:
       fail-fast: false
       matrix:
@@ -55,12 +58,18 @@ jobs:
         elif [[ "${{matrix.BACKEND}}" == "paddle" ]]; then
           echo "Installing PaddlePaddle";
           pip install 'setuptools>=65.0';
-          pip install paddlepaddle==3.0.0b1 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/;
+          pip install "paddlepaddle==$PADDLE_VERSION" -i https://www.paddlepaddle.org.cn/packages/stable/cpu/;
         fi
 
     - name: Install package
       run: |
-        python -m pip install -e .
+        if [[ "${{matrix.BACKEND}}" == "paddle" ]]; then
+          # Resolve Paddle's NumPy constraint together with SciPy and doc dependencies.
+          python -m pip install -e . -r requirements.txt -r doc/requirements_doc.txt "paddlepaddle==$PADDLE_VERSION"
+          python -m pip check
+        else
+          python -m pip install -e .
+        fi
 
     # pytest-testmon (jax and tensorflow only) records which code each test
     # executes and, on branches other than main, re-runs only the affected tests.
