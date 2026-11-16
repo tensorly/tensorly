@@ -1,8 +1,10 @@
 import numpy as np
+import pytest
 
 from .. import backend as tl
 from ..base import unfold, tensor_to_vec
 from ..tucker_tensor import (
+    TuckerTensor,
     tucker_to_tensor,
     tucker_to_unfolded,
     tucker_to_vec,
@@ -311,3 +313,200 @@ def test_tucker_copy():
     assert_array_almost_equal(
         tucker_to_tensor((core, factors)), tucker_to_tensor(tucker_tensor)
     )
+
+
+def partial_tucker_example():
+    rng = np.random.RandomState(598)
+    core = rng.normal(size=(2, 3, 4))
+    factors = [rng.normal(size=(7, 4)), rng.normal(size=(5, 2))]
+    dense = np.einsum("abc,ic,ja->jbi", core, *factors)
+    context = {"dtype": tl.float64}
+    return (
+        tl.tensor(core, **context),
+        [tl.tensor(factor, **context) for factor in factors],
+        tl.tensor(dense, **context),
+    )
+
+
+def test_partial_tucker_conversions():
+    core, factors, dense = partial_tucker_example()
+    modes = [2, 0]
+    tensor = TuckerTensor((core, factors), modes=modes)
+    modes[0] = 1  # The tensor owns its mode mapping.
+    assert_equal(tensor.modes, (2, 0))
+    assert_equal(tensor.shape, (5, 3, 7))
+    assert_equal(tensor.rank, (2, 3, 4))
+    unpacked_core, unpacked_factors = tensor
+    assert_(unpacked_core is core)
+    assert_(unpacked_factors is factors)
+    assert_equal(len(tensor), 2)
+    assert_array_almost_equal(tensor.to_tensor(), dense)
+    assert_array_almost_equal(tensor.to_vec(), tensor_to_vec(dense))
+    assert_array_almost_equal(
+        tucker_to_vec((core, factors), modes=(2, 0)), tensor_to_vec(dense)
+    )
+    for mode in range(3):
+        assert_array_almost_equal(tensor.to_unfolded(mode), unfold(dense, mode))
+        assert_array_almost_equal(
+            tucker_to_unfolded((core, factors), mode, modes=(2, 0)),
+            unfold(dense, mode),
+        )
+    assert_equal(TuckerTensor(tensor).modes, tensor.modes)
+
+
+@pytest.mark.parametrize("skip", [None, 0, 1])
+@pytest.mark.parametrize("transpose", [False, True])
+def test_partial_tucker_conversion_options(skip, transpose):
+    core, factors, _ = partial_tucker_example()
+    supplied = [tl.transpose(factor) for factor in factors] if transpose else factors
+    expected = core
+    for i, mode in enumerate((2, 0)):
+        if i != skip:
+            expected = mode_dot(expected, factors[i], mode)
+    tensor = (core, supplied)
+    options = dict(modes=(2, 0), skip_factor=skip, transpose_factors=transpose)
+    assert_array_almost_equal(tucker_to_tensor(tensor, **options), expected)
+    assert_array_almost_equal(tucker_to_vec(tensor, **options), tensor_to_vec(expected))
+    assert_array_almost_equal(
+        tucker_to_unfolded(tensor, mode=1, **options), unfold(expected, 1)
+    )
+
+
+def test_partial_tucker_normalize_and_copy():
+    core, factors, dense = partial_tucker_example()
+    tensor = TuckerTensor((core, factors), modes=(2, 0))
+    copied = tensor.tucker_copy()
+    assert_equal(copied.modes, (2, 0))
+    assert_(copied.core is not core)
+    for copied_factor, factor in zip(copied.factors, factors):
+        assert_(copied_factor is not factor)
+    normalized = tucker_normalize((core, factors), modes=(2, 0))
+    assert_equal(normalized.modes, (2, 0))
+    assert_array_almost_equal(normalized.to_tensor(), dense)
+    for factor in normalized.factors:
+        assert_array_almost_equal(tl.norm(factor, axis=0), tl.ones(factor.shape[1]))
+    copied.normalize()
+    assert_array_almost_equal(copied.to_tensor(), dense)
+    assert_array_equal(tensor.core, core)
+    zero_factors = [tl.zeros(factor.shape, **tl.context(factor)) for factor in factors]
+    zero_tensor = tucker_normalize((core, zero_factors), modes=(2, 0))
+    assert_array_equal(
+        zero_tensor.to_tensor(), tl.zeros(dense.shape, **tl.context(dense))
+    )
+    for factor in zero_tensor.factors:
+        assert_array_equal(factor, tl.zeros(factor.shape, **tl.context(factor)))
+
+
+@pytest.mark.parametrize("mode", [0, 1, 2, -1])
+@pytest.mark.parametrize("operation", ["matrix", "vector", "keep_dim"])
+@pytest.mark.parametrize("copy", [False, True])
+def test_partial_tucker_mode_dot(mode, operation, copy):
+    core, factors, dense = partial_tucker_example()
+    tensor = TuckerTensor((core, factors), modes=(2, 0))
+    operand = tl.arange(dense.shape[mode], **tl.context(core)) + 1
+    if operation == "matrix":
+        operand = tl.stack([operand, operand * 2], axis=0)
+    result = tucker_mode_dot(
+        (core, tuple(factors)),
+        operand,
+        mode,
+        modes=(2, 0),
+        keep_dim=operation == "keep_dim",
+        copy=copy,
+    )
+    expected = mode_dot(dense, operand, mode % 3)
+    if operation == "keep_dim":
+        shape = list(dense.shape)
+        shape[mode] = 1
+        expected = tl.reshape(expected, shape)
+    expected_modes = (2, 0)
+    if operation == "vector":
+        axis = mode % 3
+        expected_modes = tuple(m - (m > axis) for m in (2, 0) if m != axis)
+    assert_equal(result.modes, expected_modes)
+    assert_equal(result.shape, expected.shape)
+    assert_array_almost_equal(result.to_tensor(), expected)
+    assert_array_almost_equal(
+        tensor.mode_dot(
+            operand, mode, keep_dim=operation == "keep_dim", copy=copy
+        ).to_tensor(),
+        expected,
+    )
+    assert_array_almost_equal(tensor.to_tensor(), dense)
+
+
+def test_partial_tucker_contractions_to_scalar():
+    core, factors, dense = partial_tucker_example()
+    result = TuckerTensor((core, factors), modes=(2, 0))
+    for mode in (0, 1, 0):
+        operand = tl.ones(dense.shape[mode], **tl.context(core))
+        result = result.mode_dot(operand, mode)
+        dense = mode_dot(dense, operand, mode)
+        assert_array_almost_equal(result.to_tensor(), dense)
+        assert_array_almost_equal(result.tucker_copy().to_tensor(), dense)
+        assert_array_almost_equal(tucker_normalize(result).to_tensor(), dense)
+    assert_equal(result.modes, ())
+    assert_equal(result.rank, ())
+    assert_equal(result.shape, ())
+
+
+@pytest.mark.parametrize("modes", [(2,), (2, 2), (-1, 0), (3, 0), (2.0, 0), (True, 0)])
+def test_invalid_partial_tucker_modes(modes):
+    core, factors, _ = partial_tucker_example()
+    with assert_raises(ValueError):
+        TuckerTensor((core, factors), modes=modes)
+    with assert_raises(ValueError):
+        tucker_to_tensor((core, factors), modes=modes)
+
+
+def test_invalid_partial_tucker_factors():
+    core, factors, _ = partial_tucker_example()
+    with assert_raises(ValueError):
+        TuckerTensor((core, factors), modes=(0, 2))
+    with assert_raises(ValueError):
+        TuckerTensor((core, [factors[0][:, 0], factors[1]]), modes=(2, 0))
+
+
+def test_tucker_explicit_mode_override():
+    core = tl.tensor(np.arange(8.0).reshape(2, 2, 2), dtype=tl.float64)
+    factor = tl.tensor([[1.0, 2], [3, 4], [5, 6]], **tl.context(core))
+    tensor = TuckerTensor((core, [factor]), modes=(2,))
+    expected = mode_dot(core, factor, 0)
+    overridden = TuckerTensor(tensor, modes=(0,))
+    assert_equal(overridden.modes, (0,))
+    assert_array_almost_equal(tucker_to_tensor(tensor, modes=(0,)), expected)
+    assert_array_almost_equal(overridden.to_tensor(), expected)
+    assert_equal(tensor.modes, (2,))
+
+
+@pytest.mark.parametrize("modes", [(), (0,), (1,), (2,), (0, 2), (0, 1, 2), (2, 1, 0)])
+def test_tucker_factor_subsets(modes):
+    rng = np.random.RandomState(598)
+    core = tl.tensor(rng.normal(size=(2, 3, 4)), dtype=tl.float64)
+    factors = [
+        tl.tensor(rng.normal(size=(5, core.shape[m])), **tl.context(core))
+        for m in modes
+    ]
+    expected = core
+    for mode, factor in zip(modes, factors):
+        expected = mode_dot(expected, factor, mode)
+    tensor = TuckerTensor((core, factors), modes=modes)
+    assert_array_almost_equal(tensor.to_tensor(), expected)
+    assert_array_almost_equal(tucker_normalize(tensor).to_tensor(), expected)
+    assert_array_almost_equal(tensor.tucker_copy().to_tensor(), expected)
+    assert_array_almost_equal(tensor.to_vec(), tensor_to_vec(expected))
+
+
+def test_partial_tucker_invalid_mode_products():
+    core, factors, _ = partial_tucker_example()
+    tensor = TuckerTensor((core, factors), modes=(2, 0))
+    for mode in (-4, 3, 0.5):
+        with assert_raises(ValueError):
+            tensor.mode_dot(tl.ones((2, 5), **tl.context(core)), mode)
+    for operand in (
+        tl.ones((2, 9), **tl.context(core)),
+        tl.ones(9, **tl.context(core)),
+        tl.ones((2, 2, 2), **tl.context(core)),
+    ):
+        with assert_raises(ValueError):
+            tensor.mode_dot(operand, 0)

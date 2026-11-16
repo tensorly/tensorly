@@ -123,6 +123,40 @@ Note that some coefficients are almost zero (10e-16) but not exactly due to nume
 
 
 
+Partial Tucker tensors
+++++++++++++++++++++++
+
+A partial Tucker decomposition has factors for only some core axes. Pass
+``modes`` in factor-list order when constructing a ``TuckerTensor``. For example,
+the first factor below acts on axis 2 and the second on axis 0. Axis 1 keeps its
+core dimension:
+
+.. code-block:: python
+
+   >>> from tensorly.tucker_tensor import TuckerTensor
+   >>> core = tl.ones((2, 3, 4))
+   >>> factors = [tl.ones((7, 4)), tl.ones((5, 2))]
+   >>> partial = TuckerTensor((core, factors), modes=[2, 0])
+   >>> partial.shape
+   (5, 3, 7)
+   >>> partial.rank
+   (2, 3, 4)
+   >>> partial.to_tensor().shape
+   (5, 3, 7)
+
+Reconstruction, unfolding, vectorization, normalization, copying and mode
+products use the stored mapping. The functional equivalents also accept
+``modes`` when working with a ``(core, factors)`` pair. An explicit mapping
+overrides one stored on a ``TuckerTensor``. Unpacking still yields two values,
+``core, factors = partial``; pass ``partial.modes`` too when reconstructing from
+that pair.
+
+Mode products use axes of the full tensor, including axes without factors.
+Vector contractions remove an axis and update the remaining mode numbers;
+``keep_dim=True`` retains a size-one axis instead. A decomposition can have
+one factor or no factors (``modes=[]``). The ``rank`` attribute always contains
+the complete core shape, including unfactored axes.
+
 Matrix-Product-State / Tensor-Train Decomposition
 --------------------------------------------------
 
