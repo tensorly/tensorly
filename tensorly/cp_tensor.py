@@ -291,8 +291,7 @@ def cp_normalize(cp_tensor):
     Turns ``factors = [|U_1, ... U_n|]`` into ``[weights; |V_1, ... V_n|]``,
     where the columns of each `V_k` are normalized to unit Euclidean length
     from the columns of `U_k` with the normalizing constants absorbed into
-    `weights`. In the special case of a symmetric tensor, `weights` holds the
-    eigenvalues of the tensor.
+    `weights`.
 
     Parameters
     ----------
