@@ -50,7 +50,12 @@ def unfold(tensor, mode):
     ndarray
         unfolded_tensor of shape ``(tensor.shape[mode], -1)``
     """
-    return tl.reshape(tl.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1))
+    unfolded_shape = [tensor.shape[mode], -1]
+    if unfolded_shape[0] == 0 and None not in tensor.shape:
+        remaining_shape = list(tensor.shape)
+        remaining_shape.pop(mode)
+        unfolded_shape[1] = prod(remaining_shape)
+    return tl.reshape(tl.moveaxis(tensor, mode, 0), unfolded_shape)
 
 
 def fold(unfolded_tensor, mode, shape):
@@ -117,6 +122,13 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
 
     if skip_end:
         new_shape += [tensor.shape[-i] for i in range(skip_end, 0, -1)]
+
+    if 0 in new_shape and None not in tensor.shape:
+        end = len(tensor.shape) - skip_end
+        remaining_shape = list(tensor.shape[skip_begin:end])
+        if not ravel_tensors:
+            remaining_shape.pop(mode)
+        new_shape[new_shape.index(-1)] = prod(remaining_shape)
 
     return tl.reshape(tl.moveaxis(tensor, mode + skip_begin, skip_begin), new_shape)
 
