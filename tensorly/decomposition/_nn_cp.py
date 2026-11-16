@@ -249,8 +249,6 @@ def non_negative_parafac_hals(
         Stopping criterion for ALS, works if `tol` is not None.
         If 'rec_error',  ALS stops at current iteration if ``(previous rec_error - current rec_error) < tol``.
         If 'abs_rec_error', ALS terminates when `|previous rec_error - current rec_error| < tol`.
-    sparsity : float or int
-    random_state : {None, int, np.random.RandomState}
 
     Returns
     -------
@@ -559,8 +557,6 @@ class CP_NN_HALS(DecompositionMixin):
         Stopping criterion for ALS, works if `tol` is not None.
         If 'rec_error',  ALS stops at current iteration if (previous rec_error - current rec_error) < tol.
         If 'abs_rec_error', ALS terminates when ``|previous rec_error - current rec_error| < tol``.
-    sparsity : float or int
-        If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
     fixed_modes : list, default is None
         A list of modes for which the initial value is not modified.
         The last mode cannot be fixed due to error computation.
@@ -576,7 +572,6 @@ class CP_NN_HALS(DecompositionMixin):
                 weights of the (normalized) factors otherwise
         * factors : List of factors of the CP decomposition element `i` is of shape
                 (tensor.shape[i], rank)
-        * sparse_component : nD array of shape tensor.shape. Returns only if `sparsity` is not None.
 
     errors : list
         A list of reconstruction errors at each iteration of the algorithms.
