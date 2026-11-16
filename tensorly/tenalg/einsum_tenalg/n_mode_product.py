@@ -22,6 +22,9 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
         1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
         matrix or vectors to which to n-mode multiply the tensor
     mode : int
+    transpose : bool, optional, default is False
+        If True, the matrix is transposed or the vector is conjugated.
+        For complex matrices, the conjugate transpose is used.
 
     Returns
     -------
@@ -62,6 +65,8 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
                 f"shapes {tensor.shape} and {matrix_or_vector.shape} not aligned for mode-{mode} multiplication: "
                 f"{tensor.shape[mode]} (mode {mode}) != {matrix_or_vector.shape[0]} (vector size)"
             )
+        if transpose:
+            matrix_or_vector = tl.conj(matrix_or_vector)
         matrix_or_vector_modes = [tensor_modes[mode]]
         result_modes.pop(mode)
 
@@ -93,7 +98,7 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
     modes : None or int list, optional, default is None
 
     transpose : bool, optional, default is False
-        if True, the matrices or vectors in in the list are transposed
+        If True, matrices use their conjugate transpose and vectors are conjugated.
 
     Returns
     -------
@@ -136,6 +141,8 @@ def multi_mode_dot(tensor, matrix_or_vec_list, modes=None, skip=None, transpose=
             continue
 
         if tl.ndim(matrix_or_vec) == 1:
+            if transpose:
+                matrix_or_vec = tl.conj(matrix_or_vec)
             matrix_or_vec_list.append(matrix_or_vec)
             equation += f",{tensor_modes[mode]}"
             # We are contracting over the mode-th dimension
