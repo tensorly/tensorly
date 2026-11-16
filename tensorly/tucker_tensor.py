@@ -381,6 +381,11 @@ def validate_tucker_rank(tensor_shape, rank="same", rounding="round", fixed_mode
 
     In other words we want to solve:
     c^N n_param_tensor + \sum_k c I_k^2 = rank*n_param_tensor
+
+    With fixed modes, only the unfixed ranks scale with c. The fixed factor
+    costs are constant, and the core scales with c raised to the number of
+    unfixed modes. Ranks are at least one; if the fixed factors exhaust the
+    budget, unfixed modes use rank one and the requested budget can be exceeded.
     """
     if rounding == "ceil":
         rounding_fun = np.ceil
@@ -396,6 +401,8 @@ def validate_tucker_rank(tensor_shape, rank="same", rounding="round", fixed_mode
         rank = float(1)
 
     if isinstance(rank, float):
+        if rank < 0:
+            raise ValueError("Fractional rank must be non-negative.")
         n_modes_compressed = len(tensor_shape)
         n_param_tensor = np.prod(tensor_shape)
 
@@ -417,16 +424,27 @@ def validate_tucker_rank(tensor_shape, rank="same", rounding="round", fixed_mode
         else:
             n_fixed_params = 0
 
-        # Doesn't contain fixed_modes, those factors are accounted for in fixed_params
-        squared_dims = np.sum([s**2 for s in tensor_shape])
-
-        fun = (
-            lambda x: n_param_tensor * x**n_modes_compressed
-            + squared_dims * x
-            + n_fixed_params * x
-            - rank * n_param_tensor
+        fixed_core_size = (
+            np.prod([size for _, size in fixed_modes]) if fixed_modes is not None else 1
         )
-        fraction_param = brentq(fun, 0.0, max(rank, 1.0))
+
+        def fun(fraction):
+            # Match the minimum rank applied below. Fixed factors have a
+            # constant cost, and fixed modes still contribute to the core.
+            scaled_ranks = np.maximum(np.asarray(tensor_shape) * fraction, 1)
+            return (
+                np.prod(scaled_ranks) * fixed_core_size
+                + np.dot(tensor_shape, scaled_ranks)
+                + n_fixed_params
+                - rank * n_param_tensor
+            )
+
+        if n_modes_compressed == 0 or fun(0.0) >= 0:
+            # The minimum valid ranks may exhaust the budget. Keep the fixed
+            # ranks and use the minimum valid rank for the remaining modes.
+            fraction_param = 0.0
+        else:
+            fraction_param = brentq(fun, 0.0, max(rank, 1.0))
         rank = [max(int(rounding_fun(s * fraction_param)), 1) for s in tensor_shape]
 
         if fixed_modes is not None:
