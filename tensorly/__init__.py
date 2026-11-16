@@ -74,6 +74,7 @@ from .backend import (
     real,
     index,
     index_update,
+    fill_diagonal,
     clip,
     max,
     min,

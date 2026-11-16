@@ -123,6 +123,13 @@ class TensorflowBackend(Backend, backend_name="tensorflow"):
         S, U, V = tf.linalg.svd(matrix, full_matrices=full_matrices)
         return U, S, tfm.conj(tf.transpose(a=V))
 
+    def fill_diagonal(self, tensor, values):
+        if self.ndim(tensor) != 2:
+            raise ValueError("fill_diagonal expects a two-dimensional tensor")
+        values = tf.convert_to_tensor(values, dtype=tensor.dtype)
+        diagonal_length = tf.reduce_min(tf.shape(tensor))
+        return tf.linalg.set_diag(tensor, tf.broadcast_to(values, [diagonal_length]))
+
     def index_update(self, tensor, indices, values):
         if not isinstance(tensor, tf.Variable):
             tensor = tf.Variable(tensor)

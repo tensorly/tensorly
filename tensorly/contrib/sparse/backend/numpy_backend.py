@@ -100,6 +100,26 @@ class NumpySparseBackend(Backend, backend_name="numpy.sparse"):
         ]
         return sparse.einsum(subscripts, *operands)
 
+    def fill_diagonal(self, tensor, values):
+        if not is_sparse(tensor):
+            return super().fill_diagonal(tensor, values)
+        if tensor.ndim != 2:
+            raise ValueError("fill_diagonal expects a two-dimensional tensor")
+        length = min(tensor.shape)
+        values = values.todense() if is_sparse(values) else values
+        values = np.broadcast_to(np.asarray(values, dtype=tensor.dtype), (length,))
+        keep = tensor.coords[0] != tensor.coords[1]
+        diagonal = np.arange(length)
+        return sparse.COO(
+            np.concatenate(
+                [tensor.coords[:, keep], np.stack([diagonal, diagonal])], axis=1
+            ),
+            np.concatenate([tensor.data[keep], values]),
+            shape=tensor.shape,
+            fill_value=tensor.fill_value,
+            prune=True,
+        )
+
     def solve(self, A, b):
         """
         Compute x s.t. Ax = b
