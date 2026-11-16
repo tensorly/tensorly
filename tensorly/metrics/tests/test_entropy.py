@@ -242,6 +242,7 @@ def test_cp_entropy_public_density(case, dtype_name):
         )
     cp = CPTensor((weights, factors))
     dense = cp_to_tensor(cp)
+    assert dense.dtype == factors[0].dtype
     assert (
         float(tl.max(tl.abs(tl.reshape(dense, expected_dense.shape) - expected_dense)))
         < 2e-6
@@ -249,7 +250,8 @@ def test_cp_entropy_public_density(case, dtype_name):
     dense_entropy = vonneumann_entropy(dense)
     assert float(dense_entropy) == pytest.approx(expected, abs=2e-6)
     actual = cp_vonneumann_entropy(cp)
-    assert actual.dtype == factors[0].dtype
+    # Match the dense public path, including backend dtype promotion.
+    assert actual.dtype == dense_entropy.dtype
     assert tl.shape(actual) == ()
     assert tl.context(actual).get("device") == tl.context(factors[0]).get("device")
     assert float(actual) == pytest.approx(expected, abs=2e-6)
