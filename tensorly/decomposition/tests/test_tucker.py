@@ -251,6 +251,25 @@ def test_masked_tucker():
     assert_(mask_err < 0.001, "norm 2 of reconstruction higher than 0.001")
 
 
+def test_masked_tucker_reconstruction_error():
+    rng = tl.check_random_state(0)
+    factors = [rng.normal(size=(size, 2)) for size in (12, 10, 8)]
+    tensor = tl.tensor(np.einsum("ir,jr,kr->ijk", *factors), dtype=tl.float64)
+    mask = tl.tensor(rng.random_sample(tensor.shape) > 0.3, **tl.context(tensor))
+
+    decomposition, errors = tucker(
+        tensor * mask,
+        rank=(2, 2, 2),
+        mask=mask,
+        tol=1e-8,
+        return_errors=True,
+    )
+
+    reconstruction = tucker_to_tensor(decomposition)
+    assert_(tl.norm(tensor - reconstruction) / tl.norm(tensor) < 1e-5)
+    assert_(errors[-1] < 1e-5)
+
+
 @pytest.mark.parametrize("init", ["svd", "random"])
 @pytest.mark.parametrize("hals", [False, True])
 def test_non_negative_tucker(init, hals, monkeypatch):

@@ -246,6 +246,7 @@ def partial_tucker(
             tensor = tensor * mask + multi_mode_dot(
                 core, factors, modes=modes, transpose=False
             ) * (1 - mask)
+            norm_tensor = tl.norm(tensor, 2)
 
         for index, mode in enumerate(modes):
             core_approximation = multi_mode_dot(
