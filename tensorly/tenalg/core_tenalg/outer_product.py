@@ -3,18 +3,16 @@ import tensorly as tl
 
 # TODO : add batched_modes as in batched_tensor_dot?
 def batched_outer(tensors):
-    """Returns a generalized outer product of the two tensors
+    """Returns a generalized outer product of the tensors
 
     Parameters
     ----------
-    tensor1 : tensor
-        of shape (n_samples, J1, ..., JN)
-    tensor2 : tensor
-        of shape (n_samples, K1, ..., KM)
+    tensors : iterable of tensors
+        each of shape (n_samples, J1, ..., JN), all with the same batch-size
 
     Returns
     -------
-    outer product of tensor1 and tensor2
+    outer product of the tensors
         of shape (n_samples, J1, ..., JN, K1, ..., KM)
     """
     for i, tensor in enumerate(tensors):
@@ -44,18 +42,16 @@ def batched_outer(tensors):
 
 
 def outer(tensors):
-    """Returns a generalized outer product of the two tensors
+    """Returns a generalized outer product of the tensors
 
     Parameters
     ----------
-    tensor1 : tensor
-        of shape (J1, ..., JN)
-    tensor2 : tensor
-        of shape (K1, ..., KM)
+    tensors : iterable of tensors
+        each of shape (J1, ..., JN)
 
     Returns
     -------
-    outer product of tensor1 and tensor2
+    outer product of the tensors
         of shape (J1, ..., JN, K1, ..., KM)
     """
     for i, tensor in enumerate(tensors):
