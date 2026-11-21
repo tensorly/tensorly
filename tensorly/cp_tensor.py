@@ -497,11 +497,14 @@ def cp_to_tensor(cp_tensor, mask=None):
             full_tensor = full_tensor * mask
         return full_tensor
 
-    if len(shape) == 1:  # just a vector
-        return T.sum(weights * factors[0], axis=1)
-
     if weights is None:
         weights = 1
+
+    if len(shape) == 1:  # just a vector
+        full_tensor = T.sum(weights * factors[0], axis=1)
+        if mask is not None:
+            full_tensor = full_tensor * mask
+        return full_tensor
 
     if mask is None:
         full_tensor = T.dot(
