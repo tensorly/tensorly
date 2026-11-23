@@ -89,8 +89,6 @@ class CPTensor(FactorizedTensor):
 
         Parameters
         ----------
-        cp_tensor : tl.CPTensor or (core, factors)
-
         matrix_or_vector : ndarray
             1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
             matrix or vectors to which to n-mode multiply the tensor
@@ -114,10 +112,6 @@ class CPTensor(FactorizedTensor):
 
     def norm(self):
         """Returns the l2 norm of a CP tensor
-
-        Parameters
-        ----------
-        cp_tensor : tl.CPTensor or (core, factors)
 
         Returns
         -------
@@ -143,14 +137,6 @@ class CPTensor(FactorizedTensor):
 
         Parameters
         ----------
-        cp_tensor : CPTensor = (weight, factors)
-            factors is list of matrices, all with the same number of columns
-            i.e.::
-                for u in U:
-                    u[i].shape == (s_i, R)
-
-            where `R` is fixed while `s_i` can vary with `i`
-
         inplace : bool, default is True
             if False, returns a normalized Copy
             otherwise the tensor modifies itself and returns itself
