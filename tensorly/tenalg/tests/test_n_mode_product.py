@@ -1,6 +1,7 @@
 import itertools
 
 import numpy as np
+import pytest
 
 from ... import backend as T
 from ...testing import (
@@ -76,6 +77,27 @@ def test_mode_dot():
     U = T.tensor(np.random.random((3, 4)))
     res = unfold(mode_dot(X, U, 1), 1)
     assert_array_almost_equal(T.dot(U, unfold(X, 1)), res)
+
+
+@pytest.mark.parametrize("dtype", ["complex64", "complex128"])
+@pytest.mark.parametrize(
+    "mode,transpose,expected",
+    [
+        (0, False, [-4 + 7j, 15 + 4j]),
+        (1, False, [4 - 2j, 8 + 1j]),
+        (0, True, [-2 + 1j, 7 + 6j]),
+        (1, True, [10 + 2j, 4 + 13j]),
+    ],
+)
+def test_mode_dot_complex_vector_transpose(dtype, mode, transpose, expected):
+    dtype = getattr(T, dtype)
+    tensor = T.tensor([[1 + 2j, 3 - 1j], [-2 + 1j, 4 + 3j]], dtype=dtype)
+    vector = T.tensor([1 + 1j, 2 - 1j], dtype=dtype)
+    expected = T.tensor(expected, dtype=dtype)
+    assert_array_equal(mode_dot(tensor, vector, mode, transpose=transpose), expected)
+    assert_array_equal(
+        multi_mode_dot(tensor, [vector], modes=[mode], transpose=transpose), expected
+    )
 
 
 def test_multi_mode_dot():

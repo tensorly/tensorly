@@ -221,9 +221,7 @@ def test_tucker_runs_with_factors_only_init():
 
 
 def test_masked_tucker():
-    """Test for the masked Tucker decomposition.
-    This checks that a mask of 1's is identical to the unmasked case.
-    """
+    """Test all-observed masks, ignored outliers, and masked convergence."""
     rng = tl.check_random_state(1234)
     tensor = tl.tensor(rng.random_sample((3, 3, 3)))
     mask = tl.tensor(np.ones((3, 3, 3)))
@@ -250,15 +248,16 @@ def test_masked_tucker():
 
     assert_(mask_err < 0.001, "norm 2 of reconstruction higher than 0.001")
 
-
-def test_masked_tucker_reconstruction_error():
+    # Check reconstruction and reported errors on a masked low-rank tensor.
     rng = tl.check_random_state(0)
     factors = [rng.normal(size=(size, 2)) for size in (12, 10, 8)]
     tensor = tl.tensor(np.einsum("ir,jr,kr->ijk", *factors), dtype=tl.float64)
     mask = tl.tensor(rng.random_sample(tensor.shape) > 0.3, **tl.context(tensor))
+    masked_tensor = tensor * mask
+    tensor_norm = tl.norm(tensor)
 
     decomposition, errors = tucker(
-        tensor * mask,
+        masked_tensor,
         rank=(2, 2, 2),
         mask=mask,
         tol=1e-8,
@@ -266,8 +265,16 @@ def test_masked_tucker_reconstruction_error():
     )
 
     reconstruction = tucker_to_tensor(decomposition)
-    assert_(tl.norm(tensor - reconstruction) / tl.norm(tensor) < 1e-5)
-    assert_(errors[-1] < 1e-5)
+    assert tl.norm(tensor - reconstruction) / tensor_norm < 1e-5
+    assert errors[-1] < 1e-5
+
+    modes = (0, 2)
+    (core, factors), errors = partial_tucker(
+        masked_tensor, rank=(2, 2), modes=modes, mask=mask, tol=1e-8
+    )
+    reconstruction = multi_mode_dot(core, factors, modes=modes)
+    assert tl.norm(tensor - reconstruction) / tensor_norm < 1e-5
+    assert errors[-1] < 1e-5
 
 
 @pytest.mark.parametrize("init", ["svd", "random"])

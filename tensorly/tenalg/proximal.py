@@ -1,3 +1,5 @@
+import numpy as np
+
 import tensorly as tl
 
 
@@ -415,61 +417,70 @@ def unimodality_prox(tensor):
             "Unimodality prox doesn't support an input which has more than 2 dimensions."
         )
 
-    tensor_unimodal = tl.copy(tensor)
-    monotone_increasing = tl.tensor(monotonicity_prox(tensor), **tl.context(tensor))
-    monotone_decreasing = tl.tensor(
-        monotonicity_prox(tensor, decreasing=True), **tl.context(tensor)
+    values = tl.to_numpy(tensor)
+    tensor_unimodal = np.stack(
+        [_unimodal_regression(values[:, i]) for i in range(values.shape[1])], axis=1
     )
-    # Next line finds mutual peak points
-    values = tl.tensor(
-        tl.to_numpy((tensor - monotone_decreasing >= 0))
-        * tl.to_numpy((tensor - monotone_increasing >= 0)),
-        **tl.context(tensor),
-    )
+    return tl.tensor(tensor_unimodal, **tl.context(tensor))
 
-    sum_inc = tl.where(
-        values == 1,
-        tl.cumsum(tl.abs(tensor - monotone_increasing), axis=0),
-        tl.tensor(0, **tl.context(tensor)),
-    )
-    sum_inc = tl.where(
-        values == 1,
-        sum_inc - tl.abs(tensor - monotone_increasing),
-        tl.tensor(0, **tl.context(tensor)),
-    )
-    sum_dec = tl.where(
-        tl.flip(values, axis=0) == 1,
-        tl.cumsum(
-            tl.abs(tl.flip(tensor, axis=0) - tl.flip(monotone_decreasing, axis=0)),
-            axis=0,
-        ),
-        tl.tensor(0, **tl.context(tensor)),
-    )
-    sum_dec = tl.where(
-        tl.flip(values, axis=0) == 1,
-        sum_dec
-        - tl.abs(tl.flip(tensor, axis=0) - tl.flip(monotone_decreasing, axis=0)),
-        tl.tensor(0, **tl.context(tensor)),
-    )
 
-    difference = tl.where(
-        values == 1,
-        sum_inc + tl.flip(sum_dec, axis=0),
-        tl.max(sum_inc + tl.flip(sum_dec, axis=0)),
-    )
-    min_indice = tl.argmin(tl.tensor(difference), axis=0)
-    for i in range(len(min_indice)):
-        tensor_unimodal = tl.index_update(
-            tensor_unimodal,
-            tl.index[: int(min_indice[i]), i],
-            monotone_increasing[: int(min_indice[i]), i],
-        )
-        tensor_unimodal = tl.index_update(
-            tensor_unimodal,
-            tl.index[int(min_indice[i] + 1) :, i],
-            monotone_decreasing[int(min_indice[i] + 1) :, i],
-        )
-    return tensor_unimodal
+def _prefix_isotonic_errors(y):
+    """Squared errors of the isotonic regressions of all the prefixes of ``y``.
+
+    ``errors[j]`` is the error of the isotonic regression of ``y[: j + 1]``, computed
+    for every ``j`` in a single pass of the pool-adjacent-violators algorithm.
+    """
+    means, weights = [], []
+    sum_squares, fit_squares = 0.0, 0.0
+    errors = np.empty(len(y))
+    for j, value in enumerate(y):
+        mean, weight = float(value), 1
+        sum_squares += mean * mean
+        while means and means[-1] >= mean:
+            block_mean, block_weight = means.pop(), weights.pop()
+            fit_squares -= block_weight * block_mean * block_mean
+            mean = (block_mean * block_weight + mean * weight) / (block_weight + weight)
+            weight += block_weight
+        means.append(mean)
+        weights.append(weight)
+        fit_squares += weight * mean * mean
+        errors[j] = sum_squares - fit_squares
+    return errors
+
+
+def _isotonic_regression(y):
+    """Least squares non-decreasing fit of ``y`` (pool-adjacent-violators)."""
+    means, weights = [], []
+    for value in y:
+        mean, weight = float(value), 1
+        while means and means[-1] >= mean:
+            block_mean, block_weight = means.pop(), weights.pop()
+            mean = (block_mean * block_weight + mean * weight) / (block_weight + weight)
+            weight += block_weight
+        means.append(mean)
+        weights.append(weight)
+    return np.repeat(means, weights)
+
+
+def _unimodal_regression(y):
+    """Least squares unimodal fit of the vector ``y``.
+
+    The fit is non-decreasing up to a peak and non-increasing after it. For each
+    candidate peak ``j``, the error is that of the isotonic regression of
+    ``y[: j + 1]`` plus that of the antitonic regression of ``y[j + 1 :]``. The best
+    peak is selected and both parts are fitted separately (see Stout, "Unimodal
+    regression via prefix isotonic regression", 2008).
+    """
+    y = np.asarray(y, dtype=float)
+    n = len(y)
+    increasing_errors = _prefix_isotonic_errors(y)
+    # decreasing_errors[j] is the error of the antitonic regression of y[j:]
+    decreasing_errors = _prefix_isotonic_errors(y[::-1])[::-1]
+    total = increasing_errors + np.append(decreasing_errors[1:], 0.0)
+    peak = int(np.argmin(total))
+    increasing = _isotonic_regression(y[: peak + 1])
+    decreasing = -_isotonic_regression(-y[peak + 1 :])
+    return np.concatenate([increasing, decreasing])
 
 
 def l2_square_prox(tensor, regularizer):

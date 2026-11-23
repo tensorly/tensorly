@@ -100,9 +100,6 @@ def initialize_decomposition(
         slice, then as many components as possible are initialized from SVD and
         the remaining components are initialized randomly.
     random_state : `np.random.RandomState`
-    mask : ndarray, optional
-        An array with the same shape as the tensor. It should be 0 where there are
-        missing values and 1 everywhere else.
 
     Returns
     -------

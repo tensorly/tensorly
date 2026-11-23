@@ -17,8 +17,8 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
         matrix or vectors to which to n-mode multiply the tensor
     mode : int
     transpose : bool, default is False
-        If True, the matrix is transposed.
-        For complex tensors, the conjugate transpose is used.
+        If True, the matrix is transposed or the vector is conjugated.
+        For complex matrices, the conjugate transpose is used.
 
     Returns
     -------
@@ -60,6 +60,8 @@ def mode_dot(tensor, matrix_or_vector, mode, transpose=False):
             new_shape.pop(mode)
         else:
             new_shape = ()
+        if transpose:
+            matrix_or_vector = T.conj(matrix_or_vector)
         vec = True
 
     else:
