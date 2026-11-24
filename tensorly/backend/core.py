@@ -164,7 +164,7 @@ class Backend:
 
         Parameters
         ----------
-        seed : None or instance of int or np.random.RandomState(), default is None
+        seed : None or instance of int or np.random.RandomState()
         if seed is None NumPy's global seed is used.
 
         Returns

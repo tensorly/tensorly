@@ -35,7 +35,6 @@ def admm(
     UtU: ndarray
        Pre-computed product of the transposed of U and U.
     x: init
-       Default: None
     dual_var : ndarray
                Dual variable to update x
     n_iter_max : int

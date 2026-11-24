@@ -246,7 +246,7 @@ class BackendManager(types.ModuleType):
         Parameters
         ----------
         backend : {'numpy', 'pytorch', 'tensorflow', 'cupy', 'paddle'}
-            The name of the backend to use. Default is 'numpy'.
+            The name of the backend to use.
         local_threadsafe : bool, optional
             If True, the backend will not become the default backend for all threads.
             Note that this only affects threads where the backend hasn't already
