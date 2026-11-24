@@ -455,79 +455,65 @@ test_matricize()
 
 
 @pytest.mark.parametrize(
-    "shape,mode,expected_shape",
+    "shape,mode",
     [
-        ((0, 3, 4), 0, (0, 12)),
-        ((2, 0, 4), 1, (0, 8)),
-        ((2, 3, 0), 2, (0, 6)),
-        ((0,), 0, (0, 1)),
-        ((2, 0, 4), 0, (2, 0)),
-        ((2, 1, 4), 1, (1, 8)),
-        ((2, 3, 4), 1, (3, 8)),
+        ((0,), 0),
+        ((0, 3, 4), 0),
+        ((0, 3, 4), 1),
+        ((0, 3, 4), 2),
+        ((2, 0, 4), 0),
+        ((2, 0, 4), 1),
+        ((2, 0, 4), 2),
+        ((2, 3, 0), 0),
+        ((2, 3, 0), 1),
+        ((2, 3, 0), 2),
+        ((0, 0, 3), 0),
     ],
 )
-def test_unfold_empty_shape(shape, mode, expected_shape):
-    tensor = T.zeros(shape)
-    unfolded = unfold(tensor, mode)
-    assert T.shape(unfolded) == expected_shape
-    assert_array_equal(unfolded, T.zeros(expected_shape))
-    assert_array_equal(fold(unfolded, mode, shape), tensor)
+def test_unfold_rejects_empty_dimensions(shape, mode):
+    with pytest.raises(ValueError, match="zero-size dimensions"):
+        unfold(T.zeros(shape), mode)
 
 
 @pytest.mark.parametrize("ravel_tensors", [False, True])
 @pytest.mark.parametrize(
-    "shape,mode,skip_begin,skip_end,unfolded_shape,vector_shape",
+    "shape,mode,skip_begin,skip_end",
     [
-        ((0, 2, 3), 0, 1, 0, (0, 2, 3), (0, 6)),
-        ((2, 3, 0), 1, 0, 1, (3, 2, 0), (6, 0)),
-        ((2, 0, 3), 0, 1, 0, (2, 0, 3), (2, 0)),
-        ((2, 0, 3, 4, 5), 1, 2, 1, (2, 0, 4, 3, 5), (2, 0, 12, 5)),
-        ((0, 2, 3, 0), 0, 1, 1, (0, 2, 3, 0), (0, 6, 0)),
-        ((2, 3, 0, 4), 0, 1, 1, (2, 3, 0, 4), (2, 0, 4)),
-        ((2, 0, 3), 0, 1, 1, (2, 0, 1, 3), (2, 0, 3)),
-        ((2, 1, 3), 0, 1, 1, (2, 1, 1, 3), (2, 1, 3)),
+        ((0, 2, 3), 0, 1, 0),
+        ((2, 3, 0), 1, 0, 1),
+        ((2, 0, 3), 0, 1, 0),
+        ((2, 0, 3, 4, 5), 1, 2, 1),
+        ((0, 2, 3, 0), 0, 1, 1),
+        ((2, 3, 0, 4), 0, 1, 1),
+        ((2, 0, 3), 0, 1, 1),
     ],
 )
-def test_partial_unfold_empty_shape(
-    shape, mode, skip_begin, skip_end, unfolded_shape, vector_shape, ravel_tensors
+def test_partial_unfold_rejects_empty_dimensions(
+    shape, mode, skip_begin, skip_end, ravel_tensors
 ):
-    tensor = T.zeros(shape)
-    result = partial_unfold(
-        tensor,
-        mode,
-        skip_begin=skip_begin,
-        skip_end=skip_end,
-        ravel_tensors=ravel_tensors,
-    )
-    expected_shape = vector_shape if ravel_tensors else unfolded_shape
-    assert T.shape(result) == expected_shape
-    assert_array_equal(result, T.zeros(expected_shape))
-    reconstructed = partial_fold(
-        result, mode, shape, skip_begin=skip_begin, skip_end=skip_end
-    )
-    assert_array_equal(reconstructed, tensor)
+    with pytest.raises(ValueError, match="zero-size dimensions"):
+        partial_unfold(
+            T.zeros(shape),
+            mode,
+            skip_begin=skip_begin,
+            skip_end=skip_end,
+            ravel_tensors=ravel_tensors,
+        )
 
 
 @pytest.mark.parametrize(
-    "shape,skip_begin,skip_end,expected_shape",
+    "shape,skip_begin,skip_end",
     [
-        ((0, 2, 3), 1, 0, (0, 6)),
-        ((2, 3, 0), 0, 1, (6, 0)),
-        ((0, 2, 3, 0), 1, 1, (0, 6, 0)),
-        ((2, 0, 3, 4, 5), 2, 1, (2, 0, 12, 5)),
-        ((2, 3, 0, 4), 1, 1, (2, 0, 4)),
-        ((2, 3, 4), 1, 0, (2, 12)),
+        ((0, 2, 3), 1, 0),
+        ((2, 3, 0), 0, 1),
+        ((0, 2, 3, 0), 1, 1),
+        ((2, 0, 3, 4, 5), 2, 1),
+        ((2, 3, 0, 4), 1, 1),
     ],
 )
-def test_partial_vectorize_empty_shape(shape, skip_begin, skip_end, expected_shape):
-    tensor = T.zeros(shape)
-    vectorized = partial_tensor_to_vec(tensor, skip_begin=skip_begin, skip_end=skip_end)
-    assert T.shape(vectorized) == expected_shape
-    reconstructed = partial_vec_to_tensor(
-        vectorized, shape, skip_begin=skip_begin, skip_end=skip_end
-    )
-    assert_array_equal(reconstructed, tensor)
-    assert T.shape(tensor_to_vec(tensor)) == (int(np.prod(shape)),)
+def test_partial_vectorize_rejects_empty_dimensions(shape, skip_begin, skip_end):
+    with pytest.raises(ValueError, match="zero-size dimensions"):
+        partial_tensor_to_vec(T.zeros(shape), skip_begin=skip_begin, skip_end=skip_end)
 
 
 @pytest.mark.parametrize("skip_begin,skip_end,mode", [(1, 1, 1), (0, 1, 2)])
@@ -557,11 +543,11 @@ def test_unfold_unknown_shape_keeps_inference(monkeypatch):
     from .. import base
 
     class ShapeOnly:
-        shape = (None, 0, 3)
+        shape = (None, 2, 3)
 
     monkeypatch.setattr(base.tl, "moveaxis", lambda tensor, source, target: tensor)
     monkeypatch.setattr(base.tl, "reshape", lambda tensor, shape: tuple(shape))
-    assert base.unfold(ShapeOnly(), 1) == (0, -1)
+    assert base.unfold(ShapeOnly(), 1) == (2, -1)
 
 
 @pytest.mark.parametrize("ravel_tensors", [False, True])
@@ -570,9 +556,9 @@ def test_partial_unfold_unknown_shape_keeps_inference(monkeypatch, ravel_tensors
     from .. import base
 
     class ShapeOnly:
-        shape = (0, None, 3)
+        shape = (2, None, 3)
 
     monkeypatch.setattr(base.tl, "moveaxis", lambda tensor, source, target: tensor)
     monkeypatch.setattr(base.tl, "reshape", lambda tensor, shape: tuple(shape))
-    expected = (0, -1) if ravel_tensors else (0, None, -1)
+    expected = (2, -1) if ravel_tensors else (2, None, -1)
     assert base.partial_unfold(ShapeOnly(), 0, ravel_tensors=ravel_tensors) == expected
