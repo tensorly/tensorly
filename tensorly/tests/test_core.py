@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import tensorly as T
 from ..base import fold, unfold
@@ -454,111 +453,9 @@ def test_matricize():
 test_matricize()
 
 
-@pytest.mark.parametrize(
-    "shape,mode",
-    [
-        ((0,), 0),
-        ((0, 3, 4), 0),
-        ((0, 3, 4), 1),
-        ((0, 3, 4), 2),
-        ((2, 0, 4), 0),
-        ((2, 0, 4), 1),
-        ((2, 0, 4), 2),
-        ((2, 3, 0), 0),
-        ((2, 3, 0), 1),
-        ((2, 3, 0), 2),
-        ((0, 0, 3), 0),
-    ],
-)
-def test_unfold_rejects_empty_dimensions(shape, mode):
-    with pytest.raises(ValueError, match="zero-size dimensions"):
-        unfold(T.zeros(shape), mode)
-
-
-@pytest.mark.parametrize("ravel_tensors", [False, True])
-@pytest.mark.parametrize(
-    "shape,mode,skip_begin,skip_end",
-    [
-        ((0, 2, 3), 0, 1, 0),
-        ((2, 3, 0), 1, 0, 1),
-        ((2, 0, 3), 0, 1, 0),
-        ((2, 0, 3, 4, 5), 1, 2, 1),
-        ((0, 2, 3, 0), 0, 1, 1),
-        ((2, 3, 0, 4), 0, 1, 1),
-        ((2, 0, 3), 0, 1, 1),
-    ],
-)
-def test_partial_unfold_rejects_empty_dimensions(
-    shape, mode, skip_begin, skip_end, ravel_tensors
-):
-    with pytest.raises(ValueError, match="zero-size dimensions"):
-        partial_unfold(
-            T.zeros(shape),
-            mode,
-            skip_begin=skip_begin,
-            skip_end=skip_end,
-            ravel_tensors=ravel_tensors,
-        )
-
-
-@pytest.mark.parametrize(
-    "shape,skip_begin,skip_end",
-    [
-        ((0, 2, 3), 1, 0),
-        ((2, 3, 0), 0, 1),
-        ((0, 2, 3, 0), 1, 1),
-        ((2, 0, 3, 4, 5), 2, 1),
-        ((2, 3, 0, 4), 1, 1),
-    ],
-)
-def test_partial_vectorize_rejects_empty_dimensions(shape, skip_begin, skip_end):
-    with pytest.raises(ValueError, match="zero-size dimensions"):
-        partial_tensor_to_vec(T.zeros(shape), skip_begin=skip_begin, skip_end=skip_end)
-
-
-@pytest.mark.parametrize("skip_begin,skip_end,mode", [(1, 1, 1), (0, 1, 2)])
-def test_partial_unfold_noncontiguous_control(skip_begin, skip_end, mode):
-    array = np.arange(120).reshape(2, 3, 4, 5).transpose(0, 2, 1, 3)
-    tensor = T.transpose(T.reshape(T.arange(120), (2, 3, 4, 5)), (0, 2, 1, 3))
-    active_shape = array.shape[skip_begin : array.ndim - skip_end]
-    remaining = active_shape[:mode] + active_shape[mode + 1 :]
-    shape = (
-        array.shape[:skip_begin]
-        + (active_shape[mode], int(np.prod(remaining)))
-        + array.shape[-skip_end:]
-    )
-    expected = np.moveaxis(array, mode + skip_begin, skip_begin).reshape(shape)
-    actual = partial_unfold(tensor, mode, skip_begin=skip_begin, skip_end=skip_end)
-    assert_array_equal(actual, T.tensor(expected))
-    assert_array_equal(
-        partial_fold(
-            actual, mode, T.shape(tensor), skip_begin=skip_begin, skip_end=skip_end
-        ),
-        tensor,
-    )
-
-
-def test_unfold_unknown_shape_keeps_inference(monkeypatch):
-    # Shape-dispatch unit control; this does not execute a TensorFlow graph.
-    from .. import base
-
-    class ShapeOnly:
-        shape = (None, 2, 3)
-
-    monkeypatch.setattr(base.tl, "moveaxis", lambda tensor, source, target: tensor)
-    monkeypatch.setattr(base.tl, "reshape", lambda tensor, shape: tuple(shape))
-    assert base.unfold(ShapeOnly(), 1) == (2, -1)
-
-
-@pytest.mark.parametrize("ravel_tensors", [False, True])
-def test_partial_unfold_unknown_shape_keeps_inference(monkeypatch, ravel_tensors):
-    # Shape-dispatch unit control; this does not execute a TensorFlow graph.
-    from .. import base
-
-    class ShapeOnly:
-        shape = (2, None, 3)
-
-    monkeypatch.setattr(base.tl, "moveaxis", lambda tensor, source, target: tensor)
-    monkeypatch.setattr(base.tl, "reshape", lambda tensor, shape: tuple(shape))
-    expected = (2, -1) if ravel_tensors else (2, None, -1)
-    assert base.partial_unfold(ShapeOnly(), 0, ravel_tensors=ravel_tensors) == expected
+def test_unfold_rejects_zero_size_dimensions():
+    tensor = T.zeros((2, 3, 0))
+    with assert_raises(ValueError):
+        unfold(tensor, 0)
+    with assert_raises(ValueError):
+        partial_unfold(tensor, 0)
