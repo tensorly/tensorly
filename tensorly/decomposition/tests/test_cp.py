@@ -277,11 +277,6 @@ def test_parafac_linesearch():
     )
 
 
-@pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 3)])
-@pytest.mark.parametrize("init", ["svd", "random"])
-@pytest.mark.parametrize("normalize_factors", [False, True])
-@pytest.mark.parametrize("random_state", [1, 2])
-@pytest.mark.parametrize("hals", [True, False])
 def test_parafac_return_errors_deprecation():
     """Test that return_errors=True actually emits its DeprecationWarning."""
     rng = tl.check_random_state(1234)
@@ -297,6 +292,11 @@ def test_parafac_return_errors_deprecation():
         )
 
 
+@pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 3)])
+@pytest.mark.parametrize("init", ["svd", "random"])
+@pytest.mark.parametrize("normalize_factors", [False, True])
+@pytest.mark.parametrize("random_state", [1, 2])
+@pytest.mark.parametrize("hals", [True, False])
 def test_non_negative_parafac(
     monkeypatch, true_rank, rank, init, normalize_factors, random_state, hals
 ):
