@@ -277,6 +277,21 @@ def test_parafac_linesearch():
     )
 
 
+def test_parafac_return_errors_deprecation():
+    """Test that return_errors=True actually emits its DeprecationWarning."""
+    rng = tl.check_random_state(1234)
+    tensor = T.tensor(rng.random_sample((6, 5, 4)))
+    with pytest.warns(DeprecationWarning, match="return_errors"):
+        parafac(
+            tensor,
+            rank=2,
+            init="random",
+            random_state=1234,
+            n_iter_max=3,
+            return_errors=True,
+        )
+
+
 @pytest.mark.parametrize("true_rank,rank", [(1, 1), (3, 3)])
 @pytest.mark.parametrize("init", ["svd", "random"])
 @pytest.mark.parametrize("normalize_factors", [False, True])
