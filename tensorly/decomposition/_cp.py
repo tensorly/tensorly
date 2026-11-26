@@ -33,6 +33,7 @@ def initialize_cp(
     normalize_factors=False,
     mask=None,
     svd_mask_repeats=5,
+    fixed_modes=None,
 ):
     r"""Initialize factors used in `parafac`.
 
@@ -40,7 +41,8 @@ def initialize_cp(
     initialize factor matrices with uniform distribution using `random_state`. If `init == 'svd'` then
     initialize the `m`th factor matrix using the `rank` left singular vectors
     of the `m`th unfolding of the input tensor. If init is a previously initialized `cp tensor`, all
-    the weights are pulled in the last factor and then the weights are set to "1" for the output tensor.
+    the weights are pulled in the last unfixed factor and then the weights are set to "1" for the output tensor.
+    If all modes are fixed, the weights and factors are retained.
 
     Parameters
     ----------
@@ -51,6 +53,8 @@ def initialize_cp(
         function to use to compute the SVD, acceptable values in tensorly.SVD_FUNS
     non_negative : bool, default is False
         if True, non-negative factors are returned
+    fixed_modes : list, default is None
+        Modes whose factors must not absorb the initialization weights.
 
     Returns
     -------
@@ -116,10 +120,19 @@ def initialize_cp(
             if tl.all(weights == 1):
                 kt = CPTensor((None, factors))
             else:
-                # Pull the weights in the last factor, which is never fixed, so
-                # that fixed factors are left untouched and the model is preserved
-                factors[-1] = factors[-1] * tl.reshape(weights, (1, -1))
-                kt = CPTensor((None, factors))
+                modes = [
+                    mode
+                    for mode in range(len(factors))
+                    if fixed_modes is None or mode not in fixed_modes
+                ]
+                if modes:
+                    # Absorb weights only into a factor that is free to change.
+                    factors[modes[-1]] = factors[modes[-1]] * tl.reshape(
+                        weights, (1, -1)
+                    )
+                    kt = CPTensor((None, factors))
+                else:
+                    kt = CPTensor((tl.copy(weights), factors))
 
             return kt
         except ValueError:
@@ -162,7 +175,9 @@ def sparsify_tensor(tensor, card):
     )
 
 
-def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None):
+def error_calc(
+    tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=None, mttkrp_mode=-1
+):
     r"""Perform the error calculation. Different forms are used here depending upon
     the available information. If `mttkrp=None` or masking is being performed, then the
     full tensor must be constructed. Otherwise, the mttkrp is used to reduce the calculation cost.
@@ -182,6 +197,8 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
         Whether masking is being performed.
     mttkrp : tensor or None
         The mttkrp product, if available.
+    mttkrp_mode : int, default is -1
+        The mode used to compute ``mttkrp``.
 
     Returns
     -------
@@ -220,9 +237,8 @@ def error_calc(tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp=Non
             # ||tensor - rec||^2 = ||tensor||^2 + ||rec||^2 - 2*<tensor, rec>
             factors_norm = cp_norm((weights, factors))
 
-            # mttkrp and factor for the last mode. This is equivalent to the
-            # inner product <tensor, factorization>
-            iprod = tl.sum(tl.sum(mttkrp * tl.conj(factors[-1]), axis=0))
+            # Pair the cached mttkrp with its mode to obtain <tensor, factorization>.
+            iprod = tl.sum(tl.sum(mttkrp * tl.conj(factors[mttkrp_mode]), axis=0))
             unnorml_rec_error = tl.sqrt(
                 tl.abs(norm_tensor**2 + factors_norm**2 - 2 * iprod)
             )
@@ -292,8 +308,8 @@ def parafac(
     sparsity : float or int
         If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
     fixed_modes : list, default is None
-        A list of modes for which the initial value is not modified.
-        The last mode cannot be fixed due to error computation.
+        A list of modes whose factors are not updated during optimization.
+        If ``normalize_factors=True``, their columns are still normalized.
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
@@ -338,6 +354,9 @@ def parafac(
         acc_fail = 0  # How many times acceleration have failed
         max_fail = 4  # Increase acc_pow with one after max_fail failure
 
+    fixed_modes = [] if fixed_modes is None else list(fixed_modes)
+    modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+
     weights, factors = initialize_cp(
         tensor,
         rank,
@@ -347,6 +366,7 @@ def parafac(
         normalize_factors=normalize_factors,
         mask=mask,
         svd_mask_repeats=svd_mask_repeats,
+        fixed_modes=fixed_modes,
     )
 
     rec_errors = []
@@ -356,29 +376,16 @@ def parafac(
     else:
         Id = 0
 
-    # Copy so that the caller's list is not modified (see remove() below)
-    fixed_modes = [] if fixed_modes is None else list(fixed_modes)
-
     for mode in fixed_modes:
         if tl.shape(factors[mode])[0] != tl.shape(tensor)[mode]:
-            if mode != tl.ndim(tensor) - 1:  # last mode is never actually fixed
-                raise ValueError(
-                    f"Mode {mode} is fixed but the initial factor has {tl.shape(factors[mode])[0]} rows "
-                    f"while the tensor has size {tl.shape(tensor)[mode]} along that mode."
-                )
+            raise ValueError(
+                f"Mode {mode} is fixed but the initial factor has {tl.shape(factors[mode])[0]} rows "
+                f"while the tensor has size {tl.shape(tensor)[mode]} along that mode."
+            )
 
-    if fixed_modes == list(range(tl.ndim(tensor))):  # Check If all modes are fixed
-        cp_tensor = CPTensor(
-            (weights, factors)
-        )  # No need to run optimization algorithm, just return the initialization
-        return cp_tensor
-
-    if tl.ndim(tensor) - 1 in fixed_modes:
-        warnings.warn(
-            "You asked for fixing the last mode, which is not supported.\n The last mode will not be fixed. Consider using tl.moveaxis()"
-        )
-        fixed_modes.remove(tl.ndim(tensor) - 1)
-    modes_list = [mode for mode in range(tl.ndim(tensor)) if mode not in fixed_modes]
+    if not modes_list:
+        cp_tensor = CPTensor((weights, factors))
+        return (cp_tensor, rec_errors) if return_errors else cp_tensor
 
     if sparsity:
         sparse_component = tl.zeros_like(tensor)
@@ -405,7 +412,7 @@ def parafac(
     for iteration in range(n_iter_max):
         if orthogonalise and iteration <= orthogonalise:
             factors = [
-                tl.qr(f)[0] if min(tl.shape(f)) >= rank else f
+                tl.qr(f)[0] if i not in fixed_modes and min(tl.shape(f)) >= rank else f
                 for i, f in enumerate(factors)
             ]
 
@@ -447,7 +454,14 @@ def parafac(
         # Calculate the current unnormalized error if we need it
         if (tol or return_errors) and not line_iter:
             unnorml_rec_error, tensor, norm_tensor = error_calc(
-                tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
+                tensor,
+                norm_tensor,
+                weights,
+                factors,
+                sparsity,
+                mask,
+                mttkrp,
+                mttkrp_mode=modes_list[-1],
             )
         else:
             if mask is not None:
@@ -479,7 +493,14 @@ def parafac(
                     print(f"Accepted line search jump of {jump}.")
             else:
                 unnorml_rec_error, tensor, norm_tensor = error_calc(
-                    tensor, norm_tensor, weights, factors, sparsity, mask, mttkrp
+                    tensor,
+                    norm_tensor,
+                    weights,
+                    factors,
+                    sparsity,
+                    mask,
+                    mttkrp,
+                    mttkrp_mode=modes_list[-1],
                 )
                 acc_fail += 1
 
@@ -915,8 +936,8 @@ class CP(DecompositionMixin):
     sparsity : float or int
         If `sparsity` is not None, we approximate tensor as a sum of low_rank_component and sparse_component, where low_rank_component = cp_to_tensor((weights, factors)). `sparsity` denotes desired fraction or number of non-zero elements in the sparse_component of the `tensor`.
     fixed_modes : list, default is None
-        A list of modes for which the initial value is not modified.
-        The last mode cannot be fixed due to error computation.
+        A list of modes whose factors are not updated during optimization.
+        If ``normalize_factors=True``, their columns are still normalized.
     svd_mask_repeats: int
         If using a tensor with masked values, this initializes using SVD multiple times to
         remove the effect of these missing values on the initialization.
