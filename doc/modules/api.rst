@@ -65,6 +65,7 @@ not all backends support this. Instead of
    :template: function.rst
 
     index_update
+    fill_diagonal
     index
 
 Available backend functions

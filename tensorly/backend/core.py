@@ -1080,6 +1080,29 @@ class Backend:
 
     index = Index()
 
+    def fill_diagonal(self, tensor, values):
+        """Set the main diagonal of a matrix and return the updated matrix.
+
+        Parameters
+        ----------
+        tensor : tensorly.tensor
+            Two-dimensional input matrix. May be modified in place.
+        values : scalar or tensorly.tensor
+            Value to broadcast to the diagonal, or a vector with length
+            ``min(tensor.shape)``.
+
+        Returns
+        -------
+        tensorly.tensor
+            Matrix with its main diagonal replaced by ``values``.
+        """
+        if self.ndim(tensor) != 2:
+            raise ValueError("fill_diagonal expects a two-dimensional tensor")
+        rows, columns = self.shape(tensor)
+        diagonal = self.index[: min(rows, columns) * (columns + 1) : columns + 1]
+        flat = self.reshape(tensor, (-1,))
+        return self.reshape(self.index_update(flat, diagonal, values), (rows, columns))
+
     @staticmethod
     def index_update(tensor, indices, values):
         """Updates the value of tensors in the specified indices

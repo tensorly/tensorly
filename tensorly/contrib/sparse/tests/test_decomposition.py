@@ -13,7 +13,8 @@ import sparse
 import numpy as np
 
 
-def test_sparse_parafac():
+@pytest.mark.parametrize("l2_reg", [0, 0.1])
+def test_sparse_parafac(l2_reg):
     """Test for sparse parafac"""
     # Make sure the algorithm stays sparse. This will run out of memory on
     # most machines if the algorithm densifies.
@@ -26,7 +27,12 @@ def test_sparse_parafac():
     weights = np.ones(rank)
     tensor = cp_to_tensor((weights, factors))
     _ = parafac(
-        tensor, rank=rank, init="random", n_iter_max=1, random_state=random_state
+        tensor,
+        rank=rank,
+        init="random",
+        n_iter_max=1,
+        random_state=random_state,
+        l2_reg=l2_reg,
     )
 
 
@@ -41,3 +47,18 @@ def test_sparse_robust_pca():
     assert sparse_error.shape == tensor.shape
     assert np.isfinite(low_rank.data).all()
     assert np.isfinite(sparse_error.data).all()
+
+
+@pytest.mark.parametrize("fill_value", [0, 2])
+def test_sparse_fill_diagonal(fill_value):
+    from tensorly.contrib.sparse import fill_diagonal
+
+    data = np.array([[1.0, 0.0, 2.0], [0.0, 3.0, 0.0]])
+    tensor = sparse.COO.from_numpy(data, fill_value=fill_value)
+    result = fill_diagonal(tensor, np.array([4.0, 5.0]))
+    expected = data.copy()
+    np.fill_diagonal(expected, [4.0, 5.0])
+    assert isinstance(result, sparse.COO)
+    np.testing.assert_array_equal(result.todense(), expected)
+    np.testing.assert_array_equal(tensor.todense(), data)
+    assert result.fill_value == fill_value
