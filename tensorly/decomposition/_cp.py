@@ -326,8 +326,9 @@ def parafac(
     rank = validate_cp_rank(tl.shape(tensor), rank=rank)
 
     if return_errors:
-        DeprecationWarning(
-            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead."
+        warnings.warn(
+            "return_errors argument will be removed in the next version of TensorLy. Please use a callback function instead.",
+            DeprecationWarning,
         )
 
     if orthogonalise and not isinstance(orthogonalise, int):
