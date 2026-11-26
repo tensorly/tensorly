@@ -329,6 +329,7 @@ def partial_tucker_example():
 
 
 def test_partial_tucker_conversions():
+    """Check that an unsorted factor mapping gives the expected dense, vector, and unfolded forms."""
     core, factors, dense = partial_tucker_example()
     modes = [2, 0]
     tensor = TuckerTensor((core, factors), modes=modes)
@@ -357,6 +358,7 @@ def test_partial_tucker_conversions():
 @pytest.mark.parametrize("skip", [None, 0, 1])
 @pytest.mark.parametrize("transpose", [False, True])
 def test_partial_tucker_conversion_options(skip, transpose):
+    """Check that skipping and transposing factors respect their order in the factor list."""
     core, factors, _ = partial_tucker_example()
     supplied = [tl.transpose(factor) for factor in factors] if transpose else factors
     expected = core
@@ -373,6 +375,7 @@ def test_partial_tucker_conversion_options(skip, transpose):
 
 
 def test_partial_tucker_normalize_and_copy():
+    """Check copy independence and normalization, including factors with zero columns."""
     core, factors, dense = partial_tucker_example()
     tensor = TuckerTensor((core, factors), modes=(2, 0))
     copied = tensor.tucker_copy()
@@ -401,6 +404,7 @@ def test_partial_tucker_normalize_and_copy():
 @pytest.mark.parametrize("operation", ["matrix", "vector", "keep_dim"])
 @pytest.mark.parametrize("copy", [False, True])
 def test_partial_tucker_mode_dot(mode, operation, copy):
+    """Compare products on factored and unfactored axes with the dense result and check the remaining axes."""
     core, factors, dense = partial_tucker_example()
     tensor = TuckerTensor((core, factors), modes=(2, 0))
     operand = tl.arange(dense.shape[mode], **tl.context(core)) + 1
@@ -436,6 +440,7 @@ def test_partial_tucker_mode_dot(mode, operation, copy):
 
 
 def test_partial_tucker_contractions_to_scalar():
+    """Check that repeated contractions preserve the dense result down to a scalar."""
     core, factors, dense = partial_tucker_example()
     result = TuckerTensor((core, factors), modes=(2, 0))
     for mode in (0, 1, 0):
@@ -452,6 +457,7 @@ def test_partial_tucker_contractions_to_scalar():
 
 @pytest.mark.parametrize("modes", [(2,), (2, 2), (-1, 0), (3, 0), (2.0, 0), (True, 0)])
 def test_invalid_partial_tucker_modes(modes):
+    """Reject mappings with the wrong length, repeated axes, or invalid axis values."""
     core, factors, _ = partial_tucker_example()
     with assert_raises(ValueError):
         TuckerTensor((core, factors), modes=modes)
@@ -460,6 +466,7 @@ def test_invalid_partial_tucker_modes(modes):
 
 
 def test_invalid_partial_tucker_factors():
+    """Reject nonmatrix factors and factors whose columns do not match the mapped core axis."""
     core, factors, _ = partial_tucker_example()
     with assert_raises(ValueError):
         TuckerTensor((core, factors), modes=(0, 2))
@@ -468,6 +475,7 @@ def test_invalid_partial_tucker_factors():
 
 
 def test_tucker_explicit_mode_override():
+    """Check that an explicit mapping overrides the stored axes without changing the original tensor."""
     core = tl.tensor(np.arange(8.0).reshape(2, 2, 2), dtype=tl.float64)
     factor = tl.tensor([[1.0, 2], [3, 4], [5, 6]], **tl.context(core))
     tensor = TuckerTensor((core, [factor]), modes=(2,))
@@ -481,6 +489,7 @@ def test_tucker_explicit_mode_override():
 
 @pytest.mark.parametrize("modes", [(), (0,), (1,), (2,), (0, 2), (0, 1, 2), (2, 1, 0)])
 def test_tucker_factor_subsets(modes):
+    """Compare reconstruction with direct mode products for empty, partial, full, and reordered mappings."""
     rng = np.random.RandomState(598)
     core = tl.tensor(rng.normal(size=(2, 3, 4)), dtype=tl.float64)
     factors = [
@@ -498,6 +507,7 @@ def test_tucker_factor_subsets(modes):
 
 
 def test_partial_tucker_invalid_mode_products():
+    """Reject invalid product axes and operands with incompatible shapes or dimensions."""
     core, factors, _ = partial_tucker_example()
     tensor = TuckerTensor((core, factors), modes=(2, 0))
     for mode in (-4, 3, 0.5):
