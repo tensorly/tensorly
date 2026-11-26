@@ -317,6 +317,26 @@ def cp_normalize(cp_tensor):
     return CPTensor((weights, normalized_factors))
 
 
+def _phase(x):
+    """Unit-modulus sign of each entry, x / |x|, with 1 where x is zero.
+
+    For real tensors this is the usual sign. For complex tensors it is the
+    phase, which ``sign`` does not give on NumPy < 2 (it returns the sign of
+    the real part there).
+    """
+    magnitude = T.abs(x)
+    is_zero = magnitude == 0
+    ones = T.ones(T.shape(x), **T.context(x))
+    return T.where(
+        is_zero,
+        ones,
+        x
+        / T.where(
+            is_zero, T.ones(T.shape(magnitude), **T.context(magnitude)), magnitude
+        ),
+    )
+
+
 def cp_flip_sign(cp_tensor, mode=0, func=None):
     """Returns cp_tensor with factors flipped to have positive signs.
     The sign of a given column is determined by `func`, which is the mean
@@ -346,6 +366,8 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
     """
     _, rank = _validate_cp_tensor(cp_tensor)
     weights, factors = cp_tensor
+    # Work on a new list so that the input CP tensor is left unchanged
+    factors = list(factors)
     if weights is None:
         weights = T.ones(rank, **T.context(factors[0]))
 
@@ -357,22 +379,20 @@ def cp_flip_sign(cp_tensor, mode=0, func=None):
         if jj == mode:
             continue
 
-        # Calculate the sign of the current factor in each component
-        column_signs = T.sign(func(factors[jj], axis=0))
+        # Calculate the sign of the current factor in each component.
         # A zero summary does not imply a zero component. Leave its sign
         # unchanged rather than erasing it in both factors.
-        column_signs = T.where(
-            column_signs == 0,
-            T.ones(T.shape(column_signs), **T.context(column_signs)),
-            column_signs,
-        )
+        column_signs = _phase(func(factors[jj], axis=0))
 
-        # Update both the current and receiving factor
+        # Update both the current and receiving factor. For complex factors the
+        # "sign" is a unit phase s: dividing the current factor by s (multiplying
+        # by conj(s)) makes its summary real and positive, and multiplying the
+        # receiving factor by s leaves the reconstructed tensor unchanged.
         factors[mode] = factors[mode] * column_signs[np.newaxis, :]
-        factors[jj] = factors[jj] * column_signs[np.newaxis, :]
+        factors[jj] = factors[jj] * T.conj(column_signs)[np.newaxis, :]
 
     # Check the weight signs
-    weight_signs = T.sign(weights)
+    weight_signs = _phase(weights)
     factors[mode] = factors[mode] * weight_signs[np.newaxis, :]
     weights = T.abs(weights)
 
