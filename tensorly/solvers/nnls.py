@@ -402,9 +402,17 @@ def active_set_nnls(Utm, UtU, x=None, n_iter_max=100, tol=10e-8):
                 x_vec = x_vec + update
                 passive_set = x_vec > 0
                 active_set = x_vec <= 0
-                passive_solution = tl.solve(
-                    UtU[passive_set, :][:, passive_set], Utm[passive_set]
-                )
+                try:
+                    passive_solution = tl.solve(
+                        UtU[passive_set, :][:, passive_set], Utm[passive_set]
+                    )
+                    if not tl.all(tl.abs(passive_solution) < float("inf")):
+                        raise ValueError("Singular matrix in active set solve")
+                except Exception:
+                    support_vec = tl.zeros(tl.shape(x_vec), **tl.context(x_vec))
+                    passive_set = support_vec > 0
+                    active_set = support_vec <= 0
+                    break
                 indice_list = []
                 for i in range(tl.shape(support_vec)[0]):
                     if passive_set[i]:

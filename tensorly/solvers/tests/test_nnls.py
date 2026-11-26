@@ -42,6 +42,22 @@ def test_fista():
 
 
 @skip_tensorflow
+@pytest.mark.parametrize(
+    "dtype, offset", [("float32", 2.0**-13), ("float64", 2.0**-27)]
+)
+def test_active_set_nnls_singular_update(dtype, offset):
+    a = tl.tensor([[1.0, 1.0, 1.0], [0.0, offset, 1.0]], dtype=getattr(tl, dtype))
+    b = tl.tensor([1.0, offset - 1.0], **tl.context(a))
+    # Dropping the third variable leaves a singular passive block.
+    x = active_set_nnls(
+        tl.dot(tl.transpose(a), b),
+        tl.dot(tl.transpose(a), a),
+        x=tl.ones(3, **tl.context(a)),
+    )
+    assert_array_almost_equal(x, tl.tensor([1.0, 0.0, 0.0], **tl.context(a)))
+
+
+@skip_tensorflow
 def test_active_set_nnls():
     """Test for active_set_nnls operator. A linear system is Ax=b with known A, b and ground truth x is solved using Active Set.
     We test that the estimated x_as is almost equal to the ground truth x"""
