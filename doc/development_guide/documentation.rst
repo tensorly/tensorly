@@ -3,7 +3,7 @@
 Writing documentation
 =====================
 
-Documentation is a crutial part of this library. Here, we cover some elements of syntax 
+Documentation is a crucial part of this library. Here, we cover some elements of syntax 
 with Sphinx and reStructuredText (the `.rst` files), which is the format we use.
 
 Docstrings
@@ -77,7 +77,7 @@ If you do not want your title to appear in the table of contents, use a `rubric 
 
 Examples
 --------
-Examples are located in `tensorly/examples` and executed everytime the documentation is built. 
+Examples are located in `tensorly/examples` and executed every time the documentation is built. 
 We use the `Sphinx-Gallery <https://sphinx-gallery.github.io/stable/index.html>`_ which you can refer to for documentation but,
 in short, your example should be called `plot_xyz.py` and the the structure of that file should typically look like::
 
