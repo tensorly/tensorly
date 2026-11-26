@@ -105,6 +105,9 @@ def test_cp_flip_sign_does_not_modify_input():
     assert_array_almost_equal(cp_to_tensor(flipped), expected)
 
 
+@pytest.mark.skipif(
+    tl.get_backend() == "paddle", reason="Paddle does not support complex tensors"
+)
 @pytest.mark.parametrize("mode", [0, 1, 2])
 def test_cp_flip_sign_complex(mode):
     rng = tl.check_random_state(1234)
