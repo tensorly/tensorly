@@ -247,8 +247,7 @@ class BackendManager(types.ModuleType):
         ----------
         backend : {'numpy', 'pytorch', 'tensorflow', 'cupy', 'paddle'}
             The name of the backend to use. TensorLy's own default backend is
-            'numpy', or whatever the ``TENSORLY_BACKEND`` environment variable
-            names; on exit the backend in use beforehand is restored.
+            'numpy', or ``TENSORLY_BACKEND`` if set.
         local_threadsafe : bool, optional
             If True, the backend will not become the default backend for all threads.
             Note that this only affects threads where the backend hasn't already
