@@ -30,6 +30,26 @@ from tensorly.testing import (
 )
 
 
+@pytest.mark.parametrize(
+    "weights, mask, expected",
+    [
+        (None, None, [3.0, 7.0, 11.0]),
+        (None, [1.0, 0.0, 1.0], [3.0, 0.0, 11.0]),
+        ([2.0, -3.0], None, [-4.0, -6.0, -8.0]),
+        ([2.0, -3.0], [1.0, 0.0, 1.0], [-4.0, 0.0, -8.0]),
+    ],
+)
+def test_cp_to_tensor_single_mode_matrix_factor(weights, mask, expected):
+    factor = tl.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+    weights = None if weights is None else tl.tensor(weights, **tl.context(factor))
+    mask = None if mask is None else tl.tensor(mask, **tl.context(factor))
+    for cp in ((weights, [factor]), CPTensor((weights, [factor]))):
+        result = cp_to_tensor(cp, mask=mask)
+        assert_array_almost_equal(result, tl.tensor(expected, **tl.context(factor)))
+        assert_equal(tl.shape(result), (3,))
+    assert_array_equal(factor, tl.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]))
+
+
 def test_cp_normalize():
     shape = (3, 4, 5)
     rank = 4
