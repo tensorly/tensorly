@@ -9,39 +9,60 @@ from . import backend as tl
 import numpy as np
 from scipy.optimize import brentq
 import warnings
+from numbers import Integral
 
 # Author: Jean Kossaifi <jean.kossaifi+tensors@gmail.com>
 
 # License: BSD 3 clause
 
 
-def _validate_tucker_tensor(tucker_tensor):
+def _tucker_modes(tucker_tensor, modes=None):
+    """Resolve the factor-to-core mapping, preserving the supplied factor order."""
     core, factors = tucker_tensor
+    if modes is None:
+        modes = getattr(tucker_tensor, "modes", range(len(factors)))
+    modes = tuple(modes)
+    if len(modes) != len(factors):
+        raise ValueError("There must be exactly one mode for each Tucker factor.")
+    if any(
+        not isinstance(mode, Integral)
+        or isinstance(mode, (bool, np.bool_))
+        or mode < 0
+        or mode >= tl.ndim(core)
+        for mode in modes
+    ):
+        raise ValueError("Tucker modes must be integers between 0 and core.ndim - 1.")
+    if len(set(modes)) != len(modes):
+        raise ValueError("Tucker modes must be distinct.")
+    return modes
 
-    if len(factors) < 2:
-        raise ValueError(
-            "A Tucker tensor should be composed of at least two factors and a core."
-            f"However, {len(factors)} factor was given."
-        )
 
-    if len(factors) != tl.ndim(core):
+def _validate_tucker_tensor(tucker_tensor, modes=None):
+    core, factors = tucker_tensor
+    if (
+        modes is None
+        and not hasattr(tucker_tensor, "modes")
+        and len(factors) != tl.ndim(core)
+    ):
         raise ValueError(
-            "Tucker decompositions should have one factor per more of the core tensor."
+            "Tucker decompositions should have one factor per mode of the core tensor, "
+            "or specify the modes corresponding to the factors. "
             f"However, core has {tl.ndim(core)} modes but {len(factors)} factors have been provided"
         )
 
-    shape = []
-    rank = []
-    for i, factor in enumerate(factors):
+    modes = _tucker_modes(tucker_tensor, modes)
+    shape = list(tl.shape(core))
+    rank = tl.shape(core)
+    for i, (factor, mode) in enumerate(zip(factors, modes)):
+        if tl.ndim(factor) != 2:
+            raise ValueError(f"Tucker factor {i} must be a matrix.")
         current_shape, current_rank = tl.shape(factor)
-        if current_rank != tl.shape(core)[i]:
+        if current_rank != rank[mode]:
             raise ValueError(
-                "Factor `n` of Tucker decomposition should verify:\n"
-                "factors[n].shape[1] = core.shape[n]."
-                f"However, factors[{i}].shape[1]={tl.shape(factor)[1]} but core.shape[{i}]={tl.shape(core)[i]}."
+                "Each Tucker factor must have as many columns as its core mode. "
+                f"However, factors[{i}].shape[1]={current_rank} but core.shape[{mode}]={rank[mode]}."
             )
-        shape.append(current_shape)
-        rank.append(current_rank)
+        shape[mode] = current_shape
 
     return tuple(shape), tuple(rank)
 
@@ -56,25 +77,36 @@ def tucker_to_tensor(
     tucker_tensor : tl.TuckerTensor or (core, factors)
         core tensor and list of factor matrices
     skip_factor : None or int, optional, default is None
-        if not None, index of a matrix to skip
-        Note that in any case, `modes`, if provided, should have a lengh of ``tensor.ndim``
+        if not None, index in the supplied factor list of a matrix to skip
     transpose_factors : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
     modes : None or int list, optional, default is None
-        list of the modes on which to perform the decomposition
+        core axis corresponding to each factor, in factor-list order.
+        Defaults to the mapping stored on a TuckerTensor, or consecutive axes
+        starting at zero for a (core, factors) pair. Unfactored axes retain
+        their core dimensions. An explicit mapping overrides stored modes.
 
     Returns
     -------
-    2D-array
-       full tensor of shape ``(factors[0].shape[0], ..., factors[-1].shape[0])``
+    ndarray
+       full tensor, with each factored core dimension replaced by its factor's
+       number of rows
     """
     core, factors = tucker_tensor
-    return multi_mode_dot(
-        core, factors, skip=skip_factor, transpose=transpose_factors, modes=modes
-    )
+    modes = _tucker_modes(tucker_tensor, modes)
+    # Filter before multi_mode_dot sorts the factors by mode.
+    active = [
+        (factor, mode)
+        for i, (factor, mode) in enumerate(zip(factors, modes))
+        if i != skip_factor
+    ]
+    if not active:
+        return core
+    factors, modes = zip(*active)
+    return multi_mode_dot(core, factors, transpose=transpose_factors, modes=modes)
 
 
-def tucker_normalize(tucker_tensor):
+def tucker_normalize(tucker_tensor, modes=None):
     """Returns tucker_tensor with factors normalised to unit length with the normalizing constants absorbed into
     `core`.
 
@@ -82,27 +114,32 @@ def tucker_normalize(tucker_tensor):
     ----------
     tucker_tensor : tl.TuckerTensor or (core, factors)
         core tensor and list of factor matrices
+    modes : int list or None, optional
+        core axis for each factor. Defaults to the stored mapping, or all
+        core axes for a (core, factors) pair.
 
     Returns
     -------
     TuckerTensor((core, factors))
     """
     core, factors = tucker_tensor
+    _validate_tucker_tensor(tucker_tensor, modes)
+    modes = _tucker_modes(tucker_tensor, modes)
     normalized_factors = []
-    for i, factor in enumerate(factors):
+    for mode, factor in zip(modes, factors):
         scales = tl.norm(factor, axis=0)
         scales_non_zero = tl.where(
             scales == 0, tl.ones(tl.shape(scales), **tl.context(factor)), scales
         )
         core = core * tl.reshape(
-            scales, (1,) * i + (-1,) + (1,) * (tl.ndim(core) - i - 1)
+            scales, (1,) * mode + (-1,) + (1,) * (tl.ndim(core) - mode - 1)
         )
         normalized_factors.append(factor / tl.reshape(scales_non_zero, (1, -1)))
-    return TuckerTensor((core, normalized_factors))
+    return TuckerTensor((core, normalized_factors), modes=modes)
 
 
 def tucker_to_unfolded(
-    tucker_tensor, mode=0, skip_factor=None, transpose_factors=False
+    tucker_tensor, mode=0, skip_factor=None, transpose_factors=False, modes=None
 ):
     """Converts the Tucker decomposition into an unfolded tensor (i.e. a matrix)
 
@@ -112,10 +149,11 @@ def tucker_to_unfolded(
         core tensor and list of factor matrices
     mode : int, optional, default is 0
     skip_factor : None or int, optional, default is None
-        if not None, index of a matrix to skip
-        Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
+        if not None, index in the supplied factor list of a matrix to skip
     transpose_factors : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
+    modes : int list or None, optional
+        core axis for each factor, as in :func:`tucker_to_tensor`.
 
     Returns
     -------
@@ -124,13 +162,16 @@ def tucker_to_unfolded(
     """
     return unfold(
         tucker_to_tensor(
-            tucker_tensor, skip_factor=skip_factor, transpose_factors=transpose_factors
+            tucker_tensor,
+            skip_factor=skip_factor,
+            transpose_factors=transpose_factors,
+            modes=modes,
         ),
         mode,
     )
 
 
-def tucker_to_vec(tucker_tensor, skip_factor=None, transpose_factors=False):
+def tucker_to_vec(tucker_tensor, skip_factor=None, transpose_factors=False, modes=None):
     """Converts a Tucker decomposition into a vectorised tensor
 
     Parameters
@@ -138,10 +179,11 @@ def tucker_to_vec(tucker_tensor, skip_factor=None, transpose_factors=False):
     tucker_tensor : tl.TuckerTensor or (core, factors)
         core tensor and list of factor matrices
     skip_factor : None or int, optional, default is None
-        if not None, index of a matrix to skip
-        Note that in any case, `modes`, if provided, should have a length of ``tensor.ndim``
+        if not None, index in the supplied factor list of a matrix to skip
     transpose_factors : bool, optional, default is False
         if True, the matrices or vectors in in the list are transposed
+    modes : int list or None, optional
+        core axis for each factor, as in :func:`tucker_to_tensor`.
 
     Returns
     -------
@@ -158,12 +200,17 @@ def tucker_to_vec(tucker_tensor, skip_factor=None, transpose_factors=False):
     """
     return tensor_to_vec(
         tucker_to_tensor(
-            tucker_tensor, skip_factor=skip_factor, transpose_factors=transpose_factors
+            tucker_tensor,
+            skip_factor=skip_factor,
+            transpose_factors=transpose_factors,
+            modes=modes,
         )
     )
 
 
-def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=False):
+def tucker_mode_dot(
+    tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=False, modes=None
+):
     """n-mode product of a Tucker tensor and a matrix or vector at the specified mode
 
     Parameters
@@ -174,6 +221,15 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
         1D or 2D array of shape ``(J, i_k)`` or ``(i_k, )``
         matrix or vectors to which to n-mode multiply the tensor
     mode : int
+        axis of the full tensor on which to multiply
+    keep_dim : bool, optional, default is False
+        retain a size-one axis when multiplying by a vector
+    copy : bool, optional, default is False
+        copy the core and factors before multiplication. Otherwise, unchanged
+        arrays are shared with the input; its factor list is never modified.
+    modes : int list or None, optional
+        core axis for each factor. Defaults to the stored mapping, or all
+        core axes for a (core, factors) pair.
 
     Returns
     -------
@@ -186,8 +242,12 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
     --------
     tucker_multi_mode_dot : chaining several mode_dot in one call
     """
-    shape, _ = _validate_tucker_tensor(tucker_tensor)
+    shape, _ = _validate_tucker_tensor(tucker_tensor, modes)
+    modes = _tucker_modes(tucker_tensor, modes)
     core, factors = tucker_tensor
+    if not isinstance(mode, Integral) or not -len(shape) <= mode < len(shape):
+        raise ValueError("mode must identify an axis of the full Tucker tensor.")
+    mode %= len(shape)
     contract = False
 
     if tl.ndim(matrix_or_vector) == 2:  # Tensor times matrix
@@ -215,21 +275,51 @@ def tucker_mode_dot(tucker_tensor, matrix_or_vector, mode, keep_dim=False, copy=
     if copy:
         factors = [tl.copy(f) for f in factors]
         core = tl.copy(core)
-
-    if contract:
-        f = factors.pop(mode)
-        core = mode_dot(core, tl.dot(matrix_or_vector, f), mode=mode)
     else:
-        factors[mode] = tl.dot(matrix_or_vector, factors[mode])
+        factors = list(factors)
 
-    return TuckerTensor((core, factors))
+    if mode in modes:
+        factor_index = modes.index(mode)
+        if contract:
+            factor = factors.pop(factor_index)
+            core = mode_dot(core, tl.dot(matrix_or_vector, factor), mode=mode)
+        else:
+            factors[factor_index] = tl.dot(matrix_or_vector, factors[factor_index])
+    else:
+        core = mode_dot(core, matrix_or_vector, mode=mode)
+    if contract:
+        modes = tuple(m - (m > mode) for m in modes if m != mode)
+
+    return TuckerTensor((core, factors), modes=modes)
 
 
 class TuckerTensor(FactorizedTensor):
-    def __init__(self, tucker_tensor):
+    """Tucker decomposition with an optional factor-to-core mode mapping.
+
+    Parameters
+    ----------
+    tucker_tensor : (core, factors) or TuckerTensor
+        core tensor and factor matrices. Unpacking still yields (core, factors).
+    modes : int list or None, optional
+        core axis for each factor, in factor-list order. Defaults to the stored
+        mapping for a TuckerTensor, or all core axes for a (core, factors) pair.
+        Use an empty sequence for a core without factors.
+
+    Attributes
+    ----------
+    modes : int tuple
+        core axis corresponding to each factor
+    shape : int tuple
+        shape of the reconstructed tensor, including unfactored axes
+    rank : int tuple
+        shape of the core, including unfactored axes
+    """
+
+    def __init__(self, tucker_tensor, modes=None):
         super().__init__()
 
-        shape, rank = _validate_tucker_tensor(tucker_tensor)
+        shape, rank = _validate_tucker_tensor(tucker_tensor, modes)
+        self.modes = _tucker_modes(tucker_tensor, modes)
         core, factors = tucker_tensor
         self.shape = tuple(shape)
         self.rank = tuple(rank)
@@ -282,7 +372,8 @@ class TuckerTensor(FactorizedTensor):
             (
                 tl.copy(self.core),
                 [tl.copy(self.factors[i]) for i in range(len(self.factors))],
-            )
+            ),
+            modes=self.modes,
         )
 
     def to_vec(self):
