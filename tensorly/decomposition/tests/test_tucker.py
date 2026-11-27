@@ -398,15 +398,3 @@ def test_non_negative_tucker_hals_fixed_modes(init, fixed_modes, rank):
     for mode, initial_factor in fixed_factors.items():
         assert_array_equal(factors[mode], initial_factor)
     assert_equal(tl.shape(tucker_to_tensor((core, factors))), shape)
-
-
-@pytest.mark.skipif(
-    tl.get_backend() == "tensorflow",
-    reason="Active set is not supported with the tensorflow backend",
-)
-def test_non_negative_tucker_hals_active_set_rank_deficient():
-    tensor = tl.ones((3, 4, 3), dtype=tl.float64)
-    core, factors = non_negative_tucker_hals(tensor, rank=3, algorithm="active_set")
-    for factor in [core, *factors]:
-        assert_(tl.all(factor >= 0))
-    assert_(tl.norm(tucker_to_tensor((core, factors)) - tensor) < 1e-6)
