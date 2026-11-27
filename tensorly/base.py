@@ -49,7 +49,14 @@ def unfold(tensor, mode):
     -------
     ndarray
         unfolded_tensor of shape ``(tensor.shape[mode], -1)``
+
+    Raises
+    ------
+    ValueError
+        If any dimension of the tensor has size zero.
     """
+    if 0 in tensor.shape:
+        raise ValueError("Cannot unfold a tensor with zero-size dimensions.")
     return tl.reshape(tl.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1))
 
 
@@ -106,7 +113,15 @@ def partial_unfold(tensor, mode=0, skip_begin=1, skip_end=0, ravel_tensors=False
     -------
     ndarray
         partially unfolded tensor
+
+    Raises
+    ------
+    ValueError
+        If any dimension of the tensor has size zero.
     """
+    if 0 in tensor.shape:
+        raise ValueError("Cannot unfold a tensor with zero-size dimensions.")
+
     if ravel_tensors:
         new_shape = [-1]
     else:

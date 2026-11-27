@@ -451,3 +451,11 @@ def test_matricize():
 
 
 test_matricize()
+
+
+def test_unfold_rejects_zero_size_dimensions():
+    tensor = T.zeros((2, 3, 0))
+    with assert_raises(ValueError):
+        unfold(tensor, 0)
+    with assert_raises(ValueError):
+        partial_unfold(tensor, 0)
